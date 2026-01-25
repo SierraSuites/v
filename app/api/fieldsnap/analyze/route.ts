@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create punch list items from findings (if project_id exists)
-    let punchListResult = { created: 0, items: [] }
+    let punchListResult: { created: number; items: any[]; tasksCreated: number } = { created: 0, items: [], tasksCreated: 0 }
     if (asset.project_id) {
       try {
         punchListResult = await createPunchListFromAnalysis(
