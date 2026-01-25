@@ -3,7 +3,7 @@ import { Toaster } from "react-hot-toast"
 export default function DashboardLayout({
   children,
 }: {
-  children: React.Node
+  children: React.ReactNode
 }) {
   return (
     <>
