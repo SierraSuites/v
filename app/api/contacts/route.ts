@@ -325,16 +325,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Map validation schema fields to Contact type fields
+    // Combine address lines if present
+    const addressParts = [contactData.address_line1, contactData.address_line2].filter(Boolean)
+    const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : null
+
     const mappedContactData = {
       user_id: authData!.user.id,
       contact_name: contactData.name,
       company_name: contactData.company || null,
       email: contactData.email || null,
       phone: contactData.phone || null,
-      address: contactData.address || null,
+      address: fullAddress,
       city: contactData.city || null,
       state: contactData.state || null,
-      zip: contactData.zip || null,
+      zip: contactData.postal_code || null,
       country: contactData.country,
       contact_type: contactData.type,
       notes: contactData.notes || null,
