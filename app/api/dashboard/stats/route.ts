@@ -18,7 +18,7 @@ export const revalidate = 30
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // 1. AUTHENTICATION
     const { data: { user }, error: authError } = await supabase.auth.getUser()
