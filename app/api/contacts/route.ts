@@ -232,11 +232,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    if (params.status) {
-      filteredContacts = filteredContacts.filter(contact =>
-        contact.status === params.status
-      )
-    }
+    // Note: Contact type doesn't have status field - removed filtering
+    // if (params.status) {
+    //   filteredContacts = filteredContacts.filter(contact =>
+    //     contact.status === params.status
+    //   )
+    // }
 
     // 6. SUCCESS RESPONSE
     const response = NextResponse.json({
