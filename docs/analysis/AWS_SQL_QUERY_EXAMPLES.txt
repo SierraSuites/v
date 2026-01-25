@@ -1,0 +1,626 @@
+AWS ML SERVICE: SQL QUERY EXAMPLES
+Sierra Suites AI - Supabase Data Fetching Patterns
+
+═══════════════════════════════════════════════════════════════════════════════
+
+OVERVIEW
+
+This document provides production-ready SQL queries that AWS Lambda functions will use to fetch user-specific data from Supabase PostgreSQL for AI model personalization.
+
+All queries follow best practices:
+- Parameterized statements (prevent SQL injection)
+- Indexed columns for performance
+- Limited result sets to reduce latency
+- Explicit column selection (avoid SELECT *)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PERSONALIZATION QUERIES
+
+═══════════════════════════════════════════════════════════════════════════════
+
+QUERY 1: Check User Personalization Level (Cold/Warm/Hot Start)
+
+Purpose: Determine how many completed projects the user has to decide personalization strategy.
+
+SELECT
+    COUNT(*) as completed_projects,
+    CASE
+        WHEN COUNT(*) < 6 THEN 'cold'
+        WHEN COUNT(*) BETWEEN 6 AND 20 THEN 'warm'
+        ELSE 'hot'
+    END as personalization_level
+FROM projects
+WHERE user_id = $1
+    AND status = 'completed'
+    AND actual_completion_date IS NOT NULL;
+
+Parameters:
+- $1: user_id (uuid)
+
+Returns:
+- completed_projects: Integer count
+- personalization_level: 'cold', 'warm', or 'hot'
+
+Use Case: All AI models - determines if we use public data only or blend with user data
+
+───────────────────────────────────────────────────────────────────────────────
+
+QUERY 2: Fetch User's Completed Projects for Training
+
+Purpose: Get user's historical projects for Warm/Hot start model training.
+
+SELECT
+    id,
+    project_type,
+    city,
+    state,
+    square_footage,
+    budget_estimated,
+    budget_actual,
+    start_date,
+    target_completion_date,
+    actual_completion_date,
+    EXTRACT(DAY FROM (actual_completion_date - start_date)) as actual_duration_days,
+    EXTRACT(DAY FROM (target_completion_date - start_date)) as estimated_duration_days,
+    scope_description
+FROM projects
+WHERE user_id = $1
+    AND status = 'completed'
+    AND budget_actual IS NOT NULL
+    AND actual_completion_date IS NOT NULL
+ORDER BY actual_completion_date DESC
+LIMIT $2;
+
+Parameters:
+- $1: user_id (uuid)
+- $2: limit (integer) - Use 20 for Warm start, 50+ for Hot start
+
+Returns: Array of completed project records
+
+Use Cases:
+- Smart Estimator: Train on user's actual costs vs. project characteristics
+- Timeline Predictor: User's historical completion times
+- Change Order Predictor: User's budget variance patterns
+
+───────────────────────────────────────────────────────────────────────────────
+
+QUERY 3: User's Cost Performance Metrics
+
+Purpose: Calculate user's average cost per sqft, cost variance, and budgeting accuracy.
+
+SELECT
+    project_type,
+    COUNT(*) as project_count,
+    AVG(budget_actual) as avg_actual_cost,
+    AVG(budget_actual / NULLIF(square_footage, 0)) as avg_cost_per_sqft,
+    AVG((budget_actual - budget_estimated) / NULLIF(budget_estimated, 0) * 100) as avg_cost_variance_pct,
+    STDDEV(budget_actual) as cost_stddev
+FROM projects
+WHERE user_id = $1
+    AND status = 'completed'
+    AND budget_actual IS NOT NULL
+    AND budget_estimated IS NOT NULL
+    AND square_footage > 0
+GROUP BY project_type
+HAVING COUNT(*) >= 3;
+
+Parameters:
+- $1: user_id (uuid)
+
+Returns:
+- project_type: Type of project
+- project_count: Number of completed projects of this type
+- avg_actual_cost: Average final cost
+- avg_cost_per_sqft: User's typical cost per square foot
+- avg_cost_variance_pct: How much user typically goes over/under budget
+- cost_stddev: Cost consistency (lower = more predictable)
+
+Use Cases:
+- Smart Estimator: Adjust predictions based on user's historical cost patterns
+- Change Order Predictor: User's typical budget variance
+
+───────────────────────────────────────────────────────────────────────────────
+
+QUERY 4: User's Timeline Performance Metrics
+
+Purpose: Calculate user's average project duration and schedule adherence.
+
+SELECT
+    project_type,
+    COUNT(*) as project_count,
+    AVG(EXTRACT(DAY FROM (actual_completion_date - start_date))) as avg_actual_duration_days,
+    AVG(EXTRACT(DAY FROM (target_completion_date - start_date))) as avg_estimated_duration_days,
+    AVG(EXTRACT(DAY FROM (actual_completion_date - target_completion_date))) as avg_delay_days,
+    AVG(CASE
+        WHEN actual_completion_date <= target_completion_date THEN 1
+        ELSE 0
+    END * 100) as on_time_completion_pct
+FROM projects
+WHERE user_id = $1
+    AND status = 'completed'
+    AND actual_completion_date IS NOT NULL
+    AND target_completion_date IS NOT NULL
+GROUP BY project_type
+HAVING COUNT(*) >= 3;
+
+Parameters:
+- $1: user_id (uuid)
+
+Returns:
+- project_type: Type of project
+- project_count: Number of completed projects
+- avg_actual_duration_days: How long projects actually take
+- avg_estimated_duration_days: User's typical time estimates
+- avg_delay_days: Typical schedule slippage (negative = ahead of schedule)
+- on_time_completion_pct: Percentage of projects finished on time
+
+Use Cases:
+- Timeline Predictor: Adjust predictions based on user's historical performance
+- Project Predictor: User-specific delay patterns
+
+───────────────────────────────────────────────────────────────────────────────
+
+QUERY 5: User's Permit Approval Times
+
+Purpose: Get user's historical permit approval durations by jurisdiction.
+
+SELECT
+    jurisdiction,
+    permit_type,
+    COUNT(*) as permit_count,
+    AVG(days_to_approval) as avg_days_to_approval,
+    MIN(days_to_approval) as min_days,
+    MAX(days_to_approval) as max_days,
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY days_to_approval) as median_days
+FROM permits
+WHERE user_id = $1
+    AND status = 'approved'
+    AND days_to_approval IS NOT NULL
+GROUP BY jurisdiction, permit_type
+HAVING COUNT(*) >= 2;
+
+Parameters:
+- $1: user_id (uuid)
+
+Returns:
+- jurisdiction: City/county
+- permit_type: Type of permit
+- avg_days_to_approval: User's average wait time in this jurisdiction
+- median_days: Median approval time (more robust than average)
+
+Use Case:
+- Timeline Predictor: User-specific permit approval times (better than public average)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DAILY REPORT QUERIES
+
+═══════════════════════════════════════════════════════════════════════════════
+
+QUERY 6: Today's Project Activity
+
+Purpose: Fetch all data needed for AI Daily Report Generator.
+
+WITH today_tasks AS (
+    SELECT
+        COUNT(*) FILTER (WHERE status = 'completed' AND completed_date = CURRENT_DATE) as tasks_completed,
+        COUNT(*) FILTER (WHERE status = 'in_progress') as tasks_in_progress,
+        COUNT(*) FILTER (WHERE status = 'not_started') as tasks_not_started,
+        SUM(actual_hours) FILTER (WHERE completed_date = CURRENT_DATE) as hours_worked
+    FROM tasks
+    WHERE project_id = $1
+),
+today_crew AS (
+    SELECT
+        COUNT(DISTINCT crew_member_id) as crew_count,
+        SUM(hours_worked) as total_crew_hours
+    FROM crew_assignments
+    WHERE project_id = $1 AND assignment_date = CURRENT_DATE
+),
+today_photos AS (
+    SELECT
+        COUNT(*) as photo_count,
+        array_agg(file_url ORDER BY taken_at DESC) as photo_urls
+    FROM fieldsnap_photos
+    WHERE project_id = $1
+        AND DATE(taken_at) = CURRENT_DATE
+)
+SELECT
+    (SELECT row_to_json(today_tasks.*) FROM today_tasks) as tasks,
+    (SELECT row_to_json(today_crew.*) FROM today_crew) as crew,
+    (SELECT row_to_json(today_photos.*) FROM today_photos) as photos;
+
+Parameters:
+- $1: project_id (uuid)
+
+Returns: JSON object with tasks, crew, and photos for today
+
+Use Case:
+- AI Daily Report Generator: Single query gets all daily activity
+
+───────────────────────────────────────────────────────────────────────────────
+
+QUERY 7: Historical Productivity Benchmarking
+
+Purpose: Compare today's productivity to user's historical average.
+
+SELECT
+    AVG(tasks_completed) as avg_tasks_per_day,
+    AVG(hours_worked / NULLIF(crew_count, 0)) as avg_hours_per_worker,
+    AVG(productivity_score) as avg_productivity_score,
+    STDDEV(productivity_score) as productivity_stddev
+FROM daily_reports
+WHERE project_id = $1
+    AND report_date < CURRENT_DATE
+    AND report_date >= CURRENT_DATE - INTERVAL '90 days';
+
+Parameters:
+- $1: project_id (uuid)
+
+Returns: Historical productivity metrics for comparison
+
+Use Case:
+- AI Daily Report Generator: "Today's crew efficiency: 118% vs. your average"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PROJECT SUCCESS STORY QUERIES
+
+═══════════════════════════════════════════════════════════════════════════════
+
+QUERY 8: Project Completion Summary
+
+Purpose: Get all project data for Project Success Story Generator.
+
+SELECT
+    p.project_name,
+    p.project_type,
+    p.address,
+    p.city,
+    p.state,
+    p.square_footage,
+    p.budget_estimated,
+    p.budget_actual,
+    p.start_date,
+    p.actual_completion_date,
+    EXTRACT(DAY FROM (p.actual_completion_date - p.start_date)) as duration_days,
+    (p.budget_actual - p.budget_estimated) / NULLIF(p.budget_estimated, 0) * 100 as budget_variance_pct,
+    u.company_name,
+    COUNT(DISTINCT t.id) as total_tasks,
+    COUNT(DISTINCT ca.crew_member_id) as total_crew_members,
+    COUNT(DISTINCT dr.id) as total_daily_reports,
+    COUNT(DISTINCT si.id) as safety_incidents,
+    COALESCE(SUM(m.gwp_kg_co2e), 0) as total_carbon_kg
+FROM projects p
+JOIN user_profiles u ON p.user_id = u.id
+LEFT JOIN tasks t ON p.id = t.project_id
+LEFT JOIN crew_assignments ca ON p.id = ca.project_id
+LEFT JOIN daily_reports dr ON p.id = dr.project_id
+LEFT JOIN safety_incidents si ON p.id = si.project_id
+LEFT JOIN materials m ON p.id = m.project_id
+WHERE p.id = $1
+GROUP BY p.id, u.company_name;
+
+Parameters:
+- $1: project_id (uuid)
+
+Returns: Complete project summary with aggregated stats
+
+Use Case:
+- Project Success Story Generator: Executive summary data
+
+───────────────────────────────────────────────────────────────────────────────
+
+QUERY 9: Approved Photos for Success Story
+
+Purpose: Select high-quality, client-approved photos for PDF.
+
+SELECT
+    file_url,
+    caption,
+    taken_at,
+    tags,
+    image_quality_score
+FROM fieldsnap_photos
+WHERE project_id = $1
+    AND approved_for_client = true
+    AND image_quality_score >= 70
+ORDER BY
+    CASE
+        WHEN 'before' = ANY(tags) THEN 1
+        WHEN 'progress' = ANY(tags) THEN 2
+        WHEN 'after' = ANY(tags) THEN 3
+        ELSE 4
+    END,
+    image_quality_score DESC
+LIMIT 12;
+
+Parameters:
+- $1: project_id (uuid)
+
+Returns: Best 12 photos prioritized by before/progress/after sequence
+
+Use Case:
+- Project Success Story Generator: Photo selection for PDF
+
+───────────────────────────────────────────────────────────────────────────────
+
+QUERY 10: Client Testimonial
+
+Purpose: Get approved client testimonial for success story.
+
+SELECT
+    client_name,
+    testimonial_text,
+    rating
+FROM testimonials
+WHERE project_id = $1
+    AND approved = true
+ORDER BY rating DESC, created_at DESC
+LIMIT 1;
+
+Parameters:
+- $1: project_id (uuid)
+
+Returns: Best available testimonial
+
+Use Case:
+- Project Success Story Generator: Include client quote in PDF
+
+═══════════════════════════════════════════════════════════════════════════════
+
+RISK PREDICTION QUERIES
+
+═══════════════════════════════════════════════════════════════════════════════
+
+QUERY 11: User's Violation History
+
+Purpose: Calculate user's violation risk score for Violation Risk Predictor.
+
+SELECT
+    COUNT(*) as total_violations,
+    COUNT(*) FILTER (WHERE violation_type = 'electrical') as electrical_violations,
+    COUNT(*) FILTER (WHERE violation_type = 'structural') as structural_violations,
+    COUNT(*) FILTER (WHERE violation_type = 'plumbing') as plumbing_violations,
+    COUNT(*) FILTER (WHERE violation_type = 'safety') as safety_violations,
+    AVG(CASE WHEN resolved THEN 1 ELSE 0 END * 100) as resolution_rate_pct,
+    SUM(fine_amount) as total_fines
+FROM violations
+WHERE user_id = $1
+    AND violation_date >= CURRENT_DATE - INTERVAL '2 years';
+
+Parameters:
+- $1: user_id (uuid)
+
+Returns: User's violation history for risk scoring
+
+Use Case:
+- Violation Risk Predictor: Higher risk if user has past violations
+
+───────────────────────────────────────────────────────────────────────────────
+
+QUERY 12: User's Inspection Pass Rate
+
+Purpose: Calculate user's inspection success rate for Inspection Failure Predictor.
+
+SELECT
+    inspection_type,
+    COUNT(*) as total_inspections,
+    COUNT(*) FILTER (WHERE result = 'pass') as passed,
+    COUNT(*) FILTER (WHERE result = 'fail') as failed,
+    COUNT(*) FILTER (WHERE result = 'pass') * 100.0 / COUNT(*) as pass_rate_pct
+FROM inspections
+WHERE user_id = $1
+    AND inspection_date >= CURRENT_DATE - INTERVAL '2 years'
+GROUP BY inspection_type
+HAVING COUNT(*) >= 3;
+
+Parameters:
+- $1: user_id (uuid)
+
+Returns: Pass rate by inspection type
+
+Use Case:
+- Inspection Failure Predictor: User with 95% pass rate = lower risk than 60%
+
+───────────────────────────────────────────────────────────────────────────────
+
+QUERY 13: User's Safety Record
+
+Purpose: Calculate user's injury rate for Safety Sentinel.
+
+SELECT
+    COUNT(*) as total_incidents,
+    COUNT(*) FILTER (WHERE severity IN ('lost_time', 'fatality')) as serious_incidents,
+    COUNT(*) FILTER (WHERE incident_type = 'fall') as fall_incidents,
+    COUNT(*) FILTER (WHERE osha_reportable = true) as osha_reportable_incidents,
+    COUNT(DISTINCT project_id) as projects_with_incidents,
+    (SELECT COUNT(*) FROM projects WHERE user_id = $1 AND status = 'completed') as total_completed_projects
+FROM safety_incidents
+WHERE user_id = $1
+    AND incident_date >= CURRENT_DATE - INTERVAL '2 years';
+
+Parameters:
+- $1: user_id (uuid)
+
+Returns: Safety incident statistics
+
+Use Case:
+- Safety Sentinel: Adjust risk score based on user's safety history
+
+═══════════════════════════════════════════════════════════════════════════════
+
+SUSTAINABILITY QUERIES
+
+═══════════════════════════════════════════════════════════════════════════════
+
+QUERY 14: Project Carbon Footprint
+
+Purpose: Calculate total embodied carbon for Carbon Footprint Estimator.
+
+SELECT
+    material_category,
+    SUM(quantity) as total_quantity,
+    AVG(gwp_kg_co2e) as avg_gwp_per_unit,
+    SUM(quantity * gwp_kg_co2e) as total_gwp_kg_co2e,
+    COUNT(*) FILTER (WHERE epd_id IS NOT NULL) as epd_count,
+    COUNT(*) FILTER (WHERE local_sourced = true) as local_materials_count
+FROM materials
+WHERE project_id = $1
+GROUP BY material_category
+ORDER BY total_gwp_kg_co2e DESC;
+
+Parameters:
+- $1: project_id (uuid)
+
+Returns: Carbon breakdown by material category
+
+Use Cases:
+- Carbon Footprint Estimator: Total embodied carbon
+- LEED Credit Automation: EPD count, regional materials count
+
+───────────────────────────────────────────────────────────────────────────────
+
+QUERY 15: Buy Clean Compliance Check
+
+Purpose: Check if materials meet state GWP limits for Buy Clean Compliance Checker.
+
+SELECT
+    m.material_category,
+    m.material_name,
+    m.gwp_kg_co2e,
+    p.state,
+    CASE
+        WHEN p.state = 'CA' AND m.material_category = 'rebar_unfabricated' AND m.gwp_kg_co2e <= 755 THEN 'compliant'
+        WHEN p.state = 'CA' AND m.material_category = 'rebar_fabricated' AND m.gwp_kg_co2e <= 778 THEN 'compliant'
+        WHEN p.state = 'CA' AND m.material_category = 'flat_glass' AND m.gwp_kg_co2e <= 1430 THEN 'compliant'
+        ELSE 'non_compliant'
+    END as compliance_status
+FROM materials m
+JOIN projects p ON m.project_id = p.id
+WHERE m.project_id = $1
+    AND p.state IN ('CA', 'WA', 'CO', 'OR', 'MN')
+    AND m.gwp_kg_co2e IS NOT NULL;
+
+Parameters:
+- $1: project_id (uuid)
+
+Returns: Compliance status for each material
+
+Use Case:
+- Buy Clean Compliance Checker: Flag non-compliant materials
+
+───────────────────────────────────────────────────────────────────────────────
+
+QUERY 16: ESG Portfolio Dashboard
+
+Purpose: Aggregate carbon metrics across all user's projects.
+
+SELECT
+    COUNT(DISTINCT p.id) as total_projects,
+    SUM(p.square_footage) as total_sqft,
+    COUNT(DISTINCT m.id) as total_materials_tracked,
+    SUM(m.quantity * m.gwp_kg_co2e) as total_carbon_kg_co2e,
+    AVG(m.quantity * m.gwp_kg_co2e / NULLIF(p.square_footage, 0)) as avg_carbon_per_sqft,
+    COUNT(DISTINCT m.epd_id) as total_epds_used,
+    COUNT(*) FILTER (WHERE m.local_sourced = true) as local_materials_count
+FROM projects p
+LEFT JOIN materials m ON p.id = m.project_id
+WHERE p.user_id = $1
+    AND p.status = 'completed'
+    AND p.actual_completion_date >= CURRENT_DATE - INTERVAL '1 year'
+GROUP BY p.user_id;
+
+Parameters:
+- $1: user_id (uuid)
+
+Returns: Portfolio-wide sustainability metrics
+
+Use Case:
+- ESG Portfolio Dashboard: Annual sustainability report
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PERFORMANCE OPTIMIZATION TIPS
+
+BATCH QUERIES:
+
+Instead of N individual queries, use CTEs or JOINs to fetch multiple datasets in one round trip:
+
+WITH user_stats AS (
+    SELECT COUNT(*) FROM projects WHERE user_id = $1 AND status = 'completed'
+),
+recent_projects AS (
+    SELECT * FROM projects WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10
+)
+SELECT
+    (SELECT * FROM user_stats) as stats,
+    array_agg(recent_projects.*) as projects
+FROM recent_projects;
+
+CONNECTION POOLING:
+
+Use PgBouncer or AWS RDS Proxy to maintain persistent connections:
+- Reduces connection overhead (PostgreSQL connection = 10MB RAM)
+- Improves Lambda cold start times
+
+CACHING:
+
+Cache frequently accessed data in AWS DynamoDB:
+- User's personalization level (cold/warm/hot)
+- Historical performance metrics (recalculate daily, not per request)
+- Jurisdiction permit approval times (update weekly)
+
+Example cache pattern:
+1. Lambda checks DynamoDB for cached result
+2. If cache miss or stale (>24 hours), query Supabase
+3. Store result in DynamoDB with TTL
+4. Return to caller
+
+QUERY EXPLAIN:
+
+Before deploying, run EXPLAIN ANALYZE on all queries:
+
+EXPLAIN ANALYZE
+SELECT * FROM projects WHERE user_id = '...' AND status = 'completed';
+
+Look for:
+- Seq Scan (bad) vs. Index Scan (good)
+- High execution time (>100ms needs optimization)
+- Large row counts returned (add LIMIT)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+ERROR HANDLING
+
+NULL SAFETY:
+
+Always use NULLIF or COALESCE to prevent division by zero:
+
+BAD:  AVG(budget_actual / square_footage)
+GOOD: AVG(budget_actual / NULLIF(square_footage, 0))
+
+EMPTY RESULT SETS:
+
+Check if query returns zero rows before using data:
+
+result = await query(sql, [user_id])
+if (!result.rows.length) {
+    return { personalization_level: 'cold', data: [] }
+}
+
+TIMEOUT HANDLING:
+
+Set statement_timeout to prevent long-running queries:
+
+SET statement_timeout = '5s';
+SELECT ... FROM projects WHERE ...;
+
+AWS Lambda should timeout gracefully if query exceeds 5 seconds.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+END OF SQL QUERY EXAMPLES
+
+These queries are production-ready and optimized for AWS Lambda integration with Supabase PostgreSQL. All queries use parameterized statements, indexed columns, and explicit LIMIT clauses to ensure performance and security.

@@ -1,13 +1,19 @@
 "use client"
 import Link from "next/link"
 import { CheckCircle2 } from "lucide-react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { CurrencySelector } from "@/components/auth/CurrencySelector"
+import { priceMapping, formatPrice } from "@/lib/currencies"
+import type { Currency, Plan } from "@/types/international"
 
 export default function PricingPage() {
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>("usd")
+
   const plans = [
     {
+      id: "starter" as Plan,
       name: "Starter",
-      price: "$44",
       description: "Perfect for small contractors getting started",
       features: [
         "Up to 5 active projects",
@@ -18,8 +24,8 @@ export default function PricingPage() {
       ],
     },
     {
-      name: "Pro",
-      price: "$80",
+      id: "professional" as Plan,
+      name: "Professional",
       description: "For growing construction businesses",
       features: [
         "Unlimited projects",
@@ -33,11 +39,11 @@ export default function PricingPage() {
       popular: true,
     },
     {
+      id: "enterprise" as Plan,
       name: "Enterprise",
-      price: "$228",
       description: "For large-scale construction operations",
       features: [
-        "Everything in Pro",
+        "Everything in Professional",
         "Unlimited storage",
         "Advanced ESG & compliance tracking",
         "Dedicated account manager",
@@ -81,23 +87,34 @@ export default function PricingPage() {
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               Simple, Transparent Pricing
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
               Choose the plan that fits your business. All plans include a 14-day free trial.
             </p>
+
+            {/* Currency Selector */}
+            <div className="flex justify-center mb-8">
+              <div className="inline-block">
+                <p className="text-sm font-medium mb-3">Select Your Currency</p>
+                <CurrencySelector
+                  value={selectedCurrency}
+                  onChange={setSelectedCurrency}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="grid gap-8 md:grid-cols-3 max-w-6xl mx-auto">
             {plans.map((plan) => (
               <div
-                key={plan.name}
+                key={plan.id}
                 className={`relative rounded-xl border p-8 ${
                   plan.popular
-                    ? "border-primary shadow-xl scale-105"
+                    ? "border-[#1E3A8A] shadow-xl scale-105"
                     : "border-border"
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#1E3A8A] text-white px-4 py-1 rounded-full text-sm font-medium">
                     Most Popular
                   </div>
                 )}
@@ -107,7 +124,9 @@ export default function PricingPage() {
                     {plan.description}
                   </p>
                   <div className="flex items-baseline">
-                    <span className="text-4xl font-bold">{plan.price}</span>
+                    <span className="text-4xl font-bold text-[#1E3A8A]">
+                      {formatPrice(priceMapping[plan.id][selectedCurrency], selectedCurrency)}
+                    </span>
                     <span className="text-muted-foreground ml-2">/month</span>
                   </div>
                 </div>
@@ -115,7 +134,7 @@ export default function PricingPage() {
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                      <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
                       <span className="text-sm">{feature}</span>
                     </li>
                   ))}

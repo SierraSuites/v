@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "react-big-calendar/lib/css/react-big-calendar.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -141,7 +142,38 @@
     animation: slideUp 0.8s ease-out;
   }
 
-  /* Removed gradient-blur-overlay class as it's no longer needed */
+  .animate-wave {
+    animation: wave 2s ease-in-out infinite;
+    display: inline-block;
+    transform-origin: 70% 70%;
+  }
+
+  /* Custom scrollbar styles for modern look */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(113, 119, 144, 0.3);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(113, 119, 144, 0.5);
+  }
+
+  .scrollbar-track-transparent::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thumb-gray-700::-webkit-scrollbar-thumb {
+    background: rgba(55, 65, 81, 0.5);
+  }
 
   @keyframes fadeIn {
     from {
@@ -162,6 +194,27 @@
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  @keyframes wave {
+    0%, 100% {
+      transform: rotate(0deg);
+    }
+    10%, 30% {
+      transform: rotate(14deg);
+    }
+    20%, 40% {
+      transform: rotate(-8deg);
+    }
+    50%, 70% {
+      transform: rotate(14deg);
+    }
+    60%, 80% {
+      transform: rotate(-4deg);
+    }
+    90% {
+      transform: rotate(0deg);
     }
   }
 }

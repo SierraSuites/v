@@ -1,0 +1,624 @@
+SIERRA SUITES AI: PRIORITY USE CASES DEEP DIVE
+Strategic Implementation & User Experience Design
+
+Prepared for: AWS Partner Team (Simplified Version)
+Focus: 6 Core AI Use Cases with Maximum User Value
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIORITY RANKING
+
+TIER 1 (CRITICAL - BUILD FIRST):
+1. Smart Estimator
+
+TIER 2 (HIGH PRIORITY - BUILD SECOND):
+2. Project Predictor/Analysis
+
+TIER 3 (IMPORTANT - BUILD THIRD):
+3a. Carbon Footprint Estimator
+3b. Sustainable Material Recommender/Material Optimizer (merged)
+3c. LEED Credit Automation
+3d. Buy Clean Compliance Checker/Recommendations
+
+TIER 4 (VALUABLE - BUILD AFTER CORE):
+4. AI Daily Report Generator
+5. AI Project Success Story Generator (CRM)
+6. OSHA Safety Sentinel
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIORITY 1: SMART ESTIMATOR
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PURPOSE:
+Give contractors instant, accurate cost estimates using 3 data sources: our 500K permit dataset, their historical projects, and RSMeans professional cost data.
+
+INPUT DATA SOURCES:
+
+SOURCE 1 - Our Historical Dataset (500K permits):
+- 500,000+ construction permits from 27 US cities
+- Actual project costs, square footage, project types
+- Geographic cost variations
+- 2015-2026 timeline for inflation adjustment
+
+SOURCE 2 - User's Historical Projects (from Supabase):
+- Completed projects with actual costs
+- User's typical cost per sqft by project type
+- User's budget variance patterns (over/under budget trends)
+- Location-specific experience
+
+SOURCE 3 - RSMeans Data (premium integration):
+- 17,000+ construction cost items
+- City cost indexes (e.g., San Francisco = 125% of national average)
+- Line-item breakdowns: labor, materials, equipment, overhead
+- Updated quarterly for current pricing
+
+USER INPUTS (when requesting estimate):
+- Project type (dropdown: residential remodel, new construction, commercial, etc.)
+- Location (city, state, zip code)
+- Square footage (if known)
+- Detailed description (text box: "Kitchen remodel with new cabinets, granite countertops, stainless appliances, tile backsplash, new lighting")
+- Quality level (slider: standard, premium, luxury)
+- Desired start date (for inflation adjustment)
+
+───────────────────────────────────────────────────────────────────────────────
+
+OUTPUT FORMAT:
+
+SMART ESTIMATOR RESULT CARD:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ESTIMATED PROJECT COST: $87,500 - $105,200                                 │
+│ Confidence: 89% | Based on 1,247 similar projects + your history           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ EXECUTIVE SUMMARY:                                                          │
+│                                                                             │
+│ "Your project is a commercial office renovation in San Francisco, CA.      │
+│ Based on our analysis of 1,247 similar projects in the SF Bay Area and     │
+│ your company's 12 completed projects, we estimate your total project       │
+│ cost between $87,500 and $105,200.                                         │
+│                                                                             │
+│ Key factors influencing this estimate:                                     │
+│ • San Francisco has 28% higher costs than national average                 │
+│ • Premium finishes add approximately $18,500 to base cost                  │
+│ • Your historical projects average 8% under budget (great track record!)   │
+│ • Current material costs are 12% higher than 2023 due to inflation         │
+│                                                                             │
+│ This estimate INCLUDES: Materials, labor, permits, overhead                │
+│ This estimate EXCLUDES: Subcontractor wages, sales tax, financing costs"   │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ COST BREAKDOWN (RSMeans Data):                                             │
+│                                                                             │
+│ Labor:              $42,300 (48%)  [SF labor rate: $68/hr avg]            │
+│ Materials:          $31,200 (36%)  [Premium tier selections]              │
+│ Equipment:          $6,800  (8%)   [Rental, tools, scaffolding]           │
+│ Permits & Fees:     $4,200  (5%)   [SF building dept estimates]           │
+│ Overhead & Profit:  $12,000 (14%)  [Industry standard 12-15%]             │
+│ Contingency (10%):  $9,650         [Recommended buffer]                    │
+│                                                                             │
+│ TOTAL ESTIMATE:     $96,500 (mid-range)                                    │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ COMPARISON TO BENCHMARKS:                                                   │
+│                                                                             │
+│ National Average (similar projects):    $76,200                            │
+│ San Francisco Average:                  $98,400                            │
+│ Your Company's Historical Average:      $91,300                            │
+│ This Estimate:                          $96,500                            │
+│                                                                             │
+│ Cost per Sqft:  $142/sqft (vs. SF avg of $145/sqft)                       │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ CONFIDENCE FACTORS:                                                         │
+│                                                                             │
+│ ✓ High confidence (89%):                                                   │
+│   - 1,247 similar projects in our database                                 │
+│   - 12 of your completed projects match this profile                       │
+│   - RSMeans data available for all line items                              │
+│   - Recent projects (2024-2025) provide current pricing                    │
+│                                                                             │
+│ ⚠ Uncertainty factors:                                                     │
+│   - No blueprints provided (±8% variance possible)                         │
+│   - Material prices fluctuating (lumber +5% last quarter)                  │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ PERSONALIZED INSIGHTS:                                                      │
+│                                                                             │
+│ Based on your company's track record:                                      │
+│ • You typically complete projects 8% under budget                          │
+│ • Your SF projects average $91,300 (this is slightly higher)              │
+│ • Recommendation: Budget $100,000 to stay safe                             │
+│                                                                             │
+│ Cost-saving opportunities:                                                  │
+│ • Switching to standard finishes could save $14,200                        │
+│ • Off-season start (Nov-Feb) may reduce labor costs 6%                     │
+│ • Using your preferred suppliers (based on past projects) = $3,500 savings │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ [View Detailed Line Items]  [Export to PDF]  [Create Quote]  [Save]        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+───────────────────────────────────────────────────────────────────────────────
+
+UI/UX PLACEMENT - WHERE SHOULD THIS APPEAR?
+
+OPTION 1: Dedicated /ai/estimator Page
+- Primary access point from main navigation
+- Full-featured estimation tool with step-by-step wizard
+- Save estimates, compare multiple scenarios
+
+OPTION 2: Quick Estimate Widget on /quotes/new
+- When creating a new quote, show "Get AI Estimate" button
+- Inline estimate appears to pre-fill quote amounts
+- Saves time on quote creation
+
+OPTION 3: Project Creation Flow (RECOMMENDED - HIGHEST VALUE)
+- When user creates new project at /projects/new, show estimate
+- Helps user set realistic budget expectations upfront
+- Auto-populate budget_estimated field in database
+
+OPTION 4: Dashboard Widget
+- "Quick Estimate" card on main /dashboard
+- 3-field version: project type, location, sqft → instant rough estimate
+- "Get detailed estimate" button goes to full page
+
+RECOMMENDED IMPLEMENTATION:
+✓ Primary: Full page at /ai/estimator
+✓ Secondary: Embedded widget in /projects/new (auto-triggered when user fills project details)
+✓ Tertiary: Dashboard quick-estimate widget
+✓ Quaternary: "Suggest estimate" button in /quotes/new
+
+USER JOURNEY EXAMPLE:
+
+Step 1: User logs in → sees Dashboard
+Step 2: Clicks "New Project" button
+Step 3: Fills out project details form (type, location, sqft, description)
+Step 4: As user types, AI Estimator widget appears on right side:
+        "We're analyzing your project... Estimated cost: $87K - $105K"
+Step 5: User clicks "See detailed breakdown"
+Step 6: Full estimate card expands with all details above
+Step 7: User clicks "Use this estimate" → budget_estimated field auto-fills
+Step 8: Project created with AI-generated budget
+
+───────────────────────────────────────────────────────────────────────────────
+
+DATA ACCURACY IMPROVEMENTS:
+
+COLD START (new user, 0-5 projects):
+- Estimate based 100% on our 500K dataset + RSMeans
+- Confidence: 82-87%
+- Output shows: "Based on 1,247 similar projects nationally"
+
+WARM START (user has 6-20 projects):
+- Estimate blends our data (70%) + user data (30%)
+- Confidence: 85-90%
+- Output shows: "Based on 1,247 similar projects + your 12 completed projects"
+
+HOT START (user has 20+ projects):
+- Estimate heavily weights user data (50-50 blend)
+- Confidence: 88-94%
+- Output shows: "Personalized estimate based on your 34 completed projects"
+- Includes: "Your projects average 8% under budget in this category"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIORITY 2: PROJECT PREDICTOR/ANALYSIS
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PURPOSE:
+Predict project delays, weather impacts, and critical path risks before they happen. Give contractors proactive recommendations to stay on schedule and budget.
+
+INPUT DATA SOURCES:
+
+SOURCE 1 - Our Historical Dataset:
+- 500K permits with actual completion times vs. estimates
+- Historical weather data cross-referenced with project delays
+- Seasonal patterns (e.g., Q4 projects in Northeast = 18% more delays)
+
+SOURCE 2 - User's Historical Projects:
+- User's typical project duration by type
+- User's on-time completion rate
+- User's average delay days (if any)
+
+SOURCE 3 - Weather API (OpenWeather):
+- 15-day weather forecast for project location
+- Historical weather patterns for next 90 days
+- Extreme weather alerts
+
+SOURCE 4 - User's Current Project Data:
+- Project start date and target completion date
+- Critical path tasks (from TaskFlow)
+- Task dependencies (what must finish before what starts)
+- Outdoor vs. indoor tasks
+- Current progress (% complete)
+
+USER INPUTS:
+- Project timeline (start date, end date, milestones)
+- Critical path tasks (via TaskFlow Gantt chart or task list)
+- Task types (foundation, framing, roofing, electrical, etc.)
+- Weather sensitivity flags (user marks which tasks are weather-dependent)
+- Current status (on schedule, behind, ahead)
+
+───────────────────────────────────────────────────────────────────────────────
+
+OUTPUT FORMAT:
+
+PROJECT PREDICTOR ANALYSIS CARD:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PROJECT HEALTH SCORE: 67/100 ⚠️                                            │
+│ Status: AT RISK | Predicted Completion: March 18, 2026 (12 days late)      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ EXECUTIVE SUMMARY:                                                          │
+│                                                                             │
+│ "Your project '123 Main St Renovation' is currently AT RISK of missing     │
+│ the March 6, 2026 deadline. Based on your current progress (42% complete   │
+│ on Day 28 of 90) and upcoming weather forecasts, we predict a completion   │
+│ date of March 18, 2026 - approximately 12 days late.                       │
+│                                                                             │
+│ Primary risk factors:                                                       │
+│ • Weather delays: High probability of rain Feb 15-22 (7 days impact)       │
+│ • Critical path at risk: Roofing task is behind schedule (18% vs 25%)      │
+│ • Historical pattern: Your SF projects average 6 days late in Q1            │
+│ • Material delivery risk: 2 key deliveries not yet scheduled               │
+│                                                                             │
+│ Recommended actions (see below) could recover 8-10 days and get you back   │
+│ on track for a March 8-10 completion."                                     │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ TIMELINE PREDICTION:                                                        │
+│                                                                             │
+│ Original Target:        March 6, 2026  (90 days)                           │
+│ Current Projection:     March 18, 2026 (102 days) ⚠️                       │
+│ Best Case Scenario:     March 10, 2026 (94 days)  [if recommendations]     │
+│ Worst Case Scenario:    March 25, 2026 (109 days) [if more delays]         │
+│                                                                             │
+│ Confidence: 84% (based on 342 similar SF projects + your 12 projects)      │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ RISK BREAKDOWN:                                                             │
+│                                                                             │
+│ 🌧️ WEATHER RISK: HIGH (78% probability of impact)                         │
+│                                                                             │
+│ Next 15 days forecast:                                                      │
+│ • Feb 15-17: Heavy rain (85% chance) → Roofing CANNOT proceed             │
+│ • Feb 18-22: Light rain (60% chance) → Concrete curing delayed             │
+│ • Feb 23-28: Clear skies → Ideal for outdoor work                          │
+│                                                                             │
+│ Recommended actions:                                                        │
+│ ✓ Reschedule roofing to Feb 23-28 (clear weather window)                  │
+│ ✓ Accelerate indoor tasks (electrical, drywall) during Feb 15-22           │
+│ ✓ Pre-order materials now to avoid delivery delays                         │
+│                                                                             │
+│ Historical context:                                                         │
+│ • Similar SF projects in Feb/Mar: 68% experienced weather delays           │
+│ • Average weather delay: 4.2 days                                           │
+│ • Your company's SF projects: 6.1 days average delay in Q1                 │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ ⚡ CRITICAL PATH RISK: MEDIUM (64% on track)                               │
+│                                                                             │
+│ Tasks behind schedule:                                                      │
+│ 1. Roofing (18% complete, should be 25%) → 2 days behind                  │
+│ 2. Electrical rough-in (not started, should be 10%) → 1 day behind         │
+│                                                                             │
+│ Tasks on schedule:                                                          │
+│ ✓ Foundation (100% complete)                                               │
+│ ✓ Framing (85% complete)                                                   │
+│ ✓ Plumbing rough-in (72% complete)                                         │
+│                                                                             │
+│ Recommended actions:                                                        │
+│ ✓ Add 1 additional roofer to accelerate (cost: ~$800, saves 2 days)       │
+│ ✓ Start electrical rough-in immediately (don't wait for roofing)           │
+│ ✓ Overlap tasks where possible (see optimized schedule)                    │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ 📦 MATERIAL DELIVERY RISK: MEDIUM (2 critical items)                       │
+│                                                                             │
+│ Not yet scheduled:                                                          │
+│ • Windows (needed by Feb 20) → Order now or 5-day delay                    │
+│ • HVAC unit (needed by Mar 1) → 3-week lead time, order by Feb 8          │
+│                                                                             │
+│ Historical context:                                                         │
+│ • Your past projects: 15% had material delays averaging 3.8 days           │
+│ • SF suppliers: Current lead times 18% longer than normal                  │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ 👷 CREW PRODUCTIVITY ANALYSIS:                                             │
+│                                                                             │
+│ Current productivity: 112% of your historical average ✓                    │
+│ Tasks completed per day: 4.2 (your avg: 3.8)                               │
+│ Crew efficiency score: 89/100                                               │
+│                                                                             │
+│ Positive trends:                                                            │
+│ ✓ Framing completed 2 days ahead of schedule                               │
+│ ✓ Zero safety incidents (excellent!)                                       │
+│ ✓ Crew attendance: 98% (above your 94% average)                            │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ 🎯 RECOMMENDED ACTIONS (PRIORITIZED):                                      │
+│                                                                             │
+│ IMMEDIATE (this week):                                                      │
+│ 1. ⚡ HIGH IMPACT: Order windows today (prevents 5-day delay)              │
+│    Cost: $0 | Time saved: 5 days | Confidence: 95%                         │
+│                                                                             │
+│ 2. 🌧️ HIGH IMPACT: Reschedule roofing to Feb 23-28 (avoid rain)          │
+│    Cost: $0 | Time saved: 3 days | Confidence: 78%                         │
+│                                                                             │
+│ 3. 👷 MEDIUM IMPACT: Add 1 roofer to catch up on schedule                 │
+│    Cost: $800 | Time saved: 2 days | Confidence: 82%                       │
+│                                                                             │
+│ NEXT WEEK:                                                                  │
+│ 4. 📦 Order HVAC unit by Feb 8 (3-week lead time)                          │
+│    Cost: $0 | Prevents: 7-day delay | Confidence: 90%                      │
+│                                                                             │
+│ 5. ⚡ Start electrical rough-in immediately (overlap with roofing)         │
+│    Cost: $0 | Time saved: 1 day | Confidence: 72%                          │
+│                                                                             │
+│ POTENTIAL TIME RECOVERY: 8-10 days                                          │
+│ POTENTIAL COST: $800                                                        │
+│ UPDATED COMPLETION DATE (if actions taken): March 8-10, 2026 ✓            │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ 📊 COMPARISON TO BENCHMARKS:                                                │
+│                                                                             │
+│ Your Project:              102 days (predicted)                             │
+│ Your Company Average:      94 days (similar projects)                       │
+│ National Average:          98 days                                          │
+│ SF Average:                106 days                                         │
+│ Fastest in Database:       82 days (exceptional)                            │
+│                                                                             │
+│ You're performing: SLIGHTLY BELOW your average, ABOVE national average     │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ [View Optimized Schedule]  [Export Report]  [Set Reminders]  [Refresh]     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+───────────────────────────────────────────────────────────────────────────────
+
+ADDITIONAL OUTPUT: VISUAL TIMELINE
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│ PREDICTED TIMELINE (Gantt Chart View):                                     │
+│                                                                             │
+│ Week 1-2:  ████████████ Foundation (DONE ✓)                               │
+│ Week 3-4:  ████████████ Framing (DONE ✓)                                  │
+│ Week 5-6:  ████████░░░░ Roofing (BEHIND ⚠️) + RAIN DELAY ⛈️              │
+│ Week 6-7:  ████████████ Electrical (DELAYED START ⚠️)                     │
+│ Week 7-8:  ████████████ Plumbing (ON TRACK ✓)                             │
+│ Week 8-9:  ████████████ Insulation (ON TRACK ✓)                           │
+│ Week 9-10: ████████████ Drywall (ON TRACK ✓)                              │
+│ Week 11:   ████████████ Paint & Finish (ON TRACK ✓)                       │
+│ Week 12:   ████████████ Final Inspection (ON TRACK ✓)                     │
+│                                                                             │
+│ ⬛ Completed  ◼️ On Schedule  ░ Behind Schedule  ⛈️ Weather Risk          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+───────────────────────────────────────────────────────────────────────────────
+
+UI/UX PLACEMENT - WHERE SHOULD THIS APPEAR?
+
+OPTION 1: Dedicated /ai/predictor Page
+- Full project analysis tool
+- Upload project timeline, get comprehensive risk report
+
+OPTION 2: Project Dashboard at /projects/[id] (RECOMMENDED - HIGHEST VALUE)
+- "Project Health" widget always visible at top of project page
+- Shows current score (67/100) and top 3 risks
+- Click to expand full analysis
+- Updates daily automatically
+
+OPTION 3: TaskFlow Integration at /taskflow
+- When viewing Gantt chart or Kanban board
+- "AI Insights" panel on right side
+- Shows: "Roofing at risk - rain forecast Feb 15-22"
+- Suggests task reordering
+
+OPTION 4: Dashboard Widget
+- "High-Risk Projects" card on main /dashboard
+- Lists projects with health score <70
+- Quick link to full analysis
+
+OPTION 5: Proactive Alerts (via Email/SMS)
+- Daily digest: "3 action items for 123 Main St project"
+- Urgent alerts: "Order windows today to avoid 5-day delay"
+- Weekly summary: "Project health score improved from 67 to 81"
+
+RECOMMENDED IMPLEMENTATION:
+✓ Primary: Widget on individual project page /projects/[id] (always visible)
+✓ Secondary: Full analysis page at /ai/predictor
+✓ Tertiary: TaskFlow integration (suggestions while planning tasks)
+✓ Quaternary: Dashboard high-risk widget
+✓ Quintary: Proactive email/SMS alerts
+
+USER JOURNEY EXAMPLE:
+
+Step 1: User logs in → Dashboard shows "⚠️ 2 projects at risk"
+Step 2: User clicks on "123 Main St Renovation" project
+Step 3: Project page loads with "Project Health: 67/100 ⚠️" widget at top
+Step 4: Widget shows: "Weather delays predicted Feb 15-22. Click for recommendations."
+Step 5: User clicks → Full analysis card expands
+Step 6: User sees "Order windows today to prevent 5-day delay"
+Step 7: User clicks "Set Reminder" → Gets email reminder + calendar event
+Step 8: Next day, user receives email: "Reminder: Order windows for 123 Main St"
+Step 9: User orders windows, marks action as complete in system
+Step 10: AI refreshes prediction: "Project health improved to 81/100 ✓"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIORITY 3A: CARBON FOOTPRINT ESTIMATOR
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PURPOSE:
+Calculate the total embodied carbon (from materials) and operational carbon (from energy use) for a building project. Help contractors bid on Buy Clean projects and provide ESG reporting to clients.
+
+INPUT DATA SOURCES:
+
+SOURCE 1 - EC3 Database (Building Transparency):
+- 100,000+ Environmental Product Declarations (EPDs)
+- Material-specific GWP (Global Warming Potential) values in kg CO2e
+- Filter by category: concrete, steel, wood, glass, insulation, etc.
+
+SOURCE 2 - ICE Database (Inventory of Carbon & Energy):
+- Alternative/backup carbon data source
+- Material embodied energy and carbon coefficients
+- Used when EC3 data unavailable
+
+SOURCE 3 - User's Material Selections (from Supabase):
+- Materials table with quantities, categories, manufacturers
+- User-selected materials for the project
+
+SOURCE 4 - Energy Benchmarking Data:
+- Our dataset: 6 cities with energy consumption benchmarks
+- Building type, sqft, climate zone → predicted annual energy use
+
+USER INPUTS:
+- Building type (residential, commercial, industrial)
+- Square footage
+- Materials selected (from material picker or manual entry)
+- Energy systems (HVAC type, insulation R-value, window U-factor)
+- Location (for grid carbon intensity - e.g., CA grid is 60% renewable)
+
+───────────────────────────────────────────────────────────────────────────────
+
+OUTPUT FORMAT:
+
+CARBON FOOTPRINT ANALYSIS CARD:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ TOTAL CARBON FOOTPRINT: 142.8 tons CO2e                                    │
+│ Equivalent to: 31 cars driven for 1 year | 163,000 miles driven            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ EXECUTIVE SUMMARY:                                                          │
+│                                                                             │
+│ "Your commercial office renovation project at 123 Main St, San Francisco   │
+│ will generate an estimated 142.8 tons of CO2 equivalent emissions. This    │
+│ includes 89.3 tons from embodied carbon (materials manufacturing) and      │
+│ 53.5 tons from operational carbon (first year energy use).                 │
+│                                                                             │
+│ Compared to similar projects:                                               │
+│ • National average: 168.2 tons CO2e (you're 15% BETTER ✓)                 │
+│ • San Francisco average: 152.4 tons CO2e (you're 6% BETTER ✓)             │
+│ • Best-in-class: 98.7 tons CO2e (41% better than you)                      │
+│                                                                             │
+│ Your project qualifies for:                                                 │
+│ ✓ California Buy Clean requirements (materials meet GWP limits)            │
+│ ✓ LEED v4 MR Credit: Building Product Disclosure (12 EPDs tracked)         │
+│ ✓ LEED v4 EA Credit: Optimize Energy Performance (22% better than code)    │
+│                                                                             │
+│ Reduction opportunities identified: 28.4 tons CO2e (see recommendations)"  │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ EMBODIED CARBON BREAKDOWN (from materials):                                │
+│                                                                             │
+│ Material         Quantity    GWP/Unit    Total CO2e    % of Total          │
+│ ─────────────────────────────────────────────────────────────────────────  │
+│ Concrete         125 CY      385 kg/CY   48.1 tons     54% ████████████   │
+│ Structural Steel 18 tons     1,850 kg/t  33.3 tons     37% ████████       │
+│ Insulation       2,400 SF    2.8 kg/SF   6.7 tons      8%  ██             │
+│ Flat Glass       840 SF      18.2 kg/SF  15.3 tons     17% ████           │
+│ Drywall          4,200 SF    1.1 kg/SF   4.6 tons      5%  █              │
+│ Other            -            -           12.3 tons     14% ███            │
+│ ─────────────────────────────────────────────────────────────────────────  │
+│ TOTAL EMBODIED CARBON:                   120.3 tons    84%                 │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ OPERATIONAL CARBON (first year energy use):                                │
+│                                                                             │
+│ Predicted annual energy consumption: 87,500 kWh                            │
+│                                                                             │
+│ Energy Source    Usage      Emissions    % of Total                        │
+│ ─────────────────────────────────────────────────────────────────────────  │
+│ Electricity      72,300 kWh  18.2 tons    13% ███                         │
+│ Natural Gas      820 therms  4.3 tons     3%  █                           │
+│ ─────────────────────────────────────────────────────────────────────────  │
+│ TOTAL OPERATIONAL CARBON (Year 1):       22.5 tons    16%                 │
+│                                                                             │
+│ Note: SF grid is 55% renewable (low carbon intensity: 0.252 kg CO2e/kWh)   │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ CARBON INTENSITY METRICS:                                                   │
+│                                                                             │
+│ Embodied carbon per sqft:  201 kg CO2e/SF                                  │
+│ Total carbon per sqft:      238 kg CO2e/SF                                 │
+│                                                                             │
+│ Benchmarks:                                                                 │
+│ • Your project:        238 kg CO2e/SF                                      │
+│ • National average:    280 kg CO2e/SF                                      │
+│ • SF average:          254 kg CO2e/SF                                      │
+│ • Best-in-class:       164 kg CO2e/SF                                      │
+│                                                                             │
+│ You're performing: 15% BETTER than national average ✓                      │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ 🌱 CARBON REDUCTION OPPORTUNITIES:                                         │
+│                                                                             │
+│ We've identified ways to reduce your carbon footprint by 28.4 tons (20%):  │
+│                                                                             │
+│ 1. Switch to low-carbon concrete mix (CarbonCure or similar)               │
+│    Current: 385 kg CO2e/CY → Alternative: 298 kg CO2e/CY                  │
+│    Savings: 10.9 tons CO2e (23% reduction in concrete)                     │
+│    Cost impact: +$1,200 (+2% of concrete cost)                             │
+│    [View Alternative Concrete Options]                                     │
+│                                                                             │
+│ 2. Use recycled steel (80% recycled content vs. 30% current)               │
+│    Current: 1,850 kg/ton → Alternative: 720 kg/ton                        │
+│    Savings: 20.3 tons CO2e (61% reduction in steel)                        │
+│    Cost impact: -$800 (SAVES money!)                                       │
+│    [View Alternative Steel Options]                                        │
+│                                                                             │
+│ 3. Upgrade to triple-pane windows (reduce operational carbon)              │
+│    Current: 18.2 kg CO2e/SF → Alternative: 14.1 kg CO2e/SF                │
+│    Savings: 3.4 tons embodied + 2.1 tons/year operational                  │
+│    Cost impact: +$4,200 (+18% of window cost)                              │
+│    Payback: 3.2 years (energy savings)                                     │
+│    [View Alternative Glass Options]                                        │
+│                                                                             │
+│ 4. Increase insulation R-value from R-19 to R-30                           │
+│    Operational savings: 4.8 tons CO2e/year                                 │
+│    Cost impact: +$1,800                                                    │
+│    Payback: 2.1 years                                                      │
+│    [View Alternative Insulation Options]                                   │
+│                                                                             │
+│ TOTAL POTENTIAL REDUCTION: 28.4 tons (20% of total)                        │
+│ TOTAL COST IMPACT: +$6,400 (1.8% of project budget)                        │
+│                                                                             │
+│ If all recommendations implemented:                                         │
+│ • New carbon footprint: 114.4 tons CO2e (31% better than national avg)    │
+│ • New ranking: Top 25% of similar projects                                 │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ [View Material Alternatives]  [Generate ESG Report]  [Export PDF]  [Save]  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+(CONTINUED IN NEXT FILE DUE TO LENGTH...)

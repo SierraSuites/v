@@ -1,0 +1,507 @@
+SUPABASE DATABASE SCHEMA FOR AWS INTEGRATION
+Sierra Suites Construction Management Platform
+
+═══════════════════════════════════════════════════════════════════════════════
+
+OVERVIEW
+
+This document defines the Supabase PostgreSQL schema that AWS Lambda functions and SageMaker models will query to fetch user-specific data for personalized AI predictions.
+
+AWS will receive READ-ONLY access to these tables via a dedicated service account with row-level security (RLS) policies that restrict access to only the data needed for AI predictions.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+TABLE: user_profiles
+
+Stores contractor/company information for personalization.
+
+Schema:
+- id (uuid, primary key) - User ID from Supabase Auth
+- company_name (text) - Company name
+- email (text) - Contact email
+- phone (text) - Contact phone
+- created_at (timestamptz) - Account creation date
+- subscription_tier (text) - 'free', 'basic', 'premium', 'enterprise'
+- industry_type (text) - 'residential', 'commercial', 'industrial', 'mixed'
+- company_size (text) - 'solo', 'small' (2-10), 'medium' (11-50), 'large' (50+)
+- primary_location (text) - City, State (e.g., "Austin, TX")
+- years_in_business (integer) - Years of operation
+
+AWS Use Cases:
+- Determine user's subscription tier for feature access
+- Personalize predictions based on company size and industry type
+- Location-based cost indexing
+
+───────────────────────────────────────────────────────────────────────────────
+
+TABLE: projects
+
+Core project data for cost estimation, timeline prediction, risk scoring.
+
+Schema:
+- id (uuid, primary key)
+- user_id (uuid, foreign key → user_profiles.id)
+- project_name (text)
+- project_type (text) - 'residential_remodel', 'new_construction', 'commercial', 'tenant_improvement', etc.
+- status (text) - 'planning', 'active', 'completed', 'on_hold', 'cancelled'
+- address (text) - Full street address
+- city (text)
+- state (text)
+- zip_code (text)
+- latitude (numeric)
+- longitude (numeric)
+- square_footage (numeric, nullable)
+- budget_estimated (numeric) - Initial budget estimate
+- budget_actual (numeric, nullable) - Final actual cost
+- start_date (date)
+- target_completion_date (date)
+- actual_completion_date (date, nullable)
+- scope_description (text) - Detailed project description
+- created_at (timestamptz)
+- updated_at (timestamptz)
+
+AWS Use Cases:
+- Training data for Smart Estimator (budget_actual vs. characteristics)
+- Training data for Timeline Predictor (actual_completion_date - start_date)
+- Training data for Change Order Predictor (budget_actual vs. budget_estimated)
+- Location-based weather delay correlation
+- Cold/Warm/Hot start personalization (count of completed projects)
+
+───────────────────────────────────────────────────────────────────────────────
+
+TABLE: tasks
+
+Granular task data for productivity analysis, daily reports, timeline prediction.
+
+Schema:
+- id (uuid, primary key)
+- project_id (uuid, foreign key → projects.id)
+- user_id (uuid, foreign key → user_profiles.id)
+- task_name (text)
+- description (text)
+- task_type (text) - 'framing', 'electrical', 'plumbing', 'concrete', 'roofing', 'finish', etc.
+- status (text) - 'not_started', 'in_progress', 'completed', 'blocked'
+- assigned_to (uuid, nullable, foreign key → user_profiles.id)
+- priority (text) - 'low', 'medium', 'high', 'urgent'
+- estimated_hours (numeric)
+- actual_hours (numeric, nullable)
+- start_date (date)
+- due_date (date)
+- completed_date (date, nullable)
+- created_at (timestamptz)
+- updated_at (timestamptz)
+
+AWS Use Cases:
+- Productivity benchmarking (actual_hours vs. estimated_hours)
+- Task-specific timeline predictions
+- Daily Report Generator (tasks completed today)
+- Weather delay impact by task type (outdoor tasks more vulnerable)
+
+───────────────────────────────────────────────────────────────────────────────
+
+TABLE: fieldsnap_photos
+
+Photo metadata for AI Daily Report Generator, Project Success Story Generator.
+
+Schema:
+- id (uuid, primary key)
+- project_id (uuid, foreign key → projects.id)
+- user_id (uuid, foreign key → user_profiles.id)
+- file_path (text) - S3 or Supabase Storage path
+- file_url (text) - Public URL (if approved)
+- latitude (numeric, nullable)
+- longitude (numeric, nullable)
+- taken_at (timestamptz) - Photo timestamp
+- uploaded_at (timestamptz)
+- caption (text, nullable)
+- tags (text[], nullable) - ['before', 'after', 'progress', 'crew', 'safety_issue', etc.]
+- approved_for_client (boolean) - Can be shared in success story?
+- image_quality_score (numeric, nullable) - AI-generated quality score (0-100)
+- created_at (timestamptz)
+
+AWS Use Cases:
+- AI Daily Report Generator: Select today's photos
+- Project Success Story Generator: Filter approved photos, select high-quality images
+- Image quality scoring via AWS Rekognition
+- Progress tracking via photo timestamps
+
+───────────────────────────────────────────────────────────────────────────────
+
+TABLE: daily_reports
+
+Historical daily report data for productivity benchmarking.
+
+Schema:
+- id (uuid, primary key)
+- project_id (uuid, foreign key → projects.id)
+- user_id (uuid, foreign key → user_profiles.id)
+- report_date (date)
+- crew_count (integer) - Number of workers on site
+- hours_worked (numeric) - Total crew hours
+- tasks_completed (integer)
+- tasks_started (integer)
+- weather_condition (text) - 'clear', 'rain', 'snow', 'extreme_heat', etc.
+- temperature_high (numeric, nullable)
+- temperature_low (numeric, nullable)
+- incidents (text, nullable) - Safety incidents or delays
+- materials_delivered (text, nullable)
+- notes (text, nullable)
+- productivity_score (numeric, nullable) - Auto-calculated or manual
+- created_at (timestamptz)
+
+AWS Use Cases:
+- Historical productivity benchmarking (crew efficiency trends)
+- Weather impact correlation (productivity_score vs. weather_condition)
+- AI Daily Report Generator (compare today vs. historical average)
+
+───────────────────────────────────────────────────────────────────────────────
+
+TABLE: permits
+
+User-submitted permit data (supplements public dataset).
+
+Schema:
+- id (uuid, primary key)
+- project_id (uuid, foreign key → projects.id)
+- user_id (uuid, foreign key → user_profiles.id)
+- permit_type (text) - 'building', 'electrical', 'plumbing', 'mechanical', 'demolition'
+- permit_number (text)
+- jurisdiction (text) - City/county
+- applied_date (date)
+- issued_date (date, nullable)
+- days_to_approval (integer, nullable) - Calculated field
+- status (text) - 'applied', 'approved', 'rejected', 'pending'
+- cost (numeric, nullable) - Permit fee
+- created_at (timestamptz)
+
+AWS Use Cases:
+- Timeline Predictor: User-specific permit approval times
+- Jurisdiction-specific approval time benchmarking
+- Warm/Hot start personalization (user's historical permit timelines)
+
+───────────────────────────────────────────────────────────────────────────────
+
+TABLE: inspections
+
+User inspection history for Inspection Failure Predictor.
+
+Schema:
+- id (uuid, primary key)
+- project_id (uuid, foreign key → projects.id)
+- user_id (uuid, foreign key → user_profiles.id)
+- inspection_type (text) - 'building', 'electrical', 'plumbing', 'mechanical', 'final'
+- inspection_date (date)
+- result (text) - 'pass', 'fail', 'conditional_pass'
+- inspector_name (text, nullable)
+- notes (text, nullable) - Inspector comments
+- reinspection_required (boolean)
+- created_at (timestamptz)
+
+AWS Use Cases:
+- Inspection Failure Predictor: User's historical pass/fail rate
+- Contractor-specific risk scoring
+- NLP on notes field to extract common failure reasons
+
+───────────────────────────────────────────────────────────────────────────────
+
+TABLE: violations
+
+User violation history for Violation Risk Predictor.
+
+Schema:
+- id (uuid, primary key)
+- project_id (uuid, foreign key → projects.id)
+- user_id (uuid, foreign key → user_profiles.id)
+- violation_type (text) - 'electrical', 'structural', 'plumbing', 'safety', 'zoning'
+- violation_date (date)
+- description (text)
+- resolved (boolean)
+- resolved_date (date, nullable)
+- fine_amount (numeric, nullable)
+- created_at (timestamptz)
+
+AWS Use Cases:
+- Violation Risk Predictor: User's violation history
+- Risk scoring based on past violations
+- Identify repeat violation patterns
+
+───────────────────────────────────────────────────────────────────────────────
+
+TABLE: crew_members
+
+Crew data for Safety Sentinel, productivity analysis.
+
+Schema:
+- id (uuid, primary key)
+- user_id (uuid, foreign key → user_profiles.id)
+- name (text)
+- role (text) - 'foreman', 'carpenter', 'electrician', 'laborer', etc.
+- experience_years (integer)
+- certifications (text[], nullable) - ['OSHA-10', 'OSHA-30', 'CPR', etc.]
+- active (boolean)
+- created_at (timestamptz)
+
+AWS Use Cases:
+- Safety Sentinel: Crew experience level affects injury risk
+- Productivity analysis: More experienced crews = faster task completion
+- Certification tracking for compliance
+
+───────────────────────────────────────────────────────────────────────────────
+
+TABLE: crew_assignments
+
+Daily crew assignments for productivity tracking.
+
+Schema:
+- id (uuid, primary key)
+- project_id (uuid, foreign key → projects.id)
+- crew_member_id (uuid, foreign key → crew_members.id)
+- user_id (uuid, foreign key → user_profiles.id)
+- assignment_date (date)
+- hours_worked (numeric)
+- tasks_assigned (text[], nullable)
+- created_at (timestamptz)
+
+AWS Use Cases:
+- Daily Report Generator: Who was on site today?
+- Productivity benchmarking: Hours worked vs. tasks completed
+- Crew efficiency analysis
+
+───────────────────────────────────────────────────────────────────────────────
+
+TABLE: materials
+
+Material tracking for Carbon Estimator, Material Optimizer, Buy Clean Checker.
+
+Schema:
+- id (uuid, primary key)
+- project_id (uuid, foreign key → projects.id)
+- user_id (uuid, foreign key → user_profiles.id)
+- material_category (text) - 'concrete', 'steel', 'wood', 'insulation', 'glass', etc.
+- material_name (text) - Specific product name
+- manufacturer (text, nullable)
+- quantity (numeric)
+- unit (text) - 'tons', 'cubic_yards', 'board_feet', 'square_feet', etc.
+- cost_per_unit (numeric, nullable)
+- total_cost (numeric, nullable)
+- gwp_kg_co2e (numeric, nullable) - Global Warming Potential from EC3
+- epd_id (text, nullable) - EC3 EPD identifier
+- local_sourced (boolean) - Within 500 miles?
+- ordered_date (date, nullable)
+- delivered_date (date, nullable)
+- created_at (timestamptz)
+
+AWS Use Cases:
+- Carbon Footprint Estimator: Sum GWP for all materials
+- Buy Clean Compliance Checker: Compare GWP to state limits
+- Material Optimizer: Historical material choices and costs
+- LEED Credit Automation: Count EPDs, track regional materials
+
+───────────────────────────────────────────────────────────────────────────────
+
+TABLE: client_communications
+
+CRM data for Project Success Story Generator.
+
+Schema:
+- id (uuid, primary key)
+- project_id (uuid, foreign key → projects.id)
+- user_id (uuid, foreign key → user_profiles.id)
+- client_name (text)
+- client_email (text)
+- communication_type (text) - 'email', 'phone', 'meeting', 'text'
+- subject (text, nullable)
+- notes (text, nullable)
+- sentiment (text, nullable) - 'positive', 'neutral', 'negative'
+- communication_date (timestamptz)
+- created_at (timestamptz)
+
+AWS Use Cases:
+- Project Success Story Generator: Extract positive client feedback
+- Client satisfaction scoring
+- Communication frequency analysis
+
+───────────────────────────────────────────────────────────────────────────────
+
+TABLE: testimonials
+
+Client testimonials for Project Success Story Generator.
+
+Schema:
+- id (uuid, primary key)
+- project_id (uuid, foreign key → projects.id)
+- user_id (uuid, foreign key → user_profiles.id)
+- client_name (text)
+- testimonial_text (text)
+- rating (integer) - 1-5 stars
+- approved (boolean) - Can be published?
+- created_at (timestamptz)
+
+AWS Use Cases:
+- Project Success Story Generator: Include approved testimonials in PDF
+- Portfolio testimonial aggregation
+
+───────────────────────────────────────────────────────────────────────────────
+
+TABLE: quotes
+
+QuoteHub data for cost benchmarking.
+
+Schema:
+- id (uuid, primary key)
+- project_id (uuid, foreign key → projects.id, nullable)
+- user_id (uuid, foreign key → user_profiles.id)
+- quote_name (text)
+- client_name (text)
+- project_type (text)
+- square_footage (numeric, nullable)
+- scope_description (text)
+- total_amount (numeric)
+- status (text) - 'draft', 'sent', 'accepted', 'rejected'
+- created_at (timestamptz)
+- sent_at (timestamptz, nullable)
+- accepted_at (timestamptz, nullable)
+
+AWS Use Cases:
+- Smart Estimator: User's historical quote amounts
+- Win rate analysis (accepted vs. rejected quotes)
+- Pricing strategy benchmarking
+
+───────────────────────────────────────────────────────────────────────────────
+
+TABLE: safety_incidents
+
+OSHA-reportable incidents for Safety Sentinel.
+
+Schema:
+- id (uuid, primary key)
+- project_id (uuid, foreign key → projects.id)
+- user_id (uuid, foreign key → user_profiles.id)
+- incident_date (date)
+- incident_type (text) - 'fall', 'struck_by', 'electrocution', 'caught_between', 'other'
+- severity (text) - 'first_aid', 'medical_treatment', 'lost_time', 'fatality'
+- work_type (text) - 'roofing', 'excavation', 'framing', etc.
+- weather_condition (text, nullable)
+- crew_member_id (uuid, nullable, foreign key → crew_members.id)
+- description (text)
+- corrective_action (text, nullable)
+- osha_reportable (boolean)
+- created_at (timestamptz)
+
+AWS Use Cases:
+- Safety Sentinel: User's historical injury rates
+- Risk prediction by work type and weather conditions
+- Crew-specific safety scoring
+
+═══════════════════════════════════════════════════════════════════════════════
+
+AWS ACCESS REQUIREMENTS
+
+READ-ONLY SERVICE ACCOUNT:
+
+Username: aws_ml_service
+Permissions: SELECT only on all tables above
+RLS Policy: Access restricted to projects/users that have opted in to AI features
+
+CONNECTION DETAILS (to be provided separately):
+- Host: [Supabase project URL]
+- Port: 5432
+- Database: postgres
+- SSL: Required
+- Connection pooling: Recommended (use PgBouncer)
+
+SECURITY:
+- All queries must use parameterized statements (prevent SQL injection)
+- Rate limiting: Max 1,000 queries/minute per AI use case
+- Audit logging: All queries logged to CloudWatch
+- IP whitelist: Only AWS Lambda VPC IPs allowed
+- Connection via AWS Secrets Manager (credentials never hardcoded)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PERFORMANCE OPTIMIZATION
+
+INDEXES TO CREATE:
+
+projects:
+- CREATE INDEX idx_projects_user_id ON projects(user_id);
+- CREATE INDEX idx_projects_status ON projects(status);
+- CREATE INDEX idx_projects_completed ON projects(status) WHERE status = 'completed';
+- CREATE INDEX idx_projects_location ON projects(city, state);
+
+tasks:
+- CREATE INDEX idx_tasks_project_id ON tasks(project_id);
+- CREATE INDEX idx_tasks_status ON tasks(status);
+- CREATE INDEX idx_tasks_completed_date ON tasks(completed_date) WHERE completed_date IS NOT NULL;
+
+fieldsnap_photos:
+- CREATE INDEX idx_photos_project_id ON fieldsnap_photos(project_id);
+- CREATE INDEX idx_photos_taken_at ON fieldsnap_photos(taken_at);
+- CREATE INDEX idx_photos_approved ON fieldsnap_photos(approved_for_client) WHERE approved_for_client = true;
+
+daily_reports:
+- CREATE INDEX idx_reports_project_id ON daily_reports(project_id);
+- CREATE INDEX idx_reports_date ON daily_reports(report_date);
+
+materials:
+- CREATE INDEX idx_materials_project_id ON materials(project_id);
+- CREATE INDEX idx_materials_category ON materials(material_category);
+
+QUERY PATTERNS:
+
+Cold Start (New User):
+- No user data queries needed
+- Use public 500K permit dataset only
+
+Warm Start (6-20 Projects):
+Query user's completed projects:
+SELECT * FROM projects
+WHERE user_id = $1 AND status = 'completed'
+ORDER BY actual_completion_date DESC
+LIMIT 20;
+
+Hot Start (20+ Projects):
+Query user's full project history + aggregate stats:
+SELECT
+  COUNT(*) as total_projects,
+  AVG(budget_actual) as avg_cost,
+  AVG(EXTRACT(DAY FROM (actual_completion_date - start_date))) as avg_duration,
+  project_type,
+  COUNT(*) as projects_per_type
+FROM projects
+WHERE user_id = $1 AND status = 'completed'
+GROUP BY project_type;
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DATA FRESHNESS
+
+REAL-TIME vs. CACHED:
+
+Real-Time (query Supabase directly):
+- Active project data (for daily reports, current predictions)
+- Today's photos, tasks, crew assignments
+
+Cached (replicate to AWS RDS/DynamoDB):
+- Completed project data (changes infrequently)
+- User's historical performance metrics
+- Material cost benchmarks
+
+REPLICATION STRATEGY:
+
+Option 1 (Direct Queries):
+- AWS Lambda queries Supabase directly via VPC peering
+- Low latency if Supabase in same region
+
+Option 2 (Replication):
+- Supabase Database Webhooks trigger AWS Lambda on INSERT/UPDATE
+- Lambda writes to AWS RDS Aurora (read replica)
+- ML models query Aurora (lower latency, higher throughput)
+
+RECOMMENDATION: Use Option 2 for production (higher performance)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+END OF SCHEMA DOCUMENT
+
+This schema provides AWS with all necessary data points to build personalized AI predictions while maintaining user privacy and data security through read-only access and row-level security policies.

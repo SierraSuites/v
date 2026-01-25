@@ -1,0 +1,1706 @@
+SIERRA SUITES - SOFTWARE INTEGRATIONS ROADMAP
+Comprehensive Implementation Plan
+
+═══════════════════════════════════════════════════════════════════════════════
+
+SELECTED INTEGRATIONS (Priority Order)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+TIER 1: LAUNCH ESSENTIALS (Must-Have Before Going Live)
+
+1. Excel/Google Sheets Import/Export
+2. Weather API (OpenWeatherMap)
+3. Stripe/Square Payment Processing
+4. DocuSeal (E-Signature) ✨ FREE
+5. Google Calendar Sync
+
+TIER 2: POST-LAUNCH (Month 1-2)
+
+6. QuickBooks/Xero Accounting
+7. Google Drive/Dropbox Cloud Storage
+8. WhatsApp Business (CRM + FieldSnap)
+
+TIER 3: ADVANCED FEATURES (Month 3-6)
+
+9. RSMeans/Supplier Pricing APIs (QuoteHub)
+10. Time Tracking (TSheets/Busybusy)
+11. Plaid (Bank Connection)
+12. Review Automation (Google Reviews, Houzz)
+13. Client Portal
+14. Levelset (Lien Management)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+INTEGRATION #1: EXCEL/GOOGLE SHEETS IMPORT/EXPORT
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHY THIS MATTERS:
+Contractors won't switch from Excel if they can't bring their existing templates.
+This is a deal-breaker integration - without it, adoption will be minimal.
+
+WHERE IT GOES:
+
+1. QuoteHub (Estimates/Quotes)
+   - Import existing estimate templates
+   - Export completed quotes to Excel for client sharing
+   - Map columns: Line Item → Description, Quantity → Qty, Unit Price → Rate
+
+2. ReportCenter (Reports)
+   - Export all reports to Excel format
+   - Cost reports, progress reports, material lists
+
+3. Projects (Budgets)
+   - Import budget spreadsheets
+   - Export project financials to Excel
+
+TECHNICAL IMPLEMENTATION:
+
+Frontend:
+- Drag-drop .xlsx/.csv file upload
+- Column mapping UI: "Match your columns to Sierra Suites fields"
+- Preview imported data before confirming
+
+Backend:
+- Use library: xlsx (npm package) or SheetJS
+- Parse Excel → JSON
+- Validate data types (numbers, dates, text)
+- Insert into Supabase tables
+
+Export:
+- Generate Excel from Supabase data
+- Use xlsx library to create .xlsx files
+- Download or email to user
+
+API COST: FREE (library only, no API needed)
+
+UI LOCATION:
+- QuoteHub: "Import Estimate" button (top right)
+- QuoteHub: "Export to Excel" button on completed quotes
+- ReportCenter: "Export to Excel" button on all reports
+- Projects: "Import Budget" button on budget tab
+
+PRIORITY: Build Week 1 of launch prep
+
+═══════════════════════════════════════════════════════════════════════════════
+
+INTEGRATION #2: WEATHER API (OPENWEATHERMAP)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHY THIS MATTERS:
+Weather impacts construction schedules daily. Contractors need to know:
+- Can we pour concrete today? (needs 3 dry days)
+- Should we delay exterior work? (rain/wind)
+- When's the best week to start roofing?
+
+WHERE IT GOES:
+
+1. Dashboard (Widget)
+   - 10-day forecast for all active project locations
+   - Construction-specific alerts:
+     • "⚠️ Not safe to pour concrete (rain next 2 days)"
+     • "⚠️ High winds (25+ mph) - delay roofing work"
+     • "✅ Optimal week for exterior work (dry, mild temps)"
+
+2. TaskFlow (Scheduling)
+   - Weather warnings on tasks:
+     • "Foundation Pour scheduled Thu - ⚠️ 80% rain probability"
+   - Suggest task rescheduling:
+     • "Recommend: Move to Monday (0% rain, 68°F)"
+
+3. Daily Reports (Auto-Include Weather)
+   - Auto-populate weather conditions in AI Daily Report Generator
+   - "Weather: Sunny, 72°F, 5mph winds - optimal conditions"
+
+TECHNICAL IMPLEMENTATION:
+
+API: OpenWeatherMap
+- Free tier: 1,000 calls/day (sufficient for launch)
+- Paid tier: $40/month for 100,000 calls/day (for scale)
+
+Endpoints:
+- Current weather: /weather?q={city}
+- 10-day forecast: /forecast?q={city}
+- Alerts: /onecall?lat={lat}&lon={lon}&exclude=minutely,hourly
+
+Backend:
+- Supabase Edge Function: fetchWeatherForProjects()
+- Query all active projects → get locations
+- Fetch weather for each location
+- Cache results (refresh every 6 hours)
+- Store in Supabase weather_forecasts table
+
+Construction Logic:
+- Concrete pouring: Needs 3 consecutive dry days (rain <20%)
+- Roofing: Wind <25mph, rain <10%
+- Painting: Temp >50°F, <85°F, rain <5%
+- Foundation work: Ground not frozen (<32°F)
+
+UI LOCATION:
+- Dashboard: Weather widget (right sidebar)
+- TaskFlow: Weather icon next to each task (color-coded)
+- Projects: Weather tab showing 10-day forecast for site location
+
+PRIORITY: Build Week 2 of launch prep (AWS POC includes this)
+
+COST:
+- Free tier (launch): $0/month
+- Paid tier (at scale): $40/month
+
+═══════════════════════════════════════════════════════════════════════════════
+
+INTEGRATION #3: STRIPE/SQUARE PAYMENT PROCESSING
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHY THIS MATTERS:
+Contractors want to collect deposits immediately after client signs quote.
+Currently: Send quote → wait for check → 2-3 week delay
+With Stripe: Send quote → e-sign → pay deposit instantly → start work tomorrow
+
+WHERE IT GOES:
+
+1. QuoteHub (Primary Use Case)
+   - "Collect Deposit" button on quotes
+   - Client pays via card, ACH, Apple Pay, Google Pay
+   - Auto-mark quote as "Deposit Paid" and convert to project
+
+2. CRM (Invoice Payment)
+   - Send invoices with "Pay Now" button
+   - Track payment status (Pending, Paid, Failed)
+
+3. Projects (Progress Payments)
+   - Set up payment schedule: 30% deposit, 30% at framing, 40% at completion
+   - Auto-generate payment requests at milestones
+   - Client clicks "Pay Now" link in email
+
+TECHNICAL IMPLEMENTATION:
+
+Payment Provider: Stripe (recommended) or Square
+
+Why Stripe:
+- Better API, more features
+- ACH payments (lower fees: 0.8% vs 2.9% for cards)
+- Supports payment plans, subscriptions
+- Stripe Connect: Your customers can accept payments too
+
+Stripe Setup:
+1. Create Stripe account
+2. Get API keys (test + production)
+3. Use Stripe Checkout or Payment Elements
+4. Webhook handling for payment status updates
+
+Backend Flow:
+1. User creates quote in QuoteHub
+2. User clicks "Collect Deposit" → specify amount ($5,000)
+3. Generate Stripe Checkout session
+4. Send payment link to client via email
+5. Client pays → Stripe webhook fires
+6. Update quote status to "Deposit Paid" in Supabase
+7. Auto-create project from quote
+
+Supabase Schema:
+- payments table:
+  - id, project_id, quote_id, amount, status, stripe_payment_intent_id
+  - created_at, paid_at, refunded_at
+- payment_schedule table:
+  - id, project_id, milestone_name, amount, due_date, status
+
+UI LOCATION:
+- QuoteHub: "Collect Deposit" button on quote view
+- QuoteHub: "Payment Status: Paid ✅" badge
+- CRM: "Send Invoice" → "Include Payment Link" checkbox
+- Projects: "Payment Schedule" tab showing upcoming payments
+
+FEES:
+- Stripe: 2.9% + $0.30 per card transaction
+- Stripe: 0.8% (max $5) per ACH transaction
+- You can pass fees to client or absorb them
+
+PRIORITY: Build Week 3 of launch prep
+
+ALREADY BUILT: You mentioned Stripe is ready in your platform
+
+═══════════════════════════════════════════════════════════════════════════════
+
+INTEGRATION #4: DOCUSEAL (E-SIGNATURE) ✨ FREE ALTERNATIVE
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHY THIS MATTERS:
+Speed up approvals from days (mail contract, wait for signature) to minutes.
+DocuSeal is FREE and open-source (vs DocuSign $10-$40/month per user).
+
+WHERE IT GOES:
+
+1. QuoteHub (Primary Use Case)
+   - Send quote → client e-signs → auto-converts to contract
+   - "Send for Signature" button
+   - Track signature status: Sent, Viewed, Signed
+
+2. CRM (Contracts)
+   - Master service agreements
+   - Subcontractor agreements
+   - Client contracts
+
+3. Projects (Change Orders)
+   - Create change order → send for e-signature
+   - Client signs on phone → change order approved instantly
+
+TECHNICAL IMPLEMENTATION:
+
+DocuSeal (Open Source):
+- GitHub: https://github.com/docusealco/docuseal
+- Self-hosted (free) or cloud ($0-$29/month)
+- API for creating/sending documents
+- Webhook notifications when signed
+
+Setup Options:
+
+Option 1: Self-Hosted (Free)
+- Deploy DocuSeal on your own server (Docker)
+- Cost: $0 (just server costs, maybe $10-$20/month)
+- Full control, unlimited documents
+
+Option 2: DocuSeal Cloud (Freemium)
+- Free tier: 5 documents/month
+- Paid: $29/month for unlimited
+- Easier setup, managed service
+
+Implementation Flow:
+1. User creates quote in QuoteHub
+2. User clicks "Send for Signature"
+3. Backend generates PDF from quote template
+4. Send to DocuSeal API → create signature request
+5. Client receives email with "Sign Document" link
+6. Client e-signs on phone/computer
+7. DocuSeal webhook fires → update quote status to "Signed"
+8. Auto-convert quote to project
+
+Supabase Schema:
+- signature_requests table:
+  - id, document_type (quote, contract, change_order)
+  - related_id (quote_id, contract_id, etc.)
+  - docuseal_document_id, status, sent_at, signed_at
+  - signer_email, signer_name
+
+UI LOCATION:
+- QuoteHub: "Send for Signature" button (quote view)
+- QuoteHub: "Signature Status: Awaiting Signature 🟡" badge
+- QuoteHub: "Signature Status: Signed ✅" badge
+- CRM: "Send Contract" → "E-Signature" option
+- Projects: "Change Orders" → "Send for Approval" button
+
+PRIORITY: Build Month 1 post-launch
+
+COST: FREE (self-hosted) or $29/month (cloud, unlimited)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+INTEGRATION #5: GOOGLE CALENDAR SYNC
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHY THIS MATTERS:
+Contractors live in their calendar. Two-way sync means:
+- Add task in TaskFlow → shows in Google Calendar
+- Add meeting in Google Calendar → shows in Sierra Suites
+
+WHERE IT GOES:
+
+1. Dashboard (Today's Schedule)
+   - Pull today's events from Google Calendar
+   - Show: "9am: Client meeting, 2pm: Foundation inspection"
+
+2. TaskFlow (Two-Way Sync)
+   - Tasks sync to Google Calendar as events
+   - Changes in either direction sync automatically
+   - Color-coded by project
+
+3. CRM (Client Meetings)
+   - Schedule client call → auto-adds to Google Calendar
+   - Get reminder on phone 15 min before
+
+TECHNICAL IMPLEMENTATION:
+
+API: Google Calendar API (Free)
+
+OAuth Flow:
+1. User connects Google account in Settings
+2. Request permissions: calendar.events, calendar.readonly
+3. Store OAuth refresh token in Supabase (encrypted)
+4. Use token to read/write calendar events
+
+Two-Way Sync Logic:
+
+Direction 1: TaskFlow → Google Calendar
+- When user creates task with due date:
+  1. Create Google Calendar event
+  2. Title: "[Project Name] Task Name"
+  3. Time: Task due date + estimated duration
+  4. Store google_calendar_event_id in tasks table
+
+Direction 2: Google Calendar → TaskFlow
+- Set up webhook (Google Calendar Push Notifications)
+- When event created/updated in Google Calendar:
+  1. Check if event already exists in TaskFlow
+  2. If new: Create task in TaskFlow
+  3. If updated: Update task details
+
+Sync Frequency:
+- Real-time via webhooks (preferred)
+- Fallback: Poll every 15 minutes
+
+Supabase Schema:
+- calendar_connections table:
+  - id, user_id, provider (google, outlook)
+  - oauth_token (encrypted), refresh_token (encrypted)
+  - last_sync_at, sync_enabled (boolean)
+- calendar_sync_log table:
+  - id, task_id, google_event_id, sync_direction, synced_at
+
+UI LOCATION:
+- Dashboard: "Today's Schedule" widget (pulls from Google Calendar)
+- TaskFlow: "Sync to Calendar" toggle on each task
+- Settings: "Connected Calendars" page
+  - "Connect Google Calendar" button
+  - "Disconnect" button
+  - "Sync frequency" dropdown
+
+PRIORITY: Build Month 1 post-launch
+
+COST: FREE (Google Calendar API is free)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+INTEGRATION #6: QUICKBOOKS/XERO ACCOUNTING
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHY THIS MATTERS:
+70%+ of SMB contractors use QuickBooks. Without this integration:
+- They manually re-enter every invoice (2-3 hours/week wasted)
+- Financial data lives in two places (reconciliation nightmare)
+
+With integration:
+- Quote approved → auto-creates invoice in QuickBooks
+- Payment received → auto-marks invoice paid
+- Project costs → auto-categorized in QuickBooks
+
+WHERE IT GOES:
+
+1. Dashboard (Financial Overview)
+   - Pull real-time financials from QuickBooks
+   - Show: Revenue, Expenses, Profit this month
+   - "Your QuickBooks balance: $47,382"
+
+2. QuoteHub (Quote → Invoice)
+   - Quote signed → "Send to QuickBooks" button
+   - Auto-creates invoice in QuickBooks
+   - Link back to Sierra project
+
+3. Projects (Budget Tracking)
+   - Sync actual costs from QuickBooks
+   - Compare: Estimated $50K vs Actual $47K (under budget!)
+
+TECHNICAL IMPLEMENTATION:
+
+API: QuickBooks Online API or Xero API
+
+QuickBooks OAuth Flow:
+1. User clicks "Connect QuickBooks" in Settings
+2. Redirect to Intuit OAuth login
+3. User authorizes Sierra Suites
+4. Store OAuth tokens (access + refresh) in Supabase
+5. Use QuickBooks API to read/write data
+
+Key Endpoints:
+
+Create Invoice:
+POST /v3/company/{companyId}/invoice
+- Pull data from Sierra quote
+- Line items, customer info, amounts
+- Return QuickBooks invoice ID
+
+Get Financials:
+GET /v3/company/{companyId}/reports/ProfitAndLoss
+- Date range: This month
+- Show on Dashboard
+
+Sync Flow (Quote → Invoice):
+1. Quote marked as "Accepted" in QuoteHub
+2. Backend: Check if QuickBooks connected
+3. If yes: Create invoice in QuickBooks
+   - Customer: Pull from CRM (or create new)
+   - Line items: From quote line items
+   - Amount: Quote total
+4. Store quickbooks_invoice_id in quotes table
+5. Show "View in QuickBooks" link
+
+Sync Flow (Payment):
+1. Payment received via Stripe
+2. Backend: Mark invoice paid in QuickBooks
+   - POST /v3/company/{companyId}/payment
+   - Link to invoice ID
+3. Update QuickBooks with payment date, amount
+
+Supabase Schema:
+- accounting_connections table:
+  - id, user_id, provider (quickbooks, xero)
+  - oauth_token, refresh_token (encrypted)
+  - company_id, company_name, connected_at
+- quickbooks_sync_log table:
+  - id, entity_type (quote, invoice, payment)
+  - sierra_id, quickbooks_id, sync_status, synced_at
+
+UI LOCATION:
+- Dashboard: "Financial Overview" widget (QuickBooks data)
+- QuoteHub: "Send to QuickBooks" button on accepted quotes
+- QuoteHub: "QuickBooks Invoice #1234" badge (if synced)
+- Projects: "Actual Costs (from QuickBooks)" in budget tab
+- Settings: "Accounting" page
+  - "Connect QuickBooks" button
+  - "Disconnect" button
+  - "Auto-sync" toggle
+
+PRIORITY: Build Month 1-2 post-launch
+
+COST:
+- QuickBooks API: FREE (no API fees, but users need QuickBooks subscription)
+- Xero API: FREE
+
+NOTE: Users pay for their own QuickBooks/Xero subscriptions (~$30-$70/month).
+You don't pay for this - they connect their existing account.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+INTEGRATION #7: GOOGLE DRIVE/DROPBOX CLOUD STORAGE
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHY THIS MATTERS:
+Contractors already use Drive/Dropbox for blueprints, contracts, photos.
+Without integration: They store files in two places (Sierra + Drive).
+With integration: Files auto-sync, never lose documentation.
+
+WHERE IT GOES:
+
+1. FieldSnap (Photo Backup)
+   - Auto-backup all photos to Google Drive/Dropbox
+   - Folder structure: /Sierra Suites/[Project Name]/Photos/[Date]
+   - Never lose photos (even if Sierra goes down)
+
+2. Projects (Documents)
+   - Upload document → auto-saves to Drive/Dropbox
+   - Or: Browse Drive/Dropbox files directly in Sierra
+   - Two-way sync: Add file in Drive → shows in Sierra
+
+3. QuoteHub (Proposals)
+   - Export quote PDF → auto-save to Drive/Dropbox
+   - Folder: /Sierra Suites/Quotes/[Client Name]/
+
+TECHNICAL IMPLEMENTATION:
+
+API: Google Drive API or Dropbox API (both free)
+
+OAuth Flow:
+1. User clicks "Connect Google Drive" in Settings
+2. OAuth login → request permissions
+3. Store OAuth tokens in Supabase
+
+Auto-Backup Flow (FieldSnap Photos):
+1. User uploads photo to FieldSnap
+2. Backend: Upload photo to Supabase Storage (primary)
+3. Also upload to Google Drive:
+   - Folder: /Sierra Suites/[Project Name]/Photos/
+   - Filename: [Date]_[Time]_[Photo_ID].jpg
+4. Store drive_file_id in fieldsnap_photos table
+
+Two-Way Sync Flow (Projects Documents):
+
+Upload from Sierra:
+1. User uploads file to Projects page
+2. Save to Supabase Storage
+3. Also upload to Google Drive
+4. Store drive_file_id
+
+Add from Drive:
+1. User clicks "Browse Drive" in Projects
+2. Show Drive file picker
+3. User selects file
+4. Copy file to Supabase Storage (for fast access)
+5. Link to original Drive file
+
+Supabase Schema:
+- cloud_storage_connections table:
+  - id, user_id, provider (google_drive, dropbox)
+  - oauth_token, refresh_token (encrypted)
+  - root_folder_id, auto_backup_enabled
+- cloud_storage_files table:
+  - id, file_id (Supabase), provider_file_id
+  - provider, synced_at, sync_status
+
+UI LOCATION:
+- FieldSnap: "Auto-backup to Drive" toggle in settings
+- FieldSnap: "✅ Backed up to Drive" badge on photos
+- Projects: "Documents" tab → "Browse Drive" button
+- Projects: "📁 Google Drive" icon next to synced files
+- Settings: "Cloud Storage" page
+  - "Connect Google Drive" button
+  - "Connect Dropbox" button
+  - "Auto-backup photos" toggle
+  - "Choose backup folder" dropdown
+
+PRIORITY: Build Month 2 post-launch
+
+COST: FREE (both APIs are free)
+
+NOTE: Users need their own Drive/Dropbox accounts (free tier sufficient).
+
+═══════════════════════════════════════════════════════════════════════════════
+
+INTEGRATION #8: WHATSAPP BUSINESS (CRM + FIELDSNAP)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHY THIS MATTERS:
+Contractors and clients actually use WhatsApp (unlike email, which gets ignored).
+Use cases:
+- Share progress photos instantly to client
+- Send quote to client on WhatsApp
+- Client asks question → chat logged in CRM
+- Field crew reports issue via WhatsApp → logged in project
+
+WHERE IT GOES:
+
+1. CRM (Client Communication)
+   - Message clients directly from CRM
+   - All WhatsApp conversations logged in CRM timeline
+   - "Message on WhatsApp" button next to client name
+
+2. FieldSnap (Photo Sharing) ✨ NEW USE CASE
+   - Take photo → "Share to Client" button
+   - Sends photo + caption via WhatsApp
+   - Client receives: "Progress update from [Project Name]: [Photo]"
+   - Field crew can report issues: "Broken pipe, needs immediate attention"
+
+3. QuoteHub (Quote Delivery)
+   - Send quote via WhatsApp instead of email
+   - Higher open rate (98% vs 20% for email)
+
+4. TaskFlow (Field Crew Updates) ✨ NEW USE CASE
+   - Field foreman: "Foundation poured, curing started"
+   - Sent via WhatsApp → auto-updates task status
+   - Office sees update in real-time
+
+TECHNICAL IMPLEMENTATION:
+
+API: WhatsApp Business API (via Twilio or Meta)
+
+Option 1: Twilio WhatsApp API (Easier)
+- Cost: $0.005 per message sent/received
+- Setup: 1 day
+- Pre-approved templates required
+
+Option 2: Meta WhatsApp Business API (Official)
+- Cost: Free for first 1,000 conversations/month
+- Setup: 2-3 days (business verification required)
+- More features, cheaper at scale
+
+Recommended: Start with Twilio (faster), migrate to Meta later.
+
+Implementation Flow (Photo Sharing):
+
+1. User uploads photo in FieldSnap
+2. User adds caption: "Framing complete"
+3. User clicks "Share to Client"
+4. Backend:
+   - Get client phone number from CRM
+   - Upload photo to Twilio (get media URL)
+   - Send WhatsApp message via Twilio API:
+     POST https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/Messages.json
+     Body: {
+       "From": "whatsapp:+14155238886", // Your Twilio WhatsApp number
+       "To": "whatsapp:+1234567890", // Client number
+       "Body": "Progress update from [Project Name]: Framing complete",
+       "MediaUrl": ["https://media.url/photo.jpg"]
+     }
+5. Log message in CRM communications table
+
+Inbound Messages (Client Replies):
+
+1. Set up Twilio webhook for incoming messages
+2. When client replies on WhatsApp:
+   - Twilio sends webhook to your backend
+   - Parse message, sender number
+   - Find client in CRM by phone number
+   - Log message in communications table
+   - Optionally: Notify contractor via push notification
+
+WhatsApp Templates (Required for proactive messages):
+
+You need pre-approved templates for:
+- Quote delivery: "Hi {{1}}, your quote for {{2}} is ready: {{3}}"
+- Payment reminder: "Hi {{1}}, your payment of {{2}} is due on {{3}}"
+- Appointment reminder: "Hi {{1}}, your site visit is scheduled for {{2}}"
+
+Supabase Schema:
+- whatsapp_connections table:
+  - id, user_id, provider (twilio, meta)
+  - twilio_account_sid, twilio_auth_token (encrypted)
+  - whatsapp_number, verified
+- whatsapp_messages table:
+  - id, conversation_id, sender_phone, recipient_phone
+  - message_body, media_urls, direction (inbound, outbound)
+  - twilio_message_sid, sent_at, delivered_at, read_at
+
+UI LOCATION:
+
+CRM Page:
+- "💬 Message on WhatsApp" button next to client name
+- "WhatsApp" tab showing conversation history
+- Inline reply box: Type message → send
+
+FieldSnap Page:
+- "Share to Client" button on photo view
+- Modal: "Add caption" + "Select recipients" + "Send via WhatsApp"
+- "✅ Sent to client" badge after sending
+
+FieldSnap (Field Crew Use Case):
+- "Report Issue" button
+- Pre-filled templates:
+  - "⚠️ Issue found: [describe]"
+  - "✅ Task complete: [task name]"
+  - "📦 Materials needed: [list]"
+- Sends to project manager via WhatsApp
+- Auto-creates task or issue log in Sierra
+
+QuoteHub:
+- "Send Quote" dropdown → "Email" or "WhatsApp"
+- If WhatsApp selected: Uses approved template
+- "Quote sent via WhatsApp ✅" badge
+
+Settings:
+- "WhatsApp" page
+  - "Connect WhatsApp Business" button
+  - Enter Twilio credentials (or Meta credentials)
+  - "Your WhatsApp Number: +1 (415) 523-8886"
+  - "Message Templates" section (manage approved templates)
+
+PRIORITY: Build Month 2 post-launch
+
+COST:
+- Twilio: $0.005 per message (~$0.50 for 100 messages)
+- Meta: Free for first 1,000 conversations/month, then $0.05/conversation
+
+At 50 customers sending 20 messages/month each:
+- 1,000 messages/month × $0.005 = $5/month (very cheap)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+INTEGRATION #9: RSMEANS/SUPPLIER PRICING APIS (QUOTEHUB)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHY THIS MATTERS:
+Contractors waste hours calling suppliers for material prices.
+Lumber prices swing 30% monthly - old quotes become inaccurate fast.
+With real-time pricing: Click "Update Prices" → all line items refresh.
+
+WHERE IT GOES:
+
+1. QuoteHub (Primary Use Case)
+   - Auto-populate material/labor costs when creating estimates
+   - "Add Line Item" → search "Concrete 4000 psi" → auto-fills price
+   - "Update Prices" button refreshes all line items with current rates
+
+2. Material Optimizer AI (Sustainability Feature)
+   - Show cost comparison: Standard vs Sustainable materials
+   - Pull prices from RSMeans Green Building Costs dataset
+
+3. Smart Estimator AI
+   - Use RSMeans data for ballpark estimates
+   - "2,500 sqft office renovation" → AI suggests line items with prices
+
+DATA SOURCES:
+
+1. RSMeans Data (You're Already Paying $866/year)
+   - 10,000+ sustainable product prices
+   - Labor rates by location (adjusted for local market)
+   - Coverage: Green Building Costs dataset
+
+2. Supplier APIs (If Available):
+   - Home Depot Pro Xtra API (lumber, hardware, tools)
+   - Ferguson (plumbing, HVAC)
+   - Grainger (industrial supplies)
+   - Lowe's Pro Services (similar to Home Depot)
+
+NOTE: Most suppliers don't have public APIs. You may need:
+- Manual price lists (Excel) uploaded quarterly
+- Web scraping (risky, against TOS)
+- Direct supplier partnerships (negotiate API access)
+
+TECHNICAL IMPLEMENTATION:
+
+Option 1: RSMeans Integration (You Already Have Data)
+
+Setup:
+1. You have RSMeans Green Building Costs ($866/year)
+2. Data format: Excel/CSV with columns:
+   - Item Code, Description, Unit, Material Cost, Labor Cost, Total Cost
+   - Location Adjustment Factor (e.g., San Francisco = 1.32x)
+3. Import RSMeans data into Supabase:
+   - Table: rsmeans_cost_data
+   - Columns: item_code, category, description, unit, base_material_cost,
+     base_labor_cost, location_adjustments (JSONB)
+
+QuoteHub Integration:
+1. User creates new quote line item
+2. User types: "Concrete ready-mix 4000 psi"
+3. Search rsmeans_cost_data table
+4. Show results: "Concrete, Ready-Mix, 4000 PSI - $312/cy"
+5. User selects → auto-fills price
+6. Apply location adjustment:
+   - If project in San Francisco: $312 × 1.32 = $412/cy
+
+Option 2: Supplier API Integration (If Available)
+
+Example: Home Depot Pro API (hypothetical, may not exist publicly)
+
+Flow:
+1. User searches: "2x4 stud 8ft"
+2. Backend queries Home Depot API:
+   GET /api/v1/products/search?q=2x4+stud+8ft&zip=94102
+3. API returns:
+   {
+     "sku": "123456",
+     "name": "2x4x8 Kiln-Dried Stud",
+     "price": 3.97,
+     "availability": "In Stock",
+     "store": "San Francisco #5432"
+   }
+4. Show in QuoteHub: "HD: $3.97 (in stock at SF store)"
+5. User clicks "Add" → line item populated
+
+Challenges:
+- Most suppliers don't have public APIs
+- Prices vary by location and customer account
+- May require direct partnerships (call supplier sales rep)
+
+Supabase Schema:
+- rsmeans_cost_data table:
+  - id, item_code, category, description, unit
+  - base_material_cost, base_labor_cost
+  - location_adjustments (JSONB: {"San Francisco": 1.32, "Baton Rouge": 0.87})
+  - updated_at (last price update)
+- supplier_price_cache table:
+  - id, supplier (home_depot, ferguson), sku, product_name
+  - unit_price, availability, location, cached_at
+
+UI LOCATION:
+
+QuoteHub:
+- "Create Line Item" modal
+  - Search box: "Search materials or labor..."
+  - Results: Show RSMeans items + cached supplier prices
+  - Each result shows:
+    - Description
+    - Unit price
+    - Source: "RSMeans" or "Home Depot" badge
+    - "Add to Quote" button
+
+- "Update Prices" button (quote view)
+  - Refreshes all line items with latest prices
+  - Shows: "3 items updated, +$487 total change"
+
+Material Optimizer:
+- When suggesting alternatives:
+  - "Standard concrete: $312/cy (RSMeans)"
+  - "High-SCM concrete: $320/cy (RSMeans Green Building)"
+  - Cost difference: +$8/cy (+2.6%)
+
+Settings:
+- "Pricing Data" page
+  - "RSMeans Location Adjustment" dropdown (select city)
+  - "Markup Percentage" input (default 20% markup)
+  - "Last Updated" timestamp
+  - "Upload Price List" button (for custom supplier prices)
+
+PRIORITY: Build Month 3-4 post-launch
+
+COST:
+- RSMeans: $866/year (already paying)
+- Supplier APIs: Varies (many don't have APIs)
+  - If available: Likely free (you're driving business to them)
+
+IMPLEMENTATION DIFFICULTY: Medium-High
+- RSMeans integration: Easy (just import data)
+- Supplier APIs: Hard (most don't exist or require partnerships)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+INTEGRATION #10: TIME TRACKING (TSHEETS/BUSYBUSY)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHY THIS MATTERS:
+Payroll is a nightmare without accurate time tracking.
+Contractors need to know: Who worked where, for how long, on which project.
+Without time tracking: Manual timesheets (errors, timesheet fraud, disputes).
+With integration: Crews clock in/out on phone → hours auto-populate.
+
+WHERE IT GOES:
+
+1. TaskFlow (Labor Hours)
+   - See actual hours worked on each task
+   - Compare: Estimated 40 hours vs Actual 47 hours
+   - Track labor costs: 47 hours × $35/hr = $1,645
+
+2. Projects (Budget Tracking)
+   - Labor hours feed into project budget
+   - See: Labor budget $20K, Actual $18.5K (under budget!)
+
+3. Dashboard (Crew Status)
+   - See who's clocked in right now
+   - "John (Foreman) - Clocked in at Johnson site, 4.2 hrs today"
+
+TECHNICAL IMPLEMENTATION:
+
+Time Tracking Providers:
+
+Option 1: TSheets (now QuickBooks Time)
+- Owned by Intuit (same as QuickBooks)
+- Seamless QuickBooks integration
+- Cost: $8/month per user + $20/month base
+- Mobile app: GPS tracking, geofencing, photo timestamps
+
+Option 2: Busybusy
+- Built specifically for construction
+- Features: GPS, geofencing, equipment tracking
+- Cost: $8/month per user
+- Better for construction than TSheets
+
+Option 3: Clockify
+- Free tier available (unlimited users!)
+- Cost: Free or $9.99/month per user (Pro)
+- Good for small contractors on budget
+
+Recommended: Busybusy (construction-specific) or Clockify (free)
+
+API Integration:
+
+Busybusy API:
+- Endpoints: /users, /time_entries, /projects, /tasks
+- OAuth flow for user authorization
+
+Flow:
+1. User connects Busybusy account in Settings
+2. Sync projects from Sierra to Busybusy
+3. Crew members clock in/out via Busybusy mobile app
+4. Every hour, fetch time entries from Busybusy API:
+   GET /api/v1/time_entries?start_date=2024-01-01&end_date=2024-01-31
+5. Store in Supabase time_entries table
+6. Calculate total hours per task/project
+7. Display in TaskFlow and Projects
+
+Data Sync:
+
+Direction 1: Sierra → Busybusy
+- When project created in Sierra:
+  - Create project in Busybusy via API
+  - POST /api/v1/projects
+  - Store busybusy_project_id in projects table
+- When task created in TaskFlow:
+  - Create task in Busybusy
+  - POST /api/v1/tasks
+
+Direction 2: Busybusy → Sierra
+- Webhook: When time entry created/updated in Busybusy
+  - Busybusy sends webhook to your backend
+  - Parse time entry data
+  - Store in time_entries table
+  - Update task/project hours
+
+Supabase Schema:
+- time_tracking_connections table:
+  - id, user_id, provider (tsheets, busybusy, clockify)
+  - oauth_token, refresh_token (encrypted)
+  - connected_at, sync_enabled
+- time_entries table:
+  - id, project_id, task_id, user_id (crew member)
+  - clock_in_at, clock_out_at, total_hours
+  - provider_entry_id, gps_location, notes
+  - hourly_rate, total_cost
+
+UI LOCATION:
+
+TaskFlow:
+- Each task shows:
+  - "Estimated: 40 hours"
+  - "Actual: 47 hours" (from time tracking)
+  - "Over by: 7 hours (+17.5%)"
+- "Time Entries" tab on task detail:
+  - List of all clock-ins/clock-outs for this task
+  - Who, when, duration
+
+Projects:
+- "Labor" tab:
+  - Total hours by crew member
+  - John: 87 hours ($3,045), Mike: 62 hours ($2,170)
+  - Compare to budget: $20K budgeted, $18.5K actual (under!)
+
+Dashboard:
+- "Who's Working Now" widget:
+  - John (Foreman) - Johnson Site, 4.2 hrs today
+  - Mike (Carpenter) - Smith Site, 3.8 hrs today
+  - Sarah (Plumber) - Not clocked in
+
+Settings:
+- "Time Tracking" page
+  - "Connect Busybusy" button
+  - "Connect TSheets" button
+  - "Connect Clockify" button
+  - "Auto-sync" toggle
+  - "Sync frequency" dropdown (Every hour, Every 6 hours)
+
+PRIORITY: Build Month 3-4 post-launch
+
+COST:
+- Busybusy: $8/month per crew member (user pays, not you)
+- Clockify: Free or $9.99/month per user (user pays)
+
+NOTE: Users pay for their own time tracking subscriptions.
+You just integrate with their existing account.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+INTEGRATION #11: PLAID (BANK CONNECTION)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHY THIS MATTERS:
+Contractors need to know their real cash position, not just invoiced amounts.
+Question: "Did that $50K payment clear?" happens daily.
+With Plaid: See bank balance in real-time on Dashboard.
+
+WHERE IT GOES:
+
+1. Dashboard (Cash Flow Widget)
+   - Show real bank balance: "Bank Balance: $47,382"
+   - Compare to invoiced: "Outstanding Invoices: $83,500"
+   - Cash runway: "28 days of expenses in bank"
+
+2. Projects (Payment Tracking)
+   - Match bank deposits to project payments
+   - "✅ $25K deposit cleared on 1/15/2024"
+
+TECHNICAL IMPLEMENTATION:
+
+API: Plaid Link (Bank Connection API)
+
+Plaid Setup:
+1. Sign up for Plaid account (plaid.com)
+2. Get API keys (sandbox, development, production)
+3. Pricing: Free for <100 items, then $0.35 per item/month
+
+Plaid Link Flow:
+1. User clicks "Connect Bank Account" in Dashboard
+2. Plaid Link modal opens
+3. User selects bank (Chase, Bank of America, etc.)
+4. User logs in with bank credentials (Plaid handles securely)
+5. User authorizes account access
+6. Plaid returns access_token
+7. Store access_token in Supabase (encrypted)
+
+Fetch Bank Balance:
+- Use Plaid API: /accounts/balance/get
+- Returns: account_id, current balance, available balance
+- Update every 6-12 hours (store in dashboard_cache table)
+
+Fetch Transactions:
+- Use Plaid API: /transactions/get
+- Returns: list of deposits, withdrawals, dates, amounts
+- Match deposits to project payments:
+  - If deposit amount matches invoice amount → auto-link
+
+Supabase Schema:
+- bank_connections table:
+  - id, user_id, bank_name, account_name
+  - plaid_access_token (encrypted), plaid_account_id
+  - current_balance, available_balance, last_synced_at
+- bank_transactions table:
+  - id, bank_connection_id, transaction_id, date
+  - amount, type (debit, credit), description
+  - matched_payment_id (links to payments table)
+
+UI LOCATION:
+
+Dashboard:
+- "Cash Flow" widget:
+  - "💰 Bank Balance: $47,382"
+  - "📊 Outstanding Invoices: $83,500"
+  - "⏱️ Cash Runway: 28 days"
+  - Click widget → see full cash flow report
+
+Projects:
+- "Payments" tab:
+  - Each payment shows:
+    - "💵 $25K - Deposit (Cleared ✅ on 1/15/2024)"
+  - Auto-matched from bank transactions
+
+Settings:
+- "Banking" page:
+  - "Connect Bank Account" button (opens Plaid Link)
+  - List of connected accounts:
+    - "Chase Checking ••••5432 - Balance: $47,382"
+    - "Disconnect" button
+  - "Auto-match payments" toggle
+
+PRIORITY: Build Month 4-5 post-launch
+
+COST:
+- Plaid: Free for <100 connected accounts
+- After 100: $0.35 per account per month
+- At 200 customers: ~$70/month (if 100% adoption, unlikely)
+
+SECURITY NOTE:
+Plaid is bank-level security (same as used by Venmo, Coinbase, Robinhood).
+You never see user's bank credentials - Plaid handles authentication.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+INTEGRATION #12: REVIEW AUTOMATION (GOOGLE REVIEWS, HOUZZ)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHY THIS MATTERS:
+More 5-star reviews = more leads = more revenue.
+Without automation: Contractors forget to ask for reviews.
+With automation: Project closes → auto-send review request.
+
+WHERE IT GOES:
+
+1. CRM (Reputation Management)
+   - "Reviews" tab showing all reviews
+   - Aggregate score: "4.8★ average (47 reviews)"
+   - "Request Review" button for completed projects
+
+2. Projects (Post-Completion)
+   - When project marked as "Completed":
+     - Auto-send review request email/SMS
+     - "Hi [Client], thanks for choosing us! Please review: [link]"
+
+TECHNICAL IMPLEMENTATION:
+
+Review Platforms:
+
+1. Google Reviews (Most Important)
+   - No official API for requesting reviews
+   - Workaround: Generate Google review link
+   - Format: https://search.google.com/local/writereview?placeid=[YOUR_PLACE_ID]
+
+2. Houzz (For Home Remodelers)
+   - No official API
+   - Manual: Send client to Houzz profile
+
+3. Yelp, Angi, etc.
+   - Similar approach: Direct links
+
+4. Third-Party Services (Easier):
+   - GatherUp, Podium, Birdeye
+   - Cost: $50-$300/month
+   - They handle multi-platform review requests
+
+Implementation (DIY Approach):
+
+Setup:
+1. Get your Google Place ID:
+   - Go to: https://developers.google.com/maps/documentation/places/web-service/place-id
+   - Search your business → copy Place ID
+   - Store in settings table
+
+Auto-Request Flow:
+1. User marks project as "Completed" in Projects page
+2. Backend triggers "Request Review" workflow:
+   - Get client email/phone from CRM
+   - Generate review links:
+     - Google: https://search.google.com/local/writereview?placeid=ChIJ...
+     - Houzz: https://www.houzz.com/pro/[your-username]/reviews
+   - Send email/SMS with links:
+     Subject: "Thanks for choosing [Company Name]!"
+     Body:
+     "Hi [Client Name],
+
+      Thank you for trusting us with your [Project Type].
+      We'd love to hear about your experience!
+
+      Leave us a review:
+      🌟 Google: [link]
+      🏠 Houzz: [link]
+
+      Your feedback helps us improve and helps other homeowners
+      find quality contractors.
+
+      Thanks again!
+      [Contractor Name]"
+
+Manual Request:
+- User clicks "Request Review" button in CRM
+- Select client, select platforms (Google, Houzz, Yelp)
+- Send email/SMS immediately
+
+Track Reviews (Manual):
+- User manually enters reviews in CRM:
+  - Platform, rating (1-5 stars), review text, date
+- Display on CRM "Reviews" tab
+- Aggregate metrics: Average rating, total reviews
+
+Supabase Schema:
+- reviews table:
+  - id, project_id, client_id, platform (google, houzz, yelp)
+  - rating (1-5), review_text, review_url
+  - reviewed_at, created_at
+- review_requests table:
+  - id, project_id, client_id, requested_at
+  - platforms (array: [google, houzz]), sent_via (email, sms)
+  - opened_at, clicked_at, completed_at
+
+UI LOCATION:
+
+CRM:
+- "Reviews" tab:
+  - Aggregate score: "4.8★ average (47 reviews)"
+  - List of all reviews with platform badges
+  - "Request Review" button → opens modal
+
+Projects:
+- When project status changed to "Completed":
+  - Auto-show modal: "Request a review from [Client Name]?"
+  - "Send Review Request" button
+  - or "Skip" button
+
+Dashboard:
+- "Reputation" widget:
+  - "4.8★ Google (32 reviews)"
+  - "4.9★ Houzz (15 reviews)"
+  - Trend: "↑ +3 reviews this month"
+
+Settings:
+- "Reputation" page:
+  - "Google Place ID" input
+  - "Houzz Profile URL" input
+  - "Auto-request reviews" toggle
+  - "Request timing" dropdown:
+    - "Immediately when project completed"
+    - "3 days after project completed"
+    - "7 days after project completed"
+
+PRIORITY: Build Month 4-5 post-launch
+
+COST:
+- DIY approach: $0 (just send emails with links)
+- Third-party service (GatherUp, Podium): $50-$300/month
+  - Benefit: Multi-platform automation, SMS, tracking
+
+NOTE: Start with DIY approach (free), upgrade to paid service later if needed.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+INTEGRATION #13: CLIENT PORTAL
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHY THIS MATTERS:
+Clients constantly ask: "How's my project?" "Can I see photos?" "What's left to do?"
+Without client portal: Answer same questions via phone/email (time-consuming).
+With client portal: Client logs in anytime, sees progress, photos, invoices.
+
+WHERE IT GOES:
+
+Separate Portal (Client-Facing):
+- URL: portal.sierrasuites.com or yourcompany.sierrasuites.com/client
+- Contractor invites client via email
+- Client creates account (email + password)
+- Client sees ONLY their project (not contractor's other projects)
+
+WHAT CLIENTS CAN SEE:
+
+1. Project Overview
+   - Project name, address, status
+   - Start date, target completion date
+   - Overall progress: "68% complete"
+   - Next milestone: "Framing inspection on 1/20"
+
+2. Progress Photos (from FieldSnap)
+   - Photo gallery organized by date
+   - Captions: "Framing complete, electrical rough-in started"
+   - Download photos
+
+3. Project Timeline (from TaskFlow)
+   - Gantt chart or calendar view
+   - Completed tasks ✅
+   - Upcoming tasks
+   - Delays explained: "Foundation delayed 3 days due to rain"
+
+4. Budget & Payments
+   - Total project cost: $125,000
+   - Paid to date: $75,000
+   - Remaining balance: $50,000
+   - Payment schedule:
+     - Deposit: $37,500 (Paid ✅)
+     - Framing: $37,500 (Paid ✅)
+     - Completion: $50,000 (Due 2/15/2024)
+   - "Pay Now" button (Stripe integration)
+
+5. Documents
+   - Contract (view/download)
+   - Permits
+   - Warranties
+   - Change orders
+
+6. Communication
+   - Message contractor
+   - View message history
+   - Upload files (e.g., "Here's the cabinet color I want")
+
+TECHNICAL IMPLEMENTATION:
+
+Architecture:
+
+Separate App:
+- Next.js app (separate from contractor app)
+- Deployed at portal.sierrasuites.com
+- Shares Supabase backend (same database)
+
+Authentication:
+- Client creates account with email + password
+- Row-Level Security (RLS) in Supabase:
+  - Clients can only see projects where they're assigned as client
+  - Cannot see contractor's other projects
+
+Client Invitation Flow:
+1. Contractor creates project in Sierra
+2. Contractor enters client email
+3. Backend sends invitation email:
+   Subject: "[Contractor] invited you to view your project"
+   Body: "Click here to create your portal account: [link]"
+4. Client clicks link → lands on portal signup page
+5. Client creates password → account created
+6. Client auto-assigned to project
+
+Supabase Schema:
+- client_portal_users table:
+  - id, email, password_hash, full_name, phone
+  - created_at, last_login_at
+- client_project_access table:
+  - id, client_user_id, project_id
+  - access_granted_at, access_revoked_at
+  - can_view_budget (boolean), can_view_photos (boolean)
+
+Row-Level Security (RLS):
+- projects table:
+  - Policy: Clients can SELECT only projects where:
+    EXISTS (
+      SELECT 1 FROM client_project_access
+      WHERE client_user_id = auth.uid()
+      AND project_id = projects.id
+    )
+- fieldsnap_photos table:
+  - Policy: Clients can SELECT photos for their projects only
+
+Portal UI (Client-Facing):
+
+Pages:
+- /login - Client login
+- /dashboard - List of client's projects (usually just 1)
+- /project/[id]/overview - Project details
+- /project/[id]/photos - Photo gallery
+- /project/[id]/timeline - Project schedule
+- /project/[id]/budget - Payments, invoices
+- /project/[id]/documents - Contracts, permits
+- /project/[id]/messages - Chat with contractor
+
+Design:
+- Simple, clean (not contractor-focused)
+- Mobile-friendly (clients view on phone)
+- Branding: Use contractor's logo/colors (if configured)
+
+Contractor UI (Settings):
+
+Settings Page: "Client Portal"
+- "Enable Client Portal" toggle
+- "Portal URL" display: yourcompany.sierrasuites.com
+- "Custom Domain" input (advanced)
+- "Branding":
+  - Upload logo
+  - Choose colors (primary, secondary)
+  - Header text: "Welcome to [Company Name] Client Portal"
+
+Projects Page:
+- "Invite Client" button
+  - Enter client email
+  - Select permissions:
+    - ✅ View progress photos
+    - ✅ View project timeline
+    - ✅ View budget & payments
+    - ✅ Message contractor
+  - Send invitation
+- "Client Portal Access" badge on project (if client invited)
+
+UI LOCATION (Contractor Side):
+
+Projects:
+- "Client Portal" section:
+  - "Invite Client" button
+  - "Client Status: Invited (not yet signed up)" or "Active"
+  - "Revoke Access" button
+
+Settings:
+- "Client Portal" page:
+  - Enable/disable portal
+  - Branding settings
+  - Default permissions
+
+PRIORITY: Build Month 5-6 post-launch
+
+COST:
+- Development: ~2 weeks
+- Hosting: $0 (same Vercel/Netlify deployment)
+- Supabase: $0 (same database, minimal extra load)
+
+BENEFIT:
+- Reduces "How's my project?" calls by 80%
+- Clients love transparency
+- Professional image
+- Differentiator vs competitors
+
+═══════════════════════════════════════════════════════════════════════════════
+
+INTEGRATION #14: LEVELSET (LIEN MANAGEMENT)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHY THIS MATTERS:
+Contractors lose BILLIONS to non-payment every year.
+Mechanic's liens protect payment rights, but contractors often miss deadlines.
+Example: In California, you have 20 days to send preliminary notice or lose lien rights.
+
+Without lien management: Miss deadline → can't file lien → can't get paid → $50K loss.
+With Levelset: Auto-send preliminary notices, track deadlines, file liens if needed.
+
+WHERE IT GOES:
+
+1. Projects (Lien Tracking)
+   - "Lien Rights" tab showing:
+     - Preliminary notice status: "Sent ✅" or "Required ⚠️"
+     - Deadlines: "Preliminary notice due by 1/25/2024"
+     - Lien waivers: Collect from subs before final payment
+
+2. CRM (Client/Sub Management)
+   - Track lien waivers from subcontractors
+   - "Request Lien Waiver" button
+   - Auto-send before releasing payment
+
+3. Dashboard (Alerts)
+   - "⚠️ 3 projects have upcoming lien deadlines"
+
+TECHNICAL IMPLEMENTATION:
+
+Levelset API:
+- Levelset is a SaaS for construction lien management
+- Cost: $49-$99/month per user (paid by contractor)
+- API: Available for integrations
+
+Levelset Features:
+- Preliminary notice automation
+- Lien deadline tracking
+- Lien waiver management
+- Notice of intent to lien
+- Mechanic's lien filing
+
+API Integration:
+
+Endpoints:
+- POST /preliminary-notices - Send preliminary notice
+- GET /deadlines - Get lien deadlines for project
+- POST /lien-waivers - Request lien waiver from sub
+- POST /mechanics-liens - File mechanic's lien
+
+Flow (Preliminary Notice):
+1. User creates project in Sierra
+2. User enters project address, owner info, GC info
+3. Sierra checks state lien laws (different per state):
+   - California: 20 days from first work
+   - Texas: 15th day of 2nd month
+   - Florida: 45 days from first work
+4. Sierra shows: "⚠️ Preliminary notice required by 1/25/2024"
+5. User clicks "Send Preliminary Notice"
+6. Backend calls Levelset API:
+   POST /preliminary-notices
+   {
+     "project_address": "123 Main St, San Francisco, CA",
+     "owner_name": "John Smith",
+     "owner_address": "456 Oak Ave",
+     "amount": 50000,
+     "first_work_date": "2024-01-05"
+   }
+7. Levelset generates notice → sends certified mail
+8. Tracks delivery → updates status in Sierra
+
+Flow (Lien Waiver):
+1. Project nearing completion
+2. Before final payment, request lien waivers from all subs
+3. User clicks "Request Lien Waivers"
+4. Backend calls Levelset API:
+   POST /lien-waivers
+   {
+     "subcontractor_email": "electrician@example.com",
+     "project_id": "12345",
+     "waiver_type": "conditional", // or "unconditional"
+     "payment_amount": 15000
+   }
+5. Levelset sends waiver form to sub via email
+6. Sub e-signs waiver
+7. Levelset notifies Sierra → updates status
+8. User can now release final payment safely
+
+Supabase Schema:
+- lien_tracking table:
+  - id, project_id, state
+  - preliminary_notice_required (boolean)
+  - preliminary_notice_deadline, preliminary_notice_sent_at
+  - levelset_notice_id, status
+- lien_waivers table:
+  - id, project_id, subcontractor_id
+  - waiver_type (conditional, unconditional)
+  - payment_amount, requested_at, signed_at
+  - levelset_waiver_id, pdf_url
+
+UI LOCATION:
+
+Projects:
+- "Lien Rights" tab:
+  - "Preliminary Notice" section:
+    - Status: "Required ⚠️" or "Sent ✅"
+    - Deadline: "Due by 1/25/2024"
+    - "Send Notice" button (if not sent)
+  - "Lien Waivers" section:
+    - List of subs:
+      - "ABC Electric - Waiver Pending 🟡"
+      - "XYZ Plumbing - Waiver Signed ✅"
+    - "Request Waiver" button
+
+Dashboard:
+- "Lien Alerts" widget:
+  - "⚠️ Johnson Project - Preliminary notice due in 3 days"
+  - "⚠️ Smith Project - Final lien deadline in 15 days"
+
+Settings:
+- "Lien Management" page:
+  - "Connect Levelset" button
+  - Enter Levelset API credentials
+  - "Auto-send preliminary notices" toggle
+  - "Reminder timing" dropdown (7 days before deadline)
+
+PRIORITY: Build Month 6+ post-launch (Nice-to-have, not critical)
+
+COST:
+- Levelset: $49-$99/month per user (contractor pays)
+- API: Free (included in Levelset subscription)
+
+NOTE: This is an advanced feature for contractors doing larger projects.
+Not critical for MVP, but extremely valuable for contractors who've been burned by non-payment.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+IMPLEMENTATION TIMELINE
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PHASE 1: PRE-LAUNCH (Weeks 1-4)
+✅ Excel/Google Sheets Import/Export (Week 1)
+✅ Weather API (Week 2)
+✅ Stripe Payment Processing (Week 3)
+✅ DocuSeal E-Signature (Week 4)
+
+PHASE 2: MONTH 1 POST-LAUNCH
+✅ Google Calendar Sync
+✅ QuickBooks/Xero Accounting
+✅ Google Drive/Dropbox Cloud Storage
+
+PHASE 3: MONTH 2 POST-LAUNCH
+✅ WhatsApp Business (CRM + FieldSnap)
+
+PHASE 4: MONTHS 3-4 POST-LAUNCH
+✅ RSMeans/Supplier Pricing APIs
+✅ Time Tracking (TSheets/Busybusy)
+
+PHASE 5: MONTHS 4-5 POST-LAUNCH
+✅ Plaid (Bank Connection)
+✅ Review Automation
+
+PHASE 6: MONTHS 5-6 POST-LAUNCH
+✅ Client Portal
+✅ Levelset (Lien Management) - Optional
+
+═══════════════════════════════════════════════════════════════════════════════
+
+ESTIMATED COSTS (MONTHLY)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+AT LAUNCH (Phase 1):
+- Excel/Sheets: $0 (library only)
+- Weather API: $0 (free tier, 1,000 calls/day)
+- Stripe: $0 base (pay 2.9% + $0.30 per transaction)
+- DocuSeal: $0 (self-hosted) or $29/month (cloud)
+TOTAL: $0-$29/month
+
+AT 50 CUSTOMERS (Phases 1-3):
+- Weather API: $40/month (paid tier)
+- DocuSeal: $29/month
+- WhatsApp (Twilio): $5/month (1,000 messages)
+- All others: $0 (users connect their own accounts)
+TOTAL: ~$75/month
+
+AT 200 CUSTOMERS (All Phases):
+- Weather API: $40/month
+- DocuSeal: $29/month
+- WhatsApp: $20/month (4,000 messages)
+- Plaid: $70/month (200 accounts × $0.35)
+- RSMeans: $72/month ($866/year ÷ 12)
+TOTAL: ~$230/month
+
+NOTE: Most integration costs (QuickBooks, Drive, Time Tracking) are paid by users,
+not by you. They connect their existing subscriptions via OAuth.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+SETTINGS PAGE: INTEGRATION HUB UI
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Create a central "Integrations" page in Settings where users manage all connections.
+
+Layout:
+
+SETTINGS → INTEGRATIONS
+
+Categories:
+1. Accounting & Payments
+   - QuickBooks [Connected ✅] [Disconnect]
+   - Xero [Not Connected] [Connect]
+   - Stripe [Connected ✅] [Configure]
+   - Square [Not Connected] [Connect]
+   - Plaid (Banking) [Not Connected] [Connect]
+
+2. Cloud Storage & Documents
+   - Google Drive [Connected ✅] [Disconnect]
+   - Dropbox [Not Connected] [Connect]
+   - DocuSeal [Connected ✅] [Settings]
+
+3. Communication
+   - WhatsApp Business [Connected ✅] [Manage]
+   - Google Calendar [Connected ✅] [Disconnect]
+   - Gmail [Not Connected] [Connect]
+
+4. Time & Labor
+   - Busybusy [Not Connected] [Connect]
+   - TSheets [Not Connected] [Connect]
+   - Clockify [Not Connected] [Connect]
+
+5. Estimating & Pricing
+   - RSMeans [Active ✅] [Configure]
+   - Home Depot Pro [Not Available]
+   - Ferguson [Not Available]
+
+6. Client Experience
+   - Client Portal [Enabled ✅] [Configure]
+   - Review Automation [Configured ✅] [Settings]
+
+7. Compliance & Legal
+   - Levelset [Not Connected] [Connect]
+
+Each Integration Card Shows:
+- Logo
+- Name
+- Description: "Connect QuickBooks to auto-sync invoices and payments"
+- Status: Connected ✅, Not Connected, or Available Soon
+- Button: "Connect", "Disconnect", "Configure", "Settings"
+
+Connection Flow:
+1. User clicks "Connect QuickBooks"
+2. Modal opens with explanation:
+   "Connecting QuickBooks allows Sierra Suites to:
+    ✅ Create invoices automatically from quotes
+    ✅ Sync payments and financials
+    ✅ Track project costs in real-time
+
+    Sierra Suites will request:
+    - Read/write access to invoices
+    - Read access to customers
+    - Read access to financials"
+3. User clicks "Continue to QuickBooks"
+4. Redirects to QuickBooks OAuth login
+5. User authorizes
+6. Redirects back to Sierra Suites
+7. Shows: "QuickBooks Connected ✅"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+SUMMARY: INTEGRATION BENEFITS
+
+═══════════════════════════════════════════════════════════════════════════════
+
+With ALL integrations implemented, contractors get:
+
+TIME SAVINGS:
+- Excel import: Save 2-3 hours/week (no manual data entry)
+- QuickBooks: Save 2-3 hours/week (auto-sync invoices)
+- Time tracking: Save 5-6 hours/week (no manual timesheets)
+- Review automation: Save 1-2 hours/month
+- Client portal: Save 5-10 hours/week (fewer "how's my project?" calls)
+TOTAL: 15-20 hours saved per week = $600-$800/week ($2,400-$3,200/month)
+
+FINANCIAL BENEFITS:
+- Weather API: Avoid $10K-$50K delays (rain damage, schedule issues)
+- Stripe: Collect deposits 2-3 weeks faster (cashflow improvement)
+- Plaid: Know exact cash position (avoid overdraft fees, NSF checks)
+- Lien management: Protect $50K-$500K payment rights
+TOTAL: $60K-$550K protected per year
+
+COMPETITIVE ADVANTAGE:
+- Client portal: "Sierra Suites gave me a portal to track my project! So professional!"
+- WhatsApp: "I can message my contractor instantly and see photos!"
+- Review automation: More 5-star reviews → more leads → more revenue
+
+POSITIONING:
+"Sierra Suites: The Only All-in-One Construction Platform
+✅ AI-powered estimating, scheduling, and compliance
+✅ Seamless integrations (QuickBooks, Excel, WhatsApp, and more)
+✅ Client portal for transparency
+✅ Sustainability compliance (Buy Clean, LEED, ESG)
+
+Everything you need to run your construction business - in one place."
+
+═══════════════════════════════════════════════════════════════════════════════
+
+NEXT STEPS
+
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Review this document and confirm priorities
+2. Start with Phase 1 integrations (Excel, Weather, Stripe, DocuSeal)
+3. Build Phase 2-3 integrations post-launch (QuickBooks, Calendar, Drive, WhatsApp)
+4. Add advanced integrations later (Time Tracking, Plaid, Client Portal, Levelset)
+
+When you're ready to implement, I can help with:
+- Technical architecture details
+- API documentation references
+- UI/UX mockups
+- Code examples (OAuth flows, API calls, webhook handlers)
+- Testing strategies
+
+═══════════════════════════════════════════════════════════════════════════════

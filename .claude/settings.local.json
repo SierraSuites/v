@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(git add:*)",
+      "Bash(npm install:*)",
+      "Bash(python clean_seattle_permits.py:*)",
+      "Bash(python clean_cary_permits.py:*)",
+      "Bash(python clean_sioux_falls_permits.py:*)",
+      "Bash(python:*)",
+      "Bash(ls:*)",
+      "Bash(du:*)",
+      "Bash(dir \"c:\\\\Users\\\\as_ka\\\\OneDrive\\\\Desktop\\\\new\\\\construction-data\\\\lots of data\" /s /b)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(wc:*)",
+      "Bash(npm run build:*)",
+      "Bash(cat:*)",
+      "Bash(npm run dev:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

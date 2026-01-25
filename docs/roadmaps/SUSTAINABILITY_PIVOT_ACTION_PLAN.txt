@@ -1,0 +1,904 @@
+SUSTAINABILITY PIVOT - FINAL ACTION PLAN
+Based on Gemini AI Analysis + RSMeans Strategy
+
+═══════════════════════════════════════════════════════════════════════════════
+
+EXECUTIVE SUMMARY: WHAT WE'RE BUILDING
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Platform Name: Sierra Suites
+Positioning: "The All-in-One Sustainability Compliance Platform for Construction"
+Tagline: "Buy Clean compliance, carbon tracking, and LEED automation - all in one place"
+
+Target Market: 50,000 contractors bidding on:
+- Buy Clean public works ($280B/year in 9+ states)
+- LEED-certified buildings (10,000+ projects/year)
+- ESG-focused corporate clients (Google, Apple, REITs)
+
+Unique Advantage: ONLY all-in-one platform combining all 6 sustainability features
+- Competitors require: Procore + Green Badger + EC3 + One Click LCA (4 tools!)
+- Sierra Suites: All 6 features in one platform with AI automation
+
+Current Status: 65% complete (core infrastructure built)
+Remaining Work: 35% (AI use cases + sustainability-specific features)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+CORE 6 AI USE CASES (SUSTAINABILITY-FOCUSED)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIORITY ORDER (Build in this sequence):
+
+1. BUY CLEAN COMPLIANCE CHECKER ⭐⭐⭐⭐⭐
+   Market: LEGALLY MANDATED in 9 states (CA, CO, WA, NY, OR, MN, NJ, MD, MA)
+   Pain Point: Contractors risk $500K+ bid rejection for non-compliance
+   Competitors: BuiltCold, One Click LCA (but neither has AI automation)
+   Your Edge: AI extracts GWP from PDF EPDs using AWS Textract
+
+   Data Sources:
+   - EC3 API (free) - 100K+ verified EPDs
+   - State GWP limits (public data) - hardcode in Supabase
+
+   Technical Implementation:
+   - AWS Textract: Extract GWP values from contractor PDF submittals
+   - AWS Lambda: Query EC3 API for material carbon data
+   - Supabase: Store state-specific GWP limits (regulation table)
+   - AI Logic: Compare project materials vs state limits, flag violations
+
+   Output:
+   "Your project uses 350 kg CO2e/m³ concrete (California limit: 340)
+    ❌ NON-COMPLIANT - Risk: Bid rejection ($500K project)
+    ✅ SOLUTION: Switch to Mix Design #4827 (325 kg CO2e/m³)
+    Cost impact: +$2,400 (+0.8%) vs $500K bid loss"
+
+   Value: Prevent catastrophic bid rejection
+   ROI: Contractors will pay $199-$399/month just for this feature alone
+
+2. CARBON FOOTPRINT ESTIMATOR ⭐⭐⭐⭐⭐
+   Market: Required for ESG reporting, LEED credits, corporate clients
+   Pain Point: Manual carbon calculations take 40+ hours per project
+   Competitors: Autodesk (tallyCAT plugin), Locus Technologies
+   Your Edge: Automated from project materials list, real-time updates
+
+   Data Sources:
+   - EC3 API (free) - material-specific carbon data
+   - ICE Database (free) - generic carbon coefficients
+   - Your 500K permits (benchmarking data)
+
+   Technical Implementation:
+   - Supabase: Store project materials with quantities
+   - AWS Lambda: Query EC3/ICE APIs for carbon coefficients
+   - Amazon Bedrock: Generate executive summary reports
+   - Formula: Quantity × Carbon Coefficient = Total Embodied Carbon
+
+   Output:
+   "TOTAL PROJECT CARBON: 487 tons CO2e
+
+    Breakdown:
+    - Concrete (45 cy): 234 tons (48%)
+    - Structural steel (12 tons): 156 tons (32%)
+    - Windows (2,400 sqft): 47 tons (10%)
+    - Other: 50 tons (10%)
+
+    Benchmarking:
+    - Similar projects: 542 tons avg (you're 10% below!)
+    - LEED threshold: <500 tons (✅ QUALIFIED)
+    - Top 3 reduction opportunities: Switch to high-SCM concrete (-54 tons)"
+
+   Value: Save 40 hours/project, enable ESG reporting
+   ROI: $199-$399/month for portfolio owners
+
+3. SUSTAINABLE MATERIAL OPTIMIZER ⭐⭐⭐⭐⭐
+   Market: All sustainability-focused contractors
+   Pain Point: "Which material is cheaper? Which is greener? How do I trade off?"
+   Competitors: One Click LCA (Carbon Designer 3D), Tekla
+   Your Edge: AI-powered recommendations using Amazon Bedrock
+
+   Data Sources:
+   - EC3 API (free) - carbon data
+   - RSMeans Green Building Costs ($866/year) - pricing data
+   - ICE Database (free) - backup carbon data
+
+   Technical Implementation:
+   - AWS Lambda: Query EC3 for carbon, RSMeans for cost
+   - Amazon Bedrock (Claude): Generate 3 recommendations
+   - Logic: If user selects high-carbon material, suggest 3 alternatives:
+     1. Lower carbon, same cost
+     2. Lower carbon, slightly higher cost (<5%)
+     3. Lowest carbon option (any cost)
+   - Supabase: Store user preferences (optimize for cost vs carbon)
+
+   Output:
+   "YOU SELECTED: Standard concrete mix (400 kg CO2e/m³, $312/cy)
+
+    💡 AI RECOMMENDATIONS:
+
+    OPTION 1: High-SCM concrete (Best carbon, low cost)
+    - Carbon: 280 kg CO2e/m³ (30% reduction ⬇️)
+    - Cost: $320/cy (+2.6% vs standard)
+    - Total savings: 54 tons CO2e
+    - Total cost: +$360 for entire project
+    - ✅ RECOMMENDED: Best carbon reduction for minimal cost
+
+    OPTION 2: Ultra-low carbon concrete (Lowest carbon)
+    - Carbon: 180 kg CO2e/m³ (55% reduction ⬇️⬇️)
+    - Cost: $385/cy (+23% vs standard)
+    - Total savings: 99 tons CO2e
+    - Total cost: +$3,285 for entire project
+    - ⚠️ Premium option: Significant cost increase
+
+    OPTION 3: Stay with standard (Lowest cost)
+    - Keep current selection
+    - No carbon savings"
+
+   Value: Data-driven material decisions, optimize cost vs carbon
+   ROI: Contractors save hours of research, make confident decisions
+
+4. LEED CREDIT AUTOMATION ⭐⭐⭐⭐
+   Market: 10,000+ LEED projects/year ($50B+ market)
+   Pain Point: LEED documentation takes 80-120 hours, costs $15K-$50K consultants
+   Competitors: Green Badger (market leader)
+   Your Edge: Integrated with Buy Clean Compliance (no duplicate data entry)
+
+   Data Sources:
+   - EC3 API (free) - EPD data for LEED credits
+   - LEED requirements (public) - credit criteria
+   - Project materials from Supabase
+
+   Technical Implementation:
+   - Supabase: Materials table already tracks EPDs
+   - AWS Lambda: Check LEED credit eligibility automatically
+   - Amazon Bedrock: Generate LEED submittal documents
+   - One-click exports: PDF reports for LEED certification body
+
+   LEED Credits Automated:
+   - MR Credit 1: Building Life-Cycle Impact Reduction
+   - MR Credit 2: EPD Transparency
+   - MR Credit 3: Sourcing of Raw Materials
+   - MR Credit 4: Material Ingredients
+   - EQ Credit 2: Low-Emitting Materials
+
+   Output:
+   "LEED CREDIT TRACKING
+
+    MR Credit 2: EPD Transparency
+    Progress: 17/20 products (85% complete)
+    Status: ✅ ON TRACK to earn credit
+
+    Missing:
+    - Windows (2,400 sqft) - need EPD from manufacturer
+    - Paint (45 gallons) - need EPD
+    - Flooring (3,200 sqft) - need EPD
+
+    💡 AI SUGGESTION: Contact these 3 manufacturers for EPDs:
+    1. Pella Windows (responds in 3-5 days avg)
+    2. Sherwin-Williams (EPDs available online)
+    3. Armstrong Flooring (EPDs available online)
+
+    ESTIMATED LEED POINTS: 47/110 (Gold certification)"
+
+   Value: Save $15K-$50K on LEED consultant fees, reduce time 80%
+   ROI: $399-$599/month for LEED projects
+
+5. GREEN COST ESTIMATOR ⭐⭐⭐⭐
+   Market: All contractors bidding on green projects
+   Pain Point: "How much does a sustainable building cost vs standard?"
+   Competitors: Cerclos (eTool), RSMeans (manual lookup)
+   Your Edge: AI-powered + your 500K permits for benchmarking
+
+   Data Sources:
+   - RSMeans Green Building Costs ($866/year) - 10,000+ sustainable products
+   - Your 500K permits - historical cost benchmarking
+   - EC3 API (free) - material carbon data
+
+   Technical Implementation:
+   - Smart Estimator logic (already built) + Green Building Costs dataset
+   - AWS Lambda: Query RSMeans API for green product pricing
+   - Amazon Bedrock: Generate cost comparison reports
+   - Supabase: Store user's historical green projects
+
+   Output:
+   "QUICK GREEN ESTIMATE: 2,500 sqft office renovation, San Francisco
+
+    STANDARD BUILD: $438,000 - $488,000
+    - Materials: $180,000
+    - Labor: $220,000
+    - Permits: $28,000
+    - Overhead: $22,000
+    - Carbon: 87 tons CO2e
+
+    GREEN BUILD: $467,000 - $521,000
+    - Materials: $198,000 (+10% for green products)
+    - Labor: $220,000 (same)
+    - Permits: $28,000 (same)
+    - Overhead: $22,000 (same)
+    - Carbon: 54 tons CO2e (38% reduction ⬇️)
+
+    COST PREMIUM: +$29,000 (+6.6%)
+    CARBON SAVINGS: 33 tons CO2e
+    LEED ELIGIBILITY: ✅ YES (Gold certification possible)
+    ESG VALUE: $33,000 carbon offset value ($1,000/ton)
+
+    NET BENEFIT: $4,000 (carbon value exceeds cost premium)"
+
+   Value: Fast ballpark estimates for green buildings, compare cost vs carbon
+   ROI: $199-$399/month, helps contractors win bids
+
+6. ESG PORTFOLIO DASHBOARD ⭐⭐⭐⭐
+   Market: Corporate clients, developers, REITs with multiple projects
+   Pain Point: "How do I report our carbon footprint to investors/board?"
+   Competitors: Green Badger (portfolio view), Workiva (general ESG)
+   Your Edge: Real-time dashboard (competitors do annual reports)
+
+   Data Sources:
+   - Supabase: User's project data (all materials, carbon calculations)
+   - EC3 API (free) - verify carbon data
+
+   Technical Implementation:
+   - Supabase Edge Functions: Aggregate project data in real-time
+   - PostgreSQL views: Pre-calculated carbon totals by project/portfolio
+   - Charts: Carbon by project type, timeline, geography
+   - Export formats: CDP, GRI, SASB standards
+
+   Output:
+   "ESG PORTFOLIO DASHBOARD
+
+    TOTAL EMBODIED CARBON: 3,847 tons CO2e (12 projects)
+    REDUCTION vs BASELINE: 28% (1,497 tons saved)
+    CARBON VALUE: $1.497M ($1,000/ton offset price)
+
+    PROJECT BREAKDOWN:
+    1. 456 Market St Office (San Francisco) - 487 tons (12.7%)
+    2. Warehouse Expansion (Oakland) - 892 tons (23.2%)
+    3. Retail Center (San Jose) - 654 tons (17.0%)
+    ...
+
+    TOP PERFORMERS (lowest carbon):
+    1. 123 Main St Renovation - 54 tons (beat target by 42%)
+    2. Apartment Complex - 287 tons (beat target by 31%)
+
+    CARBON TRENDS:
+    - Q1 2026: 892 tons (baseline)
+    - Q2 2026: 741 tons (17% reduction ⬇️)
+    - Q3 2026: 654 tons (12% reduction ⬇️)
+    - Q4 2026: 560 tons (14% reduction ⬇️)
+
+    EXPORT OPTIONS:
+    - CDP Climate Report (PDF)
+    - GRI Sustainability Report (Excel)
+    - SASB Real Estate Standard (PDF)"
+
+   Value: Real-time ESG reporting, investor relations, board presentations
+   ROI: $599-$999/month for enterprise clients (10+ projects)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+COMPETITIVE ANALYSIS: YOUR UNIQUE POSITION
+
+═══════════════════════════════════════════════════════════════════════════════
+
+CURRENT MARKET LANDSCAPE:
+
+Option 1: Patchwork Solution (Current State for Contractors)
+- Procore ($400/month) - Project management
+- Green Badger ($300/month) - LEED automation
+- EC3 (free) - Carbon calculator (manual)
+- One Click LCA ($500/month) - Full LCA analysis
+TOTAL COST: $1,200/month + manual data entry across 4 platforms
+
+Option 2: Niche Point Solutions
+- BuiltCold - ONLY Buy Clean compliance ($200-$400/month)
+- Green Badger - ONLY LEED automation ($300-$500/month)
+- One Click LCA - ONLY carbon analysis ($500-$800/month)
+PROBLEM: Each solves ONE problem, requires multiple subscriptions
+
+Option 3: Sierra Suites (YOUR PLATFORM) ✨
+- All 6 sustainability features in ONE platform
+- PLUS project management (TaskFlow, FieldSnap, QuoteHub, CRM)
+- PLUS AI automation (no manual data entry)
+YOUR PRICING: $399-$599/month (all-in-one)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHY YOU WIN
+
+═══════════════════════════════════════════════════════════════════════════════
+
+1. ALL-IN-ONE PLATFORM
+   - Competitors require 3-4 separate tools
+   - You provide everything in one place
+   - Single login, single source of truth
+
+2. AI AUTOMATION
+   - Competitors: Manual data entry (contractors upload EPDs by hand)
+   - You: AWS Textract extracts GWP from PDFs automatically
+   - Time savings: 80% reduction in data entry
+
+3. REAL-TIME UPDATES
+   - Competitors: Static reports (updated quarterly/annually)
+   - You: Real-time dashboard (see carbon impact as you add materials)
+   - Value: Can adjust materials mid-project to meet goals
+
+4. SEAMLESS DATA FLOW
+   - Materials entered once → used for Buy Clean + Carbon + LEED + ESG
+   - Competitors: Re-enter data in each tool
+   - Time savings: 90% reduction in duplicate data entry
+
+5. COST ADVANTAGE
+   - Competitors: $1,200/month for patchwork solution
+   - You: $399-$599/month for all features
+   - Savings: $600-$800/month (50-67% cheaper)
+
+6. PROJECT MANAGEMENT INCLUDED
+   - Competitors: Still need Procore ($400/month) for basic PM
+   - You: TaskFlow, FieldSnap, QuoteHub, CRM included
+   - Value: Complete platform, no need for Procore
+
+═══════════════════════════════════════════════════════════════════════════════
+
+IMPLEMENTATION ROADMAP (35% REMAINING WORK)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PHASE 1: DATA INFRASTRUCTURE (WEEKS 1-2)
+Priority: Set up data pipelines FIRST, then build UI
+
+Week 1: EC3 API Integration
+✓ Task 1.1: Get EC3 API developer access (free registration)
+  - URL: https://buildingtransparency.org/ec3/register
+  - Request API key for production use
+  - Documentation: https://buildingtransparency.org/ec3/manage-apps/api-doc
+
+✓ Task 1.2: Build AWS Lambda middleware for EC3 queries
+  - Function: lambda_ec3_query(material_name, category)
+  - Input: "Concrete, ready-mix, 4000 psi"
+  - Output: JSON with GWP, EPD links, manufacturer data
+  - Cache: Store in ElastiCache (15 min TTL) to reduce API calls
+  - Error handling: Fallback to ICE database if EC3 unavailable
+
+✓ Task 1.3: Create Supabase "materials" table enhancements
+  - Add columns:
+    - ec3_epd_id (text) - Reference to EC3 database
+    - gwp_kg_co2e (numeric) - Global Warming Potential
+    - gwp_source (text) - "EC3", "ICE", or "Manual"
+    - epd_pdf_url (text) - Link to manufacturer EPD
+    - last_ec3_sync (timestamp) - Track data freshness
+
+Week 2: ICE Database + State Regulations
+✓ Task 2.1: Download ICE database (CSV format)
+  - URL: https://circularecology.com/ice-database.html
+  - Convert to JSON, upload to S3
+  - Create Lambda function to query local ICE data
+
+✓ Task 2.2: Create "state_regulations" table in Supabase
+  - Schema:
+    CREATE TABLE state_regulations (
+      id uuid PRIMARY KEY,
+      state text NOT NULL,
+      material_category text NOT NULL,
+      gwp_limit_kg_co2e numeric,
+      effective_date date,
+      source_url text,
+      notes text
+    );
+
+  - Populate with 9 state limits:
+    - California (BCCA): Concrete, steel, glass, insulation
+    - Colorado: 7 materials
+    - Washington: Concrete, wood, steel
+    - New York: Concrete (contracts >$1M)
+    - Oregon, Minnesota, New Jersey, Maryland, Massachusetts
+
+✓ Task 2.3: Build Lambda function for Buy Clean compliance check
+  - Function: lambda_buy_clean_check(state, materials_list)
+  - Logic:
+    1. Query state_regulations for GWP limits
+    2. Compare project materials vs limits
+    3. Flag violations, suggest alternatives
+  - Return: JSON with compliance status, violations, recommendations
+
+PHASE 2: AWS AI SERVICES (WEEKS 3-4)
+Priority: Build "killer features" that competitors don't have
+
+Week 3: AWS Textract for EPD Extraction
+✓ Task 3.1: Set up AWS Textract pipeline
+  - Input: Contractor uploads PDF EPD from manufacturer
+  - Process: Textract extracts text, identify GWP value
+  - Regex patterns for GWP:
+    - "Global Warming Potential: XXX kg CO2e"
+    - "GWP: XXX"
+    - "A1-A3: XXX kg CO2e/m³"
+
+✓ Task 3.2: Build validation logic
+  - Cross-check Textract result vs EC3 database
+  - If mismatch >10%: Flag for human review
+  - If match: Auto-populate materials table
+
+✓ Task 3.3: Create UI for EPD upload
+  - Page: /sustainability/materials/[id]/upload-epd
+  - Drag-drop PDF upload
+  - Show Textract extracted values for confirmation
+  - One-click approve or manual override
+
+Week 4: Amazon Bedrock for Material Recommendations
+✓ Task 4.1: Set up Amazon Bedrock (Claude 3.5 Sonnet)
+  - Region: us-east-1 (lowest latency)
+  - Model: anthropic.claude-3-5-sonnet-20241022-v2:0
+  - Prompt engineering for Material Optimizer
+
+✓ Task 4.2: Build Material Optimizer prompt template
+  - Input variables:
+    - Current material (name, GWP, cost per unit)
+    - Project location (for cost adjustments)
+    - User preference (optimize for "cost" or "carbon")
+
+  - Prompt structure:
+    "You are a sustainable construction materials expert.
+
+     The contractor selected: {material_name}
+     - Carbon: {gwp} kg CO2e per {unit}
+     - Cost: ${cost} per {unit}
+     - Location: {city}, {state}
+
+     Using the EC3 database and RSMeans Green Building Costs, recommend
+     3 alternative materials that:
+     1. Lower carbon, similar cost (within 5%)
+     2. Lower carbon, slightly higher cost (5-15%)
+     3. Lowest carbon option (any cost)
+
+     For each recommendation, provide:
+     - Material name
+     - GWP (kg CO2e)
+     - Cost per unit
+     - Carbon reduction %
+     - Cost difference $
+     - Pros/cons
+     - Availability in {state}"
+
+✓ Task 4.3: Integrate Bedrock API into Supabase Edge Function
+  - Function: optimizeMaterial(material_id, preferences)
+  - Call Bedrock API, parse response
+  - Cache results (24 hours) to reduce API costs
+  - Return structured JSON for frontend
+
+PHASE 3: BUY CLEAN COMPLIANCE CHECKER UI (WEEKS 5-6)
+Priority: This is your "hook" feature - make it PERFECT
+
+Week 5: Compliance Dashboard
+✓ Task 5.1: Create /sustainability/buy-clean page
+  - Show project compliance status
+  - Traffic light system:
+    - 🟢 GREEN: All materials compliant
+    - 🟡 YELLOW: Some materials near limit (within 10%)
+    - 🔴 RED: Violations detected
+
+✓ Task 5.2: Build "Compliance Report" component
+  - Table of all materials with GWP values
+  - Compare vs state limits
+  - Highlight violations in red
+  - Show recommendations for alternatives
+
+✓ Task 5.3: One-click "Fix All" button
+  - AI suggests compliant alternatives for ALL violations
+  - Contractor can accept all or pick individually
+  - Update materials list automatically
+
+Week 6: State-Specific Logic
+✓ Task 6.1: Implement state detection
+  - Auto-detect from project.state field
+  - Show applicable regulations for that state
+  - If no regulations: Show "Not required in [state]"
+
+✓ Task 6.2: Multi-state projects
+  - If project spans multiple states: Check ALL state limits
+  - Use strictest limit (e.g., CA is usually strictest)
+
+✓ Task 6.3: Export compliance reports (PDF)
+  - Generate PDF for state submittal
+  - Include:
+    - Project details
+    - Materials list with GWP values
+    - EPD links for each material
+    - Compliance statement
+    - Contractor signature line
+
+PHASE 4: CARBON FOOTPRINT ESTIMATOR UI (WEEKS 7-8)
+Priority: Visual, real-time, benchmarking
+
+Week 7: Real-Time Carbon Tracking
+✓ Task 7.1: Create /sustainability/carbon page
+  - Large number: "TOTAL PROJECT CARBON: 487 tons CO2e"
+  - Donut chart: Breakdown by material category
+  - Line chart: Carbon over time (as materials added)
+
+✓ Task 7.2: Benchmarking indicators
+  - Compare vs similar projects from your 500K permits
+  - "You're 12% below average for this project type"
+  - LEED threshold indicator: "✅ Below 500 tons (LEED Gold eligible)"
+
+✓ Task 7.3: "What-If" calculator
+  - Slider: "What if I switched to high-SCM concrete?"
+  - Instantly update total carbon
+  - Show cost impact
+
+Week 8: Executive Reports
+✓ Task 8.1: AI-generated executive summary
+  - Use Amazon Bedrock to write 2-3 paragraph summary
+  - Natural language, board-ready
+  - Include key stats, recommendations
+
+✓ Task 8.2: Export options
+  - PDF: Detailed carbon report
+  - Excel: Materials list with carbon data
+  - CSV: Raw data for analysis
+
+PHASE 5: SUSTAINABLE MATERIAL OPTIMIZER UI (WEEKS 9-10)
+Priority: AI magic moment - show off Bedrock
+
+Week 9: Material Selection Flow
+✓ Task 9.1: Add "Optimize" button to materials page
+  - Click on any material → "Optimize this material"
+  - Modal popup with AI recommendations
+  - Show 3 cards (Option 1, 2, 3) from Bedrock
+
+✓ Task 9.2: Comparison cards design
+  - Each card shows:
+    - Material name
+    - Carbon reduction % (big number)
+    - Cost difference $ (big number)
+    - Pros/cons list
+    - "Select this" button
+
+✓ Task 9.3: One-click apply
+  - Click "Select this" → material replaced instantly
+  - Update carbon total in real-time
+  - Show toast: "✅ Replaced! Carbon reduced by 12 tons"
+
+Week 10: Batch Optimization
+✓ Task 10.1: "Optimize All Materials" feature
+  - AI reviews ALL materials in project
+  - Suggests optimizations for each
+  - Contractor can review all suggestions at once
+
+✓ Task 10.2: Cost vs Carbon slider
+  - Slider: "Prioritize cost" ←→ "Prioritize carbon"
+  - AI adjusts recommendations based on preference
+  - Update suggestions in real-time
+
+PHASE 6: LEED AUTOMATION UI (WEEKS 11-12)
+Priority: Save contractors $15K-$50K in consultant fees
+
+Week 11: LEED Credit Tracking
+✓ Task 11.1: Create /sustainability/leed page
+  - Progress bars for each LEED credit
+  - "17/20 products have EPDs (85% complete)"
+  - Show which materials are missing EPDs
+
+✓ Task 11.2: EPD upload workflow
+  - Click "Upload EPD" next to material
+  - Drag-drop PDF → Textract extracts data
+  - Auto-populate EPD fields
+
+✓ Task 11.3: AI suggestions for missing EPDs
+  - "Contact these manufacturers for EPDs:"
+  - Show manufacturer name, contact info, avg response time
+  - One-click email template
+
+Week 12: LEED Report Generation
+✓ Task 12.1: Generate LEED submittal documents
+  - Use Amazon Bedrock to write narrative sections
+  - Include all material data, EPDs
+  - Format per LEED requirements
+
+✓ Task 12.2: Export LEED Arc format
+  - Direct integration with LEED Arc platform
+  - One-click upload to Arc (if possible)
+  - Or: Export ZIP file with all documents
+
+PHASE 7: GREEN COST ESTIMATOR UI (WEEKS 13-14)
+Priority: Integrate with existing Smart Estimator
+
+Week 13: Add "Green Mode" to Smart Estimator
+✓ Task 13.1: Update /ai/estimator page
+  - Add toggle: "Standard" vs "Green Building"
+  - If Green: Query RSMeans Green Building Costs dataset
+  - Show side-by-side comparison
+
+✓ Task 13.2: Cost premium calculator
+  - Show: "Green materials: +$29K (+6.6%)"
+  - But also: "Carbon savings: 33 tons"
+  - Net benefit: "$4K (carbon value exceeds premium)"
+
+Week 14: Historical Green Project Data
+✓ Task 14.1: Filter your 500K permits for LEED projects
+  - Search descriptions for: "LEED", "green", "sustainable"
+  - Create benchmark dataset (5-10K projects)
+
+✓ Task 14.2: Add to Smart Estimator training data
+  - Train XGBoost model on green projects separately
+  - More accurate estimates for sustainable buildings
+
+PHASE 8: ESG PORTFOLIO DASHBOARD UI (WEEKS 15-16)
+Priority: Enterprise feature for big clients
+
+Week 15: Portfolio Aggregation
+✓ Task 15.1: Create /sustainability/portfolio page
+  - Show all projects, total carbon
+  - Charts: Carbon by project, by quarter, by type
+  - Leaderboard: Best/worst performing projects
+
+✓ Task 15.2: Supabase Edge Functions for aggregation
+  - Pre-calculate totals (don't query every page load)
+  - PostgreSQL materialized views for performance
+  - Refresh every 15 minutes
+
+Week 16: ESG Export Formats
+✓ Task 16.1: CDP Climate Report template
+  - Generate PDF per CDP requirements
+  - Sections: Governance, Strategy, Risk, Metrics
+  - Include portfolio carbon data
+
+✓ Task 16.2: GRI / SASB export
+  - Excel template with GRI indicators
+  - SASB Real Estate metrics
+  - One-click populate from project data
+
+PHASE 9: AWS POC INTEGRATION (WEEKS 17-18)
+Priority: Ensure AWS-built AI integrates seamlessly
+
+Week 17: AWS Handoff Preparation
+✓ Task 17.1: Document API endpoints for AWS team
+  - Supabase API endpoints for projects, materials, permits
+  - Authentication: Service role keys
+  - Rate limits, error handling
+
+✓ Task 17.2: Create "Shadow Project" test case
+  - Find 1 friendly GC with completed project
+  - Get their submittal logs, material lists
+  - Run through your system to validate accuracy
+
+Week 18: Integration Testing
+✓ Task 18.1: Test AWS Lambda functions
+  - Ensure EC3 queries work
+  - Textract accurately extracts GWP
+  - Bedrock recommendations make sense
+
+✓ Task 18.2: Performance optimization
+  - Add caching (ElastiCache)
+  - Optimize SQL queries (add indexes)
+  - Lazy load images, code splitting
+
+PHASE 10: LAUNCH PREPARATION (WEEKS 19-20)
+Priority: Go-to-market readiness
+
+Week 19: Case Study Development
+✓ Task 19.1: Run "Shadow Project" case study
+  - Show: "AI found 3 compliance violations human missed"
+  - Quantify: "Saved $12K in potential re-work"
+  - Testimonial: Get quote from friendly GC
+
+✓ Task 19.2: Create demo video
+  - 3-minute walkthrough of Buy Clean Compliance Checker
+  - Show: Upload project → AI checks → Violations flagged → One-click fix
+  - This is your primary marketing asset
+
+Week 20: Pricing & Launch
+✓ Task 20.1: Finalize pricing tiers
+  - Starter: $199/month (Buy Clean + Carbon Estimator)
+  - Professional: $399/month (+ Material Optimizer + LEED)
+  - Enterprise: $599/month (+ ESG Portfolio Dashboard)
+
+✓ Task 20.2: Launch sequence
+  - Week 20: Soft launch to 5 beta customers
+  - Week 21: Fix bugs from beta feedback
+  - Week 22: Public launch, marketing push
+
+═══════════════════════════════════════════════════════════════════════════════
+
+TECHNICAL ARCHITECTURE SUMMARY
+
+═══════════════════════════════════════════════════════════════════════════════
+
+FRONTEND (Next.js + React):
+- App Router: /sustainability/buy-clean, /carbon, /materials, /leed, /portfolio
+- Components: ComplianceChecker, CarbonChart, MaterialOptimizer, LEEDTracker
+- State: React Context for project materials, carbon totals
+- Real-time updates: Supabase Realtime subscriptions
+
+BACKEND (Supabase PostgreSQL):
+- Tables:
+  - projects (existing)
+  - materials (enhanced with ec3_epd_id, gwp_kg_co2e)
+  - state_regulations (new: GWP limits by state)
+  - epd_documents (new: PDF storage, Textract results)
+  - leed_credits (new: track progress per credit)
+
+- Edge Functions:
+  - checkBuyCleanCompliance(project_id, state)
+  - calculateProjectCarbon(project_id)
+  - optimizeMaterial(material_id, preferences)
+  - generateLEEDReport(project_id)
+  - aggregatePortfolioCarbon(user_id)
+
+- Row-Level Security (RLS):
+  - Users can only see their own projects
+  - Enterprise users: See entire organization's portfolio
+
+AWS SERVICES:
+1. Lambda Functions:
+   - lambda_ec3_query(material_name) → Query EC3 API
+   - lambda_ice_query(material_name) → Query ICE database
+   - lambda_buy_clean_check(state, materials) → Compliance check
+   - lambda_textract_epd(pdf_url) → Extract GWP from PDF
+
+2. Amazon Bedrock (Claude 3.5 Sonnet):
+   - Material Optimizer recommendations
+   - Executive summary generation
+   - LEED narrative sections
+
+3. AWS Textract:
+   - Extract GWP from EPD PDFs
+   - OCR manufacturer documents
+
+4. ElastiCache (Redis):
+   - Cache EC3/ICE queries (15 min TTL)
+   - Cache Bedrock responses (24 hours)
+   - Reduce API costs by 80%+
+
+5. S3:
+   - Store EPD PDFs
+   - ICE database JSON
+   - Generated reports (PDF/Excel)
+
+DATA SOURCES:
+- EC3 API (free): 100K+ EPDs, real-time queries
+- ICE Database (free): Generic carbon coefficients, local JSON
+- RSMeans Green Building Costs ($866/year): 10,000+ sustainable products
+- Your 500K permits: Benchmarking data for cost/carbon
+- State regulations: Hardcoded in Supabase (9 states)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+ANNUAL COSTS (ALL-IN)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DATA SUBSCRIPTIONS:
+- RSMeans Green Building Costs: $866/year
+- EC3 API: $0 (free)
+- ICE Database: $0 (free)
+
+AWS INFRASTRUCTURE (Estimated):
+- Lambda: $200/year (1M invocations/month)
+- Bedrock: $500/year (Claude 3.5 Sonnet, 50K tokens/day)
+- Textract: $100/year (1,000 PDFs/month)
+- ElastiCache: $300/year (cache.t3.micro)
+- S3: $50/year (100 GB storage)
+TOTAL AWS: $1,150/year
+
+SUPABASE:
+- Pro Plan: $300/year (100GB database, 100GB bandwidth)
+
+TOTAL ANNUAL COST: $2,316/year
+
+BREAK-EVEN:
+- 12 customers × $199/month = $2,388/year ✅ BREAK-EVEN
+- 50 customers × $199/month = $9,950/month = $119K/year → $117K profit
+
+Year 1 Target: 500 customers × $300/month avg = $1.8M ARR - $2.3K costs = $1.798M profit
+
+═══════════════════════════════════════════════════════════════════════════════
+
+COMPETITIVE POSITIONING (FINAL)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+"Sierra Suites: The All-in-One Sustainability Compliance Platform for Construction
+
+The ONLY platform that combines Buy Clean compliance, carbon tracking, LEED automation,
+and ESG reporting in one place - with AI automation that saves 80+ hours per project.
+
+✅ Buy Clean Compliance Checker
+   - Prevent $500K+ bid rejections
+   - AI extracts GWP from PDFs automatically
+   - 9 states (growing to 15+)
+
+✅ Carbon Footprint Estimator
+   - Real-time carbon tracking as you build
+   - Benchmarking vs 500K+ historical projects
+   - ESG reporting (CDP, GRI, SASB)
+
+✅ Sustainable Material Optimizer
+   - AI recommends lower-carbon alternatives
+   - Cost vs carbon trade-off analysis
+   - Powered by RSMeans + EC3 data
+
+✅ LEED Credit Automation
+   - Track EPD compliance automatically
+   - One-click LEED submittal documents
+   - Save $15K-$50K in consultant fees
+
+✅ Green Cost Estimator
+   - Quick estimates for sustainable buildings
+   - Compare standard vs green pricing
+   - 10,000+ green products from RSMeans
+
+✅ ESG Portfolio Dashboard
+   - Portfolio-wide carbon tracking
+   - Real-time updates (not annual reports)
+   - Investor-ready dashboards
+
+PLUS: Full project management (TaskFlow, FieldSnap, QuoteHub, CRM)
+
+Pricing:
+- Starter: $199/month (Buy Clean + Carbon)
+- Professional: $399/month (+ LEED + Material Optimizer)
+- Enterprise: $599/month (+ ESG Portfolio)
+
+vs Competitors:
+- Green Badger (LEED only): $300-$500/month
+- BuiltCold (Buy Clean only): $200-$400/month
+- One Click LCA (Carbon only): $500-$800/month
+- Procore (Project management): $400/month
+
+Sierra Suites: $399/month for EVERYTHING (50-67% cheaper + AI automation)"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+NEXT STEPS: WHAT TO DO RIGHT NOW
+
+═══════════════════════════════════════════════════════════════════════════════
+
+IMMEDIATE (TODAY):
+1. ✅ Review this action plan
+2. ✅ Confirm sustainability pivot strategy
+3. ✅ Purchase RSMeans Green Building Costs ($866/year)
+4. ✅ Register for EC3 API developer access (free)
+5. ✅ Download ICE database (free)
+
+THIS WEEK:
+1. Start Phase 1: Data Infrastructure
+2. Set up AWS Lambda functions for EC3/ICE queries
+3. Create state_regulations table in Supabase
+4. Enhance materials table with carbon fields
+
+NEXT 2 WEEKS:
+1. Complete Phase 2: AWS AI Services (Textract + Bedrock)
+2. Build Buy Clean Compliance Checker UI (Phase 3)
+3. Find 1 friendly GC for "Shadow Project" test case
+
+MONTH 2-4:
+1. Complete remaining UI phases (Carbon, Materials, LEED, ESG)
+2. Integration testing with AWS POC
+3. Beta launch to 5 customers
+
+MONTH 5:
+1. Public launch
+2. Marketing push (SEO, partnerships, case study)
+3. Target: 50 customers by end of Month 6
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DECISION REQUIRED FROM YOU
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Based on Gemini AI analysis + RSMeans pricing + competitive landscape:
+
+RECOMMENDATION: GO SUSTAINABILITY-FOCUSED
+
+✅ Purchase RSMeans Green Building Costs ($866/year)
+✅ Build all 6 sustainability AI use cases
+✅ Position as all-in-one sustainability compliance platform
+✅ Target: 50K contractors in Buy Clean states
+
+This gives you:
+- Clear differentiation (no all-in-one competitor exists)
+- Lower costs ($866/year vs $4K-$5K for Full Library)
+- Regulatory moat (Buy Clean = mandatory by law)
+- Premium pricing ($399/month vs $199 for generic tools)
+- Path to $1M+ ARR without investors
+
+QUESTION: Are you ready to commit to this strategy and start implementation?

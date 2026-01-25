@@ -1,0 +1,1164 @@
+EMPLOYEE ONBOARDING CHECKLIST - FIRST TWO HIRES
+Sierra Suites Software - Day 1 Preparation
+
+═══════════════════════════════════════════════════════════════════════════════
+
+OVERVIEW
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Team Members:
+- Employee #1: Experienced Developer (coding, implementation)
+- Employee #2: Cyber Security + Research (SQL, research, security, documentation)
+
+Start Date: Tomorrow
+
+Goal: Get them productive on Day 1 with proper access, legal protections, and clear direction.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+IMMEDIATE ACTION ITEMS (DO TODAY - BEFORE THEY START)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIORITY 1: LEGAL & HR (MUST DO FIRST)
+□ 1. Create and send Employment Agreements
+   - Title/Role
+   - Compensation (salary/hourly rate)
+   - Start date
+   - Work schedule (hours/days)
+   - Probation period (if applicable)
+   - Termination conditions
+
+□ 2. Create and send Data Privacy Agreement (NDA)
+   - Confidentiality of client data, source code, business strategies
+   - Non-disclosure of proprietary AI algorithms, datasets (500K permits, EC3, RSMeans)
+   - Return of company property upon termination
+   - Duration: During employment + 2 years after
+   - Use template: https://www.docracy.com/0aqkit9n2w8/mutual-non-disclosure-agreement
+
+□ 3. Create and send Intellectual Property Assignment Agreement
+   - ALL code, designs, documentation created during employment = company property
+   - Even if created outside work hours or on personal devices
+   - CRITICAL: Without this, they could claim ownership of code they write
+
+□ 4. Create and send Workplace Policies Document
+   - Zero tolerance for sexual harassment (define, examples, reporting process)
+   - Zero tolerance for discrimination (race, gender, religion, etc.)
+   - Code of conduct (professionalism, respect, collaboration)
+   - Remote work policies (if applicable)
+   - Reporting process: Who to contact (you), escalation path
+
+□ 5. Create and send Acceptable Use Policy
+   - No personal projects on company time/equipment
+   - No unauthorized data access (can't browse other users' projects)
+   - No sharing credentials (GitHub, Supabase, AWS, etc.)
+   - Data handling: No downloading client data to personal devices
+
+□ 6. Get W-9 (US) or Tax Forms
+   - If contractors: W-9 form
+   - If employees: W-4 form, I-9 (verify work authorization)
+
+□ 7. Set up Payroll
+   - If using payroll service (Gusto, ADP): Add employees
+   - If manual: Set up bank transfer or check schedule
+   - Decide pay frequency: Weekly, bi-weekly, monthly?
+
+PRIORITY 2: TECHNICAL ACCESS (DO TODAY)
+□ 8. GitHub Access
+   - Get their GitHub usernames (or have them create accounts)
+   - Add them to your GitHub organization/repository
+   - Roles:
+     - Employee #1 (Developer): Write access
+     - Employee #2 (Security/Research): Read access initially (upgrade later)
+   - Enable branch protection (require PR reviews before merging to main)
+
+□ 9. Supabase Access
+   - Add them to Supabase project as Team Members
+   - Roles:
+     - Employee #1: Developer role (can edit tables, write SQL)
+     - Employee #2: Developer role (can clean/implement SQL schemas)
+   - Dashboard: https://app.supabase.com → Project Settings → Team
+   - IMPORTANT: Create separate accounts (don't share your credentials)
+
+□ 10. AWS Access (If needed for POC work)
+   - Create IAM users for each employee
+   - Roles:
+     - Employee #1: Limited access (Lambda, S3, Textract)
+     - Employee #2: Read-only initially
+   - Enable MFA (multi-factor authentication) for security
+   - Generate access keys if needed for CLI/SDK
+
+□ 11. Vercel/Netlify Deployment Access (If applicable)
+   - Add them as team members
+   - Employee #1: Full access (can deploy)
+   - Employee #2: View-only
+
+□ 12. Communication Tools
+   - Slack/Discord/Teams: Create workspace, invite them
+   - Email: Set up company email addresses (if applicable)
+     - dev1@sierrasuitessoftware.com
+     - dev2@sierrasuitessoftware.com
+   - Or: Use Gmail with shared labels
+
+□ 13. Project Management
+   - Set up Trello/Asana/Linear/GitHub Projects board
+   - Create initial tasks for them (see "First Week Tasks" below)
+
+□ 14. Password Manager (CRITICAL for security)
+   - Set up 1Password/Bitwarden/LastPass team account
+   - Share credentials vault with them:
+     - Supabase login
+     - AWS credentials
+     - API keys (EC3, OpenWeatherMap, etc.)
+   - NEVER share passwords via email/text/Slack
+
+□ 15. Claude Code Subscriptions
+   - Purchase 2 Claude Pro subscriptions ($20/month each = $40/month)
+   - URL: https://claude.ai/upgrade
+   - Share login credentials via password manager
+   - ALTERNATIVE: Use Claude API directly (they can use VS Code + Claude extension)
+
+PRIORITY 3: DOCUMENTATION ACCESS
+□ 16. Share Key Documents
+   - INTEGRATIONS_ROADMAP.txt (this file you just created)
+   - SUSTAINABILITY_PIVOT_ACTION_PLAN.txt (if relevant)
+   - AWS_POC_ASSESSMENT_FINAL.txt
+   - RSMEANS_STRATEGY_BRAINSTORM.txt
+   - All SQL schema files (QUOTEHUB_SETUP_COMPLETE.sql, etc.)
+
+□ 17. Set up Shared Drive
+   - Google Drive or Dropbox folder
+   - Structure:
+     /Sierra Suites/
+       /Documentation/
+       /SQL Schemas/
+       /Design Mockups/
+       /Meeting Notes/
+       /Legal/ (NDAs, employment agreements)
+
+□ 18. Create "Getting Started" Guide
+   - See template below (Section: Day 1 Getting Started Guide)
+
+PRIORITY 4: ENVIRONMENT SETUP
+□ 19. Prepare Development Environment Checklist for them
+   See detailed "COMPLETE DEVELOPMENT ENVIRONMENT SETUP" section below
+
+□ 20. Create .env.local Template
+   - Share template with all necessary API keys:
+     NEXT_PUBLIC_SUPABASE_URL=
+     NEXT_PUBLIC_SUPABASE_ANON_KEY=
+     SUPABASE_SERVICE_ROLE_KEY=
+     OPENWEATHER_API_KEY=
+     STRIPE_SECRET_KEY=
+     EC3_API_KEY=
+   - Share actual values via password manager (NOT via email/Slack)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+COMPLETE DEVELOPMENT ENVIRONMENT SETUP
+
+═══════════════════════════════════════════════════════════════════════════════
+
+CORE SOFTWARE (REQUIRED FOR ALL DEVELOPERS)
+
+1. NODE.JS & NPM
+□ Install Node.js v20+ (LTS recommended)
+  - Windows: https://nodejs.org/en/download
+  - Download installer, run, follow prompts
+  - Verify: Open Command Prompt, run:
+    node --version (should show v20.x.x or higher)
+    npm --version (should show v10.x.x or higher)
+
+2. GIT VERSION CONTROL
+□ Install Git
+  - Windows: https://git-scm.com/download/win
+  - During install:
+    ✓ Select "Git from the command line and also from 3rd-party software"
+    ✓ Use Visual Studio Code as Git's default editor (if using VS Code)
+    ✓ Override default branch name: main
+    ✓ Git Credential Manager: Yes
+  - Verify: git --version
+
+□ Configure Git (replace with your info):
+  git config --global user.name "Your Name"
+  git config --global user.email "your.email@example.com"
+
+3. CODE EDITOR: VISUAL STUDIO CODE
+□ Install VS Code
+  - Download: https://code.visualstudio.com/download
+  - Why VS Code: Most popular, best extensions, Claude Code integration
+
+4. SUPABASE CLI
+□ Install Supabase CLI globally:
+  npm install -g supabase
+  - Verify: supabase --version
+
+5. PACKAGE MANAGER (OPTIONAL BUT RECOMMENDED)
+□ Install pnpm (faster than npm):
+  npm install -g pnpm
+  - Why: 3x faster installs, saves disk space
+  - Use pnpm install instead of npm install
+
+═══════════════════════════════════════════════════════════════════════════════
+
+VS CODE EXTENSIONS (REQUIRED)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+CRITICAL EXTENSIONS (Install these first):
+
+1. ESLint (dbaeumer.vscode-eslint)
+   - Linting for JavaScript/TypeScript
+   - Catches errors before you run code
+   - Install: Press Ctrl+Shift+X → Search "ESLint" → Install
+
+2. Prettier - Code formatter (esbenp.prettier-vscode)
+   - Auto-formats code on save
+   - Keeps code style consistent across team
+   - Install: Search "Prettier" in Extensions
+
+3. ES7+ React/Redux/React-Native snippets (dsznajder.es7-react-js-snippets)
+   - Code snippets for React components
+   - Type "rafce" → auto-generates React component
+   - Huge time-saver
+
+4. Tailwind CSS IntelliSense (bradlc.vscode-tailwindcss)
+   - Auto-complete for Tailwind classes
+   - Shows color previews
+   - REQUIRED for this project (we use Tailwind)
+
+5. Auto Rename Tag (formulahendry.auto-rename-tag)
+   - Rename opening tag → closing tag auto-updates
+   - Prevents mismatched tags
+
+6. Path Intellisense (christian-kohler.path-intellisense)
+   - Auto-complete file paths
+   - Import './components/Button' → shows suggestions
+
+7. GitLens (eamodio.gitlens)
+   - See who wrote each line of code
+   - View commit history inline
+   - Essential for team collaboration
+
+8. Error Lens (usernamehw.errorlens)
+   - Shows errors inline (not just in Problems panel)
+   - Faster debugging
+
+9. TypeScript Error Translator (mattpocock.ts-error-translator)
+   - Makes TypeScript errors human-readable
+   - "Type 'string' is not assignable to type 'number'" → clearer explanation
+
+10. Console Ninja (WallabyJs.console-ninja)
+    - Shows console.log output inline in code
+    - No need to open browser console constantly
+
+PRODUCTIVITY EXTENSIONS:
+
+11. TODO Highlight (wayou.vscode-todo-highlight)
+    - Highlights TODO, FIXME, NOTE comments
+    - Easy to find todos in code
+
+12. Better Comments (aaron-bond.better-comments)
+    - Color-codes comments:
+      // ! Important
+      // ? Question
+      // TODO: Task
+      // * Highlighted
+
+13. Bracket Pair Colorizer (now built into VS Code)
+    - Color-codes matching brackets
+    - Enable in settings: "editor.bracketPairColorization.enabled": true
+
+14. Indent Rainbow (oderwat.indent-rainbow)
+    - Colors indentation levels
+    - Easier to see nesting
+
+15. Live Share (MS-vsliveshare.vsliveshare)
+    - Real-time collaboration (like Google Docs for code)
+    - You can code together, see cursors
+    - Great for pair programming or debugging together
+
+DATABASE & API EXTENSIONS:
+
+16. PostgreSQL (ckolkman.vscode-postgres)
+    - Connect to Supabase database directly from VS Code
+    - Run SQL queries, view tables
+
+17. Thunder Client (rangav.vscode-thunder-client)
+    - API testing (like Postman, but inside VS Code)
+    - Test API endpoints without leaving editor
+
+18. REST Client (humao.rest-client)
+    - Alternative to Thunder Client
+    - Write HTTP requests in .http files
+
+OPTIONAL BUT USEFUL:
+
+19. GitHub Copilot (GitHub.copilot)
+    - AI code completion (paid: $10/month)
+    - Suggests entire functions, not just lines
+    - OPTIONAL: Only if you want to pay
+
+20. Claude Code (anthropics.claude-code)
+    - Use Claude AI directly in VS Code
+    - YOU already use this - have them install too
+    - Install: Search "Claude Code" in Extensions
+
+21. Image Preview (kisstkondoros.vscode-gutter-preview)
+    - Preview images on hover in code
+    - Useful when working with FieldSnap photos
+
+22. Color Highlight (naumovs.color-highlight)
+    - Shows color preview for hex codes
+    - #3B82F6 → shows blue color inline
+
+23. npm Intellisense (christian-kohler.npm-intellisense)
+    - Auto-complete npm package imports
+    - import { useState } from 'react' → suggests packages
+
+24. Import Cost (wix.vscode-import-cost)
+    - Shows bundle size of imported packages
+    - Helps keep bundle size small
+
+═══════════════════════════════════════════════════════════════════════════════
+
+VS CODE SETTINGS (CONFIGURE AFTER INSTALLING EXTENSIONS)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+□ Open VS Code Settings (File → Preferences → Settings or Ctrl+,)
+
+□ Paste these into settings.json (Click {} icon in top right):
+
+{
+  // Editor
+  "editor.fontSize": 14,
+  "editor.fontFamily": "Consolas, 'Courier New', monospace",
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.wordWrap": "on",
+  "editor.minimap.enabled": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+
+  // Files
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/.next": true
+  },
+
+  // Prettier
+  "prettier.singleQuote": true,
+  "prettier.semi": true,
+  "prettier.trailingComma": "es5",
+  "prettier.tabWidth": 2,
+
+  // ESLint
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+
+  // Git
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+
+  // Terminal
+  "terminal.integrated.defaultProfile.windows": "Command Prompt",
+  "terminal.integrated.fontSize": 13,
+
+  // Tailwind
+  "tailwindCSS.experimental.classRegex": [
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
+  ],
+
+  // TypeScript
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.preferences.importModuleSpecifier": "relative",
+
+  // Emmet (for HTML/JSX)
+  "emmet.includeLanguages": {
+    "javascript": "javascriptreact",
+    "typescript": "typescriptreact"
+  },
+
+  // Disable telemetry (privacy)
+  "telemetry.telemetryLevel": "off"
+}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BROWSER EXTENSIONS (FOR DEVELOPMENT)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+CHROME/EDGE (REQUIRED):
+
+1. React Developer Tools
+   - Install: https://chrome.google.com/webstore (search "React Developer Tools")
+   - Inspect React component tree, props, state
+   - ESSENTIAL for debugging React apps
+
+2. Redux DevTools (if using Redux, which you might for state management)
+   - Install: Search "Redux DevTools" in Chrome Web Store
+   - Inspect Redux state, actions, time-travel debugging
+
+3. JSON Viewer
+   - Install: Search "JSON Viewer" in Chrome Web Store
+   - Pretty-prints JSON in browser (useful for API responses)
+
+4. Clear Cache (by Benjamin Bojko)
+   - One-click clear cache
+   - Useful when testing changes don't appear
+
+5. Wappalyzer
+   - Detect technologies used on websites
+   - See what frameworks competitors use
+
+OPTIONAL:
+
+6. ColorZilla
+   - Color picker, eyedropper tool
+   - Get hex codes from designs
+
+7. WhatFont
+   - Identify fonts on websites
+   - Click any text → see font family, size
+
+═══════════════════════════════════════════════════════════════════════════════
+
+ADDITIONAL TOOLS (INSTALL AS NEEDED)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DATABASE TOOLS:
+
+1. Postman or Insomnia
+   - API testing (Thunder Client alternative)
+   - Postman: https://www.postman.com/downloads
+   - Insomnia: https://insomnia.rest/download
+
+2. TablePlus or DBeaver (Database GUI)
+   - Visual database explorer (better than Supabase web UI for complex queries)
+   - TablePlus: https://tableplus.com (paid but beautiful)
+   - DBeaver: https://dbeaver.io (free, open source)
+   - Connect to Supabase PostgreSQL database
+
+DESIGN & COLLABORATION:
+
+3. Figma Desktop App
+   - View designs, export assets
+   - Install: https://www.figma.com/downloads
+
+4. Slack Desktop App
+   - Faster than web version
+   - Install: https://slack.com/downloads/windows
+
+TERMINAL ENHANCEMENTS (OPTIONAL):
+
+5. Windows Terminal (if on Windows 11, already installed)
+   - Better than Command Prompt
+   - Tabs, themes, profiles
+   - Install from Microsoft Store
+
+6. Oh My Posh (Terminal themes)
+   - Makes terminal beautiful and informative
+   - Shows Git branch, status in prompt
+   - Install: https://ohmyposh.dev/docs/installation/windows
+
+UTILITIES:
+
+7. Bitwarden Browser Extension
+   - Auto-fill passwords from password manager
+   - Install from Chrome Web Store
+
+8. Grammarly (if writing documentation)
+   - Spell-check for Markdown files, code comments
+
+═══════════════════════════════════════════════════════════════════════════════
+
+REPOSITORY SETUP (AFTER INSTALLING SOFTWARE)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+□ 1. Clone Repository
+   - Open VS Code
+   - Press Ctrl+Shift+P → "Git: Clone"
+   - Paste repository URL: [YOU'LL PROVIDE THIS]
+   - Select folder location (e.g., C:\Users\YourName\Code\sierra-suites)
+
+□ 2. Install Dependencies
+   - Open terminal in VS Code (Ctrl+`)
+   - Navigate to project folder: cd sierra-suites
+   - Install packages: npm install (or pnpm install if you installed pnpm)
+   - Wait 2-5 minutes for packages to download
+
+□ 3. Set Up Environment Variables
+   - Create .env.local file in project root
+   - Copy contents from .env.example (if exists)
+   - OR use template you'll provide via password manager
+   - NEVER commit .env.local to Git (already in .gitignore)
+
+□ 4. Run Development Server
+   - Terminal: npm run dev
+   - Open browser: http://localhost:3000
+   - You should see Sierra Suites app running
+   - If errors: Check console, ask for help
+
+□ 5. Verify Setup
+   - Can you navigate pages? ✓
+   - Can you log in? ✓
+   - Check browser console for errors (F12)
+   - If everything works → setup complete!
+
+═══════════════════════════════════════════════════════════════════════════════
+
+KEYBOARD SHORTCUTS TO LEARN (VS CODE)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+ESSENTIAL:
+- Ctrl+P: Quick open file (type filename, press Enter)
+- Ctrl+Shift+P: Command palette (search any VS Code command)
+- Ctrl+`: Toggle terminal
+- Ctrl+B: Toggle sidebar
+- Ctrl+Shift+F: Search across all files
+- Ctrl+D: Select next occurrence of word (multi-cursor)
+- Alt+Click: Add cursor at click location (multi-cursor)
+- Ctrl+/: Toggle comment
+- Ctrl+Shift+K: Delete line
+- Alt+Up/Down: Move line up/down
+- Shift+Alt+Up/Down: Duplicate line
+- Ctrl+F: Find in file
+- Ctrl+H: Find and replace
+
+NAVIGATION:
+- Ctrl+Tab: Switch between open files
+- Ctrl+Shift+E: Focus Explorer (file tree)
+- Ctrl+Shift+G: Focus Git panel
+- F12: Go to definition (click function → jump to where it's defined)
+- Alt+Left/Right: Navigate back/forward
+
+GIT:
+- Ctrl+Shift+G G: Open Git panel and stage all changes
+- Ctrl+Enter: Commit staged changes
+
+DEBUGGING:
+- F5: Start debugging
+- F9: Toggle breakpoint
+- F10: Step over
+- F11: Step into
+
+═══════════════════════════════════════════════════════════════════════════════
+
+TROUBLESHOOTING COMMON SETUP ISSUES
+
+═══════════════════════════════════════════════════════════════════════════════
+
+ISSUE: "npm: command not found" or "'npm' is not recognized"
+FIX:
+- Restart VS Code after installing Node.js
+- Open new terminal window (close old one)
+- Verify PATH: echo %PATH% (should include Node.js path)
+- Reinstall Node.js if needed
+
+ISSUE: "Permission denied" when running npm install
+FIX (Windows):
+- Run VS Code as Administrator
+- Or: Use npm install --no-optional
+
+ISSUE: Port 3000 already in use
+FIX:
+- Kill process on port 3000:
+  Windows: netstat -ano | findstr :3000
+  Then: taskkill /PID [PID_NUMBER] /F
+- Or: Change port in package.json: "dev": "next dev -p 3001"
+
+ISSUE: Git push rejected (authentication)
+FIX:
+- GitHub now requires Personal Access Token (not password)
+- Generate token: GitHub → Settings → Developer Settings → Personal Access Tokens
+- Use token as password when Git asks for credentials
+
+ISSUE: ESLint/Prettier not working
+FIX:
+- Reload VS Code: Ctrl+Shift+P → "Reload Window"
+- Check if .eslintrc.js and .prettierrc exist in project root
+- Make sure extensions are enabled
+
+═══════════════════════════════════════════════════════════════════════════════
+
+LEARNING RESOURCES (SEND TO NEW DEVELOPERS)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+NEXT.JS (Our framework):
+- Official Docs: https://nextjs.org/docs
+- Learn Next.js: https://nextjs.org/learn (interactive tutorial)
+
+REACT (Our UI library):
+- Official Docs: https://react.dev
+- React Beta Docs: https://react.dev/learn (new, better)
+
+TYPESCRIPT:
+- Official Handbook: https://www.typescriptlang.org/docs/handbook/intro.html
+- TypeScript for React: https://react-typescript-cheatsheet.netlify.app
+
+TAILWIND CSS (Our styling):
+- Docs: https://tailwindcss.com/docs
+- Cheat Sheet: https://nerdcave.com/tailwind-cheat-sheet
+
+SUPABASE (Our backend):
+- Docs: https://supabase.com/docs
+- JavaScript Client: https://supabase.com/docs/reference/javascript/introduction
+
+GIT:
+- Git Basics: https://git-scm.com/book/en/v2/Getting-Started-Git-Basics
+- Git Cheat Sheet: https://education.github.com/git-cheat-sheet-education.pdf
+
+YOUTUBE CHANNELS:
+- Fireship: Short, high-quality web dev videos
+- Web Dev Simplified: Next.js, React tutorials
+- Traversy Media: Full project tutorials
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DAY 1 SCHEDULE (TOMORROW - THEIR FIRST DAY)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+MORNING (9am - 12pm):
+
+9:00am - 9:30am: Welcome & Introductions
+□ Welcome message, team intro (even if it's just 3 of you)
+□ Company vision: "We're building the best construction management platform with AI"
+□ Review signed agreements (NDA, IP assignment, workplace policies)
+
+9:30am - 10:30am: Product Demo
+□ Walk through Sierra Suites platform (live demo)
+□ Show key features:
+  - Dashboard
+  - Projects
+  - TaskFlow
+  - FieldSnap
+  - QuoteHub
+  - Sustainability features (Buy Clean, Material Optimizer)
+□ Explain current status: "65% complete, here's what's left"
+
+10:30am - 11:00am: Technical Architecture Overview
+□ Tech stack: Next.js, React, Supabase PostgreSQL, AWS services
+□ Codebase structure:
+  - /app (Next.js App Router pages)
+  - /components (React components)
+  - /lib (utility functions, API calls)
+  - /supabase (database migrations, SQL schemas)
+□ Show GitHub repository structure
+
+11:00am - 12:00pm: Environment Setup
+□ Help them set up local dev environment (see checklist above)
+□ Clone repo, install dependencies, run dev server
+□ Troubleshoot any issues together
+
+LUNCH BREAK (12pm - 1pm)
+
+AFTERNOON (1pm - 5pm):
+
+1:00pm - 2:00pm: Role-Specific Onboarding
+
+Employee #1 (Developer):
+□ Review current codebase, file structure
+□ Show open issues/tasks in GitHub Projects
+□ Assign first task (see "First Week Tasks" below)
+
+Employee #2 (Security/Research):
+□ Review database schema (Supabase tables)
+□ Explain SQL cleanup tasks (see "First Week Tasks" below)
+□ Review AWS POC Assessment document
+□ Discuss research tasks (EC3 API, RSMeans integration)
+
+2:00pm - 4:00pm: First Tasks (Hands-On)
+□ Let them start working on assigned tasks
+□ Available for questions via Slack/Discord
+
+4:00pm - 5:00pm: End-of-Day Standup
+□ What did you accomplish today?
+□ Any blockers or questions?
+□ Plan for tomorrow
+
+═══════════════════════════════════════════════════════════════════════════════
+
+FIRST WEEK TASKS (ASSIGN ON DAY 1)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+EMPLOYEE #1 (DEVELOPER) - WEEK 1 TASKS:
+
+□ Task 1.1: Fix bug/small feature (get them familiar with codebase)
+  - Example: "Add loading spinner to QuoteHub when fetching quotes"
+  - Example: "Fix dashboard widget alignment on mobile"
+  - Goal: Ship something on Day 1, build confidence
+
+□ Task 1.2: Build Excel Import feature (from INTEGRATIONS_ROADMAP.txt)
+  - Week 1 goal: Basic Excel upload UI (drag-drop)
+  - Week 2 goal: Parse Excel, column mapping
+  - Week 3 goal: Import to Supabase
+
+□ Task 1.3: Code review & documentation
+  - Review existing codebase, suggest improvements
+  - Document any confusing sections
+
+EMPLOYEE #2 (SECURITY/RESEARCH) - WEEK 1 TASKS:
+
+□ Task 2.1: SQL Schema Audit
+  - Review all SQL files in /supabase
+  - Check for:
+    - Missing indexes (slow queries)
+    - Missing Row-Level Security (RLS) policies
+    - Data type inconsistencies
+    - Naming conventions (snake_case vs camelCase)
+  - Create audit report: "SQL_SCHEMA_AUDIT.txt"
+
+□ Task 2.2: Supabase RLS (Row-Level Security) Implementation
+  - Review all tables
+  - Ensure users can only see their own data:
+    - projects table: WHERE user_id = auth.uid()
+    - quotes table: WHERE user_id = auth.uid()
+    - etc.
+  - Write RLS policies, test thoroughly
+
+□ Task 2.3: EC3 API Research
+  - Sign up for EC3 API developer access
+  - Read API documentation: https://buildingtransparency.org/ec3/manage-apps/api-doc
+  - Test API calls (Postman or curl)
+  - Document findings: "EC3_API_RESEARCH.txt"
+    - Available endpoints
+    - Rate limits
+    - Data structure
+    - Example queries
+
+□ Task 2.4: Security Audit (Week 2)
+  - Review authentication flow (Supabase Auth)
+  - Check for common vulnerabilities:
+    - SQL injection (using parameterized queries?)
+    - XSS (sanitizing user inputs?)
+    - CSRF (using CSRF tokens?)
+    - API key exposure (.env files in .gitignore?)
+  - Create security report: "SECURITY_AUDIT.txt"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+TOOLS & SUBSCRIPTIONS TO PURCHASE (BUDGET)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+REQUIRED (Buy Today):
+□ Claude Pro subscriptions (2) - $40/month total
+  - URL: https://claude.ai/upgrade
+  - Benefit: Faster responses, priority access, more usage
+
+□ GitHub Team Plan (if not already) - $4/user/month = $12/month (you + 2 employees)
+  - Benefit: Private repos, better collaboration tools
+  - Alternative: GitHub Free (if budget is tight, free tier works)
+
+□ Password Manager - $8-$12/month for team plan
+  - 1Password Teams: $19.95/month (up to 10 users)
+  - Bitwarden Teams: $3/month per user = $9/month
+  - LastPass Teams: $6/month per user = $18/month
+  - RECOMMENDED: Bitwarden (cheapest, secure)
+
+OPTIONAL (Nice-to-Have):
+□ Slack Standard Plan - $7.25/user/month = $21.75/month
+  - Alternative: Discord (free, good enough)
+  - Alternative: GitHub Discussions (free)
+
+□ Linear/Asana/Trello for Project Management
+  - Linear: $8/user/month = $24/month
+  - Asana: Free for up to 15 users
+  - Trello: Free (basic)
+  - RECOMMENDED: GitHub Projects (free, integrated)
+
+□ Figma for Design Collaboration - Free for up to 3 editors
+  - URL: https://figma.com
+
+TOTAL MONTHLY COST (Required):
+- Claude Pro: $40
+- GitHub Team: $12 (or $0 if using Free)
+- Password Manager: $9 (Bitwarden)
+TOTAL: $61/month (or $49/month with GitHub Free)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+LEGAL DOCUMENTS TO CREATE (TEMPLATES)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DOCUMENT 1: NON-DISCLOSURE AGREEMENT (NDA)
+
+Subject: Confidential Information and Non-Disclosure Agreement
+
+This Agreement is entered into as of [DATE] between:
+- Sierra Suites Software ("Company")
+- [EMPLOYEE NAME] ("Employee")
+
+1. CONFIDENTIAL INFORMATION
+Employee acknowledges they will have access to confidential information including:
+- Source code, algorithms, and technical specifications
+- Customer data and project information
+- Business strategies, financial information, and pricing
+- Proprietary datasets (500K construction permits, EC3 integration, RSMeans data)
+- AI models and training methodologies
+
+2. NON-DISCLOSURE OBLIGATIONS
+Employee agrees to:
+- Keep all Confidential Information strictly confidential
+- Not disclose to any third party without written authorization
+- Use Confidential Information only for Company business purposes
+- Return all materials containing Confidential Information upon termination
+
+3. DURATION
+This agreement remains in effect during employment and for 2 years after termination.
+
+4. EXCEPTIONS
+This does not apply to information that:
+- Is publicly available (not due to Employee's breach)
+- Was known to Employee before employment
+- Is required to be disclosed by law (with prior notice to Company)
+
+Signature: ___________________ Date: ___________
+[EMPLOYEE NAME]
+
+Signature: ___________________ Date: ___________
+[YOUR NAME], Founder, Sierra Suites Software
+
+───────────────────────────────────────────────────────────────────────────────
+
+DOCUMENT 2: INTELLECTUAL PROPERTY ASSIGNMENT AGREEMENT
+
+Subject: Intellectual Property Assignment Agreement
+
+This Agreement is entered into as of [DATE] between:
+- Sierra Suites Software ("Company")
+- [EMPLOYEE NAME] ("Employee")
+
+1. ASSIGNMENT OF WORK PRODUCT
+Employee agrees that all work product created during employment belongs to Company:
+- Software code (frontend, backend, scripts, SQL queries)
+- Documentation, technical specifications, designs
+- Inventions, algorithms, processes related to Company business
+- Even if created outside regular work hours or on personal devices
+
+2. SCOPE
+This includes work:
+- Created using Company resources (laptop, software licenses)
+- Related to Company's current or reasonably anticipated business
+- Created during work hours OR outside work hours if related to Company projects
+
+3. DISCLOSURE
+Employee will promptly disclose all inventions/work product to Company.
+
+4. ASSISTANCE
+Employee will assist Company in obtaining patents, copyrights, or other protections
+for work product (signing documents, providing testimony, etc.).
+
+5. PRIOR INVENTIONS (OPTIONAL)
+Employee has disclosed the following prior inventions (if any):
+[LIST PRIOR PROJECTS/CODE THEY WANT TO EXCLUDE]
+
+Signature: ___________________ Date: ___________
+[EMPLOYEE NAME]
+
+Signature: ___________________ Date: ___________
+[YOUR NAME], Founder, Sierra Suites Software
+
+───────────────────────────────────────────────────────────────────────────────
+
+DOCUMENT 3: WORKPLACE POLICIES & CODE OF CONDUCT
+
+Subject: Workplace Policies and Code of Conduct
+
+Effective Date: [DATE]
+
+1. ANTI-HARASSMENT POLICY
+
+Sierra Suites Software is committed to a harassment-free workplace.
+
+ZERO TOLERANCE for:
+- Sexual harassment (unwelcome sexual advances, requests for favors, verbal/physical conduct)
+- Discrimination based on race, color, religion, sex, national origin, age, disability, sexual orientation
+- Bullying, intimidation, or threatening behavior
+
+EXAMPLES of prohibited conduct:
+- Offensive jokes, comments, or slurs
+- Unwanted physical contact
+- Sharing sexually explicit images or content
+- Making employment decisions based on protected characteristics
+
+REPORTING:
+- Report immediately to: [YOUR NAME], [YOUR EMAIL], [YOUR PHONE]
+- Anonymous reporting: [If you set up anonymous channel]
+- No retaliation for good-faith reports
+
+CONSEQUENCES:
+- Investigation of all reports
+- Disciplinary action up to and including termination
+- Legal action if warranted
+
+2. CODE OF CONDUCT
+
+Expected behaviors:
+✓ Treat colleagues, clients, and partners with respect
+✓ Communicate professionally (Slack, email, video calls)
+✓ Meet deadlines and commitments
+✓ Ask for help when stuck (don't suffer in silence)
+✓ Give and receive constructive feedback
+✓ Maintain confidentiality of client and company information
+
+Prohibited behaviors:
+✗ Using company equipment for personal projects during work hours
+✗ Sharing credentials or access with unauthorized individuals
+✗ Downloading client data to personal devices
+✗ Working under the influence of drugs or alcohol
+✗ Violating laws or regulations
+
+3. REMOTE WORK POLICY (If applicable)
+
+Work hours: [9am-5pm EST, or flexible?]
+Availability: Must be reachable via Slack during work hours
+Response time: Reply to messages within 2 hours during work hours
+Camera on: Video calls with camera on (builds team connection)
+
+4. DATA SECURITY
+
+✓ Use strong passwords (12+ characters, unique for each service)
+✓ Enable MFA (multi-factor authentication) on all accounts
+✓ Lock screen when away from computer
+✓ No storing credentials in plain text (use password manager)
+✓ Report security incidents immediately
+
+ACKNOWLEDGMENT:
+I have read, understood, and agree to comply with these policies.
+
+Signature: ___________________ Date: ___________
+[EMPLOYEE NAME]
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DAY 1 GETTING STARTED GUIDE (SEND TO EMPLOYEES)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Subject: Welcome to Sierra Suites! - Getting Started Guide
+
+Hi [NAME],
+
+Welcome to the team! 🎉
+
+Here's everything you need to get started on Day 1:
+
+STEP 1: SIGN LEGAL DOCUMENTS
+Please review and sign these documents (attached):
+□ Employment Agreement
+□ Non-Disclosure Agreement (NDA)
+□ Intellectual Property Assignment Agreement
+□ Workplace Policies Acknowledgment
+
+Return signed copies by [DATE].
+
+STEP 2: SET UP ACCOUNTS
+Create accounts on these platforms (if you don't have them):
+□ GitHub: https://github.com/signup
+  - Send me your username so I can add you to the repo
+□ Slack/Discord: [INVITE LINK]
+□ Claude AI: https://claude.ai (I'll upgrade you to Pro)
+
+STEP 3: INSTALL SOFTWARE
+Install these on your computer before Day 1:
+□ Node.js (v20+): https://nodejs.org
+□ Git: https://git-scm.com/downloads
+□ VS Code: https://code.visualstudio.com (or your preferred IDE)
+□ Bitwarden (password manager): https://bitwarden.com
+
+STEP 4: DAY 1 SCHEDULE
+9:00am - Welcome & product demo
+10:30am - Technical architecture overview
+11:00am - Environment setup (we'll do this together)
+12:00pm - Lunch break
+1:00pm - Role-specific onboarding
+2:00pm - First task assignment
+4:00pm - End-of-day standup
+
+WHAT TO BRING:
+- Laptop (if you have one, otherwise let me know)
+- Notebook and pen (optional)
+- Questions!
+
+I'm excited to have you on the team. See you [DAY]!
+
+Best,
+[YOUR NAME]
+Founder, Sierra Suites Software
+[YOUR EMAIL]
+[YOUR PHONE]
+
+═══════════════════════════════════════════════════════════════════════════════
+
+GITHUB REPOSITORY SETUP (DO TODAY)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+□ 1. Enable Branch Protection Rules
+   - Go to: GitHub repo → Settings → Branches → Add rule
+   - Branch name pattern: main
+   - Enable:
+     ☑ Require pull request reviews before merging
+     ☑ Require status checks to pass before merging
+     ☑ Require branches to be up to date before merging
+   - Why: Prevents direct pushes to main, requires code review
+
+□ 2. Create Development Branch Structure
+   - main branch: Production-ready code only
+   - develop branch: Integration branch for features
+   - Feature branches: feature/excel-import, feature/weather-api, etc.
+
+□ 3. Set Up GitHub Projects Board
+   - Go to: GitHub repo → Projects → New project
+   - Template: Kanban board
+   - Columns: Backlog, Todo, In Progress, Review, Done
+   - Add initial tasks:
+     - "Set up local dev environment"
+     - "Excel import feature"
+     - "SQL schema audit"
+     - "EC3 API research"
+
+□ 4. Create CONTRIBUTING.md File
+   - Document coding standards:
+     - Use TypeScript (not JavaScript)
+     - Function naming: camelCase
+     - Component naming: PascalCase
+     - CSS: Tailwind classes (avoid custom CSS unless necessary)
+   - Git workflow:
+     - Create feature branch from develop
+     - Make changes, commit frequently
+     - Push to GitHub
+     - Create Pull Request
+     - Wait for code review approval
+     - Merge to develop
+   - Example:
+     ```
+     git checkout develop
+     git pull origin develop
+     git checkout -b feature/excel-import
+     # Make changes
+     git add .
+     git commit -m "Add Excel upload UI"
+     git push origin feature/excel-import
+     # Create PR on GitHub
+     ```
+
+□ 5. Set Up Code Owners (Optional)
+   - Create .github/CODEOWNERS file
+   - Specify who reviews what:
+     ```
+     # Default owner for everything
+     * @your-github-username
+
+     # Supabase SQL files
+     /supabase/* @employee2-github-username
+
+     # Frontend components
+     /components/* @employee1-github-username
+     ```
+
+═══════════════════════════════════════════════════════════════════════════════
+
+COMMUNICATION & COLLABORATION SETUP
+
+═══════════════════════════════════════════════════════════════════════════════
+
+□ 1. Set Up Slack/Discord Channels
+   - #general: Team announcements, casual chat
+   - #development: Code discussions, technical questions
+   - #bugs: Bug reports and tracking
+   - #deployments: Deployment notifications (Vercel, Supabase)
+   - #wins: Celebrate shipped features, milestones
+
+□ 2. Daily Standup Schedule (Recommended)
+   - Time: 9:30am every day (15 minutes max)
+   - Format:
+     - What did you do yesterday?
+     - What will you do today?
+     - Any blockers?
+   - Tool: Slack message or quick video call
+
+□ 3. Weekly Planning Meeting
+   - Time: Monday 10am (1 hour)
+   - Agenda:
+     - Review last week's progress
+     - Plan this week's tasks
+     - Assign tasks to team members
+     - Address any roadblocks
+
+□ 4. Code Review Process
+   - All PRs require 1 approval before merging
+   - Review within 24 hours
+   - Use GitHub review features (comments, suggestions)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+FINAL CHECKLIST - DO TODAY (PRIORITIZED)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+CRITICAL (Must Do Before Tomorrow):
+□ 1. Create and send NDA (30 min)
+□ 2. Create and send IP Assignment Agreement (30 min)
+□ 3. Create and send Workplace Policies document (30 min)
+□ 4. Get their GitHub usernames, add to repository (10 min)
+□ 5. Add them to Supabase project (5 min)
+□ 6. Purchase Claude Pro subscriptions (2) - $40/month (10 min)
+□ 7. Set up password manager (Bitwarden) team account (20 min)
+□ 8. Create GitHub Projects board with initial tasks (30 min)
+□ 9. Send "Getting Started Guide" email (15 min)
+□ 10. Prepare Day 1 schedule and share with them (15 min)
+
+IMPORTANT (Do Today If Possible):
+□ 11. Set up Slack/Discord workspace and channels (30 min)
+□ 12. Create .env.local template (15 min)
+□ 13. Document codebase structure in README.md (45 min)
+□ 14. Set up branch protection rules on GitHub (10 min)
+□ 15. Create CONTRIBUTING.md file (30 min)
+
+NICE-TO-HAVE (Can Do Tomorrow):
+□ 16. AWS IAM user setup (if needed for POC work)
+□ 17. Vercel/Netlify team access
+□ 18. Set up shared Google Drive folder
+□ 19. Create onboarding video (screen recording of product demo)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+TIME ESTIMATE: 4-6 HOURS TODAY
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Breakdown:
+- Legal documents: 1.5 hours
+- Technical setup: 1.5 hours
+- Documentation: 1.5 hours
+- Communication setup: 0.5 hour
+
+You can do this! Focus on the CRITICAL items first. The rest can be done tomorrow morning before they start.
+
+Good luck with your first hires! 🚀

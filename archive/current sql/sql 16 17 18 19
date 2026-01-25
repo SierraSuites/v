@@ -1,0 +1,722 @@
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP TRIGGER IF EXISTS on_auth_user_confirmed ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user();
+DROP FUNCTION IF EXISTS public.handle_user_confirmed();
+
+-- Create function to handle new user registration (creates profile immediately)
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Insert a new profile for the user when they register
+  -- Profile is created even before email confirmation
+  INSERT INTO public.user_profiles (
+    id,
+    full_name,
+    company_name,
+    country,
+    phone,
+    plan,
+    created_at,
+    updated_at
+  )
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'company_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'country', 'US'),
+    COALESCE(NEW.raw_user_meta_data->>'phone', ''),
+    COALESCE(NEW.raw_user_meta_data->>'selected_plan', 'starter'),
+    NOW(),
+    NOW()
+  )
+  ON CONFLICT (id) DO NOTHING; -- Prevent duplicates if profile already exists
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create trigger to call function on user creation
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+
+-- Also ensure profile exists when email is confirmed (backup)
+CREATE OR REPLACE FUNCTION public.handle_user_confirmed()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Double-check profile exists when email is confirmed
+  INSERT INTO public.user_profiles (
+    id,
+    full_name,
+    company_name,
+    country,
+    phone,
+    plan,
+    created_at,
+    updated_at
+  )
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'company_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'country', 'US'),
+    COALESCE(NEW.raw_user_meta_data->>'phone', ''),
+    COALESCE(NEW.raw_user_meta_data->>'selected_plan', 'starter'),
+    NOW(),
+    NOW()
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    updated_at = NOW();
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create trigger for email confirmation
+CREATE TRIGGER on_auth_user_confirmed
+  AFTER UPDATE OF email_confirmed_at ON auth.users
+  FOR EACH ROW
+  WHEN (OLD.email_confirmed_at IS NULL AND NEW.email_confirmed_at IS NOT NULL)
+  EXECUTE FUNCTION public.handle_user_confirmed();
+
+-- Grant necessary permissions
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON public.user_profiles TO anon, authenticated;
+
+
+#end of sql 16
+
+#start of sql 17 
+
+DROP TABLE IF EXISTS tasks CASCADE;
+
+-- Recreate tasks table with all TaskFlow features
+create table tasks (
+  -- Core identification
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+
+  -- Basic information
+  title text not null,
+  description text,
+  project_id uuid references projects(id) on delete cascade,
+  project_name text,
+
+  -- Construction categorization
+  trade text check (trade in ('electrical', 'plumbing', 'hvac', 'concrete', 'framing', 'finishing', 'general')) default 'general',
+  phase text check (phase in ('pre-construction', 'foundation', 'framing', 'mep', 'finishing', 'closeout')) default 'pre-construction',
+
+  -- Status and priority
+  status text check (status in ('not-started', 'in-progress', 'review', 'completed', 'blocked')) default 'not-started',
+  priority text check (priority in ('critical', 'high', 'medium', 'low')) default 'medium',
+
+  -- Assignment
+  assignee_id uuid references auth.users(id) on delete set null,
+  assignee_name text,
+  assignee_avatar text,
+
+  -- Scheduling
+  start_date date,
+  due_date date not null,
+  duration integer default 1, -- in days
+  progress integer default 0 check (progress >= 0 and progress <= 100),
+
+  -- Time tracking
+  estimated_hours numeric default 8,
+  actual_hours numeric default 0,
+
+  -- Dependencies and relationships
+  dependencies text[] default '{}', -- array of task IDs
+
+  -- Metadata
+  attachments integer default 0,
+  comments integer default 0,
+  location text,
+
+  -- Weather considerations
+  weather_dependent boolean default false,
+  weather_buffer integer default 0, -- buffer days for weather delays
+
+  -- Inspection requirements
+  inspection_required boolean default false,
+  inspection_type text,
+
+  -- Resource management
+  crew_size integer default 1,
+  equipment text[] default '{}', -- array of equipment names
+  materials text[] default '{}', -- array of material names
+  certifications text[] default '{}', -- required certifications
+
+  -- Safety and quality
+  safety_protocols text[] default '{}',
+  quality_standards text[] default '{}',
+  documentation text[] default '{}', -- required documentation
+
+  -- Advanced settings
+  notify_inspector boolean default false,
+  client_visibility boolean default false,
+
+  -- Timestamps
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now(),
+  completed_at timestamp with time zone
+);
+
+-- Create indexes for better query performance
+create index idx_tasks_user_id on tasks(user_id);
+create index idx_tasks_project_id on tasks(project_id);
+create index idx_tasks_assignee_id on tasks(assignee_id);
+create index idx_tasks_status on tasks(status);
+create index idx_tasks_priority on tasks(priority);
+create index idx_tasks_trade on tasks(trade);
+create index idx_tasks_phase on tasks(phase);
+create index idx_tasks_due_date on tasks(due_date);
+create index idx_tasks_weather_dependent on tasks(weather_dependent);
+create index idx_tasks_inspection_required on tasks(inspection_required);
+
+-- ============================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- ============================================================
+
+-- Enable RLS on tasks table
+alter table tasks enable row level security;
+
+-- Policy: Users can view their own tasks
+create policy "Users can view their own tasks"
+  on tasks for select
+  using (auth.uid() = user_id);
+
+-- Policy: Users can insert their own tasks
+create policy "Users can insert their own tasks"
+  on tasks for insert
+  with check (auth.uid() = user_id);
+
+-- Policy: Users can update their own tasks
+create policy "Users can update their own tasks"
+  on tasks for update
+  using (auth.uid() = user_id);
+
+-- Policy: Users can delete their own tasks
+create policy "Users can delete their own tasks"
+  on tasks for delete
+  using (auth.uid() = user_id);
+
+-- Policy: Assigned users can view tasks assigned to them
+create policy "Assigned users can view their assigned tasks"
+  on tasks for select
+  using (auth.uid() = assignee_id);
+
+-- Policy: Assigned users can update tasks assigned to them (for progress updates)
+create policy "Assigned users can update their assigned tasks"
+  on tasks for update
+  using (auth.uid() = assignee_id);
+
+-- ============================================================
+-- AUTOMATIC TIMESTAMP UPDATE TRIGGER
+-- ============================================================
+
+-- Function to update updated_at timestamp
+create or replace function update_updated_at_column()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+-- Trigger for tasks table
+drop trigger if exists update_tasks_updated_at on tasks;
+create trigger update_tasks_updated_at
+  before update on tasks
+  for each row
+  execute function update_updated_at_column();
+
+-- ============================================================
+-- AUTOMATIC COMPLETED_AT UPDATE TRIGGER
+-- ============================================================
+
+-- Function to set completed_at when status changes to completed
+create or replace function set_completed_at()
+returns trigger as $$
+begin
+  if new.status = 'completed' and old.status != 'completed' then
+    new.completed_at = now();
+    new.progress = 100;
+  elsif new.status != 'completed' and old.status = 'completed' then
+    new.completed_at = null;
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+-- Trigger for automatic completed_at
+drop trigger if exists set_task_completed_at on tasks;
+create trigger set_task_completed_at
+  before update on tasks
+  for each row
+  execute function set_completed_at();
+
+-- ============================================================
+-- TEAM MEMBERS TABLE
+-- ============================================================
+
+create table if not exists team_members (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  name text not null,
+  avatar text,
+  role text,
+  trades text[] default '{}',
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+-- Enable RLS
+alter table team_members enable row level security;
+
+-- Policies
+create policy "Users can view their own team members"
+  on team_members for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert their own team members"
+  on team_members for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update their own team members"
+  on team_members for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete their own team members"
+  on team_members for delete
+  using (auth.uid() = user_id);
+
+-- ============================================================
+-- TASK COMMENTS TABLE
+-- ============================================================
+
+create table if not exists task_comments (
+  id uuid primary key default uuid_generate_v4(),
+  task_id uuid references tasks(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  comment text not null,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+-- Enable RLS
+alter table task_comments enable row level security;
+
+-- Policies
+create policy "Users can view comments on their tasks"
+  on task_comments for select
+  using (
+    exists (
+      select 1 from tasks
+      where tasks.id = task_comments.task_id
+      and (tasks.user_id = auth.uid() or tasks.assignee_id = auth.uid())
+    )
+  );
+
+create policy "Users can add comments to their tasks"
+  on task_comments for insert
+  with check (
+    exists (
+      select 1 from tasks
+      where tasks.id = task_comments.task_id
+      and (tasks.user_id = auth.uid() or tasks.assignee_id = auth.uid())
+    )
+  );
+
+-- ============================================================
+-- TASK ATTACHMENTS TABLE
+-- ============================================================
+
+create table if not exists task_attachments (
+  id uuid primary key default uuid_generate_v4(),
+  task_id uuid references tasks(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  file_name text not null,
+  file_url text not null,
+  file_size bigint,
+  file_type text,
+  created_at timestamp with time zone default now()
+);
+
+-- Enable RLS
+alter table task_attachments enable row level security;
+
+-- Policies
+create policy "Users can view attachments on their tasks"
+  on task_attachments for select
+  using (
+    exists (
+      select 1 from tasks
+      where tasks.id = task_attachments.task_id
+      and (tasks.user_id = auth.uid() or tasks.assignee_id = auth.uid())
+    )
+  );
+
+create policy "Users can add attachments to their tasks"
+  on task_attachments for insert
+  with check (
+    exists (
+      select 1 from tasks
+      where tasks.id = task_attachments.task_id
+      and (tasks.user_id = auth.uid() or tasks.assignee_id = auth.uid())
+    )
+  );
+
+-- ============================================================
+-- REALTIME PUBLICATION
+-- ============================================================
+
+alter publication supabase_realtime add table tasks;
+alter publication supabase_realtime add table task_comments;
+alter publication supabase_realtime add table task_attachments;
+
+-- ============================================================
+-- COMPLETED!
+-- Tasks table has been upgraded with full TaskFlow features
+-- ============================================================
+
+
+#end of sql 17
+
+#start of sql 18
+
+-- Verification queries (run these to check):
+-- SELECT * FROM user_profiles LIMIT 1;
+-- SELECT tablename FROM pg_tables WHERE schemaname = 'public';
+-- SELECT * FROM storage.buckets;
+
+
+#end of sql 18
+
+#start of sql 19
+
+
+-- STEP 1: Create Essential Tables
+-- ============================================================
+
+-- 1. User Profiles Table (extends auth.users)
+-- Needed for: Dashboard to show user name, company, tier
+create table user_profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  full_name text,
+  company_name text,
+  country text,
+  phone text,
+  avatar_url text,
+  plan text check (plan in ('starter', 'professional', 'enterprise')) default 'starter',
+  stripe_customer_id text,
+  stripe_subscription_id text,
+  subscription_status text,
+  trial_ends_at timestamp with time zone,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+-- 2. Projects Table
+-- Needed for: Dashboard stats (total projects, active, completed)
+create table projects (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  name text not null,
+  client text,
+  status text check (status in ('active', 'on-hold', 'completed')) default 'active',
+  budget numeric,
+  progress integer default 0 check (progress >= 0 and progress <= 100),
+  due_date timestamp with time zone,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+-- 3. Tasks Table
+-- Needed for: Dashboard stats (tasks today, overdue, this week, completion rate)
+create table tasks (
+  id uuid primary key default uuid_generate_v4(),
+  project_id uuid references projects(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  title text not null,
+  description text,
+  status text check (status in ('pending', 'in-progress', 'completed')) default 'pending',
+  priority text check (priority in ('low', 'medium', 'high', 'urgent')) default 'medium',
+  due_date timestamp with time zone,
+  completed_at timestamp with time zone,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+-- 4. Photos Table
+-- Needed for: Dashboard stats (recent photos count, storage used)
+create table photos (
+  id uuid primary key default uuid_generate_v4(),
+  project_id uuid references projects(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  url text not null,
+  caption text,
+  size_bytes bigint not null,
+  width integer,
+  height integer,
+  created_at timestamp with time zone default now()
+);
+
+-- 5. Activities Table
+-- Needed for: Dashboard activity feed
+create table activities (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  type text not null,
+  title text not null,
+  description text,
+  metadata jsonb,
+  created_at timestamp with time zone default now()
+);
+
+-- 6. Notifications Table
+-- Needed for: Dashboard notification bell dropdown
+create table notifications (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  type text check (type in ('info', 'success', 'warning', 'error')) default 'info',
+  title text not null,
+  message text not null,
+  read boolean default false,
+  action_url text,
+  created_at timestamp with time zone default now()
+);
+
+
+-- STEP 2: Create Indexes for Performance
+-- ============================================================
+
+-- User profiles indexes
+create index idx_user_profiles_plan on user_profiles(plan);
+
+-- Projects indexes
+create index idx_projects_user_id on projects(user_id);
+create index idx_projects_status on projects(status);
+create index idx_projects_due_date on projects(due_date);
+
+-- Tasks indexes
+create index idx_tasks_user_id on tasks(user_id);
+create index idx_tasks_project_id on tasks(project_id);
+create index idx_tasks_status on tasks(status);
+create index idx_tasks_due_date on tasks(due_date);
+
+-- Photos indexes
+create index idx_photos_user_id on photos(user_id);
+create index idx_photos_project_id on photos(project_id);
+create index idx_photos_created_at on photos(created_at desc);
+
+-- Activities indexes
+create index idx_activities_user_id on activities(user_id);
+create index idx_activities_created_at on activities(created_at desc);
+
+-- Notifications indexes
+create index idx_notifications_user_id on notifications(user_id);
+create index idx_notifications_read on notifications(read);
+create index idx_notifications_created_at on notifications(created_at desc);
+
+
+-- STEP 3: Enable Row Level Security (RLS)
+-- ============================================================
+
+alter table user_profiles enable row level security;
+alter table projects enable row level security;
+alter table tasks enable row level security;
+alter table photos enable row level security;
+alter table activities enable row level security;
+alter table notifications enable row level security;
+
+
+-- STEP 4: Create RLS Policies
+-- ============================================================
+
+-- User Profiles Policies
+create policy "Users can view own profile"
+  on user_profiles for select
+  using (auth.uid() = id);
+
+create policy "Users can update own profile"
+  on user_profiles for update
+  using (auth.uid() = id);
+
+create policy "Users can insert own profile"
+  on user_profiles for insert
+  with check (auth.uid() = id);
+
+-- Projects Policies
+create policy "Users can view own projects"
+  on projects for select
+  using (auth.uid() = user_id);
+
+create policy "Users can create own projects"
+  on projects for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update own projects"
+  on projects for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete own projects"
+  on projects for delete
+  using (auth.uid() = user_id);
+
+-- Tasks Policies
+create policy "Users can view own tasks"
+  on tasks for select
+  using (auth.uid() = user_id);
+
+create policy "Users can create own tasks"
+  on tasks for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update own tasks"
+  on tasks for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete own tasks"
+  on tasks for delete
+  using (auth.uid() = user_id);
+
+-- Photos Policies
+create policy "Users can view own photos"
+  on photos for select
+  using (auth.uid() = user_id);
+
+create policy "Users can upload own photos"
+  on photos for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can delete own photos"
+  on photos for delete
+  using (auth.uid() = user_id);
+
+-- Activities Policies
+create policy "Users can view own activities"
+  on activities for select
+  using (auth.uid() = user_id);
+
+create policy "Users can create own activities"
+  on activities for insert
+  with check (auth.uid() = user_id);
+
+-- Notifications Policies
+create policy "Users can view own notifications"
+  on notifications for select
+  using (auth.uid() = user_id);
+
+create policy "Users can update own notifications"
+  on notifications for update
+  using (auth.uid() = user_id);
+
+
+-- STEP 5: Create Functions for Auto-Updates
+-- ============================================================
+
+-- Function to update updated_at timestamp
+create or replace function update_updated_at_column()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+-- Apply to tables with updated_at
+create trigger update_projects_updated_at
+  before update on projects
+  for each row execute function update_updated_at_column();
+
+create trigger update_tasks_updated_at
+  before update on tasks
+  for each row execute function update_updated_at_column();
+
+create trigger update_user_profiles_updated_at
+  before update on user_profiles
+  for each row execute function update_updated_at_column();
+
+
+-- STEP 6: Create Function to Auto-Create User Profile
+-- ============================================================
+
+create or replace function handle_new_user()
+returns trigger as $$
+begin
+  insert into public.user_profiles (id, full_name, plan)
+  values (
+    new.id,
+    new.raw_user_meta_data->>'full_name',
+    'starter'
+  );
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger to create profile on signup
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function handle_new_user();
+
+
+-- STEP 7: Create Storage Buckets
+-- ============================================================
+
+-- Photos bucket for FieldSnap (when built)
+insert into storage.buckets (id, name, public)
+values ('photos', 'photos', false);
+
+-- Avatars bucket for user profile pictures
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true);
+
+
+-- STEP 8: Storage Policies
+-- ============================================================
+
+-- Photos bucket policies
+create policy "Users can upload own photos"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'photos' and
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "Users can view own photos"
+  on storage.objects for select
+  using (
+    bucket_id = 'photos' and
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "Users can delete own photos"
+  on storage.objects for delete
+  using (
+    bucket_id = 'photos' and
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Avatars bucket policies (public read)
+create policy "Anyone can view avatars"
+  on storage.objects for select
+  using (bucket_id = 'avatars');
+
+create policy "Users can upload own avatar"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'avatars' and
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "Users can update own avatar"
+  on storage.objects for update
+  using (
+    bucket_id = 'avatars' and
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+
+#end of sql 19

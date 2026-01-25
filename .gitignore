@@ -25,3 +25,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# data files (moved to local storage)
+construction-data/
+archive/construction-data/
+BUSINESS_PLAN/

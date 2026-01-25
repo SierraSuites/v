@@ -1,0 +1,746 @@
+SIERRA SUITES AI: PRIORITY USE CASES DEEP DIVE (PART 2)
+Sustainability & Reporting Features
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIORITY 3B: SUSTAINABLE MATERIAL RECOMMENDER / MATERIAL OPTIMIZER (MERGED)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PURPOSE:
+Merged AI tool that recommends materials based on user's priority: reduce carbon OR reduce cost (or balance both). Single interface, dual optimization modes.
+
+INPUT DATA SOURCES:
+
+SOURCE 1 - EC3 Database:
+- 100,000+ EPDs with GWP values and cost estimates
+- Material performance specifications
+
+SOURCE 2 - ICE Database (backup):
+- Alternative carbon data
+
+SOURCE 3 - RSMeans Data:
+- Current material costs by location
+- Labor costs for installation
+
+SOURCE 4 - Our Historical Data:
+- 500K permits with material descriptions (NLP extraction)
+- Material usage patterns by region
+- Cost trends over time
+
+USER INPUTS:
+- Material category (concrete, steel, insulation, glass, etc.)
+- Performance requirements (compressive strength, R-value, U-factor, etc.)
+- Optimization mode (dropdown):
+  • Minimize carbon footprint
+  • Minimize cost
+  • Balance both (Pareto optimal)
+- Budget constraint (max price per unit)
+- Location (for local availability and shipping carbon)
+
+───────────────────────────────────────────────────────────────────────────────
+
+OUTPUT FORMAT:
+
+MATERIAL RECOMMENDATIONS CARD:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ MATERIAL OPTIMIZER: CONCRETE FOR FOUNDATION                                │
+│ Mode: MINIMIZE CARBON ✓ | Alternatives found: 8 options                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ CURRENT SELECTION:                                                          │
+│                                                                             │
+│ Standard Portland Cement Concrete (3,500 PSI)                              │
+│ • GWP: 385 kg CO2e per cubic yard                                          │
+│ • Cost: $142 per cubic yard (SF pricing)                                   │
+│ • Performance: 3,500 PSI compressive strength                              │
+│ • Availability: Immediate (local supplier)                                  │
+│                                                                             │
+│ Your project needs: 125 cubic yards                                         │
+│ Total carbon: 48.1 tons CO2e                                                │
+│ Total cost: $17,750                                                         │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ TOP RECOMMENDATIONS:                                                        │
+│                                                                             │
+│ ┌───────────────────────────────────────────────────────────────────────┐ │
+│ │ 🏆 RECOMMENDED: CarbonCure Concrete (3,500 PSI)                       │ │
+│ │                                                                        │ │
+│ │ Carbon Savings:   87 kg CO2e/CY → 10.9 tons total saved (23% less)   │ │
+│ │ Cost:             $143/CY → +$125 total (+0.7% more)                  │ │
+│ │ Performance:      Identical (3,500 PSI)                               │ │
+│ │ Availability:     2-day lead time (Supplier: Bay Area Concrete)       │ │
+│ │                                                                        │ │
+│ │ Why this is best:                                                      │ │
+│ │ • Largest carbon reduction (23%) for minimal cost increase            │ │
+│ │ • Meets all structural requirements                                   │ │
+│ │ • CarbonCure is certified with EPD (helps LEED credits)               │ │
+│ │ • Your past projects: 0 uses (new material for you)                   │ │
+│ │                                                                        │ │
+│ │ [Select This Material]  [View EPD]  [View Supplier]                   │ │
+│ └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│ ┌───────────────────────────────────────────────────────────────────────┐ │
+│ │ 🥈 OPTION 2: Fly Ash Concrete Blend (30% fly ash replacement)        │ │
+│ │                                                                        │ │
+│ │ Carbon Savings:   298 kg CO2e/CY → 10.9 tons total saved (23% less)  │ │
+│ │ Cost:             $138/CY → -$500 total (SAVES 2.8%!)                 │ │
+│ │ Performance:      3,600 PSI (slightly stronger)                       │ │
+│ │ Availability:     3-day lead time (Supplier: Pacific Cement)          │ │
+│ │                                                                        │ │
+│ │ Trade-offs:                                                            │ │
+│ │ ✓ Same carbon reduction as CarbonCure                                 │ │
+│ │ ✓ SAVES money instead of costing more                                 │ │
+│ │ ⚠ Slower curing time (7 days vs. 5 days for standard)                │ │
+│ │ ⚠ Not ideal for cold weather pours                                    │ │
+│ │                                                                        │ │
+│ │ [Select This Material]  [View Technical Specs]                        │ │
+│ └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│ ┌───────────────────────────────────────────────────────────────────────┐ │
+│ │ 🥉 OPTION 3: Geopolymer Concrete (ultra-low carbon)                  │ │
+│ │                                                                        │ │
+│ │ Carbon Savings:   95 kg CO2e/CY → 36.3 tons total saved (75% less!)  │ │
+│ │ Cost:             $189/CY → +$5,875 total (+33% more)                 │ │
+│ │ Performance:      4,200 PSI (stronger than required)                  │ │
+│ │ Availability:     2-week lead time (Supplier: CarbonBuilt)            │ │
+│ │                                                                        │ │
+│ │ Trade-offs:                                                            │ │
+│ │ ✓ MASSIVE carbon reduction (75%!) - best-in-class                     │ │
+│ │ ✓ Higher strength than required                                       │ │
+│ │ ⚠ Significantly more expensive (+33%)                                 │ │
+│ │ ⚠ Longer lead time (schedule risk)                                    │ │
+│ │ ⚠ New technology, less proven track record                            │ │
+│ │                                                                        │ │
+│ │ Best for: Projects prioritizing ESG goals over budget                 │ │
+│ │                                                                        │ │
+│ │ [Select This Material]  [Learn More About Geopolymer]                 │ │
+│ └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ COMPARISON TABLE (all 8 options):                                          │
+│                                                                             │
+│ Option                    GWP      Cost    Performance  Lead Time  Score   │
+│ ───────────────────────────────────────────────────────────────────────── │
+│ 🏆 CarbonCure              298      $143    3,500 PSI    2 days    95/100  │
+│ 🥈 Fly Ash Blend           298      $138    3,600 PSI    3 days    94/100  │
+│ 🥉 Geopolymer              95       $189    4,200 PSI    14 days   88/100  │
+│ 4. Slag Cement Blend       312      $139    3,500 PSI    2 days    91/100  │
+│ 5. Recycled Aggregate      355      $128    3,400 PSI    5 days    85/100  │
+│ 6. Hemp-Lime Concrete      142      $205    2,800 PSI    10 days   78/100  │
+│ 7. Standard Portland       385      $142    3,500 PSI    Same day  75/100  │
+│ 8. High-Strength (overkill) 425     $168    5,000 PSI    2 days    62/100  │
+│                                                                             │
+│ 📊 Sort by: [Carbon ▼] [Cost] [Performance] [Availability] [Overall Score] │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ OPTIMIZATION MODE SWITCHER:                                                │
+│                                                                             │
+│ Current: [Minimize Carbon ✓]  [Minimize Cost]  [Balance Both]             │
+│                                                                             │
+│ Click "Minimize Cost" to see lowest-price options →                        │
+│ Click "Balance Both" to see Pareto-optimal trade-offs →                    │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ IMPACT SUMMARY (if you select CarbonCure):                                 │
+│                                                                             │
+│ Carbon footprint:  48.1 tons → 37.2 tons (10.9 tons saved!)               │
+│ Project cost:      $17,750 → $17,875 (+$125 = +0.7%)                      │
+│                                                                             │
+│ Your project's total carbon footprint would drop from 142.8 to 131.9 tons  │
+│ New ranking: Top 18% of similar projects (was top 25%)                     │
+│                                                                             │
+│ [Apply This Material]  [Compare All Options]  [Export Analysis]            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+───────────────────────────────────────────────────────────────────────────────
+
+UI/UX PLACEMENT:
+
+OPTION 1: Dedicated /ai/material-optimizer Page
+- Full material comparison tool
+- Select category, get ranked recommendations
+
+OPTION 2: Embedded in /sustainability/materials Page (RECOMMENDED)
+- When user is selecting materials for project
+- "Get AI Recommendations" button next to each material category
+- Inline widget shows top 3 options
+
+OPTION 3: Linked from Carbon Footprint Estimator
+- When estimator shows "Reduction opportunities"
+- Clicking "View Alternative Concrete Options" opens Material Optimizer
+- Pre-filtered to that specific material
+
+OPTION 4: QuoteHub Integration at /quotes
+- When building quote, suggest optimal materials
+- "Optimize materials for carbon/cost" button
+- Auto-updates quote line items
+
+RECOMMENDED IMPLEMENTATION:
+✓ Primary: Embedded widget in /sustainability/materials
+✓ Secondary: Full page at /ai/material-optimizer
+✓ Tertiary: Linked from Carbon Footprint Estimator recommendations
+✓ Quaternary: QuoteHub integration
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIORITY 3C: LEED CREDIT AUTOMATION
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PURPOSE:
+Automatically track LEED credit requirements as user selects materials and systems. Generate compliance reports formatted for LEED Online submission.
+
+INPUT DATA:
+- User's material selections (from materials table)
+- EPD count, carbon reduction %, regional materials
+- Energy performance data
+- Water usage data (if applicable)
+- LEED version (v4 or v4.1)
+
+OUTPUT FORMAT:
+
+LEED CREDIT TRACKER CARD:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ LEED v4 BD+C: CREDIT PROGRESS                                              │
+│ Project: 123 Main St Renovation | Target: LEED Gold (60-79 points)         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ CURRENT SCORE: 58 points / 110 possible                                    │
+│ Certification Level: LEED SILVER (50-59 points) ✓                          │
+│ Points to Gold: 2 more points needed                                       │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ MATERIALS & RESOURCES (MR) CREDITS:                                        │
+│                                                                             │
+│ ✅ MR Credit: Building Product Disclosure & Optimization - EPDs            │
+│    Status: ACHIEVED (2 points)                                             │
+│    Progress: 12 EPDs documented (threshold: 20 products with EPDs)         │
+│    What you did right:                                                      │
+│    • CarbonCure concrete (EPD verified)                                    │
+│    • Recycled steel (EPD verified)                                         │
+│    • Low-E windows (EPD verified)                                          │
+│    • 9 more materials with EPDs                                            │
+│                                                                             │
+│ 🟡 MR Credit: Building Product Disclosure - Material Ingredients           │
+│    Status: IN PROGRESS (1 of 2 points earned)                              │
+│    Progress: 15% of materials by cost have Health Product Declarations     │
+│    Needed: 25% for 2 points (currently at 15%)                             │
+│    Recommendation: Add 3 more HPD-certified materials                      │
+│    [View HPD-Certified Material Options]                                   │
+│                                                                             │
+│ ✅ MR Credit: Construction & Demolition Waste Management                   │
+│    Status: ACHIEVED (2 points)                                             │
+│    Progress: 82% of waste diverted from landfill (threshold: 75%)          │
+│                                                                             │
+│ ❌ MR Prerequisite: Storage & Collection of Recyclables                    │
+│    Status: NOT MET                                                          │
+│    Action needed: Designate recycling area in building plans               │
+│    [Mark as Complete]                                                      │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ ENERGY & ATMOSPHERE (EA) CREDITS:                                          │
+│                                                                             │
+│ ✅ EA Credit: Optimize Energy Performance                                  │
+│    Status: ACHIEVED (12 points)                                            │
+│    Progress: 22% better than ASHRAE 90.1 baseline                          │
+│    Points breakdown:                                                        │
+│    • 20-22% improvement = 12 points (you're at 22%)                        │
+│    • Note: 23-25% would earn 14 points                                     │
+│    Opportunity: Upgrade insulation → 24% improvement → +2 points           │
+│    Cost: $1,800 | Payback: 2.1 years                                       │
+│    [View Energy Upgrade Options]                                           │
+│                                                                             │
+│ ✅ EA Credit: Renewable Energy Production                                  │
+│    Status: ACHIEVED (3 points)                                             │
+│    Progress: 6.2% of energy from on-site solar (threshold: 5%)             │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ 🎯 QUICK WINS TO REACH GOLD (need 2 more points):                          │
+│                                                                             │
+│ OPTION 1: Upgrade insulation (easiest)                                     │
+│ • Earn: +2 points (EA: Optimize Energy Performance)                        │
+│ • Cost: $1,800                                                              │
+│ • Time: 1 day installation                                                  │
+│ • Result: 58 → 60 points = GOLD! ✓                                        │
+│ [Select This Option]                                                       │
+│                                                                             │
+│ OPTION 2: Add 3 HPD materials (moderate effort)                            │
+│ • Earn: +1 point (MR: Material Ingredients)                                │
+│ • Cost: Varies by material                                                  │
+│ • Still need 1 more point from elsewhere                                   │
+│ [View HPD Materials]                                                       │
+│                                                                             │
+│ OPTION 3: Install bike storage (design change)                             │
+│ • Earn: +1 point (Location & Transportation)                               │
+│ • Cost: $2,400                                                              │
+│ • Requires: Building design modification                                   │
+│ • Still need 1 more point                                                  │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ DOCUMENTATION STATUS:                                                       │
+│                                                                             │
+│ ✅ Ready for LEED Online submission:                                       │
+│ • MR: EPD documentation (12 products)                                      │
+│ • EA: Energy model results                                                  │
+│ • MR: Waste management reports                                             │
+│                                                                             │
+│ 🟡 Needs review:                                                           │
+│ • MR: Material Ingredients (upload HPDs)                                   │
+│ • SS: Site prerequisite (mark complete)                                    │
+│                                                                             │
+│ [Generate LEED Online Report (PDF)] [Export to Excel] [Email to Consultant]│
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+───────────────────────────────────────────────────────────────────────────────
+
+UI/UX PLACEMENT:
+
+OPTION 1: Dedicated /sustainability/leed Page (RECOMMENDED)
+- Full LEED tracker dashboard
+- All credits, progress bars, recommendations
+
+OPTION 2: Widget on Project Page /projects/[id]
+- "LEED Progress: 58/110 points - SILVER" widget
+- Click to expand full tracker
+
+OPTION 3: Linked from Materials Page
+- When selecting materials, show "LEED Impact: +2 points"
+- Encourages LEED-friendly material choices
+
+RECOMMENDED IMPLEMENTATION:
+✓ Primary: Full page at /sustainability/leed
+✓ Secondary: Widget on project page for LEED-targeted projects
+✓ Tertiary: Material selection shows LEED impact
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIORITY 3D: BUY CLEAN COMPLIANCE CHECKER
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PURPOSE:
+Verify materials meet state Buy Clean GWP limits (CA, WA, CO, OR, MN, NY, IL, MA, MD). Flag non-compliant materials and suggest alternatives.
+
+INPUT DATA:
+- User's material selections
+- State (from project location)
+- EC3 database for material GWP values
+- State GWP limit tables (hardcoded, updated annually)
+
+OUTPUT FORMAT:
+
+BUY CLEAN COMPLIANCE REPORT:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ BUY CLEAN COMPLIANCE CHECK: CALIFORNIA                                     │
+│ Project: 123 Main St Renovation | Project Type: Public Works               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ COMPLIANCE STATUS: ⚠️ 1 MATERIAL NON-COMPLIANT                            │
+│                                                                             │
+│ California Buy Clean Act (AB 262) requires materials used in state-funded  │
+│ projects to meet maximum GWP (Global Warming Potential) limits.            │
+│                                                                             │
+│ Your project is SUBJECT to Buy Clean requirements because:                 │
+│ • Location: California                                                      │
+│ • Project type: Public works (state/local government funded)               │
+│ • Value: $950,000 (threshold: $100,000+)                                   │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ MATERIAL COMPLIANCE BREAKDOWN:                                             │
+│                                                                             │
+│ ✅ COMPLIANT MATERIALS:                                                    │
+│                                                                             │
+│ 1. Rebar (unfabricated)                                                    │
+│    Your selection: 755 kg CO2e/ton                                         │
+│    CA Limit: 755 kg CO2e/ton                                               │
+│    Status: COMPLIANT ✓ (exactly at limit)                                 │
+│                                                                             │
+│ 2. Structural Steel                                                        │
+│    Your selection: 1,720 kg CO2e/ton                                       │
+│    CA Limit: 1,876 kg CO2e/ton                                             │
+│    Status: COMPLIANT ✓ (8% below limit)                                   │
+│                                                                             │
+│ ❌ NON-COMPLIANT MATERIALS:                                                │
+│                                                                             │
+│ 3. Flat Glass                                                              │
+│    Your selection: 1,580 kg CO2e/ton ⚠️                                    │
+│    CA Limit: 1,430 kg CO2e/ton                                             │
+│    Status: NON-COMPLIANT (10% over limit)                                  │
+│    Action required: Replace with lower-GWP glass                           │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ 🔧 RECOMMENDED ALTERNATIVES FOR FLAT GLASS:                                │
+│                                                                             │
+│ ┌───────────────────────────────────────────────────────────────────────┐ │
+│ │ 🏆 RECOMMENDED: Guardian Low-E Triple Glazed                          │ │
+│ │                                                                        │ │
+│ │ GWP: 1,385 kg CO2e/ton (45 kg below limit) ✓                          │ │
+│ │ Cost: $22.50/SF (vs. current $21.80/SF = +$588 total)                 │ │
+│ │ Performance: U-factor 0.28 (better than current 0.32)                 │ │
+│ │ Availability: 5-day lead time (Supplier: Guardian Glass SF)           │ │
+│ │                                                                        │ │
+│ │ Why this is best:                                                      │ │
+│ │ ✓ Meets CA Buy Clean limit with margin (45 kg buffer)                 │ │
+│ │ ✓ Better thermal performance (lower U-factor)                         │ │ │ │ ✓ EPD verified (helps LEED credits)                                   │ │
+│ │ ✓ Only $588 more expensive (+3.2%)                                    │ │
+│ │                                                                        │ │
+│ │ [Select This Glass]  [View EPD]  [View Supplier]                      │ │
+│ └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│ ┌───────────────────────────────────────────────────────────────────────┐ │
+│ │ 🥈 OPTION 2: PPG Solarban 70 Low-E                                    │ │
+│ │                                                                        │ │
+│ │ GWP: 1,410 kg CO2e/ton (20 kg below limit) ✓                          │ │
+│ │ Cost: $21.20/SF (SAVES $504!)                                         │ │
+│ │ Performance: U-factor 0.30 (similar to current)                       │ │
+│ │ Availability: Immediate (Supplier: PPG SF)                            │ │
+│ │                                                                        │ │
+│ │ Trade-offs:                                                            │ │
+│ │ ✓ Meets limit (smaller margin than Option 1)                          │ │
+│ │ ✓ SAVES money                                                          │ │
+│ │ ⚠ Less thermal performance improvement                                │ │
+│ │                                                                        │ │
+│ │ [Select This Glass]                                                    │ │
+│ └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ COMPLIANCE SUMMARY:                                                         │
+│                                                                             │
+│ Total materials checked: 3                                                  │
+│ Compliant: 2 (67%)                                                          │
+│ Non-compliant: 1 (33%)                                                      │
+│                                                                             │
+│ TO ACHIEVE FULL COMPLIANCE:                                                 │
+│ • Replace flat glass with Guardian Low-E (recommended)                     │
+│ • Cost impact: +$588 (+0.06% of project budget)                            │
+│ • Timeline impact: None (5-day lead time acceptable)                       │
+│                                                                             │
+│ Once this change is made, your project will be 100% compliant with         │
+│ California Buy Clean Act requirements.                                      │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ [Apply Recommended Materials]  [Generate Compliance Report PDF]  [Save]    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+───────────────────────────────────────────────────────────────────────────────
+
+UI/UX PLACEMENT:
+
+OPTION 1: Automatic Check at Project Creation (RECOMMENDED)
+- When user creates project in CA/WA/CO/OR/MN
+- Auto-trigger compliance check
+- Show warning: "This project is subject to Buy Clean requirements"
+
+OPTION 2: Dedicated /sustainability/buy-clean Page
+- Full compliance checker
+- Upload materials list, get instant report
+
+OPTION 3: Material Selection Page
+- When selecting materials, show "Buy Clean Status" badge
+- Red badge = non-compliant, green = compliant
+
+OPTION 4: Project Dashboard Widget
+- For public works projects in Buy Clean states
+- "Buy Clean Status: ⚠️ 1 issue" widget
+- Click to see full report
+
+RECOMMENDED IMPLEMENTATION:
+✓ Primary: Auto-check at project creation (if in Buy Clean state)
+✓ Secondary: Material selection shows compliance badges
+✓ Tertiary: Full report page at /sustainability/buy-clean
+✓ Quaternary: Project dashboard widget
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIORITY 4: AI DAILY REPORT GENERATOR
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PURPOSE:
+Auto-generate professional daily construction reports using all project data (FieldSnap photos, TaskFlow tasks, crew data, weather, AI predictions).
+
+INPUT DATA:
+- Today's photos from FieldSnap (GPS, timestamps)
+- Tasks completed today from TaskFlow
+- Crew attendance from crew_assignments table
+- Materials delivered (from materials table)
+- Weather conditions (from Weather API)
+- Incidents/notes from daily_reports table
+- AI predictions (from Smart Estimator, Project Predictor)
+
+OUTPUT FORMAT:
+
+AI DAILY REPORT (PDF):
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         DAILY CONSTRUCTION REPORT                           │
+│                                                                             │
+│ Project: 123 Main St Renovation              Date: February 10, 2026       │
+│ Contractor: ABC Construction                 Report #: 028 of 090           │
+│ Weather: Partly Cloudy, 58°F                 Prepared by: Sierra AI         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ EXECUTIVE SUMMARY:                                                          │
+│                                                                             │
+│ "Day 28 of 90: Excellent progress today with roofing work advancing ahead  │
+│ of schedule. Crew efficiency was 118% of your historical average.          │
+│ Completed 5 tasks (expected: 4.2). No safety incidents. Weather conditions │
+│ were ideal for outdoor work. Project remains on track for March 6          │
+│ completion, with health score improving from 67 to 73."                    │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ PROGRESS SUMMARY:                                                           │
+│                                                                             │
+│ Overall Completion:      48% (was 42% yesterday = +6% progress)            │
+│ Schedule Status:         ON TRACK ✓ (was AT RISK yesterday)               │
+│ Budget Status:           UNDER BUDGET by $3,200 (4% savings)               │
+│                                                                             │
+│ Tasks Completed Today:   5 tasks                                            │
+│ Tasks In Progress:       3 tasks                                            │
+│ Tasks Started Today:     2 tasks                                            │
+│                                                                             │
+│ Milestones:                                                                 │
+│ ✅ Roofing 75% complete (milestone: 70%) - AHEAD OF SCHEDULE              │
+│ ⏳ Electrical rough-in 45% complete (milestone: 50%) - SLIGHTLY BEHIND     │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ CREW PERFORMANCE:                                                           │
+│                                                                             │
+│ Crew Count:              8 workers on site                                  │
+│ Total Hours:             68 hours (8.5 hrs/worker average)                 │
+│ Attendance:              100% (8 of 8 scheduled)                            │
+│                                                                             │
+│ Productivity Analysis:                                                      │
+│ • Today's efficiency: 118% of your historical average ✓                    │
+│ • Tasks per hour: 0.074 (your avg: 0.063)                                  │
+│ • Reason for high productivity: Ideal weather, full crew attendance        │
+│                                                                             │
+│ Crew Roster:                                                                │
+│ • John Smith (Foreman) - 9 hours                                            │
+│ • Mike Johnson (Roofer) - 8.5 hours                                         │
+│ • Sarah Lee (Roofer) - 8.5 hours                                            │
+│ • Carlos Ruiz (Electrician) - 8 hours                                       │
+│ • [+4 more crew members...]                                                 │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ TASKS COMPLETED:                                                            │
+│                                                                             │
+│ 1. ✅ Install roofing shingles (Section B)                                │
+│    Assigned to: Mike Johnson, Sarah Lee                                    │
+│    Planned: 8 hours | Actual: 7.2 hours (10% faster than estimated)       │
+│                                                                             │
+│ 2. ✅ Electrical conduit installation (2nd floor)                         │
+│    Assigned to: Carlos Ruiz                                                │
+│    Planned: 6 hours | Actual: 6.5 hours (8% slower)                        │
+│                                                                             │
+│ 3. ✅ Framing inspection - PASSED ✓                                       │
+│    Inspector: SF Building Dept - No corrections needed                     │
+│                                                                             │
+│ [+2 more completed tasks...]                                                │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ MATERIALS & DELIVERIES:                                                     │
+│                                                                             │
+│ Delivered Today:                                                            │
+│ • Roofing shingles (850 SF) - Supplier: ABC Roofing Supply                │
+│ • Electrical wire (1,200 ft) - Supplier: SF Electric                       │
+│                                                                             │
+│ Used Today:                                                                 │
+│ • Roofing shingles: 680 SF                                                  │
+│ • Electrical conduit: 240 ft                                                │
+│ • Framing lumber: 180 board feet                                            │
+│                                                                             │
+│ Pending Deliveries:                                                         │
+│ ⚠️ Windows - Expected Feb 15 (ORDER PLACED ✓)                             │
+│ ⚠️ HVAC unit - Expected Mar 1                                              │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ WEATHER CONDITIONS:                                                         │
+│                                                                             │
+│ Conditions: Partly cloudy                                                   │
+│ Temperature: High 58°F / Low 48°F                                           │
+│ Precipitation: 0.0 inches                                                   │
+│ Wind: 8 mph (ideal for roofing work)                                        │
+│                                                                             │
+│ Impact on Work: NONE - Ideal conditions for outdoor tasks ✓                │
+│                                                                             │
+│ Tomorrow's Forecast:                                                        │
+│ • Clear skies, 62°F high                                                    │
+│ • No rain expected (good for continued roofing)                             │
+│ • Recommendation: Continue outdoor work as planned                          │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ SAFETY & INCIDENTS:                                                         │
+│                                                                             │
+│ ✅ ZERO safety incidents today                                             │
+│ ✅ All crew wearing required PPE (hard hats, safety harnesses for roofing) │
+│ ✅ Safety briefing conducted (fall protection for roofing work)            │
+│                                                                             │
+│ Days since last incident: 28 days                                           │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ AI INSIGHTS:                                                                │
+│                                                                             │
+│ 🎯 Project Health Score: 73/100 (improved from 67 yesterday) ✓            │
+│                                                                             │
+│ Positive trends:                                                            │
+│ • Roofing now ahead of schedule (was behind)                               │
+│ • Weather delay risk reduced from 78% to 52%                                │
+│ • Crew productivity 18% above your average                                  │
+│                                                                             │
+│ Action items for tomorrow:                                                  │
+│ 1. Focus on electrical rough-in (currently 5% behind schedule)             │
+│ 2. Confirm window delivery for Feb 15                                       │
+│ 3. Continue roofing while weather remains clear                             │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ PHOTOS (AI-SELECTED, 6 of 14 taken today):                                 │
+│                                                                             │
+│ [Photo 1: Roofing progress - Section B 75% complete]                       │
+│ [Photo 2: Electrical conduit installation - 2nd floor]                     │
+│ [Photo 3: Framing inspection - Inspector on site]                          │
+│ [Photo 4: Crew working on roofing - Safety protocols visible]              │
+│ [Photo 5: Material delivery - Roofing shingles]                            │
+│ [Photo 6: Overall site progress - Aerial view]                             │
+│                                                                             │
+│ Note: AI selected highest-quality photos showing key progress               │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ TOMORROW'S PLAN (Feb 11, 2026):                                             │
+│                                                                             │
+│ Scheduled Tasks:                                                            │
+│ • Complete roofing Section C (estimated: 8 hours)                           │
+│ • Continue electrical rough-in (estimated: 7 hours)                         │
+│ • Plumbing rough-in inspection (scheduled 10 AM)                            │
+│                                                                             │
+│ Expected Crew: 8 workers (same as today)                                    │
+│ Weather Forecast: Clear, 62°F (ideal for outdoor work)                     │
+│                                                                             │
+│ AI Prediction:                                                              │
+│ • Expected completion: 4-5 tasks                                            │
+│ • Predicted progress: +5% overall completion                                │
+│ • No major risks identified                                                 │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│ Report generated automatically by Sierra AI                                 │
+│ For questions, contact: [Your Company] | [Your Email]                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+───────────────────────────────────────────────────────────────────────────────
+
+UI/UX PLACEMENT:
+
+OPTION 1: Auto-Generate at End of Day (RECOMMENDED)
+- At 5 PM daily, system auto-generates report
+- Email PDF to project manager + client (if enabled)
+- Also saves to /reports/daily
+
+OPTION 2: Manual Generation at /reports/daily/new
+- User clicks "Generate Today's Report"
+- AI pulls all data, creates PDF instantly
+- User reviews, edits (if needed), sends
+
+OPTION 3: Project Page Widget
+- "Today's Report" widget on /projects/[id]
+- Shows summary, link to full PDF
+
+RECOMMENDED IMPLEMENTATION:
+✓ Primary: Auto-generate at 5 PM daily, email to stakeholders
+✓ Secondary: Manual generation button at /reports/daily/new
+✓ Tertiary: Project page shows "Latest Report" widget
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIORITY 5: AI PROJECT SUCCESS STORY GENERATOR (CRM)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+(See previous document for full details - this is the 8-page PDF with before/after photos, performance metrics, client testimonial, and call-to-action for reviews/referrals)
+
+UI/UX: Auto-generate when project status changes to "completed"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIORITY 6: OSHA SAFETY SENTINEL
+
+═══════════════════════════════════════════════════════════════════════════════
+
+(See previous document for full details - daily safety score, weather-based risk alerts, crew experience analysis)
+
+UI/UX: Daily widget on project page + /ai/safety full page
+
+═══════════════════════════════════════════════════════════════════════════════
+
+OVERALL SITE NAVIGATION STRATEGY
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIMARY NAVIGATION (Sidebar):
+
+🏠 Dashboard
+   └─ Quick Estimate widget
+   └─ High-Risk Projects widget
+   └─ AI Insights summary
+
+📊 Projects
+   └─ /projects (list view)
+   └─ /projects/new (Smart Estimator auto-triggers here!)
+   └─ /projects/[id] (Project Predictor widget here!)
+
+🤖 AI Command Center
+   └─ /ai (hub page with all 6 tools)
+   └─ /ai/estimator (Smart Estimator full page)
+   └─ /ai/predictor (Project Predictor full page)
+   └─ /ai/safety (OSHA Safety Sentinel)
+
+🌱 Sustainability
+   └─ /sustainability/carbon (Carbon Estimator)
+   └─ /sustainability/materials (Material Optimizer)
+   └─ /sustainability/leed (LEED Tracker)
+   └─ /sustainability/buy-clean (Buy Clean Checker)
+
+📈 Reports
+   └─ /reports/daily (AI Daily Reports)
+   └─ /reports/success-stories (AI Project Success Stories)
+
+✅ TaskFlow (existing)
+📸 FieldSnap (existing)
+💰 Quotes (existing)
+👥 Teams (existing)
+💬 CRM (existing)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+END OF BRAINSTORM DOCUMENT
+
+This comprehensive guide provides detailed input/output specifications, UI/UX placement strategies, and user journey flows for all 6 priority AI use cases. Ready for AWS implementation!
