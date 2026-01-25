@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getContacts, createContact } from '@/lib/supabase/quotes'
 import { requireAuth, rateLimit, addRateLimitHeaders, handleApiError } from '@/lib/api/auth-middleware'
+import type { ContactType } from '@/types/quotes'
 
 export const dynamic = 'force-dynamic'
 
@@ -329,6 +330,15 @@ export async function POST(request: NextRequest) {
     const addressParts = [contactData.address_line1, contactData.address_line2].filter(Boolean)
     const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : null
 
+    // Map validation schema contact types to ContactType enum
+    const typeMapping: Record<string, ContactType> = {
+      'client': 'client',
+      'supplier': 'vendor',
+      'subcontractor': 'subcontractor',
+      'lead': 'client',  // Leads are potential clients
+      'other': 'vendor'   // Default for other types
+    }
+
     const mappedContactData = {
       user_id: authData!.user.id,
       contact_name: contactData.name,
@@ -340,7 +350,7 @@ export async function POST(request: NextRequest) {
       state: contactData.state || null,
       zip: contactData.postal_code || null,
       country: contactData.country,
-      contact_type: contactData.type,
+      contact_type: typeMapping[contactData.type],
       notes: contactData.notes || null,
     }
 
