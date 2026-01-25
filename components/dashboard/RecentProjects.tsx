@@ -3,12 +3,13 @@
 import Link from 'next/link'
 
 interface Project {
-  id: number
+  id: string
   name: string
   status: string
   progress: number
-  dueDate: string
-  client: string
+  estimated_end_date: string
+  client_name?: string
+  updated_at: string
 }
 
 interface RecentProjectsProps {
@@ -66,7 +67,7 @@ export default function RecentProjects({ projects }: RecentProjectsProps) {
                   >
                     {project.name}
                   </Link>
-                  <p className="text-sm text-gray-500 mt-1">{project.client}</p>
+                  <p className="text-sm text-gray-500 mt-1">{project.client_name}</p>
                 </div>
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
@@ -93,7 +94,7 @@ export default function RecentProjects({ projects }: RecentProjectsProps) {
 
                 <div className="ml-4 text-right">
                   <p className="text-xs text-gray-500">Due Date</p>
-                  <p className="text-xs font-medium text-gray-900">{project.dueDate}</p>
+                  <p className="text-xs font-medium text-gray-900">{project.estimated_end_date}</p>
                 </div>
               </div>
             </div>
