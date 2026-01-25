@@ -316,7 +316,7 @@ export default function DashboardPage() {
 
         {/* Dashboard Stats */}
         <div className="mt-8">
-          <DashboardStats companyId={companyId} />
+          <DashboardStats />
         </div>
 
         {/* Main Grid */}
