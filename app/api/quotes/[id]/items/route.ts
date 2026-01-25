@@ -141,8 +141,26 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // 6. DATABASE OPERATION: Add quote item
     // RLS policies ensure user can only add items to their company's quotes
     const { data: item, error } = await addQuoteItem({
-      ...validationResult.data,
       quote_id: id,
+      item_number: 0, // Will be set by database trigger
+      convert_to_task: false,
+      created_task_id: null,
+      category: validationResult.data.category || null,
+      description: validationResult.data.description,
+      detailed_description: null,
+      benefits: null,
+      quantity: validationResult.data.quantity,
+      unit: validationResult.data.unit || 'unit',
+      unit_price: validationResult.data.unit_price,
+      cost_price: null,
+      markup_percentage: null,
+      margin: 0,
+      tax_rate: 0,
+      is_taxable: true,
+      notes: validationResult.data.notes || null,
+      sort_order: validationResult.data.order || 0,
+      is_optional: false,
+      is_allowance: false,
     })
 
     if (error) {
