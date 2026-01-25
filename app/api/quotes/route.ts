@@ -27,7 +27,7 @@ const GetQuotesQuerySchema = z.object({
   // Filters
   status: z.string()
     .transform(str => str.split(','))
-    .pipe(z.array(z.enum(['draft', 'sent', 'viewed', 'accepted', 'rejected', 'expired'])))
+    .pipe(z.array(z.enum(['draft', 'ready', 'sent', 'viewed', 'commented', 'revised', 'approved', 'rejected', 'on_hold', 'expired', 'won', 'lost', 'cancelled'])))
     .optional(),
   client_id: z.string().uuid().optional(),
   project_id: z.string().uuid().optional(),
