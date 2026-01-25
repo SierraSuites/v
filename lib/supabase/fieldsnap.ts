@@ -158,7 +158,7 @@ export type StorageUsage = {
 }
 
 export type MediaAssetInsert = Omit<MediaAsset, 'id' | 'created_at' | 'updated_at' | 'ai_processed_at' | 'reviewed_at'>
-export type MediaAssetUpdate = Partial<MediaAssetInsert>
+export type MediaAssetUpdate = Partial<Omit<MediaAsset, 'id' | 'created_at' | 'updated_at'>>
 
 // ============================================
 // MEDIA ASSETS CRUD
