@@ -91,7 +91,7 @@ const CreateQuoteSchema = z.object({
     .finite(),
 
   // Status and dates
-  status: z.enum(['draft', 'sent', 'viewed', 'accepted', 'rejected', 'expired'])
+  status: z.enum(['draft', 'ready', 'sent', 'viewed', 'commented', 'revised', 'approved', 'rejected', 'on_hold', 'expired', 'won', 'lost', 'cancelled'])
     .default('draft'),
 
   valid_until: z.string()
