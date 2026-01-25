@@ -311,7 +311,7 @@ export function estimateAnalysisCost(
 ): {
   estimatedCost: number
   currency: string
-  perPhotoC cost: number
+  perPhotoCost: number
 } {
   const costPerPhoto = {
     basic: 0.01,       // $0.01 per photo
