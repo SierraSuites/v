@@ -155,24 +155,6 @@ const nextConfig = {
   compress: true, // Enable gzip compression
   poweredByHeader: false, // Remove X-Powered-By header (security through obscurity)
 
-  // ============================================================================
-  // TURBOPACK CONFIGURATION (Next.js 16+)
-  // ============================================================================
-  turbopack: {
-    // Empty config to silence Turbopack warning
-    // Most apps work fine with default Turbopack settings
-  },
-
-  // ============================================================================
-  // TYPESCRIPT CONFIGURATION
-  // ============================================================================
-  typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
-    ignoreBuildErrors: true,
-  },
 
   // ============================================================================
   // EXPERIMENTAL FEATURES
