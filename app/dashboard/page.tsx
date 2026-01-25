@@ -172,7 +172,12 @@ export default function DashboardPage() {
 
       if (error) throw error
 
-      setRecentActivities(data || [])
+      // Transform the data to match Activity type (user_profiles is returned as array but we need object)
+      const transformedData = (data || []).map((item: any) => ({
+        ...item,
+        user_profiles: Array.isArray(item.user_profiles) ? item.user_profiles[0] : item.user_profiles
+      })) as Activity[]
+      setRecentActivities(transformedData)
     } catch (error) {
       console.error('Error loading activities:', error)
       setActivitiesError('Failed to load activity feed')
