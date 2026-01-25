@@ -14,7 +14,7 @@ async function createPunchListFromAnalysis(
   analysis: any,
   photoId: string,
   projectId: string
-): Promise<{ created: number; items: any[] }> {
+): Promise<{ created: number; items: any[]; tasksCreated: number }> {
   const createdItems: any[] = []
 
   try {
