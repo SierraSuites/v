@@ -142,16 +142,6 @@ const nextConfig = {
   },
 
   // ============================================================================
-  // API CONFIGURATION
-  // ============================================================================
-  api: {
-    bodyParser: {
-      sizeLimit: '4mb', // Limit request body size (prevents DoS)
-    },
-    responseLimit: '8mb', // Limit response size
-  },
-
-  // ============================================================================
   // COMPILER CONFIGURATION
   // ============================================================================
   compiler: {
@@ -166,20 +156,11 @@ const nextConfig = {
   poweredByHeader: false, // Remove X-Powered-By header (security through obscurity)
 
   // ============================================================================
-  // WEBPACK CONFIGURATION
+  // TURBOPACK CONFIGURATION (Next.js 16+)
   // ============================================================================
-  webpack: (config, { isServer }) => {
-    // Optimize for production builds
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false, // Don't include fs module in client bundle
-        net: false,
-        tls: false,
-      }
-    }
-
-    return config
+  turbopack: {
+    // Empty config to silence Turbopack warning
+    // Most apps work fine with default Turbopack settings
   },
 
   // ============================================================================
