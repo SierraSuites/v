@@ -10,9 +10,9 @@ import { requireAuth, rateLimit, addRateLimitHeaders, handleApiError } from '@/l
 export const dynamic = 'force-dynamic'
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 /**
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const rateLimitError = rateLimit(request, `quotes-get-${authData!.user.id}`, 200, 60000)
     if (rateLimitError) return rateLimitError
 
-    const { id } = params
+    const { id } = await params
 
     console.log('[GET /api/quotes/:id] Fetching quote:', id)
 
@@ -71,7 +71,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const rateLimitError = rateLimit(request, `quotes-update-${authData!.user.id}`, 50, 60000)
     if (rateLimitError) return rateLimitError
 
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
 
     console.log('[PUT /api/quotes/:id] Updating quote:', id, body)
@@ -107,7 +107,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const rateLimitError = rateLimit(request, `quotes-delete-${authData!.user.id}`, 10, 60000)
     if (rateLimitError) return rateLimitError
 
-    const { id } = params
+    const { id } = await params
 
     console.log('[DELETE /api/quotes/:id] Deleting quote:', id)
 
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const rateLimitError = rateLimit(request, `quotes-action-${authData!.user.id}`, 20, 60000)
     if (rateLimitError) return rateLimitError
 
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
     const { action } = body
 

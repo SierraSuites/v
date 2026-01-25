@@ -12,9 +12,9 @@ import { requireAuth, handleApiError, rateLimit, addRateLimitHeaders } from '@/l
 export const dynamic = 'force-dynamic'
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 // Validation schema for quote line item
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     if (rateLimitError) return rateLimitError
 
     // 3. INPUT VALIDATION: Validate quote ID format
-    const { id } = params
+    const { id } = await params
     if (!id || typeof id !== 'string' || id.length === 0) {
       return NextResponse.json(
         { error: 'Bad Request', message: 'Invalid quote ID' },
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (rateLimitError) return rateLimitError
 
     // 3. INPUT VALIDATION: Validate quote ID
-    const { id } = params
+    const { id } = await params
     if (!id || typeof id !== 'string' || id.length === 0) {
       return NextResponse.json(
         { error: 'Bad Request', message: 'Invalid quote ID' },
