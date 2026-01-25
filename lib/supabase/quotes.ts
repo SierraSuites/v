@@ -26,7 +26,14 @@ import type {
   QuoteAnalytics,
 } from '@/types/quotes'
 
-const supabase = createClient()
+// Lazy initialization to avoid calling createClient at build time
+let supabase: ReturnType<typeof createClient> | null = null
+function getSupabase() {
+  if (!supabase) {
+    supabase = createClient()
+  }
+  return supabase
+}
 
 // ============================================================
 // QUOTES CRUD OPERATIONS
@@ -155,7 +162,7 @@ export async function getQuoteById(id: string) {
       return { data: null, error: { message: 'User not authenticated' } }
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('quotes')
       .select(`
         *,
@@ -240,7 +247,7 @@ export async function createQuote(quote: Partial<QuoteInsert>) {
       view_count: 0,
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('quotes')
       .insert(quoteToInsert)
       .select()
@@ -271,7 +278,7 @@ export async function updateQuote(id: string, updates: QuoteUpdate) {
       return { data: null, error: { message: 'User not authenticated' } }
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('quotes')
       .update(updates)
       .eq('id', id)
@@ -389,7 +396,7 @@ export async function getQuoteItems(quoteId: string) {
   try {
     console.log('[getQuoteItems] Fetching items for quote:', quoteId)
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('quote_items')
       .select('*')
       .eq('quote_id', quoteId)
@@ -415,7 +422,7 @@ export async function addQuoteItem(item: QuoteItemInsert) {
   try {
     console.log('[addQuoteItem] Adding item to quote:', item.quote_id)
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('quote_items')
       .insert(item)
       .select()
@@ -441,7 +448,7 @@ export async function updateQuoteItem(id: string, updates: QuoteItemUpdate) {
   try {
     console.log('[updateQuoteItem] Updating item:', id)
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('quote_items')
       .update(updates)
       .eq('id', id)
@@ -563,7 +570,7 @@ export async function createContact(contact: ContactInsert) {
       return { data: null, error: { message: 'User not authenticated' } }
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('contacts')
       .insert({ ...contact, user_id: user.id })
       .select()
