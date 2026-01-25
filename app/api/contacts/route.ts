@@ -326,7 +326,7 @@ export async function POST(request: NextRequest) {
 
     // Map validation schema fields to Contact type fields
     const mappedContactData = {
-      user_id: auth!.user.id,
+      user_id: authData!.user.id,
       contact_name: contactData.name,
       company_name: contactData.company || null,
       email: contactData.email || null,
