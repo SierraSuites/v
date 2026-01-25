@@ -324,8 +324,24 @@ export async function POST(request: NextRequest) {
       contactData.email = contactData.email.toLowerCase()
     }
 
+    // Map validation schema fields to Contact type fields
+    const mappedContactData = {
+      user_id: auth!.user.id,
+      contact_name: contactData.name,
+      company_name: contactData.company || null,
+      email: contactData.email || null,
+      phone: contactData.phone || null,
+      address: contactData.address || null,
+      city: contactData.city || null,
+      state: contactData.state || null,
+      zip: contactData.zip || null,
+      country: contactData.country,
+      contact_type: contactData.type,
+      notes: contactData.notes || null,
+    }
+
     // 6. CREATE CONTACT IN DATABASE
-    const { data: contact, error } = await createContact(contactData)
+    const { data: contact, error } = await createContact(mappedContactData)
 
     if (error) {
       console.error('[POST /api/contacts] Database error:', error)
