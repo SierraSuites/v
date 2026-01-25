@@ -189,8 +189,7 @@ export async function POST(request: NextRequest) {
         ...analysis.objects.slice(0, 5),
         ...(analysis.defects.length > 0 ? ['defect-detected'] : []),
         ...(analysis.safety_issues.length > 0 ? ['safety-concern'] : [])
-      ],
-      ai_processed_at: new Date().toISOString()
+      ]
     })
 
     if (!updated) {
