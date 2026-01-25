@@ -53,7 +53,7 @@ const CreateContactSchema = z.object({
   name: z.string()
     .min(1, 'Name is required')
     .max(200, 'Name too long')
-    .regex(/^[\p{L}\p{M}\p{N}\s\-\'\.]+$/u, 'Name contains invalid characters'),
+    .regex(/^[\p{L}\p{M}\p{N}\s\-'.]+$/u, 'Name contains invalid characters'),
 
   type: z.enum(['client', 'supplier', 'subcontractor', 'lead', 'other'])
     .default('client'),
