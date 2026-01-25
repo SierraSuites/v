@@ -206,7 +206,7 @@ Best regards,
 This is a friendly reminder that Invoice #{invoice_number} for {project_name} was due on {due_date}.
 
 Invoice Details:
-Amount: ${amount}
+Amount: {amount}
 Due Date: {due_date}
 Project: {project_name}
 
