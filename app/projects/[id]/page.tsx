@@ -9,13 +9,14 @@ import ProjectHeader from '@/components/projects/ProjectHeader'
 import ProjectTabs from '@/components/projects/ProjectTabs'
 
 interface Props {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function ProjectDetailPage({ params }: Props) {
-  const { data: project, error } = await getProjectDetails(params.id)
+  const { id } = await params
+  const { data: project, error } = await getProjectDetails(id)
 
   if (error || !project) {
     notFound()
