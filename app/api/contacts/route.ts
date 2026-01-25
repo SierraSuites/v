@@ -226,10 +226,9 @@ export async function GET(request: NextRequest) {
     if (params.search) {
       const searchLower = params.search.toLowerCase()
       filteredContacts = filteredContacts.filter(contact =>
-        (contact.first_name?.toLowerCase().includes(searchLower) ||
-         contact.last_name?.toLowerCase().includes(searchLower) ||
-         contact.email?.toLowerCase().includes(searchLower) ||
-         contact.company?.toLowerCase().includes(searchLower))
+        (contact.contact_name?.toLowerCase().includes(searchLower) ||
+         contact.company_name?.toLowerCase().includes(searchLower) ||
+         contact.email?.toLowerCase().includes(searchLower))
       )
     }
 
