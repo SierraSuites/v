@@ -326,19 +326,11 @@ export default function DashboardPage() {
             {/* Recent Projects */}
             <RecentProjects
               projects={recentProjects}
-              loading={loadingProjects}
-              error={projectsError}
-              formatDate={formatDate}
-              onRetry={loadRecentProjects}
             />
 
             {/* Activity Feed */}
             <ActivityFeed
               activities={recentActivities}
-              loading={loadingActivities}
-              error={activitiesError}
-              getTimeAgo={getTimeAgo}
-              onRetry={loadRecentActivities}
             />
           </div>
 
@@ -347,10 +339,6 @@ export default function DashboardPage() {
             {/* Upcoming Tasks */}
             <UpcomingTasks
               tasks={upcomingTasks}
-              loading={loadingTasks}
-              error={tasksError}
-              formatDate={formatDate}
-              onRetry={loadUpcomingTasks}
             />
           </div>
         </div>
