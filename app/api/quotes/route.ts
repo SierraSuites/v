@@ -37,7 +37,7 @@ const GetQuotesQuerySchema = z.object({
   date_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)').optional(),
 
   // Sort
-  sort_field: z.enum(['quote_number', 'client_name', 'total', 'status', 'created_at', 'valid_until']).optional(),
+  sort_field: z.enum(['quote_number', 'title', 'total_amount', 'quote_date', 'created_at', 'status']).optional(),
   sort_direction: z.enum(['asc', 'desc']).default('desc'),
 
   // Pagination
