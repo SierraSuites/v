@@ -5,20 +5,20 @@
 // Beautiful timeline, status tracking, and actions
 // ============================================================
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { QuoteWithRelations, QuoteActivity, QuoteStatus } from '@/types/quotes'
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function QuoteDetailPage({ params }: PageProps) {
   const router = useRouter()
-  const { id } = params
+  const { id } = use(params)
 
   const [quote, setQuote] = useState<QuoteWithRelations | null>(null)
   const [loading, setLoading] = useState(true)

@@ -5,19 +5,19 @@
 // Beautiful, printable quote with branding
 // ============================================================
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, use } from 'react'
 import { useRouter } from 'next/navigation'
 import type { QuoteWithRelations } from '@/types/quotes'
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function QuotePDFPage({ params }: PageProps) {
   const router = useRouter()
-  const { id } = params
+  const { id } = use(params)
   const printRef = useRef<HTMLDivElement>(null)
 
   const [quote, setQuote] = useState<QuoteWithRelations | null>(null)

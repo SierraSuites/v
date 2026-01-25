@@ -5,19 +5,19 @@
 // Seamless editing experience with live preview
 // ============================================================
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import type { QuoteWithRelations, QuoteItemFormData } from '@/types/quotes'
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function EditQuotePage({ params }: PageProps) {
   const router = useRouter()
-  const { id } = params
+  const { id } = use(params)
 
   const [quote, setQuote] = useState<QuoteWithRelations | null>(null)
   const [loading, setLoading] = useState(true)
