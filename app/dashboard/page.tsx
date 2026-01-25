@@ -223,7 +223,12 @@ export default function DashboardPage() {
 
       if (error) throw error
 
-      setUpcomingTasks(data || [])
+      // Transform the data to match Task type (projects is returned as array but we need object)
+      const transformedData = (data || []).map((item: any) => ({
+        ...item,
+        projects: Array.isArray(item.projects) ? item.projects[0] : item.projects
+      })) as Task[]
+      setUpcomingTasks(transformedData)
     } catch (error) {
       console.error('Error loading tasks:', error)
       setTasksError('Failed to load upcoming tasks')
