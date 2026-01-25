@@ -1,10 +1,13 @@
 import Stripe from 'stripe'
 import type { Currency, Plan } from '@/types/international'
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
-  typescript: true,
-})
+// Initialize Stripe only if API key is available
+export const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-12-18.acacia',
+      typescript: true,
+    })
+  : null as any as Stripe // Type assertion for build time
 
 // Stripe Price ID mapping - these will be created in your Stripe Dashboard
 export function getStripePriceId(plan: Plan, currency: Currency): string {
