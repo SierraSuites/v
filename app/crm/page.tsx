@@ -118,7 +118,12 @@ export default function CRMDashboard() {
       .limit(5)
 
     if (!error && data) {
-      setUpcomingActivities(data)
+      // Transform the data to match Activity type (contact is returned as array but we need object)
+      const transformedData = data.map((item: any) => ({
+        ...item,
+        contact: Array.isArray(item.contact) ? item.contact[0] : item.contact
+      })) as Activity[]
+      setUpcomingActivities(transformedData)
     }
   }
 
