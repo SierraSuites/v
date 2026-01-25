@@ -22,6 +22,7 @@ type TemplateVariables = {
   start_date: string
   completion_date: string
   next_milestone: string
+  milestone_name: string
   budget_total: string
   amount_due: string
   company_name: string
