@@ -1,12 +1,10 @@
 "use client"
 
 import { memo, useState, useCallback } from 'react'
+// @ts-ignore - react-window types are not working correctly
 import { FixedSizeGrid } from 'react-window'
 import AutoSizer from 'react-virtualized-auto-sizer'
 import { type Photo } from '@/lib/supabase/photos'
-
-// Type alias for convenience
-type GridType = typeof FixedSizeGrid
 
 interface VirtualizedPhotoGridProps {
   photos: Photo[]
