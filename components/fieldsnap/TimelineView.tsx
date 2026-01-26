@@ -1,20 +1,7 @@
 "use client"
 
 import { useMemo } from 'react'
-
-interface Photo {
-  id: string
-  url: string
-  thumbnail_url: string
-  filename: string
-  captured_at: string
-  description: string | null
-  project_name: string | null
-  tags: string[]
-  ai_analysis: {
-    quality_score: number
-  } | null
-}
+import { type Photo } from '@/lib/supabase/photos'
 
 interface TimelineViewProps {
   photos: Photo[]

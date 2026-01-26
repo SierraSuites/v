@@ -1,19 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from 'react'
-
-interface Photo {
-  id: string
-  url: string
-  thumbnail_url: string
-  filename: string
-  gps_latitude: number | null
-  gps_longitude: number | null
-  description: string | null
-  captured_at: string
-  project_name: string | null
-  tags: string[]
-}
+import { type Photo } from '@/lib/supabase/photos'
 
 interface MapViewProps {
   photos: Photo[]
