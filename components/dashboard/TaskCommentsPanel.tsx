@@ -272,10 +272,9 @@ export default function TaskCommentsPanel({ taskId, taskTitle, onClose }: TaskCo
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Write a comment... (Use @username to mention someone)"
-                className="w-full p-3 rounded-lg border resize-none focus:outline-none focus:ring-2"
+                className="w-full p-3 rounded-lg border resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
                 style={{
-                  borderColor: '#E0E0E0',
-                  focusRingColor: '#FF6B6B'
+                  borderColor: '#E0E0E0'
                 }}
                 rows={3}
                 disabled={submitting}

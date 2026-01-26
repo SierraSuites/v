@@ -314,8 +314,8 @@ export default function FieldSnapPage() {
                   placeholder="Search photos, tags, descriptions..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 pr-10 rounded-lg border focus:outline-none focus:ring-2"
-                  style={{ borderColor: '#E0E0E0', focusRingColor: '#FF6B6B' }}
+                  className="w-full px-4 py-2 pr-10 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-400"
+                  style={{ borderColor: '#E0E0E0' }}
                 />
                 <span className="absolute right-3 top-2.5 text-xl">🔍</span>
               </div>
