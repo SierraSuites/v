@@ -147,11 +147,13 @@ export default function ResolutionWorkflow({
             style={{
               backgroundColor:
                 punchItem.severity === 'critical' ? '#FEE2E2' :
-                punchItem.severity === 'major' ? '#FED7AA' : '#FEF3C7'
+                punchItem.severity === 'high' ? '#FED7AA' :
+                punchItem.severity === 'medium' ? '#FEF3C7' : '#DBEAFE'
             }}
           >
             {punchItem.severity === 'critical' ? '🚨' :
-             punchItem.severity === 'major' ? '⚠️' : '📝'}
+             punchItem.severity === 'high' ? '⚠️' :
+             punchItem.severity === 'medium' ? '📝' : 'ℹ️'}
           </div>
           <div className="flex-1">
             <h3 className="font-bold text-lg" style={{ color: '#1A1A1A' }}>Resolution Workflow</h3>
