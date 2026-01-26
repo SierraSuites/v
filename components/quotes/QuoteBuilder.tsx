@@ -118,18 +118,22 @@ export default function QuoteBuilder({
                   id: crypto.randomUUID(),
                   quote_id: '',
                   description: item.description,
+                  detailed_description: item.detailed_description || null,
                   item_type: item.item_type,
                   quantity: item.quantity,
                   unit: item.unit,
                   unit_price: item.unit_price,
                   total_price: item.quantity * item.unit_price,
+                  cost_price: item.cost_price || null,
+                  markup_percentage: item.markup_percentage || null,
                   category: item.category,
                   is_taxable: item.is_taxable ?? true,
                   is_optional: item.is_optional ?? false,
+                  sku: item.sku || null,
+                  supplier: item.supplier || null,
                   notes: item.notes || null,
                   sort_order: templateLineItems.length,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
+                  created_at: new Date().toISOString()
                 })
               })
             })
@@ -168,18 +172,22 @@ export default function QuoteBuilder({
       id: crypto.randomUUID(),
       quote_id: quoteId || '',
       description: '',
+      detailed_description: null,
       item_type: 'labor',
       quantity: 1,
       unit: 'hours',
       unit_price: 0,
       total_price: 0,
+      cost_price: null,
+      markup_percentage: null,
       category: null,
       is_taxable: true,
       is_optional: false,
+      sku: null,
+      supplier: null,
       notes: null,
       sort_order: lineItems.length,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      created_at: new Date().toISOString()
     }
     setLineItems([...lineItems, newItem])
   }
