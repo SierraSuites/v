@@ -208,9 +208,9 @@ export default function AppShell({ children, user }: AppShellProps) {
                     {userData.company_name || 'Company'}
                   </p>
                   <span
-                    className={`inline-block mt-1.5 px-2 py-0.5 text-xs font-semibold text-white rounded-md ${planColors[userPlan]} shadow-sm`}
+                    className={`inline-block mt-1.5 px-2 py-0.5 text-xs font-semibold text-white rounded-md ${planColors[userPlan as keyof typeof planColors]} shadow-sm`}
                   >
-                    {planNames[userPlan]}
+                    {planNames[userPlan as keyof typeof planNames]}
                   </span>
                 </div>
               )}
