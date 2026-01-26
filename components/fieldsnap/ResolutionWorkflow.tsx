@@ -69,9 +69,16 @@ export default function ResolutionWorkflow({
 
       if (mediaError) throw mediaError
 
-      // Update punch item with proof photo
-      await punchListService.updateItem(punchItem.id, {
-        proof_photo_id: mediaAsset.id,
+      // Add comment with proof photo
+      await punchListService.addComment(punchItem.id, {
+        comment: 'Resolution proof photo uploaded',
+        comment_type: 'resolution',
+        resolved: true,
+        photo_proof_id: mediaAsset.id
+      })
+
+      // Update punch item status
+      await punchListService.update(punchItem.id, {
         status: 'resolved'
       })
 
@@ -86,10 +93,19 @@ export default function ResolutionWorkflow({
 
   const handleStatusUpdate = async (newStatus: typeof punchItem.status) => {
     try {
-      await punchListService.updateItem(punchItem.id, {
-        status: newStatus,
-        resolution_notes: notes || undefined
+      // Update status
+      await punchListService.update(punchItem.id, {
+        status: newStatus
       })
+
+      // Add comment if notes provided
+      if (notes.trim()) {
+        await punchListService.addComment(punchItem.id, {
+          comment: notes,
+          comment_type: 'status_change'
+        })
+      }
+
       setNotes('')
       setShowNotesInput(false)
       onStatusChange()
