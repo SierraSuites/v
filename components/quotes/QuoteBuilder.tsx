@@ -289,13 +289,18 @@ export default function QuoteBuilder({
         terms_and_conditions: termsConditions || undefined,
         line_items: lineItems.map(item => ({
           description: item.description,
+          detailed_description: item.detailed_description,
           item_type: item.item_type,
           quantity: item.quantity,
           unit: item.unit,
           unit_price: item.unit_price,
+          cost_price: item.cost_price,
+          markup_percentage: item.markup_percentage,
           category: item.category,
           is_taxable: item.is_taxable,
           is_optional: item.is_optional,
+          sku: item.sku,
+          supplier: item.supplier,
           notes: item.notes,
           sort_order: item.sort_order
         }))
