@@ -1,15 +1,15 @@
 "use client"
 
 import { useState } from 'react'
-import { punchListService } from '@/lib/punchlist'
+import { punchListService, type PunchListStatus, type PunchListSeverity } from '@/lib/punchlist'
 import { createClient } from '@/lib/supabase/client'
 
 interface ResolutionWorkflowProps {
   punchItem: {
     id: string
     title: string
-    status: 'open' | 'in_progress' | 'resolved' | 'verified' | 'closed'
-    severity: 'critical' | 'major' | 'minor'
+    status: PunchListStatus
+    severity: PunchListSeverity
     photo_id: string
     proof_photo_id?: string | null
   }
@@ -119,8 +119,9 @@ export default function ResolutionWorkflow({
     switch (status) {
       case 'open': return '#DC2626'
       case 'in_progress': return '#F59E0B'
+      case 'pending_review': return '#3B82F6'
       case 'resolved': return '#10B981'
-      case 'verified': return '#6BCB77'
+      case 'rejected': return '#EF4444'
       case 'closed': return '#6B7280'
       default: return '#6B7280'
     }
@@ -129,8 +130,8 @@ export default function ResolutionWorkflow({
   const workflowSteps = [
     { key: 'open', label: 'Open', icon: '🔴', description: 'Issue identified' },
     { key: 'in_progress', label: 'In Progress', icon: '🟡', description: 'Being worked on' },
+    { key: 'pending_review', label: 'Pending Review', icon: '🔵', description: 'Awaiting review' },
     { key: 'resolved', label: 'Resolved', icon: '🟢', description: 'Fix completed' },
-    { key: 'verified', label: 'Verified', icon: '✅', description: 'Fix confirmed' },
     { key: 'closed', label: 'Closed', icon: '🔒', description: 'Archived' }
   ]
 
