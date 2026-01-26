@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay } from 'date-fns'
-import enUS from 'date-fns/locale/en-US'
+import { enUS } from 'date-fns/locale/en-US'
 
 type Task = {
   id: string
