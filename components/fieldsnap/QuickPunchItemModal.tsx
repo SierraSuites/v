@@ -73,16 +73,15 @@ export default function QuickPunchItemModal({
     try {
       setLoading(true)
 
-      await punchListService.createItem({
+      await punchListService.create({
         project_id: photo.project_id,
         photo_id: photo.id,
         title: title.trim(),
-        description: description.trim() || null,
+        description: description.trim() || undefined,
         severity,
         category,
-        location: location.trim() || null,
-        assigned_to: assignedTo.trim() || null,
-        status: 'open'
+        location_description: location.trim() || undefined,
+        assigned_to: assignedTo.trim() || undefined
       })
 
       // Reset form
