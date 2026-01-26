@@ -297,10 +297,9 @@ export default function QuotePDFPage({ params }: PageProps) {
             <p className="text-xs text-gray-500">
               This quote is valid until {quote.valid_until ? formatDate(quote.valid_until) : 'acceptance'}
             </p>
-            {quote.status === 'approved' && quote.approved_at && (
+            {quote.status === 'approved' && (
               <div className="mt-4 inline-block bg-green-100 border-2 border-green-500 rounded-lg px-6 py-3">
                 <div className="text-lg font-bold text-green-700">✓ APPROVED</div>
-                <div className="text-xs text-green-600 mt-1">Approved on {formatDate(quote.approved_at)}</div>
               </div>
             )}
           </div>
