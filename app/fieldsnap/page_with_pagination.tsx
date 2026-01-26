@@ -163,8 +163,8 @@ export default function FieldSnapPage() {
     if (storageResult.data) {
       setStats(prev => ({
         ...prev,
-        storageUsed: storageResult.data.used,
-        storageTotal: storageResult.data.total
+        storageUsed: storageResult.data.totalSize,
+        storageTotal: 10 * 1024 * 1024 * 1024 // 10GB default
       }))
     }
 
