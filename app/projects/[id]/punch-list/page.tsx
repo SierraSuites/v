@@ -362,11 +362,8 @@ export default function ProjectPunchListPage() {
 
         {/* Punch List */}
         <PunchListPanel
-          punchItems={filteredItems}
           projectId={params.id as string}
-          onPunchItemUpdate={handlePunchItemUpdate}
-          showProjectFilter={false}
-          enableBulkOperations={true}
+          onItemUpdated={handlePunchItemUpdate}
         />
       </div>
     </div>
