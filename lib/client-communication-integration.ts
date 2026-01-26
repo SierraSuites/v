@@ -72,6 +72,7 @@ export interface CRMContact {
 
 export interface QuoteData {
   id: string
+  project_id: string | null
   project_name: string
   client_id: string
   client_name: string
