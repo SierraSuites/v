@@ -51,9 +51,7 @@ export default function SharePhotoModal({
         .from('shared_media_assets')
         .select(`
           *,
-          team:company_teams(id, name, color),
-          user:auth.users(id, email, user_metadata),
-          shared_by_user:auth.users!shared_media_assets_shared_by_fkey(id, email, user_metadata)
+          team:company_teams(id, name, color)
         `)
         .eq('media_asset_id', photoId)
         .eq('is_active', true)
