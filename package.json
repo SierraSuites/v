@@ -78,6 +78,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.9",
+    "@types/frappe-gantt": "^0.6.4",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-big-calendar": "^1.8.9",
