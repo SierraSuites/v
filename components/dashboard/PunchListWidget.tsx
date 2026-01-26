@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { punchListService } from '@/lib/punchlist'
-import PunchListItem from '@/components/fieldsnap/PunchListItem'
 import Link from 'next/link'
 
 interface PunchListWidgetProps {
