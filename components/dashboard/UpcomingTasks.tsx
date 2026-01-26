@@ -3,11 +3,15 @@
 import Link from 'next/link'
 
 interface Task {
-  id: number
+  id: string
   title: string
-  project: string
-  dueDate: string
+  due_date: string
   priority: string
+  status: string
+  project_id: string
+  projects?: {
+    name: string
+  }
 }
 
 interface UpcomingTasksProps {
@@ -60,7 +64,7 @@ export default function UpcomingTasks({ tasks }: UpcomingTasksProps) {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <p className="font-medium text-gray-900 text-sm">{task.title}</p>
-                  <p className="text-xs text-gray-500 mt-1">{task.project}</p>
+                  <p className="text-xs text-gray-500 mt-1">{task.projects?.name || 'No project'}</p>
                 </div>
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
@@ -71,7 +75,7 @@ export default function UpcomingTasks({ tasks }: UpcomingTasksProps) {
                 </span>
               </div>
               <div className="mt-2 flex items-center text-xs text-gray-600">
-                <span>📅 {task.dueDate}</span>
+                <span>📅 {task.due_date}</span>
               </div>
             </div>
           ))
