@@ -3,7 +3,7 @@
 export type SubscriptionTier = 'starter' | 'pro' | 'enterprise' | 'super_admin'
 
 // Sustainability features by tier
-export const SUSTAINABILITY_FEATURES = {
+export const SUSTAINABILITY_FEATURES: Record<SubscriptionTier, string[]> = {
   starter: [],
   pro: [
     'sustainability_dashboard',
