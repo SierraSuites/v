@@ -70,7 +70,7 @@ export default function ProjectPunchListPage() {
   const loadPunchItems = async (projectId: string) => {
     try {
       setLoading(true)
-      const items = await punchListService.getItemsByProject(projectId)
+      const items = await punchListService.getByProject(projectId)
       setPunchItems(items)
 
       // Calculate stats

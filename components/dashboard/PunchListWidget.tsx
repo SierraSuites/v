@@ -38,7 +38,7 @@ export default function PunchListWidget({
 
       if (projectId) {
         // Load critical items for specific project
-        const allItems = await punchListService.getItemsByProject(projectId)
+        const allItems = await punchListService.getByProject(projectId)
         items = allItems
           .filter(item => item.severity === 'critical' && item.status !== 'closed')
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
