@@ -137,7 +137,7 @@ export async function getProjectDetails(
   projectId: string
 ): Promise<{ data: ProjectDetails | null; error: Error | null }> {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Verify user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -315,7 +315,7 @@ export async function userHasProjectAccess(
   userId: string
 ): Promise<boolean> {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Check if user owns the project
     const { data: project } = await supabase
