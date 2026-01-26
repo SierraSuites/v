@@ -269,10 +269,9 @@ export default function PhotoDetailPage() {
           {/* Punch List Column */}
           <div className="lg:col-span-1">
             <PunchListPanel
-              punchItems={punchItems}
               photoId={photo.id}
               projectId={photo.project_id || ''}
-              onPunchItemUpdate={handlePunchItemUpdate}
+              onItemUpdated={handlePunchItemUpdate}
             />
           </div>
         </div>
