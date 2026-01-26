@@ -373,9 +373,10 @@ export async function duplicateQuote(id: string) {
       title: `${original.title} (Copy)`,
       status: 'draft',
       sent_at: null,
-      viewed_at: null,
-      approved_at: null,
-      rejected_at: null,
+      first_viewed_at: null,
+      last_viewed_at: null,
+      client_approved_at: null,
+      client_rejected_at: null,
     })
 
     if (createError || !newQuote) {
