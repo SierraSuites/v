@@ -274,14 +274,14 @@ export default function ResolutionWorkflow({
                         {step.key === 'resolved' && (
                           <div className="space-y-2">
                             <button
-                              onClick={() => handleStatusUpdate('verified')}
+                              onClick={() => handleStatusUpdate('pending_review')}
                               className="w-full px-4 py-2 rounded-lg font-semibold text-sm text-white transition-colors"
-                              style={{ backgroundColor: '#6BCB77' }}
+                              style={{ backgroundColor: '#3B82F6' }}
                             >
-                              ✅ Verify & Approve Fix
+                              🔵 Submit for Review
                             </button>
                             <button
-                              onClick={() => handleStatusUpdate('in_progress')}
+                              onClick={() => handleStatusUpdate('rejected')}
                               className="w-full px-4 py-2 rounded-lg font-semibold text-sm border hover:bg-red-50 transition-colors"
                               style={{ borderColor: '#DC2626', color: '#DC2626' }}
                             >
@@ -290,7 +290,7 @@ export default function ResolutionWorkflow({
                           </div>
                         )}
 
-                        {step.key === 'verified' && (
+                        {step.key === 'pending_review' && (
                           <button
                             onClick={() => handleStatusUpdate('closed')}
                             className="w-full px-4 py-2 rounded-lg font-semibold text-sm text-white transition-colors"
