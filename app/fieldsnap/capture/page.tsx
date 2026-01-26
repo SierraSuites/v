@@ -464,7 +464,6 @@ export default function FieldSnapCapturePage() {
           quality_score: null,
           ai_confidence: null,
           reviewed_by: null,
-          reviewed_at: null,
           review_notes: null,
           ai_analysis: null
         })
