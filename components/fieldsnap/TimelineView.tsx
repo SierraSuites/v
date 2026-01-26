@@ -58,8 +58,8 @@ export default function TimelineView({ photos, onPhotoClick }: TimelineViewProps
     // Calculate average quality for each group
     groups.forEach(group => {
       const qualityScores = group.photos
-        .filter(p => p.ai_analysis?.quality_score)
-        .map(p => p.ai_analysis!.quality_score)
+        .map(p => p.ai_analysis?.quality_score)
+        .filter((score): score is number => typeof score === 'number')
 
       group.stats.avgQuality = qualityScores.length > 0
         ? Math.round(qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length)
