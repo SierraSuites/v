@@ -196,15 +196,11 @@ export default function ResolutionWorkflow({
                 <div key={step.key} className="relative flex items-start gap-4">
                   {/* Step Icon */}
                   <div
-                    className={`
-                      relative z-10 w-12 h-12 rounded-full flex items-center justify-center text-xl
-                      transition-all
-                      ${isCurrent ? 'ring-4 ring-offset-2' : ''}
-                    `}
+                    className="relative z-10 w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all"
                     style={{
                       backgroundColor: isCompleted || isCurrent ? getStatusColor(step.key) : '#F3F4F6',
                       color: isCompleted || isCurrent ? '#FFFFFF' : '#9CA3AF',
-                      ringColor: isCurrent ? `${getStatusColor(step.key)}40` : undefined
+                      boxShadow: isCurrent ? `0 0 0 4px ${getStatusColor(step.key)}40, 0 0 0 6px white` : undefined
                     }}
                   >
                     {step.icon}
