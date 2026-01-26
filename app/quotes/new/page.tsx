@@ -37,6 +37,8 @@ export default function NewQuotePage() {
 
   // Additional fields not in QuoteFormData but needed for Quote creation
   const [scopeOfWork, setScopeOfWork] = useState<string>('')
+  const [autoCreateProject, setAutoCreateProject] = useState<boolean>(true)
+  const [autoCreateTasks, setAutoCreateTasks] = useState<boolean>(true)
 
   // Form data with enhanced fields
   const [formData, setFormData] = useState<QuoteFormData>({
@@ -290,6 +292,8 @@ export default function NewQuotePage() {
         ...formData,
         quote_type: quoteType,
         scope_of_work: scopeOfWork || null,
+        auto_create_project: autoCreateProject,
+        auto_create_tasks: autoCreateTasks,
         subtotal: totals.subtotal,
         tax_amount: totals.tax,
         discount_amount: totals.discount,
@@ -642,8 +646,8 @@ export default function NewQuotePage() {
                     <label className="flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={formData.auto_create_project}
-                        onChange={(e) => setFormData({ ...formData, auto_create_project: e.target.checked })}
+                        checked={autoCreateProject}
+                        onChange={(e) => setAutoCreateProject(e.target.checked)}
                         className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
                       />
                       <span className="ml-3 text-sm font-semibold text-gray-700">
@@ -654,8 +658,8 @@ export default function NewQuotePage() {
                     <label className="flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={formData.auto_create_tasks}
-                        onChange={(e) => setFormData({ ...formData, auto_create_tasks: e.target.checked })}
+                        checked={autoCreateTasks}
+                        onChange={(e) => setAutoCreateTasks(e.target.checked)}
                         className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
                       />
                       <span className="ml-3 text-sm font-semibold text-gray-700">
@@ -832,7 +836,7 @@ export default function NewQuotePage() {
                         </div>
 
                         {/* Task Conversion Checkbox */}
-                        {formData.auto_create_tasks && (quoteType === 'proposal' || quoteType === 'bid' || quoteType === 'change_order') && (
+                        {autoCreateTasks && (quoteType === 'proposal' || quoteType === 'bid' || quoteType === 'change_order') && (
                           <div className="border-2 border-green-200 bg-green-50 rounded-lg p-4">
                             <label className="flex items-center cursor-pointer">
                               <input
@@ -1197,17 +1201,17 @@ export default function NewQuotePage() {
               </div>
 
               {/* Conversion Settings Reminder */}
-              {(quoteType === 'proposal' || quoteType === 'bid') && formData.auto_create_project && (
+              {(quoteType === 'proposal' || quoteType === 'bid') && autoCreateProject && (
                 <div className="bg-purple-50 border-2 border-purple-300 rounded-xl p-6">
                   <h3 className="font-bold text-purple-900 mb-3 flex items-center">
                     <span className="text-2xl mr-2">🚀</span>
                     Automation Enabled
                   </h3>
                   <div className="space-y-2 text-sm text-purple-800">
-                    {formData.auto_create_project && (
+                    {autoCreateProject && (
                       <div>✓ Will automatically create a project when approved</div>
                     )}
-                    {formData.auto_create_tasks && (
+                    {autoCreateTasks && (
                       <div>✓ Will automatically create tasks from {lineItems.filter(i => i.convert_to_task).length} line items</div>
                     )}
                   </div>
@@ -1222,7 +1226,7 @@ export default function NewQuotePage() {
                   </h3>
                   <div className="space-y-2 text-sm text-orange-800">
                     <div>✓ Will add {formatCurrency(totals.total)} to project budget when approved</div>
-                    {formData.auto_create_tasks && (
+                    {autoCreateTasks && (
                       <div>✓ Will create {lineItems.filter(i => i.convert_to_task).length} new tasks tagged as [CHANGE ORDER]</div>
                     )}
                   </div>
