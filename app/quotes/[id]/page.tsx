@@ -518,12 +518,6 @@ export default function QuoteDetailPage({ params }: PageProps) {
                     <div className="text-sm font-semibold text-gray-900">{formatDateTime(quote.sent_at)}</div>
                   </div>
                 )}
-                {quote.viewed_at && (
-                  <div className="pt-3 border-t border-purple-200">
-                    <div className="text-xs text-gray-600 mb-1">Last Viewed</div>
-                    <div className="text-sm font-semibold text-gray-900">{formatDateTime(quote.viewed_at)}</div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
