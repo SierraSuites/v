@@ -3,24 +3,7 @@
 import { memo, useState, useCallback } from 'react'
 import { FixedSizeGrid as Grid } from 'react-window'
 import AutoSizer from 'react-virtualized-auto-sizer'
-
-interface Photo {
-  id: string
-  url: string
-  thumbnail_url: string
-  filename: string
-  file_size: number
-  captured_at: string
-  description: string | null
-  tags: string[]
-  ai_analysis: {
-    quality_score?: number
-    defects?: string[]
-    safety_issues?: string[]
-  } | null
-  status: 'pending' | 'approved' | 'rejected'
-  project_name: string | null
-}
+import { type Photo } from '@/lib/supabase/photos'
 
 interface VirtualizedPhotoGridProps {
   photos: Photo[]
