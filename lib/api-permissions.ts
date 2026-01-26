@@ -14,7 +14,7 @@ export async function requirePermission(
   projectId?: string
 ): Promise<{ authorized: boolean; userId?: string; error?: NextResponse }> {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -90,7 +90,7 @@ export async function requirePermissions(
   projectId?: string
 ): Promise<{ authorized: boolean; userId?: string; error?: NextResponse }> {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -151,7 +151,7 @@ export async function requireResourceOwnership(
   resourceId: string
 ): Promise<{ authorized: boolean; userId?: string; error?: NextResponse }> {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -230,7 +230,7 @@ export async function requireMediaAssetAccess(
   mediaAssetId: string
 ): Promise<{ authorized: boolean; userId?: string; error?: NextResponse }> {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -283,7 +283,7 @@ export async function requireMediaAssetDeletePermission(
   mediaAssetId: string
 ): Promise<{ authorized: boolean; userId?: string; error?: NextResponse }> {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -336,7 +336,7 @@ export async function requireTeamMembership(
   teamId: string
 ): Promise<{ authorized: boolean; userId?: string; role?: string; error?: NextResponse }> {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -396,7 +396,7 @@ export async function requireProjectAccess(
   projectId: string
 ): Promise<{ authorized: boolean; userId?: string; role?: string; error?: NextResponse }> {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -458,7 +458,7 @@ export async function getAuthenticatedUser(): Promise<{
   error?: NextResponse
 }> {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
