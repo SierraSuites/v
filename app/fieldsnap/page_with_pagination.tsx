@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getPhotos, subscribeToPhotos, getStorageStats, type Photo as PhotoType, type PaginatedResult } from '@/lib/supabase/photos'
+import { getPhotos, subscribeToPhotos, getStorageStats, type Photo, type PaginatedResult } from '@/lib/supabase/photos'
 import PhotoUploadModal from '@/components/fieldsnap/PhotoUploadModal'
 import { useToast } from '@/components/ToastNotification'
 import MapView from '@/components/fieldsnap/MapView'
@@ -12,43 +12,7 @@ import TimelineView from '@/components/fieldsnap/TimelineView'
 import VirtualizedPhotoGrid from '@/components/fieldsnap/VirtualizedPhotoGrid'
 import FieldSnapPagination from '@/components/fieldsnap/FieldSnapPagination'
 
-// Types
-interface Photo {
-  id: string
-  user_id: string
-  project_id: string | null
-  url: string
-  thumbnail_url: string
-  filename: string
-  file_size: number
-  mime_type: string
-  width: number
-  height: number
-  gps_latitude: number | null
-  gps_longitude: number | null
-  captured_at: string
-  uploaded_at: string
-  description: string | null
-  tags: string[]
-  ai_tags: string[]
-  // AI analysis removed - was displaying fake data
-  // Real AI integration planned for future release
-  weather_data: {
-    condition: string
-    temperature: number
-    humidity: number
-  } | null
-  blueprint_coordinates: {
-    x: number
-    y: number
-    floor: string
-    room: string
-  } | null
-  annotations: any[]
-  status: 'pending' | 'approved' | 'rejected'
-  uploader_name: string
-  project_name: string | null
-}
+// Types - using Photo type from lib/supabase/photos
 
 interface DashboardStats {
   totalPhotos: number
@@ -142,7 +106,7 @@ export default function FieldSnapPage() {
         loadStats()
         toast.success('New photo uploaded')
       } else if (payload.eventType === 'UPDATE') {
-        setPhotos(prev => prev.map(p => p.id === payload.new.id ? payload.new as PhotoType : p))
+        setPhotos(prev => prev.map(p => p.id === payload.new.id ? payload.new as Photo : p))
       } else if (payload.eventType === 'DELETE') {
         loadPhotos()
         loadStats()
