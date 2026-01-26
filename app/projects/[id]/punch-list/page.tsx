@@ -9,7 +9,7 @@ import Link from 'next/link'
 
 interface PunchListFiltersState {
   status: 'all' | 'open' | 'in_progress' | 'resolved' | 'verified' | 'closed'
-  severity: 'all' | 'critical' | 'major' | 'minor'
+  severity: 'all' | 'critical' | 'high' | 'medium' | 'low'
   category: 'all' | 'safety' | 'quality' | 'progress' | 'other'
   assignedTo: string
   searchQuery: string
@@ -28,8 +28,9 @@ export default function ProjectPunchListPage() {
     in_progress: 0,
     resolved: 0,
     critical: 0,
-    major: 0,
-    minor: 0
+    high: 0,
+    medium: 0,
+    low: 0
   })
 
   const [filters, setFilters] = useState<PunchListFiltersState>({
@@ -80,8 +81,9 @@ export default function ProjectPunchListPage() {
         in_progress: items.filter(i => i.status === 'in_progress').length,
         resolved: items.filter(i => i.status === 'resolved').length,
         critical: items.filter(i => i.severity === 'critical').length,
-        major: items.filter(i => i.severity === 'major').length,
-        minor: items.filter(i => i.severity === 'minor').length
+        high: items.filter(i => i.severity === 'high').length,
+        medium: items.filter(i => i.severity === 'medium').length,
+        low: items.filter(i => i.severity === 'low').length
       }
       setStats(newStats)
     } catch (err) {
@@ -214,14 +216,19 @@ export default function ProjectPunchListPage() {
               <p className="text-2xl font-bold" style={{ color: '#DC2626' }}>{stats.critical}</p>
             </div>
 
-            <div className="p-4 rounded-xl cursor-pointer hover:bg-orange-50 transition-colors" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }} onClick={() => handleFilterChange('severity', 'major')}>
-              <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Major</p>
-              <p className="text-2xl font-bold" style={{ color: '#F97316' }}>{stats.major}</p>
+            <div className="p-4 rounded-xl cursor-pointer hover:bg-orange-50 transition-colors" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }} onClick={() => handleFilterChange('severity', 'high')}>
+              <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>High</p>
+              <p className="text-2xl font-bold" style={{ color: '#F97316' }}>{stats.high}</p>
             </div>
 
-            <div className="p-4 rounded-xl cursor-pointer hover:bg-yellow-50 transition-colors" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }} onClick={() => handleFilterChange('severity', 'minor')}>
-              <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Minor</p>
-              <p className="text-2xl font-bold" style={{ color: '#FBBF24' }}>{stats.minor}</p>
+            <div className="p-4 rounded-xl cursor-pointer hover:bg-orange-50 transition-colors" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }} onClick={() => handleFilterChange('severity', 'medium')}>
+              <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Medium</p>
+              <p className="text-2xl font-bold" style={{ color: '#F59E0B' }}>{stats.medium}</p>
+            </div>
+
+            <div className="p-4 rounded-xl cursor-pointer hover:bg-yellow-50 transition-colors" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }} onClick={() => handleFilterChange('severity', 'low')}>
+              <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Low</p>
+              <p className="text-2xl font-bold" style={{ color: '#FBBF24' }}>{stats.low}</p>
             </div>
           </div>
         </div>
