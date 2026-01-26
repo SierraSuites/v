@@ -758,10 +758,10 @@ export function generateQuoteHTML(
     ` : ''}
 
     <!-- Terms and Conditions -->
-    ${opts.includeTermsConditions && quote.terms_conditions ? `
+    ${opts.includeTermsConditions && quote.terms_and_conditions ? `
     <div class="terms">
       <div class="terms-title">📄 Terms & Conditions</div>
-      <div class="terms-content">${quote.terms_conditions}</div>
+      <div class="terms-content">${quote.terms_and_conditions}</div>
     </div>
     ` : ''}
 
