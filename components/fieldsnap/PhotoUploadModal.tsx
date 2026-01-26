@@ -175,7 +175,6 @@ export default function PhotoUploadModal({
           project_id: projectId || null,
           project_name: projectName || null,
           status: 'pending',
-          annotations_count: 0,
           ai_analysis: null,
           weather_data: null,
           blueprint_coordinates: null,
