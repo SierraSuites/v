@@ -271,7 +271,7 @@ export default function PhotoDetailPage() {
             <PunchListPanel
               punchItems={punchItems}
               photoId={photo.id}
-              projectId={photo.project_id || undefined}
+              projectId={photo.project_id || ''}
               onPunchItemUpdate={handlePunchItemUpdate}
             />
           </div>
