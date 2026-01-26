@@ -6,33 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { punchListService } from '@/lib/punchlist'
 import PunchListPanel from '@/components/fieldsnap/PunchListPanel'
 import Link from 'next/link'
-
-interface Photo {
-  id: string
-  user_id: string
-  project_id: string | null
-  url: string
-  thumbnail_url: string
-  filename: string
-  file_size: number
-  mime_type: string
-  width: number
-  height: number
-  gps_latitude: number | null
-  gps_longitude: number | null
-  captured_at: string
-  uploaded_at: string
-  description: string | null
-  tags: string[]
-  ai_tags: string[]
-  // AI analysis removed - was fake data
-  // Real AI integration coming in future release
-  weather_data: any
-  blueprint_coordinates: any
-  annotations: any[]
-  status: 'pending' | 'approved' | 'rejected'
-  project_name: string | null
-}
+import { type Photo } from '@/lib/supabase/photos'
 
 export default function PhotoDetailPage() {
   const params = useParams()
