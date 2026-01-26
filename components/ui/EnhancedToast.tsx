@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { toast as hotToast } from 'react-hot-toast'
 
 /**
@@ -33,7 +34,7 @@ interface ToastOptions {
 export const success = (message: string, options?: ToastOptions) => {
   return hotToast.success(message, {
     duration: options?.duration || 4000,
-    icon: options?.icon || '✅',
+    icon: options?.icon ? <span>{options.icon}</span> : <span>✅</span>,
     style: {
       background: '#10B981',
       color: '#fff',
@@ -85,7 +86,7 @@ export const success = (message: string, options?: ToastOptions) => {
 export const error = (message: string, options?: ToastOptions) => {
   return hotToast.error(message, {
     duration: options?.duration || 6000,
-    icon: options?.icon || '❌',
+    icon: options?.icon ? <span>{options.icon}</span> : <span>❌</span>,
     style: {
       background: '#EF4444',
       color: '#fff',
@@ -137,7 +138,7 @@ export const error = (message: string, options?: ToastOptions) => {
 export const info = (message: string, options?: ToastOptions) => {
   return hotToast(message, {
     duration: options?.duration || 4000,
-    icon: options?.icon || 'ℹ️',
+    icon: options?.icon ? <span>{options.icon}</span> : <span>ℹ️</span>,
     style: {
       background: '#3B82F6',
       color: '#fff',
@@ -154,7 +155,7 @@ export const info = (message: string, options?: ToastOptions) => {
 export const warning = (message: string, options?: ToastOptions) => {
   return hotToast(message, {
     duration: options?.duration || 5000,
-    icon: options?.icon || '⚠️',
+    icon: options?.icon ? <span>{options.icon}</span> : <span>⚠️</span>,
     style: {
       background: '#F59E0B',
       color: '#fff',
@@ -216,7 +217,7 @@ export const uploadProgress = (filename: string, progress: number) => {
   if (progress === 100) {
     return hotToast.success(`${filename} uploaded!`, {
       id: toastId,
-      icon: '✅'
+      icon: <span>✅</span>
     })
   }
 
@@ -264,7 +265,7 @@ export const undo = (
     ),
     {
       duration: options?.duration || 5000,
-      icon: '↩️'
+      icon: <span>↩️</span>
     }
   )
 }
