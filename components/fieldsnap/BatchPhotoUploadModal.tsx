@@ -195,13 +195,7 @@ export default function BatchPhotoUploadModal({
             .from('fieldsnap-photos')
             .upload(filePath, photo.file, {
               cacheControl: '3600',
-              upsert: false,
-              onUploadProgress: (progress) => {
-                const percentage = (progress.loaded / progress.total) * 100
-                setPhotos(prev => prev.map(p =>
-                  p.id === photo.id ? { ...p, progress: percentage } : p
-                ))
-              }
+              upsert: false
             })
 
           if (uploadError) throw uploadError
