@@ -275,8 +275,7 @@ export const punchListService = {
       .select(`
         *,
         photo:media_assets(id, url, thumbnail_url, filename, captured_at),
-        project:projects(id, name, client_name),
-        assigned_user:auth.users(id, email, user_metadata)
+        project:projects(id, name, client_name)
       `)
       .eq('id', id)
       .single()
