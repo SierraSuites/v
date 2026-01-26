@@ -189,7 +189,7 @@ export default function ProjectsPage() {
   }
 
   // Handle project save (create/update)
-  const handleSaveProject = async (projectData: Partial<Project>) => {
+  const handleSaveProject = async (projectData: any) => {
     console.log('handleSaveProject called with projectData:', projectData)
     console.log('projectData keys:', Object.keys(projectData))
     console.log('projectData type:', typeof projectData)
