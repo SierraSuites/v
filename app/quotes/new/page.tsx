@@ -1291,7 +1291,24 @@ export default function NewQuotePage() {
       {showExcelImport && (
         <ExcelImport
           onImport={(items) => {
-            setLineItems([...lineItems, ...items])
+            const mappedItems: ExtendedQuoteItemFormData[] = items.map((item, index) => ({
+              item_number: lineItems.length + index + 1,
+              description: item.description,
+              detailed_description: '',
+              benefits: '',
+              category: item.category || '',
+              quantity: item.quantity,
+              unit: item.unit,
+              unit_price: item.unit_price,
+              cost_price: null,
+              tax_rate: formData.tax_rate,
+              is_taxable: item.is_taxable ?? true,
+              is_optional: item.is_optional ?? false,
+              is_allowance: item.is_allowance ?? false,
+              notes: item.notes || '',
+              convert_to_task: item.convert_to_task ?? true,
+            }))
+            setLineItems([...lineItems, ...mappedItems])
             setShowExcelImport(false)
           }}
           onClose={() => setShowExcelImport(false)}
