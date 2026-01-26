@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getUserCompany } from '@/lib/auth/get-user-company'
-import ExifReader from 'exifreader'
+import * as exifr from 'exifr'
 
 interface PhotoFile {
   id: string
@@ -64,7 +64,7 @@ export default function BatchPhotoUploadModal({
         // Extract EXIF data
         let metadata: PhotoFile['metadata'] = undefined
         try {
-          const tags = await ExifReader.load(file)
+          const tags = await exifr.parse(file)
 
           metadata = {
             location: tags.GPSLatitude && tags.GPSLongitude ? {
