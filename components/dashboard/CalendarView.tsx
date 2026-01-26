@@ -275,7 +275,6 @@ export default function CalendarView({ tasks, onTaskClick, onDateClick }: Calend
 
       {/* Calendar */}
       <div className="flex-1 rounded-xl overflow-hidden" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', height: '700px' }}>
-        {console.log(`🗓️ Rendering Calendar: ${events.length} events, view=${view}, date=${format(date, 'yyyy-MM-dd')}`)}
         {events.length === 0 && (
           <div className="p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded m-4">
             ⚠️ No events to display. Check console for details.
