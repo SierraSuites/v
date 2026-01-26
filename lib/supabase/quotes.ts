@@ -207,11 +207,24 @@ export async function createQuote(quote: Partial<QuoteInsert>) {
     const quoteToInsert: QuoteInsert = {
       user_id: user.id,
       created_by: user.id,
+      quote_type: quote.quote_type || 'estimate',
+      year: quote.year || new Date().getFullYear(),
+      sequence_number: quote.sequence_number || 1,
       title: quote.title || 'Untitled Quote',
       description: quote.description || null,
+      scope_of_work: quote.scope_of_work || null,
       client_id: quote.client_id || null,
       project_id: quote.project_id || null,
+      original_quote_id: quote.original_quote_id || null,
       status: quote.status || 'draft',
+      sub_status: quote.sub_status || null,
+
+      // Conversion tracking
+      converted_to_project_id: quote.converted_to_project_id || null,
+      converted_at: quote.converted_at || null,
+      conversion_type: quote.conversion_type || null,
+      auto_create_project: quote.auto_create_project || false,
+      auto_create_tasks: quote.auto_create_tasks || false,
 
       // Financial fields with defaults
       subtotal: quote.subtotal || 0,
@@ -223,15 +236,19 @@ export async function createQuote(quote: Partial<QuoteInsert>) {
       total_amount: quote.total_amount || 0,
       deposit_required: quote.deposit_required || 0,
       deposit_amount: quote.deposit_amount || 0,
+      deposit_received: quote.deposit_received || false,
       currency: quote.currency || 'USD',
+      total_cost: quote.total_cost || 0,
+      profit_margin: quote.profit_margin || 0,
 
       // Dates
       quote_date: quote.quote_date || new Date().toISOString().split('T')[0],
       valid_until: quote.valid_until || null,
       sent_at: quote.sent_at || null,
-      viewed_at: quote.viewed_at || null,
-      approved_at: quote.approved_at || null,
-      rejected_at: quote.rejected_at || null,
+      first_viewed_at: quote.first_viewed_at || null,
+      last_viewed_at: quote.last_viewed_at || null,
+      client_approved_at: quote.client_approved_at || null,
+      client_rejected_at: quote.client_rejected_at || null,
 
       // Additional details
       approved_by: quote.approved_by || null,
@@ -245,9 +262,9 @@ export async function createQuote(quote: Partial<QuoteInsert>) {
       branding: quote.branding || { logo: null, primaryColor: '#2563EB', accentColor: '#F97316' },
 
       // Tracking
-      email_sent_count: 0,
-      last_email_sent_at: null,
       view_count: 0,
+      revision_count: 0,
+      email_sent_count: 0,
     }
 
     const { data, error } = await getSupabase()
