@@ -219,8 +219,7 @@ export const punchListService = {
       .select(`
         *,
         photo:media_assets(id, url, thumbnail_url, filename),
-        project:projects(id, name),
-        assigned_user:auth.users(id, email)
+        project:projects(id, name)
       `)
       .eq('project_id', projectId)
       .order('created_at', { ascending: false })
