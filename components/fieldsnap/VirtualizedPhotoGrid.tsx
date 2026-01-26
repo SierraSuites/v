@@ -1,9 +1,12 @@
 "use client"
 
 import { memo, useState, useCallback } from 'react'
-import { FixedSizeGrid as Grid } from 'react-window'
+import { FixedSizeGrid } from 'react-window'
 import AutoSizer from 'react-virtualized-auto-sizer'
 import { type Photo } from '@/lib/supabase/photos'
+
+// Type alias for convenience
+type GridType = typeof FixedSizeGrid
 
 interface VirtualizedPhotoGridProps {
   photos: Photo[]
@@ -216,7 +219,7 @@ export default function VirtualizedPhotoGrid({
           }
 
           return (
-            <Grid
+            <FixedSizeGrid
               columnCount={columnCount}
               columnWidth={itemSize}
               height={height}
@@ -226,7 +229,7 @@ export default function VirtualizedPhotoGrid({
               overscanRowCount={2}
             >
               {Cell}
-            </Grid>
+            </FixedSizeGrid>
           )
         }}
       </AutoSizer>
