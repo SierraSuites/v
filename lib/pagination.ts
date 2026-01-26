@@ -259,7 +259,7 @@ export function createVirtualScrollLoader<T>(
       const limit = stopIndex - startIndex + 1
       const offset = startIndex
 
-      const { data, count } = await paginateWithOffset<T>(
+      const { data, totalRecords } = await paginateWithOffset<T>(
         supabase,
         tableName,
         Math.floor(offset / limit) + 1,
@@ -267,7 +267,7 @@ export function createVirtualScrollLoader<T>(
         params.filters
       )
 
-      totalCount = count?.totalRecords ?? 0
+      totalCount = totalRecords ?? 0
 
       // Cache the items
       data.forEach((item, index) => {
