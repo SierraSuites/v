@@ -278,15 +278,15 @@ export default function QuoteBuilder({
 
       const quoteData: CreateQuoteInput = {
         title,
-        description: description || null,
-        client_id: selectedClientId || null,
-        project_id: selectedProjectId || null,
+        description: description || undefined,
+        client_id: selectedClientId || undefined,
+        project_id: selectedProjectId || undefined,
         status,
         tax_rate: taxRate,
         discount_amount: discountAmount,
-        valid_until: validUntil || null,
-        notes: notes || null,
-        terms_and_conditions: termsConditions || null,
+        valid_until: validUntil || undefined,
+        notes: notes || undefined,
+        terms_and_conditions: termsConditions || undefined,
         line_items: lineItems.map(item => ({
           description: item.description,
           item_type: item.item_type,
