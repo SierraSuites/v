@@ -27,8 +27,8 @@ export default function QuickPunchItemModal({
 }: QuickPunchItemModalProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [severity, setSeverity] = useState<'critical' | 'major' | 'minor'>('major')
-  const [category, setCategory] = useState<'safety' | 'quality' | 'progress' | 'other'>('quality')
+  const [severity, setSeverity] = useState<'critical' | 'high' | 'medium' | 'low'>('medium')
+  const [category, setCategory] = useState<'safety' | 'quality' | 'compliance' | 'aesthetic' | 'functional'>('quality')
   const [location, setLocation] = useState('')
   const [assignedTo, setAssignedTo] = useState('')
   const [loading, setLoading] = useState(false)
@@ -45,7 +45,7 @@ export default function QuickPunchItemModal({
         } else if (photo.ai_analysis.defects.length > 0) {
           setTitle(`Defect: ${photo.ai_analysis.defects[0]}`)
           setCategory('quality')
-          setSeverity('major')
+          setSeverity('high')
           setDescription(photo.ai_analysis.defects.join(', '))
         }
       }
@@ -87,7 +87,7 @@ export default function QuickPunchItemModal({
       // Reset form
       setTitle('')
       setDescription('')
-      setSeverity('major')
+      setSeverity('medium')
       setCategory('quality')
       setLocation('')
       setAssignedTo('')
@@ -220,8 +220,9 @@ export default function QuickPunchItemModal({
                 disabled={loading}
               >
                 <option value="critical">🔴 Critical - Immediate action required</option>
-                <option value="major">🟠 Major - Needs attention soon</option>
-                <option value="minor">🟡 Minor - Can wait</option>
+                <option value="high">🟠 High - Needs attention soon</option>
+                <option value="medium">🟡 Medium - Should be addressed</option>
+                <option value="low">🟢 Low - Can wait</option>
               </select>
             </div>
 
@@ -239,8 +240,9 @@ export default function QuickPunchItemModal({
               >
                 <option value="safety">⚠️ Safety Issue</option>
                 <option value="quality">🔍 Quality Issue</option>
-                <option value="progress">📋 Progress Item</option>
-                <option value="other">📝 Other</option>
+                <option value="compliance">📋 Compliance</option>
+                <option value="aesthetic">🎨 Aesthetic</option>
+                <option value="functional">⚙️ Functional</option>
               </select>
             </div>
           </div>
