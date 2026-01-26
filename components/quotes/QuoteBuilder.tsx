@@ -93,7 +93,7 @@ export default function QuoteBuilder({
           setDiscountValue(quote.discount_amount || 0)
           setValidUntil(quote.valid_until ? quote.valid_until.split('T')[0] : '')
           setNotes(quote.notes || '')
-          setTermsConditions(quote.terms_conditions || '')
+          setTermsConditions(quote.terms_and_conditions || '')
           setLineItems(quote.line_items || [])
         }
       }
@@ -278,7 +278,7 @@ export default function QuoteBuilder({
         discount_amount: discountAmount,
         valid_until: validUntil || null,
         notes: notes || null,
-        terms_conditions: termsConditions || null,
+        terms_and_conditions: termsConditions || null,
         line_items: lineItems.map(item => ({
           description: item.description,
           item_type: item.item_type,
