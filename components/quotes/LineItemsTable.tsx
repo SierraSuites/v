@@ -96,18 +96,22 @@ export default function LineItemsTable({
       id: crypto.randomUUID(),
       quote_id: '',
       description: '',
+      detailed_description: null,
       item_type: 'labor',
       quantity: 1,
       unit: 'hours',
       unit_price: 0,
       total_price: 0,
+      cost_price: null,
+      markup_percentage: null,
       category: null,
       is_taxable: true,
       is_optional: false,
+      sku: null,
+      supplier: null,
       notes: null,
       sort_order: lineItems.length,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      created_at: new Date().toISOString()
     }
     onChange([...lineItems, newItem])
   }
