@@ -22,6 +22,9 @@ export default function NewQuotePage() {
   // STEP 1: Quote Type Selection
   const [quoteType, setQuoteType] = useState<QuoteType>('proposal')
 
+  // Additional fields not in QuoteFormData but needed for Quote creation
+  const [scopeOfWork, setScopeOfWork] = useState<string>('')
+
   // Form data with enhanced fields
   const [formData, setFormData] = useState<QuoteFormData>({
     title: '',
@@ -116,13 +119,12 @@ export default function NewQuotePage() {
         const quote = data.data
         setFormData({
           ...formData,
-          quote_type: quote.quote_type,
           title: quote.title + ' (Copy)',
           description: quote.description,
-          scope_of_work: quote.scope_of_work,
           client_id: quote.client_id,
         })
         setQuoteType(quote.quote_type)
+        setScopeOfWork(quote.scope_of_work || '')
         if (quote.items) {
           setLineItems(quote.items.map((item: any, index: number) => ({
             item_number: index + 1,
@@ -253,10 +255,6 @@ export default function NewQuotePage() {
 
   function nextStep() {
     if (validateStep()) {
-      // Update formData with quote type when leaving step 1
-      if (currentStep === 1) {
-        setFormData({ ...formData, quote_type: quoteType })
-      }
       setCurrentStep(Math.min(currentStep + 1, totalSteps))
     }
   }
@@ -277,6 +275,7 @@ export default function NewQuotePage() {
       const quoteData = {
         ...formData,
         quote_type: quoteType,
+        scope_of_work: scopeOfWork || null,
         subtotal: totals.subtotal,
         tax_amount: totals.tax,
         discount_amount: totals.discount,
@@ -581,8 +580,8 @@ export default function NewQuotePage() {
                     Scope of Work
                   </label>
                   <textarea
-                    value={formData.scope_of_work || ''}
-                    onChange={(e) => setFormData({ ...formData, scope_of_work: e.target.value })}
+                    value={scopeOfWork}
+                    onChange={(e) => setScopeOfWork(e.target.value)}
                     placeholder="Detailed scope of work for this proposal..."
                     rows={5}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
