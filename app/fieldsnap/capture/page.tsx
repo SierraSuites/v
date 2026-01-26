@@ -181,7 +181,9 @@ export default function FieldSnapCapturePage() {
               uploadFile.metadata.gps.coords.latitude,
               uploadFile.metadata.gps.coords.longitude
             )
-            uploadFile.metadata!.weather = weather
+            if (weather) {
+              uploadFile.metadata!.weather = weather
+            }
           } catch (error) {
             console.log('Weather data not available:', error)
           }
