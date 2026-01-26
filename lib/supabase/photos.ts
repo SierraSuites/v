@@ -499,7 +499,7 @@ export async function removePhotoTags(photoId: string, tagsToRemove: string[]) {
   }
 
   const currentTags = photo.tags || []
-  const updatedTags = currentTags.filter(tag => !tagsToRemove.includes(tag))
+  const updatedTags = currentTags.filter((tag: string) => !tagsToRemove.includes(tag))
 
   return await supabase
     .from('media_assets')
