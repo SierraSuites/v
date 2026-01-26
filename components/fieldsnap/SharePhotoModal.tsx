@@ -17,6 +17,14 @@ interface SharePhotoModalProps {
   onShared?: () => void
 }
 
+interface SharedMediaAssetWithTeam extends SharedMediaAsset {
+  team?: {
+    id: string
+    name: string
+    color: string
+  } | null
+}
+
 export default function SharePhotoModal({
   photoId,
   photoTitle,
@@ -24,7 +32,7 @@ export default function SharePhotoModal({
   onShared
 }: SharePhotoModalProps) {
   const [teams, setTeams] = useState<CompanyTeam[]>([])
-  const [currentShares, setCurrentShares] = useState<SharedMediaAsset[]>([])
+  const [currentShares, setCurrentShares] = useState<SharedMediaAssetWithTeam[]>([])
   const [loading, setLoading] = useState(true)
   const [sharing, setSharing] = useState(false)
 
@@ -363,10 +371,10 @@ export default function SharePhotoModal({
                       <div
                         className="w-10 h-10 rounded-full flex items-center justify-center text-lg"
                         style={{
-                          backgroundColor: share.shared_with_team_id
-                            ? (share.team as any)?.color + '20'
+                          backgroundColor: share.shared_with_team_id && share.team?.color
+                            ? share.team.color + '20'
                             : '#E5E7EB',
-                          color: share.shared_with_team_id ? (share.team as any)?.color : '#6B7280'
+                          color: share.shared_with_team_id && share.team?.color ? share.team.color : '#6B7280'
                         }}
                       >
                         {share.shared_with_team_id ? '👥' : '👤'}
@@ -374,8 +382,8 @@ export default function SharePhotoModal({
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm truncate" style={{ color: '#1A1A1A' }}>
                           {share.shared_with_team_id
-                            ? (share.team as any)?.name
-                            : (share.user as any)?.email}
+                            ? share.team?.name
+                            : `User ${share.shared_with_user_id?.substring(0, 8)}...`}
                         </p>
                         <div className="flex items-center gap-2 text-xs" style={{ color: '#6B7280' }}>
                           <span
