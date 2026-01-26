@@ -24,7 +24,6 @@ export default function NewQuotePage() {
 
   // Form data with enhanced fields
   const [formData, setFormData] = useState<QuoteFormData>({
-    quote_type: 'proposal',
     title: '',
     description: '',
     scope_of_work: '',
