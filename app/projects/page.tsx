@@ -1149,7 +1149,7 @@ export default function ProjectsPage() {
           setEditingProject(null)
         }}
         onSave={handleSaveProject}
-        editingProject={editingProject}
+        editingProject={editingProject as any}
         mode={editingProject ? 'edit' : 'create'}
       />
     </div>
