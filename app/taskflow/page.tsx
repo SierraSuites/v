@@ -1266,7 +1266,7 @@ export default function TaskFlowPage() {
               <CalendarView
                 tasks={filteredTasks}
                 onTaskClick={(task) => {
-                  setEditingTask(task)
+                  setEditingTask(task as any)
                   setShowCreateModal(true)
                 }}
                 onDateClick={(date) => {
@@ -1279,7 +1279,7 @@ export default function TaskFlowPage() {
               <GanttChartView
                 tasks={filteredTasks}
                 onTaskClick={(task) => {
-                  setEditingTask(task)
+                  setEditingTask(task as any)
                   setShowCreateModal(true)
                 }}
               />
