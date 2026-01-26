@@ -427,14 +427,18 @@ export default function FieldSnapCapturePage() {
 
         // Create media asset record
         const { data, error } = await uploadMediaAsset({
+          user_id: user.id,
           project_id: selectedProject,
           url,
           thumbnail_url,
           filename: uploadFile.file.name,
           file_size: uploadFile.file.size,
           mime_type: uploadFile.file.type,
+          width: null,
+          height: null,
           captured_at: new Date().toISOString(),
           uploaded_at: new Date().toISOString(),
+          capture_device: null,
           capture_source: uploadMethod === 'camera' ? 'mobile' : 'mobile',
           description: description || null,
           tags,
@@ -442,6 +446,7 @@ export default function FieldSnapCapturePage() {
           gps_longitude: uploadFile.metadata?.gps?.coords.longitude || null,
           gps_altitude: uploadFile.metadata?.gps?.coords.altitude || null,
           gps_accuracy: uploadFile.metadata?.gps?.coords.accuracy || null,
+          gps_heading: uploadFile.metadata?.gps?.coords.heading || null,
           weather_condition: uploadFile.metadata?.weather?.condition || null,
           weather_temperature: uploadFile.metadata?.weather?.temperature || null,
           weather_humidity: uploadFile.metadata?.weather?.humidity || null,
