@@ -513,10 +513,7 @@ export const permissionService = {
 
     const { data, error } = await supabase
       .from('team_members')
-      .select(`
-        *,
-        user:auth.users(id, email, user_metadata)
-      `)
+      .select('*')
       .eq('team_id', teamId)
       .is('removed_at', null)
       .order('added_at')
