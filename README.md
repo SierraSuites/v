@@ -1,6 +1,7 @@
 # Sierra Suites redesign
 
 *Automatically synced with your [v0.app](https://v0.app) deployments*
+<!-- Build trigger -->
 
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/ugurs-projects-6b7f9796/v0-sierra-suites-redesign)
 [![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/pRucA3eLjNV)
