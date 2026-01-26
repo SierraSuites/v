@@ -291,6 +291,30 @@ export const punchListService = {
   },
 
   /**
+   * Get punch list items by photo
+   */
+  async getItemsByPhoto(photoId: string): Promise<PunchListItem[]> {
+    const supabase = createClient()
+
+    const { data, error } = await supabase
+      .from('punch_list_items')
+      .select(`
+        *,
+        photo:media_assets(id, url, thumbnail_url, filename),
+        project:projects(id, name)
+      `)
+      .eq('photo_id', photoId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching punch list items by photo:', error)
+      throw error
+    }
+
+    return data || []
+  },
+
+  /**
    * Update punch list item
    */
   async update(id: string, input: UpdatePunchItemInput): Promise<PunchListItem | null> {
