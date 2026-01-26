@@ -23,7 +23,14 @@ export default function PricingCalculator({
   showMargins = false,
   onPricingChange
 }: PricingCalculatorProps) {
-  const [pricing, setPricing] = useState<QuotePricing>({ subtotal: 0, tax_amount: 0, total: 0 })
+  const [pricing, setPricing] = useState<QuotePricing>({
+    subtotal: 0,
+    discount_amount: 0,
+    tax_amount: 0,
+    total: 0,
+    tax_rate: 0,
+    discount_percentage: 0
+  })
 
   // Calculate pricing whenever inputs change
   useEffect(() => {
