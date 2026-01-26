@@ -168,7 +168,7 @@ export default function ProjectCreationModal({
   const handleNestedInputChange = (parent: string, field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
-      [parent]: { ...(prev[parent] as any), [field]: value }
+      [parent]: { ...((prev as any)[parent] as any), [field]: value }
     }))
   }
 
