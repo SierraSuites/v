@@ -26,10 +26,8 @@ export default function NewQuotePage() {
   const [formData, setFormData] = useState<QuoteFormData>({
     title: '',
     description: '',
-    scope_of_work: '',
     client_id: null,
-    project_id: null, // For change orders
-    original_quote_id: null,
+    project_id: null,
 
     quote_date: new Date().toISOString().split('T')[0],
     valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -39,10 +37,6 @@ export default function NewQuotePage() {
     discount_type: 'fixed',
     discount_value: 0,
     deposit_required: 0,
-
-    // Conversion settings
-    auto_create_project: true,
-    auto_create_tasks: true,
 
     terms_conditions: 'Payment due within 30 days of acceptance.\nAll work performed according to specifications.\n50% deposit required to begin work.',
     payment_terms: 'Net 30',
