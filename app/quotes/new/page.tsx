@@ -11,6 +11,19 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import type { QuoteType, QuoteFormData, QuoteItemFormData, Contact } from '@/types/quotes'
 import ExcelImport from '@/components/quotes/ExcelImport'
 
+// Extended QuoteItemFormData with additional fields used in the form
+interface ExtendedQuoteItemFormData extends QuoteItemFormData {
+  item_number: number
+  detailed_description: string
+  benefits: string
+  cost_price: number | null
+  convert_to_task: boolean
+  is_taxable: boolean
+  is_allowance: boolean
+  category: string
+  notes: string
+}
+
 export default function NewQuotePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -53,7 +66,7 @@ export default function NewQuotePage() {
   })
 
   // Line items with enhanced fields
-  const [lineItems, setLineItems] = useState<QuoteItemFormData[]>([])
+  const [lineItems, setLineItems] = useState<ExtendedQuoteItemFormData[]>([])
 
   // Data lists
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -173,7 +186,7 @@ export default function NewQuotePage() {
   }
 
   function addLineItem() {
-    const newItem: QuoteItemFormData = {
+    const newItem: ExtendedQuoteItemFormData = {
       item_number: lineItems.length + 1,
       description: '',
       detailed_description: '',
@@ -181,18 +194,19 @@ export default function NewQuotePage() {
       quantity: 1,
       unit: 'ea',
       unit_price: 0,
+      tax_rate: formData.tax_rate,
       cost_price: null,
       convert_to_task: true, // Default to creating tasks
       is_taxable: true,
       is_optional: false,
       is_allowance: false,
-      category: null,
-      notes: null,
+      category: '',
+      notes: '',
     }
     setLineItems([...lineItems, newItem])
   }
 
-  function updateLineItem(index: number, field: keyof QuoteItemFormData, value: any) {
+  function updateLineItem(index: number, field: keyof ExtendedQuoteItemFormData, value: any) {
     const updated = [...lineItems]
     updated[index] = { ...updated[index], [field]: value }
     setLineItems(updated)
