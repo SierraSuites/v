@@ -653,11 +653,18 @@ export async function getQuoteStats(): Promise<{ data: QuoteStats | null; error:
       total: quotes.length,
       by_status: {
         draft: quotes.filter(q => q.status === 'draft').length,
+        ready: quotes.filter(q => q.status === 'ready').length,
         sent: quotes.filter(q => q.status === 'sent').length,
         viewed: quotes.filter(q => q.status === 'viewed').length,
+        commented: quotes.filter(q => q.status === 'commented').length,
+        revised: quotes.filter(q => q.status === 'revised').length,
         approved: quotes.filter(q => q.status === 'approved').length,
         rejected: quotes.filter(q => q.status === 'rejected').length,
+        on_hold: quotes.filter(q => q.status === 'on_hold').length,
         expired: quotes.filter(q => q.status === 'expired').length,
+        won: quotes.filter(q => q.status === 'won').length,
+        lost: quotes.filter(q => q.status === 'lost').length,
+        cancelled: quotes.filter(q => q.status === 'cancelled').length,
       },
       total_value: quotes.reduce((sum, q) => sum + Number(q.total_amount || 0), 0),
       approved_value: quotes
