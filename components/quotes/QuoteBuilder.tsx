@@ -281,7 +281,6 @@ export default function QuoteBuilder({
         description: description || undefined,
         client_id: selectedClientId || undefined,
         project_id: selectedProjectId || undefined,
-        status,
         tax_rate: taxRate,
         discount_amount: discountAmount,
         valid_until: validUntil || undefined,
