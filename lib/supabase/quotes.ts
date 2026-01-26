@@ -50,6 +50,7 @@ export async function getQuotes(
   try {
     console.log('[getQuotes] Starting with filters:', filters)
 
+    const supabase = getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return { data: null, error: { message: 'User not authenticated' } }
@@ -157,6 +158,7 @@ export async function getQuoteById(id: string) {
   try {
     console.log('[getQuoteById] Fetching quote:', id)
 
+    const supabase = getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return { data: null, error: { message: 'User not authenticated' } }
@@ -196,6 +198,7 @@ export async function createQuote(quote: Partial<QuoteInsert>) {
   try {
     console.log('[createQuote] Creating quote:', quote)
 
+    const supabase = getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return { data: null, error: { message: 'User not authenticated' } }
@@ -273,6 +276,7 @@ export async function updateQuote(id: string, updates: QuoteUpdate) {
   try {
     console.log('[updateQuote] Updating quote:', id, updates)
 
+    const supabase = getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return { data: null, error: { message: 'User not authenticated' } }
@@ -306,6 +310,7 @@ export async function deleteQuote(id: string) {
   try {
     console.log('[deleteQuote] Deleting quote:', id)
 
+    const supabase = getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return { data: null, error: { message: 'User not authenticated' } }
@@ -336,6 +341,8 @@ export async function deleteQuote(id: string) {
 export async function duplicateQuote(id: string) {
   try {
     console.log('[duplicateQuote] Duplicating quote:', id)
+
+    const supabase = getSupabase()
 
     // Get the original quote with items
     const { data: original, error: fetchError } = await getQuoteById(id)
@@ -475,6 +482,7 @@ export async function deleteQuoteItem(id: string) {
   try {
     console.log('[deleteQuoteItem] Deleting item:', id)
 
+    const supabase = getSupabase()
     const { error } = await supabase
       .from('quote_items')
       .delete()
@@ -500,6 +508,7 @@ export async function updateQuoteItemsOrder(items: { id: string; sort_order: num
   try {
     console.log('[updateQuoteItemsOrder] Updating order for', items.length, 'items')
 
+    const supabase = getSupabase()
     const updates = items.map(item =>
       supabase
         .from('quote_items')
@@ -528,6 +537,7 @@ export async function getContacts(contactType?: string) {
   try {
     console.log('[getContacts] Fetching contacts')
 
+    const supabase = getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return { data: null, error: { message: 'User not authenticated' } }
@@ -565,6 +575,7 @@ export async function createContact(contact: ContactInsert) {
   try {
     console.log('[createContact] Creating contact:', contact.contact_name)
 
+    const supabase = getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return { data: null, error: { message: 'User not authenticated' } }
@@ -600,6 +611,7 @@ export async function getQuoteStats(): Promise<{ data: QuoteStats | null; error:
   try {
     console.log('[getQuoteStats] Fetching statistics')
 
+    const supabase = getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return { data: null, error: { message: 'User not authenticated' } }
@@ -673,6 +685,7 @@ export async function getQuoteStats(): Promise<{ data: QuoteStats | null; error:
  */
 export async function getQuoteCount(filters?: QuoteFilters) {
   try {
+    const supabase = getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return { data: 0, error: { message: 'User not authenticated' } }
