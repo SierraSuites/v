@@ -1,6 +1,7 @@
 "use client"
 
 export const dynamic = 'force-dynamic'
+
 import Link from "next/link"
 import { CheckCircle2 } from "lucide-react"
 import { useState } from "react"

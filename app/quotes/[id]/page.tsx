@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
+
 // ============================================================
 // INCREDIBLE QUOTE DETAIL PAGE
 // Beautiful timeline, status tracking, and actions

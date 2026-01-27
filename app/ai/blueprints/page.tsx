@@ -1,12 +1,13 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
+
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import AIAccessWrapper from '@/components/ai/AIAccessWrapper'
 import { formatCurrency, formatNumber } from '@/lib/ai-permissions'
-
-export const dynamic = 'force-dynamic'
 
 interface BlueprintAnalysis {
   id: string

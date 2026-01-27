@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
+
 // ============================================================
 // PROFESSIONAL PDF QUOTE PAGE
 // Beautiful, printable quote with branding
