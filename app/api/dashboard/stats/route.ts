@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 // ============================================================================
 // DASHBOARD STATS API
 // Returns cached dashboard statistics for better performance
