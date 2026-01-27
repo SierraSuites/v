@@ -1,7 +1,7 @@
 // Financial Management Supabase Service
 // Enterprise-grade invoice, payment, and expense management
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from './client'
 import type {
   Invoice,
   InvoiceLineItem,
@@ -12,7 +12,14 @@ import type {
   CashFlowForecast
 } from '@/types/financial'
 
-const supabase = createClientComponentClient()
+// Lazy initialization pattern to avoid build-time issues
+let supabase: ReturnType<typeof createClient> | null = null
+function getSupabase() {
+  if (!supabase) {
+    supabase = createClient()
+  }
+  return supabase
+}
 
 // ============================================================================
 // INVOICES
@@ -26,6 +33,7 @@ export async function getInvoices(companyId: string, filters?: {
   dateTo?: string
 }) {
   try {
+    const supabase = getSupabase()
     let query = supabase
       .from('invoices')
       .select(`
@@ -257,6 +265,7 @@ export async function generateNextInvoiceNumber(companyId: string): Promise<stri
 
 export async function getPayments(companyId: string, invoiceId?: string) {
   try {
+    const supabase = getSupabase()
     let query = supabase
       .from('payments')
       .select(`
@@ -335,6 +344,7 @@ export async function getExpenses(companyId: string, filters?: {
   billableOnly?: boolean
 }) {
   try {
+    const supabase = getSupabase()
     let query = supabase
       .from('expenses')
       .select(`
@@ -441,6 +451,7 @@ export async function getFinancialStats(companyId: string): Promise<{
   error: string | null
 }> {
   try {
+    const supabase = getSupabase()
     // Call Supabase function for complex stats
     const { data, error } = await supabase.rpc('get_financial_stats', {
       p_company_id: companyId
@@ -504,6 +515,7 @@ export function subscribeToInvoices(
   companyId: string,
   callback: (payload: any) => void
 ) {
+  const supabase = getSupabase()
   const channel = supabase
     .channel('invoices-changes')
     .on(
@@ -527,6 +539,7 @@ export function subscribeToPayments(
   companyId: string,
   callback: (payload: any) => void
 ) {
+  const supabase = getSupabase()
   const channel = supabase
     .channel('payments-changes')
     .on(
@@ -550,6 +563,7 @@ export function subscribeToExpenses(
   companyId: string,
   callback: (payload: any) => void
 ) {
+  const supabase = getSupabase()
   const channel = supabase
     .channel('expenses-changes')
     .on(

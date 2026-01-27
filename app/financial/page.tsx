@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import {
   getInvoices,
   getFinancialStats,
@@ -28,7 +28,6 @@ import {
 
 export default function FinancialPage() {
   const router = useRouter()
-  const supabase = createClientComponentClient()
 
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [stats, setStats] = useState<FinancialStats | null>(null)
@@ -76,6 +75,8 @@ export default function FinancialPage() {
 
   async function loadData() {
     try {
+      const supabase = createClient()
+
       // Get user profile
       const {
         data: { user }
