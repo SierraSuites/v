@@ -95,6 +95,7 @@ export async function getInvoices(companyId: string, filters?: {
 
 export async function getInvoice(invoiceId: string) {
   try {
+    const supabase = getSupabase()
     const { data, error } = await supabase
       .from('invoices')
       .select(`
@@ -146,6 +147,7 @@ export async function getInvoice(invoiceId: string) {
 
 export async function createInvoice(invoice: Partial<Invoice>) {
   try {
+    const supabase = getSupabase()
     const { data, error } = await supabase
       .from('invoices')
       .insert([invoice])
@@ -163,6 +165,7 @@ export async function createInvoice(invoice: Partial<Invoice>) {
 
 export async function updateInvoice(invoiceId: string, updates: Partial<Invoice>) {
   try {
+    const supabase = getSupabase()
     const { data, error } = await supabase
       .from('invoices')
       .update({
@@ -184,6 +187,7 @@ export async function updateInvoice(invoiceId: string, updates: Partial<Invoice>
 
 export async function deleteInvoice(invoiceId: string) {
   try {
+    const supabase = getSupabase()
     const { error } = await supabase
       .from('invoices')
       .delete()
@@ -230,6 +234,7 @@ export async function sendInvoice(invoiceId: string, emailData: {
 
 export async function generateNextInvoiceNumber(companyId: string): Promise<string> {
   try {
+    const supabase = getSupabase()
     const { data, error } = await supabase
       .from('invoices')
       .select('invoice_number')
@@ -301,6 +306,7 @@ export async function getPayments(companyId: string, invoiceId?: string) {
 
 export async function recordPayment(payment: Partial<Payment>) {
   try {
+    const supabase = getSupabase()
     const { data, error } = await supabase
       .from('payments')
       .insert([payment])
@@ -318,6 +324,7 @@ export async function recordPayment(payment: Partial<Payment>) {
 
 export async function deletePayment(paymentId: string) {
   try {
+    const supabase = getSupabase()
     const { error } = await supabase
       .from('payments')
       .delete()
@@ -390,6 +397,7 @@ export async function getExpenses(companyId: string, filters?: {
 
 export async function createExpense(expense: Partial<Expense>) {
   try {
+    const supabase = getSupabase()
     const { data, error } = await supabase
       .from('expenses')
       .insert([expense])
@@ -407,6 +415,7 @@ export async function createExpense(expense: Partial<Expense>) {
 
 export async function updateExpense(expenseId: string, updates: Partial<Expense>) {
   try {
+    const supabase = getSupabase()
     const { data, error } = await supabase
       .from('expenses')
       .update({
@@ -428,6 +437,7 @@ export async function updateExpense(expenseId: string, updates: Partial<Expense>
 
 export async function deleteExpense(expenseId: string) {
   try {
+    const supabase = getSupabase()
     const { error } = await supabase
       .from('expenses')
       .delete()
@@ -468,6 +478,7 @@ export async function getFinancialStats(companyId: string): Promise<{
 
 export async function getAgingReport(companyId: string) {
   try {
+    const supabase = getSupabase()
     const { data, error } = await supabase
       .from('invoices')
       .select('*')
