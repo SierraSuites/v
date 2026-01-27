@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 // ============================================================
 // QUOTE EDIT PAGE
 // Seamless editing experience with live preview

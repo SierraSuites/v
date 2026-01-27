@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 // ============================================================
 // BEAUTIFUL TEMPLATE GALLERY
 // Browse and use pre-built quote templates

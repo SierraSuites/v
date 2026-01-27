@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 // ============================================================================
 // PROJECT DETAIL PAGE
 // Complete project management interface with tabs

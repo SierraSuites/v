@@ -1,4 +1,6 @@
 "use client"
+
+export const dynamic = 'force-dynamic'
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { ArrowRight, CheckCircle2, Shield, Target, X, TrendingUp, Clock, AlertTriangle } from "lucide-react"
