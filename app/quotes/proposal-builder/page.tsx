@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 interface ProposalSection {
@@ -25,7 +25,7 @@ interface Quote {
   created_at: string
 }
 
-export default function ProposalBuilderPage() {
+function ProposalBuilderContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const quoteId = searchParams.get('quote')
@@ -571,5 +571,17 @@ export default function ProposalBuilderPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function ProposalBuilderPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-purple-50 via-indigo-50 to-white flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <ProposalBuilderContent />
+    </Suspense>
   )
 }

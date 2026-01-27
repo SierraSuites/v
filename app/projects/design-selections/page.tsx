@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientCommunication, formatCurrency, formatDate } from '@/lib/client-communication-integration'
 
@@ -46,7 +46,7 @@ interface SelectionCategory {
   description: string
 }
 
-export default function DesignSelectionsPage() {
+function DesignSelectionsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const projectId = searchParams.get('project')
@@ -716,5 +716,17 @@ export default function DesignSelectionsPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function DesignSelectionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <DesignSelectionsContent />
+    </Suspense>
   )
 }

@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientCommunication, formatCurrency, formatDate } from '@/lib/client-communication-integration'
 
@@ -33,7 +33,7 @@ interface ClientApproval {
   annotations: any
 }
 
-export default function ApprovalsPage() {
+function ApprovalsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const projectId = searchParams.get('project')
@@ -941,5 +941,17 @@ export default function ApprovalsPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function ApprovalsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <ApprovalsContent />
+    </Suspense>
   )
 }

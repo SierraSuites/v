@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 // Step 4: Pricing → Step 5: Terms → Step 6: Review
 // ============================================================
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { QuoteType, QuoteFormData, QuoteItemFormData, Contact } from '@/types/quotes'
 import ExcelImport from '@/components/quotes/ExcelImport'
@@ -27,7 +27,7 @@ interface ExtendedQuoteItemFormData extends QuoteItemFormData {
   notes: string
 }
 
-export default function NewQuotePage() {
+function NewQuoteForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -1318,5 +1318,17 @@ export default function NewQuotePage() {
         />
       )}
     </div>
+  )
+}
+
+export default function NewQuotePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <NewQuoteForm />
+    </Suspense>
   )
 }

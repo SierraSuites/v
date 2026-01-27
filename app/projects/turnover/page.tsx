@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientCommunication, formatCurrency, formatDate } from '@/lib/client-communication-integration'
 
@@ -81,7 +81,7 @@ interface CustomSection {
   order: number
 }
 
-export default function ProjectTurnoverPage() {
+function ProjectTurnoverContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const projectId = searchParams.get('project')
@@ -1041,5 +1041,17 @@ export default function ProjectTurnoverPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function ProjectTurnoverPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <ProjectTurnoverContent />
+    </Suspense>
   )
 }
