@@ -219,7 +219,7 @@ export default function AICommandCenter() {
   if (loading) {
     return (
       <AIAccessWrapper requiredTier="enterprise">
-        <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+        <div className="min-h-screen bg-linear-to-b from-blue-50 to-white flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Initializing AI Command Center...</p>
@@ -231,9 +231,9 @@ export default function AICommandCenter() {
 
   return (
     <AIAccessWrapper requiredTier="enterprise">
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <div className="min-h-screen bg-linear-to-b from-slate-50 to-white">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg">
+        <div className="bg-linear-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex items-center justify-between">
               <div>
@@ -296,7 +296,7 @@ export default function AICommandCenter() {
           </div>
 
           {/* Quick Access to AI Tools */}
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-6 mb-8 border-2 border-indigo-200">
+          <div className="bg-linear-to-r from-indigo-50 to-purple-50 rounded-lg p-6 mb-8 border-2 border-indigo-200">
             <h2 className="text-xl font-bold text-gray-900 mb-4">AI Tools</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Link
@@ -362,7 +362,7 @@ export default function AICommandCenter() {
                 <div className="text-xs text-gray-600 mt-1">Legal risk review</div>
               </Link>
 
-              <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg p-4 opacity-60">
+              <div className="bg-linear-to-br from-gray-100 to-gray-200 rounded-lg p-4 opacity-60">
                 <div className="text-4xl mb-2">🚀</div>
                 <div className="font-semibold text-gray-600 text-sm">More AI Tools</div>
                 <div className="text-xs text-gray-500 mt-1">Coming soon</div>
@@ -522,7 +522,7 @@ export default function AICommandCenter() {
               {/* AI Chat Interface */}
               <div className="bg-white rounded-lg shadow-md">
                 <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                  <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
                     <span className="text-white text-xl">🦺</span>
                   </div>
                   <div>
@@ -589,7 +589,7 @@ export default function AICommandCenter() {
           </div>
 
           {/* Bottom Banner - AI Learning */}
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6 border-2 border-green-200">
+          <div className="bg-linear-to-r from-green-50 to-emerald-50 rounded-lg p-6 border-2 border-green-200">
             <div className="flex items-center gap-4">
               <div className="text-5xl">🧠</div>
               <div className="flex-1">

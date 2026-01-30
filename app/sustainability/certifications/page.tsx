@@ -290,7 +290,7 @@ export default function CertificationsPage() {
     <SustainabilityAccessWrapper>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg">
+        <div className="bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex items-center justify-between">
               <div>
@@ -359,7 +359,7 @@ export default function CertificationsPage() {
           </div>
 
           {/* Educational Banner */}
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-6 mb-8">
+          <div className="bg-linear-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-6 mb-8">
             <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
               <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -545,7 +545,7 @@ export default function CertificationsPage() {
         {showAddCertModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-4 flex items-center justify-between">
+              <div className="sticky top-0 bg-linear-to-r from-purple-600 to-pink-600 text-white px-6 py-4 flex items-center justify-between">
                 <h2 className="text-2xl font-bold">Add Certification</h2>
                 <button
                   onClick={() => setShowAddCertModal(false)}

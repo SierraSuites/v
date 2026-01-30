@@ -34,7 +34,7 @@ export function StatCardSkeleton() {
 
 export function WelcomeBannerSkeleton() {
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg shadow-lg p-6 mb-8 animate-pulse">
+    <div className="bg-linear-to-r from-blue-600 to-blue-700 rounded-lg shadow-lg p-6 mb-8 animate-pulse">
       <div className="flex items-start justify-between">
         <div className="flex-1 space-y-3">
           <div className="h-8 bg-blue-500 rounded w-64"></div>

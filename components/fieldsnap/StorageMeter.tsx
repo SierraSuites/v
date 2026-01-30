@@ -135,7 +135,7 @@ export default function StorageMeter({
                 }}
               >
                 {/* Animated shine effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 animate-shimmer" />
+                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white to-transparent opacity-20 animate-shimmer" />
               </div>
 
               {/* Warning markers */}

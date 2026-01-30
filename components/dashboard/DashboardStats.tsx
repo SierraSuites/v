@@ -67,10 +67,10 @@ export default function DashboardStats() {
         throw new Error('Not authenticated')
       }
 
-      // Get user's company_id from profiles (single source of truth)
+      // Get user's profile
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
-        .select('company_id, subscription_tier, full_name')
+        .select('id, plan, full_name')
         .eq('id', user.id)
         .single()
 
@@ -78,8 +78,8 @@ export default function DashboardStats() {
         throw new Error('Failed to load user profile')
       }
 
-      const fetchedCompanyId = profile.company_id
-      setCompanyId(fetchedCompanyId)
+      const userId = user.id
+      setCompanyId(userId) // Using user ID for real-time subscriptions
 
       // Set user name for empty state
       if (profile.full_name) {
@@ -92,44 +92,37 @@ export default function DashboardStats() {
         tasksData,
         quotesData,
         punchItemsData,
-        storageData,
-        teamData
+        storageData
       ] = await Promise.all([
         // Projects stats
         supabase
           .from('projects')
           .select('status', { count: 'exact' })
-          .eq('company_id', fetchedCompanyId),
+          .eq('user_id', userId),
 
         // Tasks stats
         supabase
           .from('tasks')
           .select('status, due_date', { count: 'exact' })
-          .eq('company_id', fetchedCompanyId),
+          .eq('user_id', userId),
 
         // Quotes stats
         supabase
           .from('quotes')
           .select('status, total_price', { count: 'exact' })
-          .eq('company_id', fetchedCompanyId),
+          .eq('user_id', userId),
 
         // Punch items stats
         supabase
-          .from('punch_items')
+          .from('punch_list_items')
           .select('priority, status', { count: 'exact' })
-          .eq('company_id', fetchedCompanyId),
+          .eq('user_id', userId),
 
         // Storage stats
         supabase
-          .from('photos')
+          .from('media_assets')
           .select('file_size', { count: 'exact' })
-          .eq('company_id', fetchedCompanyId),
-
-        // Team members count
-        supabase
-          .from('user_profiles')
-          .select('id', { count: 'exact' })
-          .eq('company_id', fetchedCompanyId)
+          .eq('user_id', userId)
       ])
 
       // Calculate project stats
@@ -183,10 +176,10 @@ export default function DashboardStats() {
         professional: 50,
         enterprise: 500
       }
-      const storageLimit = storageLimits[profile.subscription_tier as keyof typeof storageLimits] || 5
+      const storageLimit = storageLimits[profile.plan as keyof typeof storageLimits] || 5
 
-      // Team count
-      const teamMembers = teamData.count || 0
+      // Team count (single user mode)
+      const teamMembers = 1
 
       setStats({
         totalProjects,

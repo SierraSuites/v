@@ -253,7 +253,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             {!sidebarCollapsed && (
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center shadow-lg">
+                <div className="w-8 h-8 rounded-lg bg-linear-to-br from-blue-600 to-blue-400 flex items-center justify-center shadow-lg">
                   <span className="text-white font-bold text-sm">SS</span>
                 </div>
                 <h1 className={`text-lg font-bold tracking-tight ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
@@ -280,7 +280,7 @@ export default function DashboardPage() {
               className={`w-full flex items-center gap-3 p-3 rounded-xl ${darkMode ? 'hover:bg-gray-800/50' : 'hover:bg-gray-100'} transition-all duration-200 ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
               <div className="relative">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-600 via-blue-500 to-blue-400 flex items-center justify-center text-white font-bold text-sm shadow-lg">
                   {userData.full_name?.charAt(0) || "U"}
                 </div>
                 <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 ${darkMode ? 'border-gray-900' : 'border-white'} shadow-sm"></div>
@@ -369,8 +369,8 @@ export default function DashboardPage() {
                     className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
                       item.href === "/dashboard"
                         ? darkMode
-                          ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-900/50"
-                          : "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30"
+                          ? "bg-linear-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-900/50"
+                          : "bg-linear-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30"
                         : item.locked
                         ? `opacity-50 cursor-not-allowed ${darkMode ? 'hover:bg-gray-800/30' : 'hover:bg-gray-100/30'}`
                         : darkMode
@@ -386,7 +386,7 @@ export default function DashboardPage() {
                           <span className="text-xs opacity-60">🔒</span>
                         )}
                         {item.badge && (
-                          <span className="text-xs px-2 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-md font-semibold shadow-sm">
+                          <span className="text-xs px-2 py-1 bg-linear-to-r from-amber-500 to-amber-600 text-white rounded-md font-semibold shadow-sm">
                             {item.badge}
                           </span>
                         )}
@@ -409,7 +409,7 @@ export default function DashboardPage() {
             <span className="text-xl transition-transform group-hover:scale-110">🔔</span>
             {!sidebarCollapsed && <span className={`font-medium text-sm flex-1 text-left ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Notifications</span>}
             {notificationCount > 0 && (
-              <span className={`${sidebarCollapsed ? 'absolute -top-1 -right-1' : ''} w-5 h-5 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg`}>
+              <span className={`${sidebarCollapsed ? 'absolute -top-1 -right-1' : ''} w-5 h-5 bg-linear-to-r from-red-500 to-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg`}>
                 {notificationCount}
               </span>
             )}
@@ -441,8 +441,8 @@ export default function DashboardPage() {
 
           {/* Upgrade Card - Enhanced Design */}
           {userPlan !== "enterprise" && !sidebarCollapsed && (
-            <div className="mt-4 p-4 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-xl text-white shadow-xl shadow-blue-900/30 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+            <div className="mt-4 p-4 bg-linear-to-br from-blue-600 via-blue-500 to-blue-400 rounded-xl text-white shadow-xl shadow-blue-900/30 relative overflow-hidden">
+              <div className="absolute inset-0 bg-linear-to-br from-white/10 to-transparent"></div>
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">✨</span>
@@ -532,7 +532,7 @@ export default function DashboardPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
                 {notificationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg shadow-red-500/50 animate-pulse">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-linear-to-r from-red-500 to-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg shadow-red-500/50 animate-pulse">
                     {notificationCount}
                   </span>
                 )}
@@ -548,7 +548,7 @@ export default function DashboardPage() {
               {/* User Menu */}
               <button
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 flex items-center justify-center text-white font-bold text-sm shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-600 via-blue-500 to-blue-400 flex items-center justify-center text-white font-bold text-sm shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
               >
                 {userData.full_name?.charAt(0) || "U"}
               </button>
@@ -563,10 +563,10 @@ export default function DashboardPage() {
             <>
               {/* Modern Welcome Banner - Dismissible */}
               {!dismissedWelcome && (
-                <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 text-white rounded-2xl p-8 shadow-2xl shadow-blue-900/30">
+                <div className="relative overflow-hidden bg-linear-to-br from-blue-600 via-blue-500 to-blue-400 text-white rounded-2xl p-8 shadow-2xl shadow-blue-900/30">
                   {/* Decorative Background Pattern */}
                   <div className="absolute inset-0 opacity-10">
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                    <div className="absolute inset-0 bg-linear-to-br from-white/20 to-transparent"></div>
                     <svg className="absolute -right-10 -top-10 w-64 h-64 opacity-20" viewBox="0 0 200 200">
                       <circle cx="100" cy="100" r="80" fill="white" />
                     </svg>
@@ -626,7 +626,7 @@ export default function DashboardPage() {
                 <div className={`lg:col-span-6 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center shadow-lg">
+                      <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-600 to-blue-400 flex items-center justify-center shadow-lg">
                         <span className="text-xl">🏗️</span>
                       </div>
                       <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Project Overview</h3>
@@ -641,11 +641,11 @@ export default function DashboardPage() {
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total Projects</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{userStats.totalProjects}</p>
                     </div>
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10 border ${darkMode ? 'border-green-500/20' : 'border-green-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-green-500/10 to-green-600/10 border ${darkMode ? 'border-green-500/20' : 'border-green-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>Active</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{userStats.activeProjects}</p>
                     </div>
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-600/10 border ${darkMode ? 'border-amber-500/20' : 'border-amber-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-amber-500/10 to-amber-600/10 border ${darkMode ? 'border-amber-500/20' : 'border-amber-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-amber-400' : 'text-amber-700'}`}>On Hold</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-amber-400' : 'text-amber-600'}`}>{userStats.onHoldProjects}</p>
                     </div>
@@ -655,7 +655,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <Link href="/projects" className="block text-center px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-600 shadow-lg shadow-blue-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
+                  <Link href="/projects" className="block text-center px-4 py-3 bg-linear-to-r from-blue-600 to-blue-500 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-600 shadow-lg shadow-blue-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
                     View All Projects
                   </Link>
                 </div>
@@ -663,32 +663,32 @@ export default function DashboardPage() {
                 {/* Task Summary Widget - Modern Card */}
                 <div className={`lg:col-span-6 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-purple-400 flex items-center justify-center shadow-lg">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-purple-600 to-purple-400 flex items-center justify-center shadow-lg">
                       <span className="text-xl">✅</span>
                     </div>
                     <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Task Summary</h3>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 mb-6">
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10 border ${darkMode ? 'border-blue-500/20' : 'border-blue-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-blue-500/10 to-blue-600/10 border ${darkMode ? 'border-blue-500/20' : 'border-blue-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>Today's Tasks</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>{userStats.tasksToday}</p>
                     </div>
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-red-500/10 to-red-600/10 border ${darkMode ? 'border-red-500/20' : 'border-red-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-red-500/10 to-red-600/10 border ${darkMode ? 'border-red-500/20' : 'border-red-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-red-400' : 'text-red-700'}`}>Overdue</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-red-400' : 'text-red-600'}`}>{userStats.overdueTasks}</p>
                     </div>
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/10 border ${darkMode ? 'border-purple-500/20' : 'border-purple-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-purple-500/10 to-purple-600/10 border ${darkMode ? 'border-purple-500/20' : 'border-purple-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-purple-400' : 'text-purple-700'}`}>This Week</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{userStats.tasksThisWeek}</p>
                     </div>
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10 border ${darkMode ? 'border-green-500/20' : 'border-green-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-green-500/10 to-green-600/10 border ${darkMode ? 'border-green-500/20' : 'border-green-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>Completion Rate</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{userStats.completionRate}%</p>
                     </div>
                   </div>
 
-                  <Link href="/taskflow" className="block text-center px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-600 shadow-lg shadow-purple-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
+                  <Link href="/taskflow" className="block text-center px-4 py-3 bg-linear-to-r from-purple-600 to-purple-500 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-600 shadow-lg shadow-purple-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
                     Go to TaskFlow
                   </Link>
                 </div>
@@ -699,7 +699,7 @@ export default function DashboardPage() {
                 {/* Recent Photos Widget - Modern Card (4 cols) */}
                 <div className={`lg:col-span-4 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-600 to-pink-400 flex items-center justify-center shadow-lg">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-pink-600 to-pink-400 flex items-center justify-center shadow-lg">
                       <span className="text-xl">📸</span>
                     </div>
                     <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Recent Photos</h3>
@@ -711,7 +711,7 @@ export default function DashboardPage() {
                         <span className="text-3xl opacity-50">📷</span>
                       </div>
                       <p className={`text-sm mb-4 ${darkMode ? 'text-gray-500' : 'text-gray-600'}`}>No photos yet</p>
-                      <Link href="/fieldsnap" className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-600 to-pink-500 text-white rounded-xl text-sm font-semibold hover:from-pink-700 hover:to-pink-600 shadow-lg shadow-pink-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
+                      <Link href="/fieldsnap" className="inline-flex items-center gap-2 px-4 py-2.5 bg-linear-to-r from-pink-600 to-pink-500 text-white rounded-xl text-sm font-semibold hover:from-pink-700 hover:to-pink-600 shadow-lg shadow-pink-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
                         <span>📸</span> Upload First Photo
                       </Link>
                     </div>
@@ -729,12 +729,12 @@ export default function DashboardPage() {
                         </div>
                         <div className={`w-full ${darkMode ? 'bg-gray-800' : 'bg-gray-200'} rounded-full h-2`}>
                           <div
-                            className="bg-gradient-to-r from-pink-600 to-pink-400 h-2 rounded-full transition-all duration-500"
+                            className="bg-linear-to-r from-pink-600 to-pink-400 h-2 rounded-full transition-all duration-500"
                             style={{ width: `${(userStats.storageUsed / userStats.storageLimit) * 100}%` }}
                           ></div>
                         </div>
                       </div>
-                      <Link href="/fieldsnap" className="block text-center px-4 py-2.5 bg-gradient-to-r from-pink-600 to-pink-500 text-white rounded-xl text-sm font-semibold hover:from-pink-700 hover:to-pink-600 shadow-lg shadow-pink-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
+                      <Link href="/fieldsnap" className="block text-center px-4 py-2.5 bg-linear-to-r from-pink-600 to-pink-500 text-white rounded-xl text-sm font-semibold hover:from-pink-700 hover:to-pink-600 shadow-lg shadow-pink-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
                         View All Photos
                       </Link>
                     </>
@@ -744,7 +744,7 @@ export default function DashboardPage() {
                 {/* Quick Actions Panel - Modern Grid (4 cols) */}
                 <div className={`lg:col-span-4 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center shadow-lg">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-600 to-indigo-400 flex items-center justify-center shadow-lg">
                       <span className="text-xl">⚡</span>
                     </div>
                     <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Quick Actions</h3>
@@ -773,7 +773,7 @@ export default function DashboardPage() {
                 {/* Activity Feed - Modern Card (4 cols) */}
                 <div className={`lg:col-span-4 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-600 to-orange-400 flex items-center justify-center shadow-lg">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-orange-600 to-orange-400 flex items-center justify-center shadow-lg">
                       <span className="text-xl">📋</span>
                     </div>
                     <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Activity Feed</h3>
@@ -798,7 +798,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Modern Upgrade Prompt Card (Full Width) */}
-              <div className="relative overflow-hidden bg-gradient-to-br from-purple-600 via-purple-500 to-blue-600 text-white rounded-2xl p-8 shadow-2xl shadow-purple-900/30">
+              <div className="relative overflow-hidden bg-linear-to-br from-purple-600 via-purple-500 to-blue-600 text-white rounded-2xl p-8 shadow-2xl shadow-purple-900/30">
                 {/* Animated Background Pattern */}
                 <div className="absolute inset-0 opacity-10">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.3),transparent)]"></div>
@@ -867,10 +867,10 @@ export default function DashboardPage() {
             <>
               {/* Modern Welcome Banner - Dismissible */}
               {!dismissedWelcome && (
-                <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 text-white rounded-2xl p-8 shadow-2xl shadow-blue-900/30">
+                <div className="relative overflow-hidden bg-linear-to-br from-blue-600 via-blue-500 to-blue-400 text-white rounded-2xl p-8 shadow-2xl shadow-blue-900/30">
                   {/* Decorative Background Pattern */}
                   <div className="absolute inset-0 opacity-10">
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                    <div className="absolute inset-0 bg-linear-to-br from-white/20 to-transparent"></div>
                     <svg className="absolute -right-10 -top-10 w-64 h-64 opacity-20" viewBox="0 0 200 200">
                       <circle cx="100" cy="100" r="80" fill="white" />
                     </svg>
@@ -930,7 +930,7 @@ export default function DashboardPage() {
                 <div className={`lg:col-span-6 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center shadow-lg">
+                      <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-600 to-blue-400 flex items-center justify-center shadow-lg">
                         <span className="text-xl">🏗️</span>
                       </div>
                       <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Project Overview</h3>
@@ -945,11 +945,11 @@ export default function DashboardPage() {
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total Projects</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{userStats.totalProjects}</p>
                     </div>
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10 border ${darkMode ? 'border-green-500/20' : 'border-green-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-green-500/10 to-green-600/10 border ${darkMode ? 'border-green-500/20' : 'border-green-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>Active</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{userStats.activeProjects}</p>
                     </div>
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-600/10 border ${darkMode ? 'border-amber-500/20' : 'border-amber-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-amber-500/10 to-amber-600/10 border ${darkMode ? 'border-amber-500/20' : 'border-amber-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-amber-400' : 'text-amber-700'}`}>On Hold</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-amber-400' : 'text-amber-600'}`}>{userStats.onHoldProjects}</p>
                     </div>
@@ -959,7 +959,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <Link href="/projects" className="block text-center px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-600 shadow-lg shadow-blue-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
+                  <Link href="/projects" className="block text-center px-4 py-3 bg-linear-to-r from-blue-600 to-blue-500 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-600 shadow-lg shadow-blue-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
                     View All Projects
                   </Link>
                 </div>
@@ -967,32 +967,32 @@ export default function DashboardPage() {
                 {/* Task Summary Widget - Modern Card */}
                 <div className={`lg:col-span-6 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-purple-400 flex items-center justify-center shadow-lg">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-purple-600 to-purple-400 flex items-center justify-center shadow-lg">
                       <span className="text-xl">✅</span>
                     </div>
                     <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Task Summary</h3>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 mb-6">
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10 border ${darkMode ? 'border-blue-500/20' : 'border-blue-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-blue-500/10 to-blue-600/10 border ${darkMode ? 'border-blue-500/20' : 'border-blue-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>Today's Tasks</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>{userStats.tasksToday}</p>
                     </div>
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-red-500/10 to-red-600/10 border ${darkMode ? 'border-red-500/20' : 'border-red-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-red-500/10 to-red-600/10 border ${darkMode ? 'border-red-500/20' : 'border-red-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-red-400' : 'text-red-700'}`}>Overdue</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-red-400' : 'text-red-600'}`}>{userStats.overdueTasks}</p>
                     </div>
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/10 border ${darkMode ? 'border-purple-500/20' : 'border-purple-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-purple-500/10 to-purple-600/10 border ${darkMode ? 'border-purple-500/20' : 'border-purple-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-purple-400' : 'text-purple-700'}`}>This Week</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{userStats.tasksThisWeek}</p>
                     </div>
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10 border ${darkMode ? 'border-green-500/20' : 'border-green-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-green-500/10 to-green-600/10 border ${darkMode ? 'border-green-500/20' : 'border-green-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>Completion Rate</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{userStats.completionRate}%</p>
                     </div>
                   </div>
 
-                  <Link href="/taskflow" className="block text-center px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-600 shadow-lg shadow-purple-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
+                  <Link href="/taskflow" className="block text-center px-4 py-3 bg-linear-to-r from-purple-600 to-purple-500 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-600 shadow-lg shadow-purple-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
                     Go to TaskFlow
                   </Link>
                 </div>
@@ -1003,7 +1003,7 @@ export default function DashboardPage() {
                 {/* Recent Photos Widget - Modern Card (4 cols) */}
                 <div className={`lg:col-span-4 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-600 to-pink-400 flex items-center justify-center shadow-lg">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-pink-600 to-pink-400 flex items-center justify-center shadow-lg">
                       <span className="text-xl">📸</span>
                     </div>
                     <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Recent Photos</h3>
@@ -1015,7 +1015,7 @@ export default function DashboardPage() {
                         <span className="text-3xl opacity-50">📷</span>
                       </div>
                       <p className={`text-sm mb-4 ${darkMode ? 'text-gray-500' : 'text-gray-600'}`}>No photos yet</p>
-                      <Link href="/fieldsnap" className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-600 to-pink-500 text-white rounded-xl text-sm font-semibold hover:from-pink-700 hover:to-pink-600 shadow-lg shadow-pink-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
+                      <Link href="/fieldsnap" className="inline-flex items-center gap-2 px-4 py-2.5 bg-linear-to-r from-pink-600 to-pink-500 text-white rounded-xl text-sm font-semibold hover:from-pink-700 hover:to-pink-600 shadow-lg shadow-pink-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
                         <span>📸</span> Upload First Photo
                       </Link>
                     </div>
@@ -1033,12 +1033,12 @@ export default function DashboardPage() {
                         </div>
                         <div className={`w-full ${darkMode ? 'bg-gray-800' : 'bg-gray-200'} rounded-full h-2`}>
                           <div
-                            className="bg-gradient-to-r from-pink-600 to-pink-400 h-2 rounded-full transition-all duration-500"
+                            className="bg-linear-to-r from-pink-600 to-pink-400 h-2 rounded-full transition-all duration-500"
                             style={{ width: `${(userStats.storageUsed / userStats.storageLimit) * 100}%` }}
                           ></div>
                         </div>
                       </div>
-                      <Link href="/fieldsnap" className="block text-center px-4 py-2.5 bg-gradient-to-r from-pink-600 to-pink-500 text-white rounded-xl text-sm font-semibold hover:from-pink-700 hover:to-pink-600 shadow-lg shadow-pink-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
+                      <Link href="/fieldsnap" className="block text-center px-4 py-2.5 bg-linear-to-r from-pink-600 to-pink-500 text-white rounded-xl text-sm font-semibold hover:from-pink-700 hover:to-pink-600 shadow-lg shadow-pink-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
                         View All Photos
                       </Link>
                     </>
@@ -1048,7 +1048,7 @@ export default function DashboardPage() {
                 {/* Quick Actions Panel - Modern Grid (4 cols) */}
                 <div className={`lg:col-span-4 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center shadow-lg">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-600 to-indigo-400 flex items-center justify-center shadow-lg">
                       <span className="text-xl">⚡</span>
                     </div>
                     <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Quick Actions</h3>
@@ -1077,7 +1077,7 @@ export default function DashboardPage() {
                 {/* Activity Feed - Modern Card (4 cols) */}
                 <div className={`lg:col-span-4 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-600 to-orange-400 flex items-center justify-center shadow-lg">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-orange-600 to-orange-400 flex items-center justify-center shadow-lg">
                       <span className="text-xl">📋</span>
                     </div>
                     <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Activity Feed</h3>
@@ -1102,7 +1102,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Modern Upgrade Prompt Card (Full Width) - Modified for Pro Users */}
-              <div className="relative overflow-hidden bg-gradient-to-br from-purple-600 via-purple-500 to-blue-600 text-white rounded-2xl p-8 shadow-2xl shadow-purple-900/30">
+              <div className="relative overflow-hidden bg-linear-to-br from-purple-600 via-purple-500 to-blue-600 text-white rounded-2xl p-8 shadow-2xl shadow-purple-900/30">
                 {/* Animated Background Pattern */}
                 <div className="absolute inset-0 opacity-10">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.3),transparent)]"></div>
@@ -1171,10 +1171,10 @@ export default function DashboardPage() {
             <>
               {/* Modern Welcome Banner - Dismissible */}
               {!dismissedWelcome && (
-                <div className="relative overflow-hidden bg-gradient-to-br from-amber-600 via-amber-500 to-orange-500 text-white rounded-2xl p-8 shadow-2xl shadow-amber-900/30">
+                <div className="relative overflow-hidden bg-linear-to-br from-amber-600 via-amber-500 to-orange-500 text-white rounded-2xl p-8 shadow-2xl shadow-amber-900/30">
                   {/* Decorative Background Pattern */}
                   <div className="absolute inset-0 opacity-10">
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                    <div className="absolute inset-0 bg-linear-to-br from-white/20 to-transparent"></div>
                     <svg className="absolute -right-10 -top-10 w-64 h-64 opacity-20" viewBox="0 0 200 200">
                       <circle cx="100" cy="100" r="80" fill="white" />
                     </svg>
@@ -1246,7 +1246,7 @@ export default function DashboardPage() {
                 <div className={`lg:col-span-6 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center shadow-lg">
+                      <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-600 to-blue-400 flex items-center justify-center shadow-lg">
                         <span className="text-xl">🏗️</span>
                       </div>
                       <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Project Overview</h3>
@@ -1261,11 +1261,11 @@ export default function DashboardPage() {
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total Projects</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{userStats.totalProjects}</p>
                     </div>
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10 border ${darkMode ? 'border-green-500/20' : 'border-green-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-green-500/10 to-green-600/10 border ${darkMode ? 'border-green-500/20' : 'border-green-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>Active</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{userStats.activeProjects}</p>
                     </div>
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-600/10 border ${darkMode ? 'border-amber-500/20' : 'border-amber-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-amber-500/10 to-amber-600/10 border ${darkMode ? 'border-amber-500/20' : 'border-amber-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-amber-400' : 'text-amber-700'}`}>On Hold</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-amber-400' : 'text-amber-600'}`}>{userStats.onHoldProjects}</p>
                     </div>
@@ -1275,7 +1275,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <Link href="/projects" className="block text-center px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-600 shadow-lg shadow-blue-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
+                  <Link href="/projects" className="block text-center px-4 py-3 bg-linear-to-r from-blue-600 to-blue-500 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-600 shadow-lg shadow-blue-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
                     View All Projects
                   </Link>
                 </div>
@@ -1283,32 +1283,32 @@ export default function DashboardPage() {
                 {/* Task Summary Widget - Modern Card */}
                 <div className={`lg:col-span-6 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-purple-400 flex items-center justify-center shadow-lg">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-purple-600 to-purple-400 flex items-center justify-center shadow-lg">
                       <span className="text-xl">✅</span>
                     </div>
                     <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Task Summary</h3>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 mb-6">
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10 border ${darkMode ? 'border-blue-500/20' : 'border-blue-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-blue-500/10 to-blue-600/10 border ${darkMode ? 'border-blue-500/20' : 'border-blue-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>Today's Tasks</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>{userStats.tasksToday}</p>
                     </div>
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-red-500/10 to-red-600/10 border ${darkMode ? 'border-red-500/20' : 'border-red-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-red-500/10 to-red-600/10 border ${darkMode ? 'border-red-500/20' : 'border-red-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-red-400' : 'text-red-700'}`}>Overdue</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-red-400' : 'text-red-600'}`}>{userStats.overdueTasks}</p>
                     </div>
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/10 border ${darkMode ? 'border-purple-500/20' : 'border-purple-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-purple-500/10 to-purple-600/10 border ${darkMode ? 'border-purple-500/20' : 'border-purple-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-purple-400' : 'text-purple-700'}`}>This Week</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{userStats.tasksThisWeek}</p>
                     </div>
-                    <div className={`p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10 border ${darkMode ? 'border-green-500/20' : 'border-green-500/30'} hover:scale-105 transition-transform duration-200`}>
+                    <div className={`p-4 rounded-xl bg-linear-to-br from-green-500/10 to-green-600/10 border ${darkMode ? 'border-green-500/20' : 'border-green-500/30'} hover:scale-105 transition-transform duration-200`}>
                       <p className={`text-xs font-medium mb-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>Completion Rate</p>
                       <p className={`text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{userStats.completionRate}%</p>
                     </div>
                   </div>
 
-                  <Link href="/taskflow" className="block text-center px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-600 shadow-lg shadow-purple-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
+                  <Link href="/taskflow" className="block text-center px-4 py-3 bg-linear-to-r from-purple-600 to-purple-500 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-600 shadow-lg shadow-purple-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
                     Go to TaskFlow
                   </Link>
                 </div>
@@ -1319,7 +1319,7 @@ export default function DashboardPage() {
                 {/* Recent Photos Widget - Modern Card (4 cols) */}
                 <div className={`lg:col-span-4 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-600 to-pink-400 flex items-center justify-center shadow-lg">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-pink-600 to-pink-400 flex items-center justify-center shadow-lg">
                       <span className="text-xl">📸</span>
                     </div>
                     <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Recent Photos</h3>
@@ -1337,10 +1337,10 @@ export default function DashboardPage() {
                         <span className={`font-bold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{userStats.storageUsed}GB / Unlimited</span>
                       </div>
                       <div className={`w-full ${darkMode ? 'bg-gray-800' : 'bg-gray-200'} rounded-full h-2`}>
-                        <div className="bg-gradient-to-r from-pink-600 to-pink-400 h-2 rounded-full transition-all duration-500" style={{ width: '5%' }}></div>
+                        <div className="bg-linear-to-r from-pink-600 to-pink-400 h-2 rounded-full transition-all duration-500" style={{ width: '5%' }}></div>
                       </div>
                     </div>
-                    <Link href="/fieldsnap" className="block text-center px-4 py-2.5 bg-gradient-to-r from-pink-600 to-pink-500 text-white rounded-xl text-sm font-semibold hover:from-pink-700 hover:to-pink-600 shadow-lg shadow-pink-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
+                    <Link href="/fieldsnap" className="block text-center px-4 py-2.5 bg-linear-to-r from-pink-600 to-pink-500 text-white rounded-xl text-sm font-semibold hover:from-pink-700 hover:to-pink-600 shadow-lg shadow-pink-900/30 hover:shadow-xl transition-all duration-200 hover:scale-105">
                       View All Photos
                     </Link>
                   </>
@@ -1349,7 +1349,7 @@ export default function DashboardPage() {
                 {/* Quick Actions Panel - Modern Grid (4 cols) */}
                 <div className={`lg:col-span-4 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-400 flex items-center justify-center shadow-lg">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-600 to-indigo-400 flex items-center justify-center shadow-lg">
                       <span className="text-xl">⚡</span>
                     </div>
                     <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Quick Actions</h3>
@@ -1378,7 +1378,7 @@ export default function DashboardPage() {
                 {/* Activity Feed - Modern Card (4 cols) */}
                 <div className={`lg:col-span-4 ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-600 to-orange-400 flex items-center justify-center shadow-lg">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-orange-600 to-orange-400 flex items-center justify-center shadow-lg">
                       <span className="text-xl">📋</span>
                     </div>
                     <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Activity Feed</h3>
@@ -1405,14 +1405,14 @@ export default function DashboardPage() {
               {/* Enterprise-Specific: Revenue & Analytics Card (Full Width) */}
               <div className={`${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'} backdrop-blur-sm border rounded-2xl p-6 shadow-xl ${darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200/50'} hover:shadow-2xl transition-all duration-300`}>
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-400 flex items-center justify-center shadow-lg">
+                  <div className="w-10 h-10 rounded-xl bg-linear-to-br from-emerald-600 to-emerald-400 flex items-center justify-center shadow-lg">
                     <span className="text-xl">💰</span>
                   </div>
                   <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Revenue Analytics</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className={`p-6 rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 border ${darkMode ? 'border-emerald-500/20' : 'border-emerald-500/30'}`}>
+                  <div className={`p-6 rounded-xl bg-linear-to-br from-emerald-500/10 to-emerald-600/10 border ${darkMode ? 'border-emerald-500/20' : 'border-emerald-500/30'}`}>
                     <p className={`text-sm font-medium mb-2 ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>Revenue This Month</p>
                     <p className={`text-4xl font-bold ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
                       ${userStats.revenueThisMonth.toLocaleString()}
@@ -1420,7 +1420,7 @@ export default function DashboardPage() {
                     <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-600'}`}>+12% from last month</p>
                   </div>
 
-                  <div className={`p-6 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10 border ${darkMode ? 'border-blue-500/20' : 'border-blue-500/30'}`}>
+                  <div className={`p-6 rounded-xl bg-linear-to-br from-blue-500/10 to-blue-600/10 border ${darkMode ? 'border-blue-500/20' : 'border-blue-500/30'}`}>
                     <p className={`text-sm font-medium mb-2 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>Revenue YTD</p>
                     <p className={`text-4xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
                       ${userStats.revenueYTD.toLocaleString()}
@@ -1428,7 +1428,7 @@ export default function DashboardPage() {
                     <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-600'}`}>Across {userStats.completedProjects} completed projects</p>
                   </div>
 
-                  <div className={`p-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/10 border ${darkMode ? 'border-purple-500/20' : 'border-purple-500/30'}`}>
+                  <div className={`p-6 rounded-xl bg-linear-to-br from-purple-500/10 to-purple-600/10 border ${darkMode ? 'border-purple-500/20' : 'border-purple-500/30'}`}>
                     <p className={`text-sm font-medium mb-2 ${darkMode ? 'text-purple-400' : 'text-purple-700'}`}>Avg Project Value</p>
                     <p className={`text-4xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
                       ${Math.round(userStats.revenueYTD / userStats.completedProjects).toLocaleString()}

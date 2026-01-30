@@ -358,7 +358,7 @@ export default function IntegrationsPage() {
         </div>
 
         {/* Important Notice */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
+        <div className="bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
           <div className="flex items-start gap-4">
             <div className="text-3xl">💡</div>
             <div className="flex-1">

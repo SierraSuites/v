@@ -32,7 +32,7 @@ export default function AIUpgradePrompt({
 
   if (variant === 'compact') {
     return (
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4">
+      <div className="bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4">
         <div className="flex items-center gap-4">
           <div className="text-4xl">🤖</div>
           <div className="flex-1">
@@ -55,10 +55,10 @@ export default function AIUpgradePrompt({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-indigo-50 to-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-b from-blue-50 via-indigo-50 to-white flex items-center justify-center p-4">
       <div className="max-w-7xl w-full">
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-t-2xl shadow-2xl px-8 py-12 text-white text-center relative overflow-hidden">
+        <div className="bg-linear-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-t-2xl shadow-2xl px-8 py-12 text-white text-center relative overflow-hidden">
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-10 left-10 w-40 h-40 bg-white rounded-full blur-3xl"></div>
@@ -96,7 +96,7 @@ export default function AIUpgradePrompt({
         <div className="bg-white rounded-b-2xl shadow-2xl px-8 py-12">
           {/* Pricing */}
           <div className="text-center mb-12">
-            <div className="inline-block bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl px-8 py-6 border-2 border-blue-200">
+            <div className="inline-block bg-linear-to-r from-blue-50 to-indigo-50 rounded-2xl px-8 py-6 border-2 border-blue-200">
               <div className="text-sm text-gray-600 mb-1">Upgrade to</div>
               <div className="text-6xl font-bold text-gray-900 mb-1">
                 ${upgradeInfo.price}
@@ -119,7 +119,7 @@ export default function AIUpgradePrompt({
           </div>
 
           {/* Interactive ROI Calculator */}
-          <div className="mb-12 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-8 border-2 border-green-200">
+          <div className="mb-12 bg-linear-to-br from-green-50 to-emerald-50 rounded-xl p-8 border-2 border-green-200">
             <h2 className="text-3xl font-bold text-gray-900 mb-2 text-center flex items-center justify-center gap-3">
               <span>💰</span>
               <span>Calculate Your ROI</span>
@@ -293,7 +293,7 @@ export default function AIUpgradePrompt({
           )}
 
           {/* Why Construction Companies Love This */}
-          <div className="mb-12 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-lg p-8">
+          <div className="mb-12 bg-linear-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-lg p-8">
             <h3 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
               <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -345,7 +345,7 @@ export default function AIUpgradePrompt({
                     <div className="flex-1">
                       <p className="text-gray-700 italic mb-3">{testimonial.quote}</p>
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                        <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
                           {testimonial.author.split(' ').map(n => n[0]).join('')}
                         </div>
                         <div>
@@ -367,7 +367,7 @@ export default function AIUpgradePrompt({
           <div className="flex flex-col sm:flex-row gap-4 mb-8">
             <Link
               href="/pricing"
-              className="flex-1 px-8 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-bold text-center text-xl shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="flex-1 px-8 py-5 bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-bold text-center text-xl shadow-lg hover:shadow-xl transform hover:scale-105"
             >
               🚀 Unlock AI Co-Pilot - ${upgradeInfo.price}/month
             </Link>

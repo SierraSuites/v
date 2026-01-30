@@ -12,7 +12,7 @@ export default function CRMUpgradePrompt({ variant = 'full' }: CRMUpgradePromptP
 
   if (variant === 'compact') {
     return (
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4">
+      <div className="bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4">
         <div className="flex items-center gap-4">
           <div className="text-4xl">🔒</div>
           <div className="flex-1">
@@ -39,7 +39,7 @@ export default function CRMUpgradePrompt({ variant = 'full' }: CRMUpgradePromptP
       <div className="max-w-4xl w-full">
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           {/* Header with gradient */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-12 text-white text-center">
+          <div className="bg-linear-to-r from-blue-600 to-indigo-600 px-8 py-12 text-white text-center">
             <div className="text-6xl mb-4">🚀</div>
             <h1 className="text-4xl font-bold mb-3">{upgradeInfo.title}</h1>
             <p className="text-xl text-blue-100">{upgradeInfo.description}</p>
@@ -49,7 +49,7 @@ export default function CRMUpgradePrompt({ variant = 'full' }: CRMUpgradePromptP
           <div className="px-8 py-12">
             {/* Pricing */}
             <div className="text-center mb-8">
-              <div className="inline-block bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl px-8 py-6 border-2 border-blue-200">
+              <div className="inline-block bg-linear-to-r from-blue-50 to-indigo-50 rounded-2xl px-8 py-6 border-2 border-blue-200">
                 <div className="text-sm text-gray-600 mb-1">Upgrade to</div>
                 <div className="text-4xl font-bold text-gray-900 mb-1">
                   ${upgradeInfo.price}
@@ -155,7 +155,7 @@ export default function CRMUpgradePrompt({ variant = 'full' }: CRMUpgradePromptP
                 The email templates alone save us 5 hours per week. Best investment we've made.
               </p>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
                   MJ
                 </div>
                 <div>

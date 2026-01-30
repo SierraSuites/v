@@ -271,7 +271,7 @@ export default function SafetySentinelPage() {
   if (loading) {
     return (
       <AIAccessWrapper requiredTier="enterprise">
-        <div className="min-h-screen bg-gradient-to-b from-red-50 to-white flex items-center justify-center">
+        <div className="min-h-screen bg-linear-to-b from-red-50 to-white flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading safety data...</p>
@@ -283,9 +283,9 @@ export default function SafetySentinelPage() {
 
   return (
     <AIAccessWrapper requiredTier="enterprise">
-      <div className="min-h-screen bg-gradient-to-b from-red-50 to-white">
+      <div className="min-h-screen bg-linear-to-b from-red-50 to-white">
         {/* Header */}
-        <div className="bg-gradient-to-r from-red-600 via-orange-600 to-yellow-600 text-white shadow-lg">
+        <div className="bg-linear-to-r from-red-600 via-orange-600 to-yellow-600 text-white shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex items-center justify-between">
               <div>
@@ -352,25 +352,25 @@ export default function SafetySentinelPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg">
+              <div className="text-center p-4 bg-linear-to-br from-orange-50 to-red-50 rounded-lg">
                 <div className="text-2xl mb-2">🚨</div>
                 <div className="text-3xl font-bold text-gray-900">{stats.activePredictions}</div>
                 <div className="text-sm text-gray-600">Active Predictions</div>
               </div>
 
-              <div className="text-center p-4 bg-gradient-to-br from-red-50 to-orange-50 rounded-lg">
+              <div className="text-center p-4 bg-linear-to-br from-red-50 to-orange-50 rounded-lg">
                 <div className="text-2xl mb-2">⚠️</div>
                 <div className="text-3xl font-bold text-orange-600">{stats.oshaViolations}</div>
                 <div className="text-sm text-gray-600">OSHA Violations Found</div>
               </div>
 
-              <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg">
+              <div className="text-center p-4 bg-linear-to-br from-green-50 to-emerald-50 rounded-lg">
                 <div className="text-2xl mb-2">💰</div>
                 <div className="text-3xl font-bold text-green-600">{formatCurrency(stats.potentialSavings)}</div>
                 <div className="text-sm text-gray-600">Potential Savings</div>
               </div>
 
-              <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
+              <div className="text-center p-4 bg-linear-to-br from-blue-50 to-indigo-50 rounded-lg">
                 <div className="text-2xl mb-2">✅</div>
                 <div className="text-3xl font-bold text-blue-600">{stats.incidentsPrevented}</div>
                 <div className="text-sm text-gray-600">Incidents Prevented</div>
@@ -379,7 +379,7 @@ export default function SafetySentinelPage() {
           </div>
 
           {/* How It Works */}
-          <div className="bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200 rounded-lg p-6 mb-8">
+          <div className="bg-linear-to-r from-orange-50 to-red-50 border-2 border-orange-200 rounded-lg p-6 mb-8">
             <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
               <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -445,7 +445,7 @@ export default function SafetySentinelPage() {
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2">
                                   <div
-                                    className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full"
+                                    className="bg-linear-to-r from-orange-500 to-red-500 h-2 rounded-full"
                                     style={{ width: `${factor.impact_percentage}%` }}
                                   />
                                 </div>
@@ -567,7 +567,7 @@ export default function SafetySentinelPage() {
         {showPhotoUpload && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full">
-              <div className="bg-gradient-to-r from-red-600 to-orange-600 text-white px-6 py-4 flex items-center justify-between rounded-t-lg">
+              <div className="bg-linear-to-r from-red-600 to-orange-600 text-white px-6 py-4 flex items-center justify-between rounded-t-lg">
                 <h2 className="text-2xl font-bold">Upload Site Photo for Safety Analysis</h2>
                 <button
                   onClick={() => setShowPhotoUpload(false)}

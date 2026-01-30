@@ -436,7 +436,7 @@ function ApprovalsContent() {
   const selectedProjectData = projects.find(p => p.id === selectedProject)
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-blue-50 to-white p-8">
+    <div className="min-h-screen bg-linear-to-b from-indigo-50 via-blue-50 to-white p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -458,7 +458,7 @@ function ApprovalsContent() {
           </div>
 
           {/* Info Banner */}
-          <div className="bg-gradient-to-r from-indigo-100 to-blue-100 border-l-4 border-indigo-600 p-6 rounded-lg">
+          <div className="bg-linear-to-r from-indigo-100 to-blue-100 border-l-4 border-indigo-600 p-6 rounded-lg">
             <div className="flex items-start gap-4">
               <div className="text-3xl">💡</div>
               <div>
@@ -947,7 +947,7 @@ function ApprovalsContent() {
 export default function ApprovalsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     }>

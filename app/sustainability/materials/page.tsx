@@ -282,7 +282,7 @@ export default function MaterialsDatabasePage() {
     <SustainabilityAccessWrapper>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
+        <div className="bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex items-center justify-between">
               <div>
@@ -388,7 +388,7 @@ export default function MaterialsDatabasePage() {
           </div>
 
           {/* Educational Banner */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
+          <div className="bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
             <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
               <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -564,7 +564,7 @@ export default function MaterialsDatabasePage() {
         {showAddModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex items-center justify-between">
+              <div className="sticky top-0 bg-linear-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex items-center justify-between">
                 <h2 className="text-2xl font-bold">Add Sustainable Material</h2>
                 <button
                   onClick={() => setShowAddModal(false)}
@@ -810,7 +810,7 @@ export default function MaterialsDatabasePage() {
         {showComparisonModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 flex items-center justify-between">
+              <div className="sticky top-0 bg-linear-to-r from-green-600 to-emerald-600 text-white px-6 py-4 flex items-center justify-between">
                 <h2 className="text-2xl font-bold">🔍 Material Switcher Calculator</h2>
                 <button
                   onClick={() => setShowComparisonModal(false)}
@@ -886,7 +886,7 @@ export default function MaterialsDatabasePage() {
                 </div>
 
                 {comparisonResults && comparison.standard && comparison.alternative && (
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-6 border-2 border-green-200">
+                  <div className="bg-linear-to-br from-green-50 to-emerald-50 rounded-lg p-6 border-2 border-green-200">
                     <h3 className="text-xl font-bold text-gray-900 mb-4">Comparison Results</h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

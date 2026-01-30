@@ -158,7 +158,7 @@ export default function AppShell({ children, user }: AppShellProps) {
           <div className="flex items-center justify-between">
             {!sidebarCollapsed && (
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center shadow-lg">
+                <div className="w-8 h-8 rounded-lg bg-linear-to-br from-blue-600 to-blue-400 flex items-center justify-center shadow-lg">
                   <span className="text-white font-bold text-sm">SS</span>
                 </div>
                 <h1 className={`text-lg font-bold tracking-tight ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
@@ -194,7 +194,7 @@ export default function AppShell({ children, user }: AppShellProps) {
               } transition-all duration-200 ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
               <div className="relative">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-600 via-blue-500 to-blue-400 flex items-center justify-center text-white font-bold text-sm shadow-lg">
                   {userData.full_name?.charAt(0) || 'U'}
                 </div>
                 <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
@@ -338,7 +338,7 @@ export default function AppShell({ children, user }: AppShellProps) {
                         <span className="font-medium text-sm flex-1">{item.name}</span>
                         {item.locked && <span className="text-xs opacity-60">🔒</span>}
                         {item.badge && (
-                          <span className="text-xs px-2 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-md font-semibold shadow-sm">
+                          <span className="text-xs px-2 py-1 bg-linear-to-r from-amber-500 to-amber-600 text-white rounded-md font-semibold shadow-sm">
                             {item.badge}
                           </span>
                         )}
@@ -370,7 +370,7 @@ export default function AppShell({ children, user }: AppShellProps) {
               <span
                 className={`${
                   sidebarCollapsed ? 'absolute -top-1 -right-1' : ''
-                } w-5 h-5 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg`}
+                } w-5 h-5 bg-linear-to-r from-red-500 to-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg`}
               >
                 {notificationCount}
               </span>
@@ -407,8 +407,8 @@ export default function AppShell({ children, user }: AppShellProps) {
 
           {/* Upgrade Card */}
           {userPlan !== 'enterprise' && !sidebarCollapsed && (
-            <div className="mt-4 p-4 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 rounded-xl text-white shadow-xl relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+            <div className="mt-4 p-4 bg-linear-to-br from-blue-600 via-blue-500 to-blue-400 rounded-xl text-white shadow-xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-linear-to-br from-white/10 to-transparent"></div>
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">✨</span>

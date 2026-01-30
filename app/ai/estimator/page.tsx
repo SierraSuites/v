@@ -305,9 +305,9 @@ export default function SmartEstimatorPage() {
 
   return (
     <AIAccessWrapper requiredTier="pro">
-      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
+      <div className="min-h-screen bg-linear-to-b from-green-50 to-white">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white shadow-lg">
+        <div className="bg-linear-to-r from-green-600 via-emerald-600 to-teal-600 text-white shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex items-center justify-between">
               <div>
@@ -489,7 +489,7 @@ export default function SmartEstimatorPage() {
               ) : (
                 <>
                   {/* Success Animation */}
-                  <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg shadow-lg p-8 mb-6 text-center">
+                  <div className="bg-linear-to-r from-green-600 to-emerald-600 text-white rounded-lg shadow-lg p-8 mb-6 text-center">
                     <div className="text-7xl mb-4">🎉</div>
                     <h2 className="text-4xl font-bold mb-2">Estimate Complete!</h2>
                     <p className="text-green-100 text-lg mb-6">
@@ -610,7 +610,7 @@ export default function SmartEstimatorPage() {
                   <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <button
                       onClick={handleConvertToProposal}
-                      className="px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all font-bold shadow-lg transform hover:scale-105"
+                      className="px-6 py-4 bg-linear-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all font-bold shadow-lg transform hover:scale-105"
                     >
                       📄 Convert to Proposal
                     </button>
