@@ -4,7 +4,14 @@ import { createClient } from '@/lib/supabase/client'
 // TYPES
 // ============================================
 
-export type UserRole = 'admin' | 'superintendent' | 'project_manager' | 'field_engineer' | 'viewer'
+export type UserRole =
+  | 'admin'
+  | 'superintendent'
+  | 'project_manager'
+  | 'field_engineer'
+  | 'viewer'
+  | 'accountant'
+  | 'subcontractor'
 
 export interface PermissionSet {
   // Project Permissions
@@ -45,6 +52,20 @@ export interface PermissionSet {
   canManagePunchList: boolean
   canResolvePunchItems: boolean
   canViewPunchList: boolean
+
+  // Financial Management
+  canManageFinances: boolean
+  canApproveExpenses: boolean
+  canViewFinancials: boolean
+
+  // Document Management
+  canUploadDocuments: boolean
+  canDeleteDocuments: boolean
+  canShareDocuments: boolean
+
+  // Settings & Configuration
+  canManageCompanySettings: boolean
+  canManageIntegrations: boolean
 }
 
 export interface TeamMember {
@@ -127,7 +148,18 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionSet> = {
     // Punch List
     canManagePunchList: true,
     canResolvePunchItems: true,
-    canViewPunchList: true
+    canViewPunchList: true,
+    // Financial
+    canManageFinances: true,
+    canApproveExpenses: true,
+    canViewFinancials: true,
+    // Documents
+    canUploadDocuments: true,
+    canDeleteDocuments: true,
+    canShareDocuments: true,
+    // Settings
+    canManageCompanySettings: true,
+    canManageIntegrations: true
   },
 
   superintendent: {
@@ -162,7 +194,18 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionSet> = {
     // Punch List
     canManagePunchList: true,
     canResolvePunchItems: true,
-    canViewPunchList: true
+    canViewPunchList: true,
+    // Financial
+    canManageFinances: true,
+    canApproveExpenses: true,
+    canViewFinancials: true,
+    // Documents
+    canUploadDocuments: true,
+    canDeleteDocuments: true,
+    canShareDocuments: true,
+    // Settings
+    canManageCompanySettings: false,
+    canManageIntegrations: false
   },
 
   project_manager: {
@@ -197,7 +240,18 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionSet> = {
     // Punch List
     canManagePunchList: true,
     canResolvePunchItems: true,
-    canViewPunchList: true
+    canViewPunchList: true,
+    // Financial
+    canManageFinances: false,
+    canApproveExpenses: false,
+    canViewFinancials: true, // Can view project financials
+    // Documents
+    canUploadDocuments: true,
+    canDeleteDocuments: false, // Only own documents
+    canShareDocuments: true,
+    // Settings
+    canManageCompanySettings: false,
+    canManageIntegrations: false
   },
 
   field_engineer: {
@@ -232,7 +286,18 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionSet> = {
     // Punch List
     canManagePunchList: false,
     canResolvePunchItems: false,
-    canViewPunchList: true
+    canViewPunchList: true,
+    // Financial
+    canManageFinances: false,
+    canApproveExpenses: false,
+    canViewFinancials: false,
+    // Documents
+    canUploadDocuments: true,
+    canDeleteDocuments: false,
+    canShareDocuments: false,
+    // Settings
+    canManageCompanySettings: false,
+    canManageIntegrations: false
   },
 
   viewer: {
@@ -267,7 +332,110 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionSet> = {
     // Punch List
     canManagePunchList: false,
     canResolvePunchItems: false,
-    canViewPunchList: true
+    canViewPunchList: true,
+    // Financial
+    canManageFinances: false,
+    canApproveExpenses: false,
+    canViewFinancials: false,
+    // Documents
+    canUploadDocuments: false,
+    canDeleteDocuments: false,
+    canShareDocuments: false,
+    // Settings
+    canManageCompanySettings: false,
+    canManageIntegrations: false
+  },
+
+  accountant: {
+    // Project - Read-only access to view project details
+    canViewAllProjects: true,
+    canEditProjects: false,
+    canDeleteProjects: false,
+    canCreateProjects: false,
+    // Team - No team management
+    canManageTeam: false,
+    canInviteMembers: false,
+    canRemoveMembers: false,
+    canChangeRoles: false,
+    // Photos - View only
+    canViewAllPhotos: true,
+    canUploadPhotos: false,
+    canDeletePhotos: false,
+    canSharePhotos: false,
+    canEditPhotoMetadata: false,
+    // Analytics - Full access for financial reporting
+    canViewAnalytics: true,
+    canExportData: true,
+    canViewReports: true,
+    // AI - View insights only
+    canManageAI: false,
+    canRunAIAnalysis: false,
+    canViewAIInsights: true,
+    // Tasks - View only
+    canManageTasks: false,
+    canAssignTasks: false,
+    canViewAllTasks: true,
+    // Punch List - View only
+    canManagePunchList: false,
+    canResolvePunchItems: false,
+    canViewPunchList: true,
+    // Financial - Full access
+    canManageFinances: true,
+    canApproveExpenses: true,
+    canViewFinancials: true,
+    // Documents - Can upload invoices/receipts
+    canUploadDocuments: true,
+    canDeleteDocuments: false,
+    canShareDocuments: true,
+    // Settings - No access
+    canManageCompanySettings: false,
+    canManageIntegrations: false
+  },
+
+  subcontractor: {
+    // Project - Only assigned projects
+    canViewAllProjects: false,
+    canEditProjects: false,
+    canDeleteProjects: false,
+    canCreateProjects: false,
+    // Team - No access
+    canManageTeam: false,
+    canInviteMembers: false,
+    canRemoveMembers: false,
+    canChangeRoles: false,
+    // Photos - Can upload for documentation
+    canViewAllPhotos: false,
+    canUploadPhotos: true,
+    canDeletePhotos: false, // Only own photos
+    canSharePhotos: false,
+    canEditPhotoMetadata: false,
+    // Analytics - No access
+    canViewAnalytics: false,
+    canExportData: false,
+    canViewReports: false,
+    // AI - No access
+    canManageAI: false,
+    canRunAIAnalysis: false,
+    canViewAIInsights: false,
+    // Tasks - Only assigned tasks
+    canManageTasks: false,
+    canAssignTasks: false,
+    canViewAllTasks: false,
+    // Punch List - Can resolve assigned items
+    canManagePunchList: false,
+    canResolvePunchItems: true,
+    canViewPunchList: true,
+    // Financial - No access
+    canManageFinances: false,
+    canApproveExpenses: false,
+    canViewFinancials: false,
+    // Documents - Can upload work documentation
+    canUploadDocuments: true,
+    canDeleteDocuments: false,
+    canShareDocuments: false,
+    // Settings - No access
+    canManageCompanySettings: false,
+    canManageIntegrations: false
   }
 }
 
@@ -570,7 +738,9 @@ export function getRoleDisplayName(role: UserRole): string {
     superintendent: 'Superintendent',
     project_manager: 'Project Manager',
     field_engineer: 'Field Engineer',
-    viewer: 'Viewer'
+    viewer: 'Viewer',
+    accountant: 'Accountant',
+    subcontractor: 'Subcontractor'
   }
   return names[role]
 }
@@ -584,7 +754,9 @@ export function getRoleColor(role: UserRole): string {
     superintendent: '#F59E0B', // Orange
     project_manager: '#6366F1', // Indigo
     field_engineer: '#10B981', // Green
-    viewer: '#6B7280' // Gray
+    viewer: '#6B7280', // Gray
+    accountant: '#8B5CF6', // Purple
+    subcontractor: '#14B8A6' // Teal
   }
   return colors[role]
 }
@@ -598,7 +770,9 @@ export function getRoleIcon(role: UserRole): string {
     superintendent: '🏗️',
     project_manager: '📋',
     field_engineer: '🔧',
-    viewer: '👁️'
+    viewer: '👁️',
+    accountant: '💰',
+    subcontractor: '🛠️'
   }
   return icons[role]
 }
@@ -608,10 +782,12 @@ export function getRoleIcon(role: UserRole): string {
  */
 export function getRoleLevel(role: UserRole): number {
   const levels: Record<UserRole, number> = {
-    admin: 5,
-    superintendent: 4,
-    project_manager: 3,
-    field_engineer: 2,
+    admin: 7,
+    superintendent: 6,
+    accountant: 5,
+    project_manager: 4,
+    field_engineer: 3,
+    subcontractor: 2,
     viewer: 1
   }
   return levels[role]
