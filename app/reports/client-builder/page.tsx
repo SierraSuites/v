@@ -196,7 +196,7 @@ export default function ClientReportBuilderPage() {
   const selectedProjectData = projects.find(p => p.id === selectedProject)
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-indigo-50 to-white p-8">
+    <div className="min-h-screen bg-linear-to-b from-blue-50 via-indigo-50 to-white p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -233,7 +233,7 @@ export default function ClientReportBuilderPage() {
           </div>
 
           {/* How It Works */}
-          <div className="bg-gradient-to-r from-blue-100 to-indigo-100 border-l-4 border-blue-600 p-6 rounded-lg">
+          <div className="bg-linear-to-r from-blue-100 to-indigo-100 border-l-4 border-blue-600 p-6 rounded-lg">
             <div className="flex items-start gap-4">
               <div className="text-3xl">💡</div>
               <div>

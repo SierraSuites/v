@@ -17,7 +17,7 @@ export default function SustainabilityUpgradePrompt({ variant = 'full' }: Sustai
 
   if (variant === 'compact') {
     return (
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-4">
+      <div className="bg-linear-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-4">
         <div className="flex items-center gap-4">
           <div className="text-4xl">🌱</div>
           <div className="flex-1">
@@ -40,10 +40,10 @@ export default function SustainabilityUpgradePrompt({ variant = 'full' }: Sustai
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-b from-green-50 to-white flex items-center justify-center p-4">
       <div className="max-w-6xl w-full">
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-t-2xl shadow-2xl px-8 py-12 text-white text-center">
+        <div className="bg-linear-to-r from-green-600 to-emerald-600 rounded-t-2xl shadow-2xl px-8 py-12 text-white text-center">
           <div className="text-6xl mb-4">🌱</div>
           <h1 className="text-4xl font-bold mb-3">{upgradeInfo.title}</h1>
           <p className="text-xl text-green-100 mb-6">{upgradeInfo.description}</p>
@@ -73,7 +73,7 @@ export default function SustainabilityUpgradePrompt({ variant = 'full' }: Sustai
         <div className="bg-white rounded-b-2xl shadow-2xl px-8 py-12">
           {/* Pricing */}
           <div className="text-center mb-12">
-            <div className="inline-block bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl px-8 py-6 border-2 border-green-200">
+            <div className="inline-block bg-linear-to-r from-green-50 to-emerald-50 rounded-2xl px-8 py-6 border-2 border-green-200">
               <div className="text-sm text-gray-600 mb-1">Upgrade to</div>
               <div className="text-5xl font-bold text-gray-900 mb-1">
                 ${upgradeInfo.price}
@@ -89,7 +89,7 @@ export default function SustainabilityUpgradePrompt({ variant = 'full' }: Sustai
           </div>
 
           {/* ROI Calculator */}
-          <div className="mb-12 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 border-2 border-blue-200">
+          <div className="mb-12 bg-linear-to-br from-blue-50 to-indigo-50 rounded-xl p-8 border-2 border-blue-200">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
               💰 See Your ROI in Real-Time
             </h2>
@@ -225,7 +225,7 @@ export default function SustainabilityUpgradePrompt({ variant = 'full' }: Sustai
                   The tax credits alone paid for our subscription for 15 years."
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  <div className="w-12 h-12 bg-linear-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
                     RJ
                   </div>
                   <div>

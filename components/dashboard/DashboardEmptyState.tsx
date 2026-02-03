@@ -10,7 +10,7 @@ export default function DashboardEmptyState({ userName }: DashboardEmptyStatePro
   return (
     <div className="max-w-4xl mx-auto">
       {/* Welcome Hero */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-8 mb-8 text-center">
+      <div className="bg-linear-to-br from-blue-50 to-indigo-100 rounded-2xl p-8 mb-8 text-center">
         <div className="mb-6">
           <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

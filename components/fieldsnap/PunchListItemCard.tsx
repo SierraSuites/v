@@ -280,7 +280,7 @@ export default function PunchListItemCard({
                 fill
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent" />
               <p className="absolute bottom-2 left-2 text-white text-xs font-semibold">
                 📸 {(item.photo as any).filename}
               </p>

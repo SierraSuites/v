@@ -408,7 +408,7 @@ export default function CRMDashboard() {
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
               <Link
                 href="/crm/contacts"
-                className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+                className="bg-linear-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="text-3xl mb-3">👥</div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Manage Contacts</h3>
@@ -417,7 +417,7 @@ export default function CRMDashboard() {
 
               <Link
                 href="/crm/leads"
-                className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+                className="bg-linear-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="text-3xl mb-3">🎯</div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Leads Pipeline</h3>
@@ -426,7 +426,7 @@ export default function CRMDashboard() {
 
               <Link
                 href="/crm/activities"
-                className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+                className="bg-linear-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="text-3xl mb-3">📅</div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Activities</h3>

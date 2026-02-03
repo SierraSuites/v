@@ -452,7 +452,7 @@ export default function ContactsPage() {
                     />
 
                     {/* Avatar */}
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                    <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                       {contact.first_name[0]}{contact.last_name[0]}
                     </div>
 

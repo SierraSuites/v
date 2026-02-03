@@ -136,7 +136,7 @@ export default function QuoteTemplatesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 py-8 px-4">
+    <div className="min-h-screen bg-linear-to-br from-purple-50 via-white to-blue-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -227,7 +227,7 @@ export default function QuoteTemplatesPage() {
               >
                 <div className="p-6">
                   {/* Icon */}
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center text-4xl mb-4 group-hover:scale-110 transition-transform">
+                  <div className="w-16 h-16 rounded-full bg-linear-to-br from-blue-100 to-purple-100 flex items-center justify-center text-4xl mb-4 group-hover:scale-110 transition-transform">
                     {template.icon}
                   </div>
 
@@ -270,7 +270,7 @@ export default function QuoteTemplatesPage() {
         )}
 
         {/* Create Custom Template CTA */}
-        <div className="mt-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl p-8 text-white text-center">
+        <div className="mt-12 bg-linear-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl p-8 text-white text-center">
           <h2 className="text-3xl font-bold mb-4">Create Your Own Template</h2>
           <p className="text-lg mb-6 opacity-90">
             Save your frequently used quotes as templates for even faster quote creation

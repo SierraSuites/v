@@ -686,7 +686,7 @@ export default function ProjectsPage() {
                           <span className="text-xs opacity-60">🔒</span>
                         )}
                         {item.badge && (
-                          <span className="text-xs px-2 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-md font-semibold shadow-sm">
+                          <span className="text-xs px-2 py-1 bg-linear-to-r from-amber-500 to-amber-600 text-white rounded-md font-semibold shadow-sm">
                             {item.badge}
                           </span>
                         )}
@@ -703,7 +703,7 @@ export default function ProjectsPage() {
         <div className="p-4 border-t border-gray-200">
           {userPlan !== "enterprise" && !sidebarCollapsed && (
             <div className="p-4 rounded-xl text-white relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #4ECDC4 0%, #5FD9CF 100%)', boxShadow: '0 4px 6px rgba(78,205,196,0.15), 0 2px 4px rgba(78,205,196,0.25)' }}>
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+              <div className="absolute inset-0 bg-linear-to-br from-white/10 to-transparent"></div>
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">✨</span>
@@ -981,7 +981,7 @@ export default function ProjectsPage() {
                       </button>
                     )}
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+                  <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-4">
                     <div className="flex items-center gap-2 text-white text-xs">
                       <span>📍</span>
                       <span className="truncate">{project.address}</span>
@@ -1107,7 +1107,7 @@ export default function ProjectsPage() {
                           {project.teamMembers.slice(0, 3).map((member, idx) => (
                             <div
                               key={idx}
-                              className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-blue-400 border-2 border-white flex items-center justify-center text-white text-xs font-semibold"
+                              className="w-8 h-8 rounded-full bg-linear-to-br from-blue-600 to-blue-400 border-2 border-white flex items-center justify-center text-white text-xs font-semibold"
                               title={member.name}
                             >
                               {member.avatar}

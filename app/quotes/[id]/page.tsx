@@ -196,7 +196,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
   const isExpired = quote.valid_until && new Date(quote.valid_until) < new Date()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 px-4">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -504,7 +504,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
             </div>
 
             {/* Tracking Stats */}
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl shadow-lg p-6 border-2 border-purple-200">
+            <div className="bg-linear-to-br from-purple-50 to-pink-50 rounded-xl shadow-lg p-6 border-2 border-purple-200">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Tracking</h2>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">

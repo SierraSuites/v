@@ -841,7 +841,7 @@ export default function TaskFlowPage() {
         <div className="p-4 border-t border-gray-200">
           {userPlan !== "enterprise" && !sidebarCollapsed && (
             <div className="p-4 rounded-xl text-white relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #4ECDC4 0%, #5FD9CF 100%)', boxShadow: '0 4px 6px rgba(78,205,196,0.15), 0 2px 4px rgba(78,205,196,0.25)' }}>
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+              <div className="absolute inset-0 bg-linear-to-br from-white/10 to-transparent"></div>
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">✨</span>

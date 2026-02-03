@@ -100,9 +100,9 @@ export default function SustainabilityDashboard() {
 
   return (
     <SustainabilityAccessWrapper>
-      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
+      <div className="min-h-screen bg-linear-to-b from-green-50 to-white">
         {/* Hero Metrics Bar - Always Visible */}
-        <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white sticky top-0 z-10 shadow-lg">
+        <div className="bg-linear-to-r from-green-600 to-emerald-600 text-white sticky top-0 z-10 shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
@@ -205,7 +205,7 @@ export default function SustainabilityDashboard() {
 
                           {/* Cert details */}
                           <h3 className="font-bold text-gray-900 text-lg mb-1">{cert.name}</h3>
-                          <div className={`px-3 py-1 bg-gradient-to-r ${cert.color} text-white rounded-full text-sm font-semibold mb-2`}>
+                          <div className={`px-3 py-1 bg-linear-to-r ${cert.color} text-white rounded-full text-sm font-semibold mb-2`}>
                             {cert.level}
                           </div>
                           <div className="text-sm text-gray-600">
@@ -225,7 +225,7 @@ export default function SustainabilityDashboard() {
                   {/* Add New Certification */}
                   <Link
                     href="/sustainability/certifications"
-                    className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-green-500 hover:bg-green-50 transition-all flex flex-col items-center justify-center"
+                    className="bg-linear-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-green-500 hover:bg-green-50 transition-all flex flex-col items-center justify-center"
                   >
                     <div className="w-32 h-32 flex items-center justify-center mb-4">
                       <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -272,7 +272,7 @@ export default function SustainabilityDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <Link
                   href="/sustainability/carbon"
-                  className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+                  className="bg-linear-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
                 >
                   <div className="text-4xl mb-3">🌍</div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Carbon Tracker</h3>
@@ -285,7 +285,7 @@ export default function SustainabilityDashboard() {
 
                 <Link
                   href="/sustainability/waste"
-                  className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+                  className="bg-linear-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
                 >
                   <div className="text-4xl mb-3">♻️</div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Waste Management</h3>
@@ -298,7 +298,7 @@ export default function SustainabilityDashboard() {
 
                 <Link
                   href="/sustainability/water"
-                  className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-2 border-cyan-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+                  className="bg-linear-to-br from-cyan-50 to-cyan-100 border-2 border-cyan-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
                 >
                   <div className="text-4xl mb-3">💧</div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Water Monitoring</h3>
@@ -311,7 +311,7 @@ export default function SustainabilityDashboard() {
 
                 <Link
                   href="/sustainability/materials"
-                  className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+                  className="bg-linear-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
                 >
                   <div className="text-4xl mb-3">🏢</div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Materials Database</h3>
@@ -324,7 +324,7 @@ export default function SustainabilityDashboard() {
 
                 <Link
                   href="/sustainability/certifications"
-                  className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+                  className="bg-linear-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
                 >
                   <div className="text-4xl mb-3">🏆</div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Certifications</h3>
@@ -337,7 +337,7 @@ export default function SustainabilityDashboard() {
 
                 <Link
                   href="/sustainability/esg"
-                  className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+                  className="bg-linear-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
                 >
                   <div className="text-4xl mb-3">📊</div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">ESG Dashboard</h3>
@@ -350,7 +350,7 @@ export default function SustainabilityDashboard() {
               </div>
 
               {/* Value Proposition Banner */}
-              <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-8 text-white shadow-xl mb-8">
+              <div className="bg-linear-to-r from-green-600 to-emerald-600 rounded-xl p-8 text-white shadow-xl mb-8">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <h2 className="text-2xl font-bold mb-3">💡 Why This Matters</h2>

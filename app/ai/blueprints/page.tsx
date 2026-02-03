@@ -308,7 +308,7 @@ export default function BlueprintAnalyzerPage() {
   if (loading) {
     return (
       <AIAccessWrapper requiredTier="enterprise">
-        <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-white flex items-center justify-center">
+        <div className="min-h-screen bg-linear-to-b from-indigo-50 to-white flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading blueprint analyses...</p>
@@ -320,9 +320,9 @@ export default function BlueprintAnalyzerPage() {
 
   return (
     <AIAccessWrapper requiredTier="enterprise">
-      <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-white">
+      <div className="min-h-screen bg-linear-to-b from-indigo-50 to-white">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg">
+        <div className="bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex items-center justify-between">
               <div>
@@ -403,7 +403,7 @@ export default function BlueprintAnalyzerPage() {
               </div>
 
               {/* How It Works */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
+              <div className="bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
                 <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
                   <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -567,7 +567,7 @@ export default function BlueprintAnalyzerPage() {
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {selectedAnalysis.material_takeoff.map((item, index) => (
-                      <div key={index} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
+                      <div key={index} className="bg-linear-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
                         <div className="text-xs text-gray-600 mb-1">{item.category}</div>
                         <div className="font-bold text-gray-900 text-lg mb-1">{item.material}</div>
                         <div className="text-2xl font-bold text-indigo-600">
@@ -608,7 +608,7 @@ export default function BlueprintAnalyzerPage() {
         {showUploadModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full">
-              <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-4 flex items-center justify-between rounded-t-lg">
+              <div className="bg-linear-to-r from-indigo-600 to-purple-600 text-white px-6 py-4 flex items-center justify-between rounded-t-lg">
                 <h2 className="text-2xl font-bold">Upload Blueprint for AI Analysis</h2>
                 <button
                   onClick={() => setShowUploadModal(false)}

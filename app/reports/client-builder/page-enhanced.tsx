@@ -417,7 +417,7 @@ export default function ClientReportBuilderEnhancedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-indigo-50 to-white p-8">
+    <div className="min-h-screen bg-linear-to-b from-blue-50 via-indigo-50 to-white p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -454,7 +454,7 @@ export default function ClientReportBuilderEnhancedPage() {
           </div>
 
           {/* Integration Status Banner */}
-          <div className="bg-gradient-to-r from-green-100 to-emerald-100 border-l-4 border-green-600 p-6 rounded-lg">
+          <div className="bg-linear-to-r from-green-100 to-emerald-100 border-l-4 border-green-600 p-6 rounded-lg">
             <div className="flex items-start gap-4">
               <div className="text-3xl">🔗</div>
               <div>

@@ -407,7 +407,7 @@ export default function NewDailyReportPage() {
             ) : (
               <>
                 {/* Weather Widget */}
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow p-6">
+                <div className="bg-linear-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm opacity-90">Weather</div>
