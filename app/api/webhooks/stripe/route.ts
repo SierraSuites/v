@@ -86,6 +86,25 @@ export async function POST(request: NextRequest) {
           if (error) {
             console.error('Error updating user:', error)
           }
+
+          // Also update user_profiles.plan (protected by RLS)
+          const { error: profileError } = await supabaseAdmin
+            .from('user_profiles')
+            .update({ plan: plan })
+            .eq('id', userId)
+
+          if (profileError) {
+            console.error('Error updating user_profiles:', profileError)
+          }
+
+          // Also update app_metadata (admin-only, can't be modified by users)
+          const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+            app_metadata: { plan: plan }
+          })
+
+          if (authError) {
+            console.error('Error updating app_metadata:', authError)
+          }
         }
         break
       }
