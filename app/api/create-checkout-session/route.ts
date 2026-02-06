@@ -47,30 +47,34 @@ export async function POST(request: NextRequest) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
+    // Guard: email is required for Stripe checkout
+    if (!user.email) {
+      console.warn('[Checkout] User attempted checkout without email', {
+        userId: user.id,
+        timestamp: new Date().toISOString()
+      })
+      return NextResponse.json(
+        { error: 'User email is required for checkout' },
+        { status: 400 }
+      )
+    }
+
     // Create Stripe checkout session
     const session = await createCheckoutSession({
       userId: user.id,
-      email: user.email!,
+      email: user.email,
       plan,
       currency,
       successUrl: `${appUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${appUrl}/register?step=2`,
     })
 
-    const supabase2 = await createClient()
-    const {
-      data: { user: currentUser },
-    } = await supabase2.auth.getUser()
-
     const response = NextResponse.json({
       sessionId: session.id,
       url: session.url
     })
 
-    if (currentUser) {
-      return addRateLimitHeaders(response, `checkout-${currentUser.id}`, 10)
-    }
-    return response
+    return addRateLimitHeaders(response, `checkout-${user.id}`, 10)
   } catch (error) {
     return handleApiError(error)
   }
