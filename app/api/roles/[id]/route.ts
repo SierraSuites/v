@@ -102,6 +102,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // Authenticate user
@@ -166,6 +167,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // Authenticate user
@@ -230,7 +232,7 @@ export async function PUT(
     // Update the role
     const updatedRole = await customRolesService.updateCustomRole(id, {
       role_name: updates.roleName,
-      description: updates.description,
+      description: updates.description ?? undefined,
       color: updates.color,
       icon: updates.icon,
       permissions: updates.permissions
@@ -267,6 +269,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // Authenticate user

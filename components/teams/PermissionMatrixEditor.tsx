@@ -347,7 +347,7 @@ export default function PermissionMatrixEditor({
                 onClick={() => {
                   const allEnabled = Object.fromEntries(
                     Object.keys(permissions).map(key => [key, true])
-                  ) as PermissionSet
+                  ) as unknown as PermissionSet
                   setPermissions(allEnabled)
                   onChange(allEnabled)
                 }}
@@ -359,7 +359,7 @@ export default function PermissionMatrixEditor({
                 onClick={() => {
                   const allDisabled = Object.fromEntries(
                     Object.keys(permissions).map(key => [key, false])
-                  ) as PermissionSet
+                  ) as unknown as PermissionSet
                   setPermissions(allDisabled)
                   onChange(allDisabled)
                 }}

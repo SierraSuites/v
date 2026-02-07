@@ -524,8 +524,8 @@ export default function ProjectCreationModal({
                 </select>
                 <input
                   type="number"
-                  value={formData.estimatedBudget || 0}
-                  onChange={(e) => handleInputChange('estimatedBudget', parseFloat(e.target.value) || 0)}
+                  value={formData.estimatedBudget || ''}
+                  onChange={(e) => handleInputChange('estimatedBudget', e.target.value === '' ? 0 : parseFloat(e.target.value))}
                   className="flex-1 px-4 py-3 rounded-lg text-sm"
                   style={{
                     backgroundColor: '#F8F9FA',

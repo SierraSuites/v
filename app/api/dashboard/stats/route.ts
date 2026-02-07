@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     // 2. GET USER'S PROFILE
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('id, plan')
+      .select('id, plan, full_name')
       .eq('id', user.id)
       .single()
 
@@ -145,6 +145,8 @@ export async function GET(request: NextRequest) {
 
     // 10. BUILD RESPONSE
     const stats = {
+      userId: user.id,
+      userName: profile.full_name || 'User',
       projects: {
         total: totalProjects,
         active: activeProjects,
