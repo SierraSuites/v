@@ -32,21 +32,17 @@ export default function AppShell({ children, user }: AppShellProps) {
   const userData = user?.user_metadata || {}
   const userName = userData.full_name?.split(' ')[0] || 'User'
 
-  // Fetch plan from user_profiles (secure, RLS-protected) instead of user_metadata
+  // Fetch plan from session API (server-side auth) instead of direct DB query
   const [userPlan, setUserPlan] = useState<string>('starter')
 
   useEffect(() => {
     const fetchPlan = async () => {
       if (!user?.id) return
-      const supabase = createClient()
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('plan')
-        .eq('id', user.id)
-        .single()
-
-      if (profile?.plan) {
-        setUserPlan(profile.plan)
+      const res = await fetch('/api/auth/session')
+      if (!res.ok) return
+      const data = await res.json()
+      if (data.profile?.plan) {
+        setUserPlan(data.profile.plan)
       }
     }
     fetchPlan()

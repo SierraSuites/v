@@ -71,6 +71,20 @@ export default function UserRoleBadge({
       textColor: '#C2410C',
       borderColor: '#FDBA74'
     },
+    accountant: {
+      label: 'Accountant',
+      icon: '💰',
+      bgColor: '#FEF3C7',
+      textColor: '#92400E',
+      borderColor: '#FDE68A'
+    },
+    subcontractor: {
+      label: 'Subcontractor',
+      icon: '🔨',
+      bgColor: '#E0E7FF',
+      textColor: '#3730A3',
+      borderColor: '#C7D2FE'
+    },
     viewer: {
       label: 'Viewer',
       icon: '👁️',
@@ -78,7 +92,7 @@ export default function UserRoleBadge({
       textColor: '#4B5563',
       borderColor: '#E5E7EB'
     }
-  }
+  } satisfies Record<UserRole, { label: string; icon: string; bgColor: string; textColor: string; borderColor: string }>
 
   const config = roleConfig[role]
 
