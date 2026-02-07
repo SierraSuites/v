@@ -99,7 +99,7 @@ async function checkUserPermissions(userId: string) {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -113,8 +113,11 @@ export async function GET(
       )
     }
 
+    // Await params in Next.js 15
+    const { id } = await params
+
     // Get the custom role
-    const role = await customRolesService.getCustomRole(params.id)
+    const role = await customRolesService.getCustomRole(id)
 
     if (!role) {
       return NextResponse.json(
@@ -160,7 +163,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -180,8 +183,11 @@ export async function PUT(
       return permissionCheck.error
     }
 
+    // Await params in Next.js 15
+    const { id } = await params
+
     // Verify role exists and belongs to user's company
-    const role = await customRolesService.getCustomRole(params.id)
+    const role = await customRolesService.getCustomRole(id)
     if (!role) {
       return NextResponse.json(
         { error: 'Role not found' },
@@ -222,7 +228,7 @@ export async function PUT(
     const updates = validationResult.data
 
     // Update the role
-    const updatedRole = await customRolesService.updateCustomRole(params.id, {
+    const updatedRole = await customRolesService.updateCustomRole(id, {
       role_name: updates.roleName,
       description: updates.description,
       color: updates.color,
@@ -258,7 +264,7 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -278,8 +284,11 @@ export async function DELETE(
       return permissionCheck.error
     }
 
+    // Await params in Next.js 15
+    const { id } = await params
+
     // Verify role exists and belongs to user's company
-    const role = await customRolesService.getCustomRole(params.id)
+    const role = await customRolesService.getCustomRole(id)
     if (!role) {
       return NextResponse.json(
         { error: 'Role not found' },
@@ -301,7 +310,7 @@ export async function DELETE(
     }
 
     // Check if role is in use
-    const memberCount = await customRolesService.getRoleMemberCount(params.id)
+    const memberCount = await customRolesService.getRoleMemberCount(id)
 
     if (memberCount > 0) {
       return NextResponse.json(
@@ -314,7 +323,7 @@ export async function DELETE(
     }
 
     // Delete the role (soft delete)
-    await customRolesService.deleteCustomRole(params.id)
+    await customRolesService.deleteCustomRole(id)
 
     return NextResponse.json({
       message: 'Role deleted successfully'
