@@ -722,6 +722,157 @@ export const permissionService = {
     } catch (error) {
       console.error('Error logging permission check:', error)
     }
+  },
+
+  /**
+   * Check if user has specific permission using database function
+   * More efficient than client-side role checking
+   */
+  async hasPermissionDB(
+    userId: string,
+    companyId: string,
+    permissionName: keyof PermissionSet
+  ): Promise<boolean> {
+    const supabase = createClient()
+
+    const { data, error } = await supabase.rpc('user_has_permission', {
+      p_user_id: userId,
+      p_company_id: companyId,
+      p_permission_name: permissionName
+    })
+
+    if (error) {
+      console.error('Error checking permission:', error)
+      return false
+    }
+
+    return data as boolean
+  },
+
+  /**
+   * Get merged permissions for user across all roles
+   * Returns the union of all permissions from all assigned roles
+   */
+  async getMergedPermissions(
+    userId: string,
+    companyId: string
+  ): Promise<PermissionSet> {
+    const supabase = createClient()
+
+    const { data, error } = await supabase.rpc('get_user_permissions', {
+      p_user_id: userId,
+      p_company_id: companyId
+    })
+
+    if (error) {
+      console.error('Error getting merged permissions:', error)
+      return ROLE_PERMISSIONS.viewer // Default to viewer on error
+    }
+
+    return data as PermissionSet
+  },
+
+  /**
+   * Check if user can access specific company
+   */
+  async canAccessCompany(userId: string, companyId: string): Promise<boolean> {
+    const supabase = createClient()
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', userId)
+      .eq('company_id', companyId)
+      .single()
+
+    if (error || !data) {
+      return false
+    }
+
+    return true
+  },
+
+  /**
+   * Get user's role assignments for a company
+   */
+  async getUserRoleAssignments(userId: string, companyId: string) {
+    const supabase = createClient()
+
+    const { data, error } = await supabase
+      .from('user_role_assignments')
+      .select(`
+        id,
+        role_id,
+        project_ids,
+        assigned_at,
+        expires_at,
+        custom_roles:role_id (
+          id,
+          role_name,
+          role_slug,
+          color,
+          icon,
+          permissions,
+          is_system_role
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('company_id', companyId)
+      .is('deleted_at', null)
+
+    if (error) {
+      console.error('Error getting role assignments:', error)
+      return []
+    }
+
+    // Filter out expired assignments
+    const now = new Date()
+    return (data || []).filter(assignment => {
+      if (!assignment.expires_at) return true
+      return new Date(assignment.expires_at) > now
+    })
+  },
+
+  /**
+   * Check if a role assignment is expiring soon (within 7 days)
+   */
+  isRoleExpiringSoon(expiresAt: string | null): boolean {
+    if (!expiresAt) return false
+
+    const expirationDate = new Date(expiresAt)
+    const now = new Date()
+    const daysUntilExpiry = (expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+
+    return daysUntilExpiry > 0 && daysUntilExpiry <= 7
+  },
+
+  /**
+   * Get list of permissions that differ between two roles
+   */
+  compareRolePermissions(role1: UserRole, role2: UserRole): {
+    added: (keyof PermissionSet)[]
+    removed: (keyof PermissionSet)[]
+    unchanged: (keyof PermissionSet)[]
+  } {
+    const perms1 = ROLE_PERMISSIONS[role1]
+    const perms2 = ROLE_PERMISSIONS[role2]
+
+    const added: (keyof PermissionSet)[] = []
+    const removed: (keyof PermissionSet)[] = []
+    const unchanged: (keyof PermissionSet)[] = []
+
+    for (const key in perms1) {
+      const permKey = key as keyof PermissionSet
+      if (perms1[permKey] === false && perms2[permKey] === true) {
+        added.push(permKey)
+      } else if (perms1[permKey] === true && perms2[permKey] === false) {
+        removed.push(permKey)
+      } else {
+        unchanged.push(permKey)
+      }
+    }
+
+    return { added, removed, unchanged }
   }
 }
 
