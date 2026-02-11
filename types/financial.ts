@@ -17,6 +17,7 @@ export interface Invoice {
   subtotal: number
   tax_rate: number
   tax_amount: number
+  discount_amount?: number
   total_amount: number
 
   // Payments
@@ -27,6 +28,10 @@ export interface Invoice {
   status: InvoiceStatus
   sent_at?: string
   paid_at?: string
+
+  // Email Tracking
+  last_email_sent_at?: string
+  email_sent_count?: number
 
   // Terms
   payment_terms: string

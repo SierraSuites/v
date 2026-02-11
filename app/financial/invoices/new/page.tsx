@@ -17,11 +17,20 @@ import {
   TrashIcon,
   PaperAirplaneIcon,
   DocumentTextIcon,
-  XMarkIcon
+  XMarkIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline'
+import { usePermissionGuard } from '@/hooks/usePermissionGuard'
+import toast, { Toaster } from 'react-hot-toast'
 
 export default function NewInvoicePage() {
   const router = useRouter()
+
+  // RBAC: Require canManageFinances permission
+  const { loading: permissionLoading } = usePermissionGuard({
+    permission: 'canManageFinances',
+    redirectTo: '/unauthorized'
+  })
 
   const [profile, setProfile] = useState<any>(null)
   const [contacts, setContacts] = useState<any[]>([])
@@ -51,8 +60,9 @@ export default function NewInvoicePage() {
     }
   ])
 
-  // Tax
+  // Tax and Discount
   const [taxRate, setTaxRate] = useState(0)
+  const [discountAmount, setDiscountAmount] = useState(0)
 
   useEffect(() => {
     loadData()
@@ -168,19 +178,31 @@ export default function NewInvoicePage() {
   }
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0)
-  const taxAmount = subtotal * (taxRate / 100)
-  const total = subtotal + taxAmount
+  const discountedSubtotal = subtotal - discountAmount
+  const taxAmount = discountedSubtotal * (taxRate / 100)
+  const total = discountedSubtotal + taxAmount
 
   async function handleSaveDraft() {
     if (!profile?.company_id) return
 
+    // Validation
     if (!selectedContact) {
-      alert('Please select a client')
+      toast.error('Please select a client')
       return
     }
 
     if (lineItems.length === 0 || lineItems.every((item) => !item.description)) {
-      alert('Please add at least one line item')
+      toast.error('Please add at least one line item')
+      return
+    }
+
+    if (!invoiceNumber.trim()) {
+      toast.error('Invoice number is required')
+      return
+    }
+
+    if (total <= 0) {
+      toast.error('Invoice total must be greater than $0')
       return
     }
 
@@ -194,10 +216,11 @@ export default function NewInvoicePage() {
         invoice_number: invoiceNumber,
         invoice_date: invoiceDate,
         due_date: dueDate,
-        line_items: lineItems,
+        line_items: lineItems.filter(item => item.description.trim()), // Filter empty items
         subtotal,
-        tax_rate: taxRate,
+        tax_rate: taxRate / 100, // Store as decimal (e.g., 0.07 for 7%)
         tax_amount: taxAmount,
+        discount_amount: discountAmount,
         total_amount: total,
         amount_paid: 0,
         status: 'draft',
@@ -209,14 +232,15 @@ export default function NewInvoicePage() {
       const { data, error } = await createInvoice(invoiceData)
 
       if (error) {
-        alert('Error creating invoice: ' + error)
+        toast.error(`Error creating invoice: ${error}`)
         return
       }
 
-      router.push(`/financial/invoices/${data?.id}`)
-    } catch (error) {
+      toast.success('Invoice saved as draft')
+      router.push(`/financial`)
+    } catch (error: any) {
       console.error('Error saving invoice:', error)
-      alert('Error saving invoice')
+      toast.error(error?.message || 'Error saving invoice')
     } finally {
       setSaving(false)
     }
@@ -225,23 +249,35 @@ export default function NewInvoicePage() {
   async function handleSaveAndSend() {
     if (!profile?.company_id) return
 
+    // Validation
     if (!selectedContact) {
-      alert('Please select a client')
+      toast.error('Please select a client')
       return
     }
 
     const contact = contacts.find((c) => c.id === selectedContact)
     if (!contact?.email) {
-      alert('Client must have an email address to send invoice')
+      toast.error('Client must have an email address to send invoice')
       return
     }
 
     if (lineItems.length === 0 || lineItems.every((item) => !item.description)) {
-      alert('Please add at least one line item')
+      toast.error('Please add at least one line item')
+      return
+    }
+
+    if (!invoiceNumber.trim()) {
+      toast.error('Invoice number is required')
+      return
+    }
+
+    if (total <= 0) {
+      toast.error('Invoice total must be greater than $0')
       return
     }
 
     setSaving(true)
+    const loadingToast = toast.loading('Creating and sending invoice...')
 
     try {
       const invoiceData: Partial<Invoice> = {
@@ -251,40 +287,49 @@ export default function NewInvoicePage() {
         invoice_number: invoiceNumber,
         invoice_date: invoiceDate,
         due_date: dueDate,
-        line_items: lineItems,
+        line_items: lineItems.filter(item => item.description.trim()), // Filter empty items
         subtotal,
-        tax_rate: taxRate,
+        tax_rate: taxRate / 100, // Store as decimal (e.g., 0.07 for 7%)
         tax_amount: taxAmount,
+        discount_amount: discountAmount,
         total_amount: total,
         amount_paid: 0,
         status: 'sent',
         payment_terms: paymentTerms,
         notes: notes || undefined,
         created_by: profile.id,
-        sent_at: new Date().toISOString()
+        sent_at: new Date().toISOString(),
+        email_sent_count: 1,
+        last_email_sent_at: new Date().toISOString()
       }
 
       const { data, error } = await createInvoice(invoiceData)
 
       if (error) {
-        alert('Error creating invoice: ' + error)
+        toast.error(`Error creating invoice: ${error}`, { id: loadingToast })
         return
       }
 
       // Send invoice via email
       if (data) {
-        const clientName = contact.company_name || `${contact.first_name} ${contact.last_name}`
-        await sendInvoice(data.id, {
-          to: contact.email,
-          subject: `Invoice ${invoiceNumber} from ${profile.company_name || 'The Sierra Suites'}`,
-          message: `Dear ${clientName},\n\nPlease find attached invoice ${invoiceNumber} for ${total.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}.\n\nDue date: ${new Date(dueDate).toLocaleDateString()}\n\nThank you for your business!`
-        })
+        try {
+          const clientName = contact.company_name || `${contact.first_name} ${contact.last_name}`
+          await sendInvoice(data.id, {
+            to: contact.email,
+            subject: `Invoice ${invoiceNumber} from ${profile.company_name || 'The Sierra Suites'}`,
+            message: `Dear ${clientName},\n\nPlease find attached invoice ${invoiceNumber} for ${total.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}.\n\nDue date: ${new Date(dueDate).toLocaleDateString()}\n\nPayment terms: ${paymentTerms}\n\nThank you for your business!`
+          })
+          toast.success('Invoice created and sent successfully!', { id: loadingToast })
+        } catch (emailError) {
+          console.error('Error sending email:', emailError)
+          toast.success('Invoice created but email failed to send. You can resend from the invoice page.', { id: loadingToast })
+        }
       }
 
-      router.push(`/financial/invoices/${data?.id}`)
-    } catch (error) {
+      router.push(`/financial`)
+    } catch (error: any) {
       console.error('Error saving and sending invoice:', error)
-      alert('Error saving and sending invoice')
+      toast.error(error?.message || 'Error saving and sending invoice', { id: loadingToast })
     } finally {
       setSaving(false)
     }
@@ -297,7 +342,7 @@ export default function NewInvoicePage() {
     }).format(amount)
   }
 
-  if (loading) {
+  if (loading || permissionLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -309,41 +354,44 @@ export default function NewInvoicePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Create Invoice</h1>
-            <p className="mt-1 text-gray-600">
-              Invoice #{invoiceNumber}
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => router.back()}
-              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSaveDraft}
-              disabled={saving}
-              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            >
-              Save Draft
-            </button>
-            <button
-              onClick={handleSaveAndSend}
-              disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              <PaperAirplaneIcon className="w-5 h-5" />
-              {saving ? 'Sending...' : 'Save & Send'}
-            </button>
+    <>
+      <Toaster position="top-right" />
+      <div className="min-h-screen bg-gray-50 p-6">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Create Invoice</h1>
+              <p className="mt-1 text-gray-600">
+                Invoice #{invoiceNumber}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => router.back()}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveDraft}
+                disabled={saving}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >
+                <DocumentTextIcon className="w-5 h-5 inline mr-2" />
+                Save Draft
+              </button>
+              <button
+                onClick={handleSaveAndSend}
+                disabled={saving}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                <PaperAirplaneIcon className="w-5 h-5" />
+                {saving ? 'Sending...' : 'Save & Send'}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Form */}
@@ -567,6 +615,31 @@ export default function NewInvoicePage() {
               </div>
 
               <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">Discount:</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-900">$</span>
+                  <input
+                    type="number"
+                    value={discountAmount}
+                    onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
+                    min="0"
+                    max={subtotal}
+                    step="0.01"
+                    className="w-20 px-2 py-1 text-right border border-gray-300 rounded"
+                  />
+                </div>
+              </div>
+
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Subtotal after discount:</span>
+                  <span className="font-medium text-gray-900">
+                    {formatCurrency(discountedSubtotal)}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">Tax:</span>
                 <div className="flex items-center gap-2">
                   <input
@@ -582,12 +655,14 @@ export default function NewInvoicePage() {
                 </div>
               </div>
 
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Tax Amount:</span>
-                <span className="font-medium text-gray-900">
-                  {formatCurrency(taxAmount)}
-                </span>
-              </div>
+              {taxRate > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Tax Amount:</span>
+                  <span className="font-medium text-gray-900">
+                    {formatCurrency(taxAmount)}
+                  </span>
+                </div>
+              )}
 
               <div className="border-t border-gray-200 pt-3 mt-3">
                 <div className="flex justify-between">
@@ -613,6 +688,7 @@ export default function NewInvoicePage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }
