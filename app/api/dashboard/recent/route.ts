@@ -11,19 +11,18 @@ export async function GET(request: NextRequest) {
     if (!authResult.authorized) return authResult.error
 
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
     // Get user's company_id
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('company_id, full_name')
-      .eq('id', user.id)
+      .eq('id', authResult.userId!)
       .single()
 
     const companyId = profile?.company_id
     if (!companyId) {
       return NextResponse.json({
-        user: { id: user.id, user_metadata: user.user_metadata },
+        user: { id: authResult.userId },
         companyId: null,
         projects: [],
         activities: [],
@@ -81,7 +80,7 @@ export async function GET(request: NextRequest) {
     }))
 
     return NextResponse.json({
-      user: { id: user.id, user_metadata: user.user_metadata },
+      user: { id: authResult.userId },
       companyId,
       projects: projectsResult.data || [],
       activities,
