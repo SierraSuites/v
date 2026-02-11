@@ -382,7 +382,7 @@ export async function uploadMediaAsset(asset: MediaAssetInsert) {
     .from('media_assets')
     .insert({
       ...asset,
-      user_id: user.user.id
+      user_id: authContext.userId
     })
     .select()
     .single()
