@@ -92,7 +92,7 @@ export function useCurrentUser() {
             company_id: profile.company_id,
             is_active: profile.is_active ?? true,
             created_at: profile.created_at,
-            last_sign_in_at: authUser.last_sign_in_at,
+            last_sign_in_at: authUser.last_sign_in_at ?? null,
             highestRole,
             roleAssignments,
             permissions
@@ -271,7 +271,7 @@ export function useRealtimeUser() {
           company_id: profile.company_id,
           is_active: profile.is_active ?? true,
           created_at: profile.created_at,
-          last_sign_in_at: authUser.last_sign_in_at,
+          last_sign_in_at: authUser.last_sign_in_at ?? null,
           highestRole,
           roleAssignments,
           permissions
@@ -313,7 +313,7 @@ export function useRealtimeUser() {
                   company_id: updatedProfile.company_id,
                   is_active: updatedProfile.is_active ?? true,
                   created_at: updatedProfile.created_at,
-                  last_sign_in_at: authUser.last_sign_in_at,
+                  last_sign_in_at: authUser.last_sign_in_at ?? null,
                   highestRole: updatedRole,
                   roleAssignments: updatedAssignments,
                   permissions: updatedPermissions
