@@ -146,18 +146,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 5. LOGIN SUCCESSFUL
+    // 5. LOGIN SUCCESSFUL (Password verified)
+    // Check if user has 2FA enabled
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('id, email, full_name, role, avatar_url, company_id, two_factor_enabled')
+      .eq('id', data.user.id)
+      .single()
+
+    if (profile?.two_factor_enabled) {
+      // User has 2FA enabled - require verification before completing login
+      // Don't record successful login yet or reset rate limit
+      return NextResponse.json(
+        {
+          requires2FA: true,
+          userId: data.user.id,
+          message: 'Please enter your two-factor authentication code',
+        },
+        { status: 200 }
+      )
+    }
+
+    // No 2FA - complete login
     await recordSuccessfulLogin(data.user.id, email, ipAddress, userAgent)
 
     // Reset rate limiting for this user
     await resetRateLimit(email, 'login')
-
-    // Get user profile for response
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('id, email, full_name, role, avatar_url, company_id')
-      .eq('id', data.user.id)
-      .single()
 
     const responseTime = Date.now() - startTime
 

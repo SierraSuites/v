@@ -21,6 +21,11 @@ function LoginForm() {
   const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null)
   const [lockedUntil, setLockedUntil] = useState<string | null>(null)
 
+  // 2FA States
+  const [requires2FA, setRequires2FA] = useState(false)
+  const [userId2FA, setUserId2FA] = useState<string | null>(null)
+  const [twoFactorCode, setTwoFactorCode] = useState("")
+
   useEffect(() => {
     // Check if user was redirected after email verification
     if (searchParams.get('verified') === 'true') {
@@ -40,6 +45,46 @@ function LoginForm() {
     const hours = Math.floor(minutesRemaining / 60)
     const mins = minutesRemaining % 60
     return mins > 0 ? `${hours} hours and ${mins} minutes` : `${hours} hours`
+  }
+
+  const handleVerify2FA = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setIsLoading(true)
+
+    if (!twoFactorCode || (twoFactorCode.length !== 6 && twoFactorCode.length !== 9)) {
+      setError("Please enter a valid 6-digit code or backup code")
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/auth/2fa/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId2FA,
+          token: twoFactorCode,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Invalid verification code')
+        setIsLoading(false)
+        return
+      }
+
+      // 2FA verified - complete login and redirect
+      router.push("/dashboard")
+      router.refresh()
+    } catch (err: any) {
+      setError("An unexpected error occurred. Please try again.")
+      setIsLoading(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,6 +149,14 @@ function LoginForm() {
         return
       }
 
+      // Check if 2FA is required
+      if (data.requires2FA) {
+        setRequires2FA(true)
+        setUserId2FA(data.userId)
+        setIsLoading(false)
+        return
+      }
+
       // Success - redirect to dashboard
       if (data.success) {
         router.push("/dashboard")
@@ -127,9 +180,13 @@ function LoginForm() {
           <Link href="/" className="text-2xl font-bold">
             The Sierra Suites
           </Link>
-          <h1 className="mt-6 text-3xl font-bold">Welcome Back</h1>
+          <h1 className="mt-6 text-3xl font-bold">
+            {requires2FA ? "Two-Factor Authentication" : "Welcome Back"}
+          </h1>
           <p className="mt-2 text-muted-foreground">
-            Sign in to your account to continue
+            {requires2FA
+              ? "Enter the 6-digit code from your authenticator app"
+              : "Sign in to your account to continue"}
           </p>
         </div>
 
@@ -158,72 +215,118 @@ function LoginForm() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-2">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-                required
-                className="w-full px-4 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="you@company.com"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label htmlFor="password" className="block text-sm font-medium">
-                  Password
+          {requires2FA ? (
+            // 2FA Verification Form
+            <form onSubmit={handleVerify2FA} className="space-y-6">
+              <div>
+                <label htmlFor="twoFactorCode" className="block text-sm font-medium mb-2">
+                  Verification Code
                 </label>
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-[#1E3A8A] hover:underline"
-                >
-                  Forgot password?
+                <input
+                  id="twoFactorCode"
+                  type="text"
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ""))}
+                  disabled={isLoading}
+                  required
+                  className="w-full px-4 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed text-center text-2xl tracking-widest"
+                  placeholder="000000"
+                  maxLength={6}
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Or enter a backup code if you don't have access to your authenticator
+                </p>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Verifying..." : "Verify Code"}
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setRequires2FA(false)
+                  setUserId2FA(null)
+                  setTwoFactorCode("")
+                  setError("")
+                }}
+                className="w-full text-sm text-muted-foreground hover:text-foreground"
+              >
+                ← Back to login
+              </button>
+            </form>
+          ) : (
+            // Standard Login Form
+            <>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
+                    required
+                    className="w-full px-4 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="you@company.com"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label htmlFor="password" className="block text-sm font-medium">
+                      Password
+                    </label>
+                    <Link
+                      href="/forgot-password"
+                      className="text-sm text-[#1E3A8A] hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                    required
+                    className="w-full px-4 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="Enter your password"
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    id="rememberMe"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    disabled={isLoading}
+                    className="rounded border-input"
+                  />
+                  <label htmlFor="rememberMe" className="ml-2 text-sm text-muted-foreground">
+                    Remember me for 30 days
+                  </label>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
+
+              <div className="mt-6 text-center text-sm text-muted-foreground">
+                Don't have an account?{" "}
+                <Link href="/register" className="text-primary hover:underline font-medium">
+                  Sign up
                 </Link>
               </div>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-                required
-                className="w-full px-4 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="Enter your password"
-              />
-            </div>
-
-            <div className="flex items-center">
-              <input
-                id="rememberMe"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                disabled={isLoading}
-                className="rounded border-input"
-              />
-              <label htmlFor="rememberMe" className="ml-2 text-sm text-muted-foreground">
-                Remember me for 30 days
-              </label>
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link href="/register" className="text-primary hover:underline font-medium">
-              Sign up
-            </Link>
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>
