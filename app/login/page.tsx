@@ -18,6 +18,8 @@ function LoginForm() {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
+  const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null)
+  const [lockedUntil, setLockedUntil] = useState<string | null>(null)
 
   useEffect(() => {
     // Check if user was redirected after email verification
@@ -26,39 +28,84 @@ function LoginForm() {
     }
   }, [searchParams])
 
+  // Format locked until time for user display
+  const formatLockedTime = (lockedUntilISO: string): string => {
+    const lockedDate = new Date(lockedUntilISO)
+    const now = new Date()
+    const minutesRemaining = Math.ceil((lockedDate.getTime() - now.getTime()) / (1000 * 60))
+
+    if (minutesRemaining <= 1) return 'less than a minute'
+    if (minutesRemaining < 60) return `${minutesRemaining} minutes`
+
+    const hours = Math.floor(minutesRemaining / 60)
+    const mins = minutesRemaining % 60
+    return mins > 0 ? `${hours} hours and ${mins} minutes` : `${hours} hours`
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    setAttemptsRemaining(null)
+    setLockedUntil(null)
     setIsLoading(true)
 
     try {
       // Validate inputs
       const validated = loginSchema.parse({ email, password, rememberMe })
 
-      // Create Supabase client
-      const supabase = createClient()
-
-      // Sign in with Supabase
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: validated.email,
-        password: validated.password,
+      // Use new API endpoint with rate limiting and brute force protection
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: validated.email,
+          password: validated.password,
+        }),
       })
 
-      if (signInError) {
-        // Handle specific error cases
-        if (signInError.message.includes("Invalid login credentials")) {
-          setError("Invalid email or password. Please try again.")
-        } else if (signInError.message.includes("Email not confirmed")) {
-          setError("Please verify your email address before signing in.")
-        } else {
-          setError(signInError.message)
+      const data = await response.json()
+
+      // Handle rate limiting (429)
+      if (response.status === 429) {
+        setError(data.error || 'Too many login attempts. Please try again later.')
+        if (data.lockedUntil) {
+          setLockedUntil(data.lockedUntil)
         }
         setIsLoading(false)
         return
       }
 
-      if (data.user) {
-        // Successfully logged in - redirect to dashboard
+      // Handle account lockout (423)
+      if (response.status === 423) {
+        setError(data.error || 'Account temporarily locked.')
+        if (data.lockedUntil) {
+          setLockedUntil(data.lockedUntil)
+        }
+        setIsLoading(false)
+        return
+      }
+
+      // Handle authentication failure (401)
+      if (response.status === 401) {
+        setError(data.error || 'Invalid email or password.')
+        if (typeof data.attemptsRemaining === 'number') {
+          setAttemptsRemaining(data.attemptsRemaining)
+        }
+        setIsLoading(false)
+        return
+      }
+
+      // Handle other errors
+      if (!response.ok) {
+        setError(data.error || 'An unexpected error occurred. Please try again.')
+        setIsLoading(false)
+        return
+      }
+
+      // Success - redirect to dashboard
+      if (data.success) {
         router.push("/dashboard")
         router.refresh()
       }
@@ -98,6 +145,16 @@ function LoginForm() {
           {error && (
             <div className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
               <p className="text-sm text-destructive font-medium">{error}</p>
+              {attemptsRemaining !== null && attemptsRemaining > 0 && (
+                <p className="text-xs text-destructive/80 mt-2">
+                  {attemptsRemaining} {attemptsRemaining === 1 ? 'attempt' : 'attempts'} remaining before account lockout
+                </p>
+              )}
+              {lockedUntil && (
+                <p className="text-xs text-destructive/80 mt-2">
+                  Account will be unlocked in {formatLockedTime(lockedUntil)}
+                </p>
+              )}
             </div>
           )}
 
