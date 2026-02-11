@@ -2,18 +2,16 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requirePermission } from '@/lib/api-permissions'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canViewAnalytics')
+    if (!authResult.authorized) return authResult.error
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
     // Get user's company_id
     const { data: profile } = await supabase

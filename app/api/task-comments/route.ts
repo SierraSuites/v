@@ -1,20 +1,17 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requirePermission } from '@/lib/api-permissions'
 
 // GET /api/task-comments?taskId=xxx
 // List comments for a task
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createClient()
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canViewAllTasks')
+    if (!authResult.authorized) return authResult.error
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const supabase = await createClient()
 
     const taskId = req.nextUrl.searchParams.get('taskId')
     if (!taskId) {
@@ -52,15 +49,12 @@ export async function GET(req: NextRequest) {
 // Create a comment on a task
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canManageTasks')
+    if (!authResult.authorized) return authResult.error
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
     const { task_id, content, mentions } = await req.json()
 
@@ -98,15 +92,11 @@ export async function POST(req: NextRequest) {
 // Delete a comment
 export async function DELETE(req: NextRequest) {
   try {
-    const supabase = await createClient()
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canManageTasks')
+    if (!authResult.authorized) return authResult.error
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const supabase = await createClient()
 
     const id = req.nextUrl.searchParams.get('id')
     if (!id) {

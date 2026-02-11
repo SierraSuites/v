@@ -1,20 +1,17 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requirePermission } from '@/lib/api-permissions'
 
 // GET /api/shared-media?mediaAssetId=xxx
 // List shares for a media asset
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createClient()
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canViewAllPhotos')
+    if (!authResult.authorized) return authResult.error
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const supabase = await createClient()
 
     const mediaAssetId = req.nextUrl.searchParams.get('mediaAssetId')
     if (!mediaAssetId) {
@@ -53,15 +50,12 @@ export async function GET(req: NextRequest) {
 // Create a share
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canSharePhotos')
+    if (!authResult.authorized) return authResult.error
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
     const {
       media_asset_id,
@@ -108,15 +102,11 @@ export async function POST(req: NextRequest) {
 // Revoke a share
 export async function PUT(req: NextRequest) {
   try {
-    const supabase = await createClient()
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canSharePhotos')
+    if (!authResult.authorized) return authResult.error
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const supabase = await createClient()
 
     const { shareId } = await req.json()
 

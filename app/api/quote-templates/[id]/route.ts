@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requirePermission } from '@/lib/api-permissions'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -10,17 +11,13 @@ interface RouteParams {
 // Get a single quote template by id
 export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = await createClient()
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canViewFinancials')
+    if (!authResult.authorized) return authResult.error
 
     const { id } = await params
+
+    const supabase = await createClient()
 
     const { data, error } = await supabase
       .from('quote_templates')

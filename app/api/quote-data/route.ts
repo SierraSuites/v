@@ -1,20 +1,17 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requirePermission } from '@/lib/api-permissions'
 
 // GET /api/quote-data
 // Returns { clients, projects } for QuoteBuilder dropdowns
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createClient()
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canViewFinancials')
+    if (!authResult.authorized) return authResult.error
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const supabase = await createClient()
 
     const [clientsResult, projectsResult] = await Promise.all([
       supabase

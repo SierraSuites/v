@@ -1,20 +1,18 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requirePermission } from '@/lib/api-permissions'
 
 // POST /api/teams/manage
 // Create a new team
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canManageTeam')
+    if (!authResult.authorized) return authResult.error
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
     const { name, description, team_type, color } = await req.json()
 

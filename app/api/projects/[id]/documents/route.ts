@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requirePermission, requireProjectAccess } from '@/lib/api-permissions'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -13,14 +14,13 @@ interface RouteParams {
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = await createClient()
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { id } = await params
+
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requireProjectAccess(id)
+    if (!authResult.authorized) return authResult.error
+
+    const supabase = await createClient()
 
     const { data: documents, error: docsError } = await supabase
       .from('project_documents')
@@ -58,14 +58,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = await createClient()
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { id } = await params
+
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canUploadDocuments')
+    if (!authResult.authorized) return authResult.error
+
+    // 2. PROJECT ACCESS CHECK
+    const projectAccess = await requireProjectAccess(id)
+    if (!projectAccess.authorized) return projectAccess.error
+
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
     const body = await request.json()
 
     const { data: document, error: insertError } = await supabase
@@ -105,14 +109,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = await createClient()
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { id } = await params
+
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canDeleteDocuments')
+    if (!authResult.authorized) return authResult.error
+
+    // 2. PROJECT ACCESS CHECK
+    const projectAccess = await requireProjectAccess(id)
+    if (!projectAccess.authorized) return projectAccess.error
+
+    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
     const documentId = searchParams.get('documentId')
 
