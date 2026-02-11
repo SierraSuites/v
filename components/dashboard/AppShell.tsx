@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, ReactNode } from 'react'
+import { useState, useEffect, ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -30,8 +30,23 @@ export default function AppShell({ children, user }: AppShellProps) {
   const [expandedNav, setExpandedNav] = useState<string | null>(null)
 
   const userData = user?.user_metadata || {}
-  const userPlan = userData.selected_plan || 'starter'
   const userName = userData.full_name?.split(' ')[0] || 'User'
+
+  // Fetch plan from session API (server-side auth) instead of direct DB query
+  const [userPlan, setUserPlan] = useState<string>('starter')
+
+  useEffect(() => {
+    const fetchPlan = async () => {
+      if (!user?.id) return
+      const res = await fetch('/api/auth/session')
+      if (!res.ok) return
+      const data = await res.json()
+      if (data.profile?.plan) {
+        setUserPlan(data.profile.plan)
+      }
+    }
+    fetchPlan()
+  }, [user?.id])
 
   const planNames = {
     starter: 'Starter',

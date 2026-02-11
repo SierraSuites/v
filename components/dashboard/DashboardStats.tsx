@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useDashboardRealtime } from '@/hooks/useDashboardRealtime'
 import DashboardEmptyState from './DashboardEmptyState'
 
@@ -59,147 +58,40 @@ export default function DashboardStats() {
   async function loadDashboardStats() {
     try {
       setLoading(true)
-      const supabase = createClient()
 
-      // Get current user
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      if (authError || !user) {
-        throw new Error('Not authenticated')
+      const res = await fetch('/api/dashboard/stats')
+      if (!res.ok) {
+        if (res.status === 401) throw new Error('Not authenticated')
+        throw new Error('Failed to load stats')
       }
 
-      // Get user's profile
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('id, plan, full_name')
-        .eq('id', user.id)
-        .single()
+      const data = await res.json()
 
-      if (profileError || !profile) {
-        throw new Error('Failed to load user profile')
+      setCompanyId(data.userId)
+
+      if (data.userName) {
+        setUserName(data.userName.split(' ')[0])
       }
-
-      const userId = user.id
-      setCompanyId(userId) // Using user ID for real-time subscriptions
-
-      // Set user name for empty state
-      if (profile.full_name) {
-        setUserName(profile.full_name.split(' ')[0])
-      }
-
-      // Load all stats in parallel for performance
-      const [
-        projectsData,
-        tasksData,
-        quotesData,
-        punchItemsData,
-        storageData
-      ] = await Promise.all([
-        // Projects stats
-        supabase
-          .from('projects')
-          .select('status', { count: 'exact' })
-          .eq('user_id', userId),
-
-        // Tasks stats
-        supabase
-          .from('tasks')
-          .select('status, due_date', { count: 'exact' })
-          .eq('user_id', userId),
-
-        // Quotes stats
-        supabase
-          .from('quotes')
-          .select('status, total_price', { count: 'exact' })
-          .eq('user_id', userId),
-
-        // Punch items stats
-        supabase
-          .from('punch_list_items')
-          .select('priority, status', { count: 'exact' })
-          .eq('user_id', userId),
-
-        // Storage stats
-        supabase
-          .from('media_assets')
-          .select('file_size', { count: 'exact' })
-          .eq('user_id', userId)
-      ])
-
-      // Calculate project stats
-      const projects = projectsData.data || []
-      const totalProjects = projects.length
-      const activeProjects = projects.filter(p => p.status === 'active').length
-      const onHoldProjects = projects.filter(p => p.status === 'on_hold').length
-      const completedProjects = projects.filter(p => p.status === 'completed').length
-
-      // Calculate task stats
-      const tasks = tasksData.data || []
-      const totalTasks = tasks.length
-      const tasksCompleted = tasks.filter(t => t.status === 'completed').length
-      const tasksInProgress = tasks.filter(t => t.status === 'in_progress').length
-
-      // Calculate overdue tasks
-      const today = new Date()
-      const tasksOverdue = tasks.filter(t => {
-        if (t.status === 'completed' || !t.due_date) return false
-        return new Date(t.due_date) < today
-      }).length
-
-      const completionRate = totalTasks > 0
-        ? Math.round((tasksCompleted / totalTasks) * 100)
-        : 0
-
-      // Calculate quote stats
-      const quotes = quotesData.data || []
-      const totalQuoteValue = quotes
-        .filter(q => q.status === 'accepted')
-        .reduce((sum, q) => sum + (q.total_price || 0), 0)
-      const pendingQuotes = quotes.filter(q => q.status === 'pending').length
-      const acceptedQuotes = quotes.filter(q => q.status === 'accepted').length
-
-      // Calculate punch item stats
-      const punchItems = punchItemsData.data || []
-      const criticalItems = punchItems.filter(
-        p => p.priority === 'critical' && p.status !== 'resolved'
-      ).length
-      const openItems = punchItems.filter(p => p.status === 'open').length
-      const resolvedItems = punchItems.filter(p => p.status === 'resolved').length
-
-      // Calculate storage stats
-      const photos = storageData.data || []
-      const photoCount = photos.length
-      const storageUsed = photos.reduce((sum, p) => sum + (p.file_size || 0), 0) / (1024 * 1024 * 1024) // Convert to GB
-
-      // Storage limits based on tier
-      const storageLimits = {
-        starter: 5,
-        professional: 50,
-        enterprise: 500
-      }
-      const storageLimit = storageLimits[profile.plan as keyof typeof storageLimits] || 5
-
-      // Team count (single user mode)
-      const teamMembers = 1
 
       setStats({
-        totalProjects,
-        activeProjects,
-        onHoldProjects,
-        completedProjects,
-        tasksCompleted,
-        tasksInProgress,
-        tasksOverdue,
-        completionRate,
-        totalQuoteValue,
-        pendingQuotes,
-        acceptedQuotes,
-        criticalItems,
-        openItems,
-        resolvedItems,
-        storageUsed,
-        storageLimit,
-        photoCount,
-        teamMembers
+        totalProjects: data.projects.total,
+        activeProjects: data.projects.active,
+        onHoldProjects: data.projects.onHold,
+        completedProjects: data.projects.completed,
+        tasksCompleted: data.tasks.completed,
+        tasksInProgress: data.tasks.inProgress,
+        tasksOverdue: data.tasks.overdue,
+        completionRate: data.tasks.completionRate,
+        totalQuoteValue: data.quotes.totalValue,
+        pendingQuotes: data.quotes.pending,
+        acceptedQuotes: data.quotes.accepted,
+        criticalItems: data.punchItems.critical,
+        openItems: data.punchItems.open,
+        resolvedItems: data.punchItems.resolved,
+        storageUsed: data.storage.used,
+        storageLimit: data.storage.limit,
+        photoCount: data.storage.photoCount,
+        teamMembers: data.team.members,
       })
 
     } catch (err) {

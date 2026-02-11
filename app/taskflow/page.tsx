@@ -709,8 +709,7 @@ export default function TaskFlowPage() {
 
       if (session) {
         setUser(session.user)
-        const plan = session.user.user_metadata?.selected_plan || "starter"
-        setUserPlan(plan)
+        // Plan is loaded from user_profiles.plan in the other useEffect (secure, RLS-protected)
       } else {
         setUser({ user_metadata: { full_name: "John Doe" } })
       }
