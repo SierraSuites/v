@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { OAuthButtons } from "@/components/auth/OAuthButtons"
 import { createClient } from "@/lib/supabase/client"
 import { loginSchema } from "@/lib/validation"
 
@@ -318,6 +319,8 @@ function LoginForm() {
                   {isLoading ? "Signing in..." : "Sign In"}
                 </Button>
               </form>
+
+              <OAuthButtons showDivider={true} />
 
               <div className="mt-6 text-center text-sm text-muted-foreground">
                 Don't have an account?{" "}

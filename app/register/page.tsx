@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { InternationalPhoneInput } from "@/components/auth/InternationalPhoneInput"
 import { CurrencySelector } from "@/components/auth/CurrencySelector"
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter"
+import { OAuthButtons } from "@/components/auth/OAuthButtons"
 import { createClient } from "@/lib/supabase/client"
 import { countries } from "@/lib/countries"
 import { priceMapping, formatPrice, getCurrencyByCountry } from "@/lib/currencies"
@@ -509,6 +510,15 @@ export default function RegisterPage() {
                   <Button type="button" onClick={handleNext} className="w-full">
                     Continue to Plan Selection
                   </Button>
+
+                  <OAuthButtons showDivider={true} />
+
+                  <p className="text-xs text-center text-muted-foreground">
+                    Already have an account?{" "}
+                    <Link href="/login" className="text-primary hover:underline font-medium">
+                      Sign in
+                    </Link>
+                  </p>
                 </div>
               )}
 

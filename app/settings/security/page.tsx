@@ -31,8 +31,13 @@ export default function SecuritySettingsPage() {
   const [showRegenerateCodes, setShowRegenerateCodes] = useState(false)
   const [regeneratePassword, setRegeneratePassword] = useState("")
 
+  // Active Sessions States
+  const [sessions, setSessions] = useState<any[]>([])
+  const [loadingSessions, setLoadingSessions] = useState(true)
+
   useEffect(() => {
     loadSecuritySettings()
+    loadActiveSessions()
   }, [])
 
   async function loadSecuritySettings() {
@@ -49,6 +54,58 @@ export default function SecuritySettingsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function loadActiveSessions() {
+    try {
+      const response = await fetch("/api/auth/sessions")
+      const data = await response.json()
+
+      if (response.ok) {
+        setSessions(data.sessions || [])
+      }
+    } catch (error) {
+      console.error("Failed to load sessions:", error)
+    } finally {
+      setLoadingSessions(false)
+    }
+  }
+
+  async function handleRevokeSession(sessionId: string) {
+    try {
+      const response = await fetch("/api/auth/sessions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast.success("Session revoked successfully")
+        loadActiveSessions() // Reload sessions
+      } else {
+        toast.error(data.error || "Failed to revoke session")
+      }
+    } catch (error) {
+      toast.error("An error occurred")
+    }
+  }
+
+  function formatSessionTime(dateString: string): string {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInMs = now.getTime() - date.getTime()
+    const diffInMins = Math.floor(diffInMs / 60000)
+
+    if (diffInMins < 1) return "Just now"
+    if (diffInMins < 60) return `${diffInMins} minutes ago`
+
+    const diffInHours = Math.floor(diffInMins / 60)
+    if (diffInHours < 24) return `${diffInHours} hours ago`
+
+    const diffInDays = Math.floor(diffInHours / 24)
+    return `${diffInDays} days ago`
   }
 
   async function handleStartSetup() {
