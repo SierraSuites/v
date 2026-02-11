@@ -1,4 +1,78 @@
 import { createClient } from "@/lib/supabase/client"
+import { permissionService } from '@/lib/permissions'
+
+// ============================================================================
+// RBAC PERMISSION GUARD HELPERS
+// ============================================================================
+
+/**
+ * Get authenticated user and their company ID
+ */
+async function getAuthContext(): Promise<{
+  userId: string
+  companyId: string
+} | null> {
+  try {
+    const supabase = createClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
+
+    if (error || !user) {
+      console.error('Authentication required')
+      return null
+    }
+
+    // Get user's company from profile
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.company_id) {
+      console.error('User profile or company not found')
+      return null
+    }
+
+    return {
+      userId: user.id,
+      companyId: profile.company_id
+    }
+  } catch (error) {
+    console.error('Error getting auth context:', error)
+    return null
+  }
+}
+
+/**
+ * Check if user has required photo permission
+ */
+async function checkPhotoPermission(
+  permission: 'canViewAllPhotos' | 'canUploadPhotos' | 'canDeletePhotos' | 'canSharePhotos' | 'canEditPhotoMetadata',
+  userId: string,
+  companyId: string
+): Promise<boolean> {
+  try {
+    const hasPermission = await permissionService.hasPermissionDB(
+      userId,
+      companyId,
+      permission
+    )
+
+    // Log permission check for audit trail
+    await permissionService.logPermissionCheck(
+      `photo_${permission}`,
+      'media_asset',
+      companyId,
+      hasPermission,
+      hasPermission ? undefined : 'Insufficient permissions'
+    )
+
+    return hasPermission
+  } catch (error) {
+    console.error('Error checking permission:', error)
+    return false
+  }
+}
 
 // ============================================
 // TYPES
@@ -166,6 +240,7 @@ export type MediaAssetUpdate = Partial<Omit<MediaAsset, 'id' | 'created_at' | 'u
 
 /**
  * Get all media assets for current user
+ * RBAC: Requires canViewAllPhotos permission
  */
 export async function getMediaAssets(filters?: {
   project_id?: string
@@ -176,11 +251,28 @@ export async function getMediaAssets(filters?: {
   limit?: number
   offset?: number
 }) {
+  // RBAC: Check authentication and permissions
+  const authContext = await getAuthContext()
+  if (!authContext) {
+    return { data: null, error: new Error('Authentication required') }
+  }
+
+  const canView = await checkPhotoPermission(
+    'canViewAllPhotos',
+    authContext.userId,
+    authContext.companyId
+  )
+
+  if (!canView) {
+    return { data: null, error: new Error('Permission denied: canViewAllPhotos required') }
+  }
+
   const supabase = createClient()
 
   let query = supabase
     .from('media_assets')
     .select('*')
+    .eq('user_id', authContext.userId)  // Company isolation
     .order('captured_at', { ascending: false })
 
   if (filters?.project_id) {
@@ -223,8 +315,25 @@ export async function getMediaAssets(filters?: {
 
 /**
  * Get single media asset by ID
+ * RBAC: Requires canViewAllPhotos permission + ownership check
  */
 export async function getMediaAssetById(id: string) {
+  // RBAC: Check authentication and permissions
+  const authContext = await getAuthContext()
+  if (!authContext) {
+    return { data: null, error: new Error('Authentication required') }
+  }
+
+  const canView = await checkPhotoPermission(
+    'canViewAllPhotos',
+    authContext.userId,
+    authContext.companyId
+  )
+
+  if (!canView) {
+    return { data: null, error: new Error('Permission denied: canViewAllPhotos required') }
+  }
+
   const supabase = createClient()
 
   const { data, error } = await supabase
@@ -238,19 +347,36 @@ export async function getMediaAssetById(id: string) {
     return { data: null, error }
   }
 
+  // Verify ownership (user's media asset)
+  if (data && data.user_id !== authContext.userId) {
+    return { data: null, error: new Error('Access denied: Media asset not found') }
+  }
+
   return { data, error: null }
 }
 
 /**
  * Upload new media asset
+ * RBAC: Requires canUploadPhotos permission
  */
 export async function uploadMediaAsset(asset: MediaAssetInsert) {
-  const supabase = createClient()
-
-  const { data: user } = await supabase.auth.getUser()
-  if (!user.user) {
-    return { data: null, error: new Error('User not authenticated') }
+  // RBAC: Check authentication and permissions
+  const authContext = await getAuthContext()
+  if (!authContext) {
+    return { data: null, error: new Error('Authentication required') }
   }
+
+  const canUpload = await checkPhotoPermission(
+    'canUploadPhotos',
+    authContext.userId,
+    authContext.companyId
+  )
+
+  if (!canUpload) {
+    return { data: null, error: new Error('Permission denied: canUploadPhotos required') }
+  }
+
+  const supabase = createClient()
 
   const { data, error } = await supabase
     .from('media_assets')
@@ -272,8 +398,39 @@ export async function uploadMediaAsset(asset: MediaAssetInsert) {
 /**
  * Update media asset
  */
+/**
+ * Update media asset
+ * RBAC: Requires canEditPhotoMetadata permission + ownership check
+ */
 export async function updateMediaAsset(id: string, updates: MediaAssetUpdate) {
+  // RBAC: Check authentication and permissions
+  const authContext = await getAuthContext()
+  if (!authContext) {
+    return { data: null, error: new Error('Authentication required') }
+  }
+
+  const canEdit = await checkPhotoPermission(
+    'canEditPhotoMetadata',
+    authContext.userId,
+    authContext.companyId
+  )
+
+  if (!canEdit) {
+    return { data: null, error: new Error('Permission denied: canEditPhotoMetadata required') }
+  }
+
   const supabase = createClient()
+
+  // Verify ownership first
+  const { data: existing } = await supabase
+    .from('media_assets')
+    .select('user_id')
+    .eq('id', id)
+    .single()
+
+  if (!existing || existing.user_id !== authContext.userId) {
+    return { data: null, error: new Error('Access denied: Media asset not found') }
+  }
 
   const { data, error } = await supabase
     .from('media_assets')
@@ -287,14 +444,50 @@ export async function updateMediaAsset(id: string, updates: MediaAssetUpdate) {
     return { data: null, error }
   }
 
+  // Log the operation
+  await permissionService.logPermissionCheck(
+    'update_media_asset',
+    'media_asset',
+    id,
+    true
+  )
+
   return { data, error: null }
 }
 
 /**
  * Delete media asset
+ * RBAC: Requires canDeletePhotos permission + ownership check
  */
 export async function deleteMediaAsset(id: string) {
+  // RBAC: Check authentication and permissions
+  const authContext = await getAuthContext()
+  if (!authContext) {
+    return { error: new Error('Authentication required') }
+  }
+
+  const canDelete = await checkPhotoPermission(
+    'canDeletePhotos',
+    authContext.userId,
+    authContext.companyId
+  )
+
+  if (!canDelete) {
+    return { error: new Error('Permission denied: canDeletePhotos required') }
+  }
+
   const supabase = createClient()
+
+  // Verify ownership first
+  const { data: existing } = await supabase
+    .from('media_assets')
+    .select('user_id')
+    .eq('id', id)
+    .single()
+
+  if (!existing || existing.user_id !== authContext.userId) {
+    return { error: new Error('Access denied: Media asset not found') }
+  }
 
   const { error } = await supabase
     .from('media_assets')
@@ -305,6 +498,14 @@ export async function deleteMediaAsset(id: string) {
     console.error('Error deleting media asset:', error)
     return { error }
   }
+
+  // Log the operation
+  await permissionService.logPermissionCheck(
+    'delete_media_asset',
+    'media_asset',
+    id,
+    true
+  )
 
   return { error: null }
 }

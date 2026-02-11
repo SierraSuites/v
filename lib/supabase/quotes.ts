@@ -1,9 +1,11 @@
 // ============================================================
 // QUOTEHUB DATABASE OPERATIONS
 // Supabase client functions for quotes management
+// WITH RBAC PERMISSION ENFORCEMENT
 // ============================================================
 
 import { createClient } from '@/lib/supabase/client'
+import { permissionService } from '@/lib/permissions'
 import type {
   Quote,
   QuoteItem,
@@ -33,6 +35,80 @@ function getSupabase() {
     supabase = createClient()
   }
   return supabase
+}
+
+// ============================================================================
+// RBAC PERMISSION GUARD HELPERS
+// ============================================================================
+
+/**
+ * Get authenticated user and their company ID
+ */
+async function getAuthContext(): Promise<{
+  userId: string
+  companyId: string
+} | null> {
+  try {
+    const supabase = getSupabase()
+    const { data: { user }, error } = await supabase.auth.getUser()
+
+    if (error || !user) {
+      console.error('Authentication required')
+      return null
+    }
+
+    // Get user's company from profile
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.company_id) {
+      console.error('User profile or company not found')
+      return null
+    }
+
+    return {
+      userId: user.id,
+      companyId: profile.company_id
+    }
+  } catch (error) {
+    console.error('Error getting auth context:', error)
+    return null
+  }
+}
+
+/**
+ * Check if user has required permission for quotes
+ * Note: Using generic permissions since quote-specific permissions may not exist yet
+ */
+async function checkQuotePermission(
+  permission: 'canManageFinances' | 'canViewFinancials',
+  userId: string,
+  companyId: string
+): Promise<boolean> {
+  try {
+    const hasPermission = await permissionService.hasPermissionDB(
+      userId,
+      companyId,
+      permission
+    )
+
+    // Log permission check for audit trail
+    await permissionService.logPermissionCheck(
+      `quote_${permission}`,
+      'quote',
+      companyId,
+      hasPermission,
+      hasPermission ? undefined : 'Insufficient permissions'
+    )
+
+    return hasPermission
+  } catch (error) {
+    console.error('Error checking permission:', error)
+    return false
+  }
 }
 
 // ============================================================
@@ -193,20 +269,31 @@ export async function getQuoteById(id: string) {
 
 /**
  * Create a new quote
+ * RBAC: Requires canManageFinances permission
  */
 export async function createQuote(quote: Partial<QuoteInsert>) {
   try {
     console.log('[createQuote] Creating quote:', quote)
 
-    const supabase = getSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return { data: null, error: { message: 'User not authenticated' } }
+    // RBAC: Check authentication and permissions
+    const authContext = await getAuthContext()
+    if (!authContext) {
+      return { data: null, error: { message: 'Authentication required' } }
+    }
+
+    const hasPermission = await checkQuotePermission(
+      'canManageFinances',
+      authContext.userId,
+      authContext.companyId
+    )
+
+    if (!hasPermission) {
+      return { data: null, error: { message: 'Permission denied: canManageFinances required' } }
     }
 
     const quoteToInsert: QuoteInsert = {
-      user_id: user.id,
-      created_by: user.id,
+      user_id: authContext.userId,
+      created_by: authContext.userId,
       quote_type: quote.quote_type || 'estimate',
       year: quote.year || new Date().getFullYear(),
       sequence_number: quote.sequence_number || 1,
@@ -278,6 +365,14 @@ export async function createQuote(quote: Partial<QuoteInsert>) {
       return { data: null, error }
     }
 
+    // Log the operation
+    await permissionService.logPermissionCheck(
+      'create_quote',
+      'quote',
+      data.id,
+      true
+    )
+
     console.log('[createQuote] Success:', data.id)
     return { data: data as Quote, error: null }
   } catch (error) {
@@ -288,22 +383,33 @@ export async function createQuote(quote: Partial<QuoteInsert>) {
 
 /**
  * Update an existing quote
+ * RBAC: Requires canManageFinances permission
  */
 export async function updateQuote(id: string, updates: QuoteUpdate) {
   try {
     console.log('[updateQuote] Updating quote:', id, updates)
 
-    const supabase = getSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return { data: null, error: { message: 'User not authenticated' } }
+    // RBAC: Check authentication and permissions
+    const authContext = await getAuthContext()
+    if (!authContext) {
+      return { data: null, error: { message: 'Authentication required' } }
+    }
+
+    const hasPermission = await checkQuotePermission(
+      'canManageFinances',
+      authContext.userId,
+      authContext.companyId
+    )
+
+    if (!hasPermission) {
+      return { data: null, error: { message: 'Permission denied: canManageFinances required' } }
     }
 
     const { data, error } = await getSupabase()
       .from('quotes')
       .update(updates)
       .eq('id', id)
-      .eq('user_id', user.id)
+      .eq('user_id', authContext.userId)
       .select()
       .single()
 

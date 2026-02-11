@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getContacts, createContact } from '@/lib/supabase/quotes'
 import { requireAuth, rateLimit, addRateLimitHeaders, handleApiError } from '@/lib/api/auth-middleware'
+import { requirePermission } from '@/lib/api-permissions'
 import type { ContactType } from '@/types/quotes'
 
 export const dynamic = 'force-dynamic'
@@ -172,18 +173,18 @@ const CreateContactSchema = z.object({
  * GET /api/contacts
  * List all contacts for the authenticated user
  *
- * @security Requires authentication
+ * @security Requires authentication + canViewFinancials permission
  * @rateLimit 100 requests per minute
  * @validation Query parameters validated with Zod
  */
 export async function GET(request: NextRequest) {
   try {
-    // 1. AUTHENTICATION
-    const { data: authData, error: authError } = await requireAuth(request)
-    if (authError) return authError
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canViewFinancials')
+    if (!authResult.authorized) return authResult.error
 
     // 2. RATE LIMITING
-    const rateLimitError = rateLimit(request, `contacts-list-${authData!.user.id}`, 100, 60000)
+    const rateLimitError = rateLimit(request, `contacts-list-${authResult.userId}`, 100, 60000)
     if (rateLimitError) return rateLimitError
 
     // 3. PARSE & VALIDATE QUERY PARAMETERS
@@ -246,7 +247,7 @@ export async function GET(request: NextRequest) {
       count: filteredContacts.length
     })
 
-    return addRateLimitHeaders(response, `contacts-list-${authData!.user.id}`, 100)
+    return addRateLimitHeaders(response, `contacts-list-${authResult.userId}`, 100)
 
   } catch (error) {
     console.error('[GET /api/contacts] Unhandled exception:', error)
@@ -262,18 +263,18 @@ export async function GET(request: NextRequest) {
  * POST /api/contacts
  * Create a new contact
  *
- * @security Requires authentication
+ * @security Requires authentication + canManageFinances permission
  * @rateLimit 20 creates per minute
  * @validation Request body validated with Zod
  */
 export async function POST(request: NextRequest) {
   try {
-    // 1. AUTHENTICATION
-    const { data: authData, error: authError } = await requireAuth(request)
-    if (authError) return authError
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canManageFinances')
+    if (!authResult.authorized) return authResult.error
 
     // 2. RATE LIMITING (stricter for write operations)
-    const rateLimitError = rateLimit(request, `contacts-create-${authData!.user.id}`, 20, 60000)
+    const rateLimitError = rateLimit(request, `contacts-create-${authResult.userId}`, 20, 60000)
     if (rateLimitError) return rateLimitError
 
     // 3. PARSE REQUEST BODY
@@ -340,7 +341,7 @@ export async function POST(request: NextRequest) {
     }
 
     const mappedContactData = {
-      user_id: authData!.user.id,
+      user_id: authResult.userId!,
       contact_name: contactData.name,
       company_name: contactData.company || null,
       email: contactData.email || null,
@@ -383,7 +384,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
 
-    return addRateLimitHeaders(response, `contacts-create-${authData!.user.id}`, 20)
+    return addRateLimitHeaders(response, `contacts-create-${authResult.userId}`, 20)
 
   } catch (error) {
     console.error('[POST /api/contacts] Unhandled exception:', error)
