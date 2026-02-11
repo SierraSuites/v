@@ -764,7 +764,7 @@ export async function updateExpense(expenseId: string, updates: Partial<Expense>
     }
 
     // If updating approval_status, need canApproveExpenses
-    if (updates.approval_status) {
+    if ('approval_status' in updates && updates.approval_status) {
       const canApprove = await checkPermission(
         'canApproveExpenses',
         authContext.userId,
@@ -801,7 +801,7 @@ export async function updateExpense(expenseId: string, updates: Partial<Expense>
 
     // Log the operation
     await permissionService.logPermissionCheck(
-      updates.approval_status ? 'approve_expense' : 'update_expense',
+      ('approval_status' in updates && updates.approval_status) ? 'approve_expense' : 'update_expense',
       'expense',
       expenseId,
       true
