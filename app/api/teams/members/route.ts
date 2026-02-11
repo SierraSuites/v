@@ -50,7 +50,6 @@ export async function POST(req: NextRequest) {
     if (!authResult.authorized) return authResult.error
 
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
     const { teamId, email, role } = await req.json()
 
@@ -69,7 +68,7 @@ export async function POST(req: NextRequest) {
         role,
         token,
         expires_at: expiresAt.toISOString(),
-        invited_by: user.id,
+        invited_by: authResult.userId!,
       })
       .select()
       .single()

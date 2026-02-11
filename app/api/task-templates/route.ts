@@ -12,12 +12,11 @@ export async function GET(req: NextRequest) {
     if (!authResult.authorized) return authResult.error
 
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
     const { data, error } = await supabase
       .from('task_templates')
       .select('*')
-      .or(`user_id.eq.${user.id},is_public.eq.true`)
+      .or(`user_id.eq.${authResult.userId},is_public.eq.true`)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -47,7 +46,6 @@ export async function POST(req: NextRequest) {
     if (!authResult.authorized) return authResult.error
 
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
     const { name, description, category, icon, is_public, tasks } = await req.json()
 
@@ -55,7 +53,7 @@ export async function POST(req: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('company_id')
-      .eq('id', user.id)
+      .eq('id', authResult.userId!)
       .single()
 
     if (profileError) {
@@ -75,7 +73,7 @@ export async function POST(req: NextRequest) {
         icon,
         is_public,
         tasks,
-        user_id: user.id,
+        user_id: authResult.userId!,
         company_id: profile?.company_id,
       })
       .select()

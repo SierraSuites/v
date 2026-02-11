@@ -12,7 +12,6 @@ export async function POST(req: NextRequest) {
     if (!authResult.authorized) return authResult.error
 
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
     const { name, description, team_type, color } = await req.json()
 
@@ -20,7 +19,7 @@ export async function POST(req: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('company_id')
-      .eq('id', user.id)
+      .eq('id', authResult.userId!)
       .single()
 
     if (profileError || !profile?.company_id) {
@@ -40,7 +39,7 @@ export async function POST(req: NextRequest) {
         description,
         team_type,
         color,
-        created_by: user.id,
+        created_by: authResult.userId!,
       })
       .select()
       .single()
@@ -58,7 +57,7 @@ export async function POST(req: NextRequest) {
       .from('team_members')
       .insert({
         team_id: team.id,
-        user_id: user.id,
+        user_id: authResult.userId!,
         role: 'admin',
         is_lead: true,
       })

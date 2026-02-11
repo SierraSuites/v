@@ -90,7 +90,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!projectAccess.authorized) return projectAccess.error
 
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
     const body = await request.json()
 
     const { data: expense, error: insertError } = await supabase
@@ -105,7 +104,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         vendor: body.vendor || null,
         invoice_number: body.invoice_number || null,
         payment_status: body.payment_status || 'pending',
-        created_by: user.id,
+        created_by: authResult.userId!,
       })
       .select()
       .single()

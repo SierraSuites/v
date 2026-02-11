@@ -54,7 +54,6 @@ export async function POST(req: NextRequest) {
     if (!authResult.authorized) return authResult.error
 
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
     const { task_id, content, mentions } = await req.json()
 
@@ -64,8 +63,8 @@ export async function POST(req: NextRequest) {
         task_id,
         content,
         mentions,
-        user_id: user.id,
-        user_name: user.user_metadata?.full_name || user.email,
+        user_id: authResult.userId!,
+        user_name: null, // Will be filled by database trigger or frontend
       })
       .select()
       .single()

@@ -55,7 +55,6 @@ export async function POST(req: NextRequest) {
     if (!authResult.authorized) return authResult.error
 
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
     const {
       media_asset_id,
@@ -75,7 +74,7 @@ export async function POST(req: NextRequest) {
         permission_level,
         expires_at,
         share_message,
-        shared_by: user.id,
+        shared_by: authResult.userId!,
       })
       .select()
       .single()

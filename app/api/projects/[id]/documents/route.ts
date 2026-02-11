@@ -69,7 +69,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!projectAccess.authorized) return projectAccess.error
 
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
     const body = await request.json()
 
     const { data: document, error: insertError } = await supabase
@@ -83,7 +82,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         file_type: body.file_type || null,
         description: body.description || null,
         tags: body.tags || [],
-        uploaded_by: user.id,
+        uploaded_by: authResult.userId!,
       })
       .select()
       .single()
