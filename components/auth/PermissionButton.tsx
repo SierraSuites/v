@@ -2,10 +2,12 @@
 
 import { usePermissions } from '@/hooks/usePermissions'
 import type { PermissionSet } from '@/lib/permissions'
-import { Button, type ButtonProps } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import type { VariantProps } from 'class-variance-authority'
+import type React from 'react'
 
-interface PermissionButtonProps extends ButtonProps {
+interface PermissionButtonProps extends React.ComponentProps<typeof Button> {
   permission: keyof PermissionSet | (keyof PermissionSet)[]
   requireAll?: boolean
   projectId?: string
