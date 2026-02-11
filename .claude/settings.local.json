@@ -48,7 +48,9 @@
       "Bash(supabaseKey are required!\" which occurred because the deprecated\nauth-helpers package creates clients at module evaluation time.\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(for file in 0*.md 1*.md)",
       "Bash(for file in *.md)",
-      "Bash(do echo \"$file:\")"
+      "Bash(do echo \"$file:\")",
+      "Bash(gh pr list:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": [],
     "ask": []
