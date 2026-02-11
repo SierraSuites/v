@@ -1,4 +1,8 @@
 // CRM-specific permissions and tier checking
+// Integrates subscription tier features with RBAC permissions
+
+import { permissionService } from '@/lib/permissions'
+import { createClient } from '@/lib/supabase/client'
 
 export type SubscriptionTier = 'starter' | 'pro' | 'enterprise' | 'super_admin'
 
@@ -130,14 +134,133 @@ export function getCRMUpgradeMessage(): {
   }
 }
 
-// Mock function to get user tier (in production, this would come from Supabase)
+/**
+ * Get user's subscription tier from database
+ * Integrates with RBAC system for complete access control
+ */
 export async function getUserTier(): Promise<SubscriptionTier> {
-  // TODO: Replace with actual Supabase query to users.subscription_tier
-  // For now, return 'pro' for testing
-  // In production:
-  // const { data: { user } } = await supabase.auth.getUser()
-  // const { data } = await supabase.from('users').select('subscription_tier').eq('id', user.id).single()
-  // return data.subscription_tier
+  try {
+    const supabase = createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-  return 'pro' // Change to 'starter' to test upgrade prompts
+    if (authError || !user) {
+      console.error('Authentication error in getUserTier:', authError)
+      return 'starter' // Default to most restrictive tier
+    }
+
+    // Get subscription tier from user_profiles
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('subscription_tier, company_id')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError)
+      return 'starter'
+    }
+
+    // If user has company, check company subscription tier instead
+    if (profile?.company_id) {
+      const { data: company } = await supabase
+        .from('companies')
+        .select('subscription_tier')
+        .eq('id', profile.company_id)
+        .single()
+
+      if (company?.subscription_tier) {
+        return company.subscription_tier as SubscriptionTier
+      }
+    }
+
+    // Fallback to user's individual tier
+    return (profile?.subscription_tier as SubscriptionTier) || 'starter'
+  } catch (error) {
+    console.error('Unexpected error in getUserTier:', error)
+    return 'starter'
+  }
+}
+
+/**
+ * Check if user has both tier access AND RBAC permission
+ * This enforces a two-layer security model:
+ * 1. Subscription tier must include the feature
+ * 2. User's role must have the required permission
+ */
+export async function hasFullCRMAccess(): Promise<{
+  hasTierAccess: boolean
+  hasPermission: boolean
+  hasFullAccess: boolean
+  tier: SubscriptionTier
+}> {
+  try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return {
+        hasTierAccess: false,
+        hasPermission: false,
+        hasFullAccess: false,
+        tier: 'starter'
+      }
+    }
+
+    // Check tier access
+    const tier = await getUserTier()
+    const hasTierAccess = hasCRMAccess(tier)
+
+    // Check RBAC permission (CRM should require at least one of these permissions)
+    const hasPermission = await permissionService.hasPermissionDB(
+      user.id,
+      '', // Company ID will be looked up by permissionService
+      'canManageCompanySettings' // Using this as a proxy for CRM access - admins/managers can use CRM
+    )
+
+    return {
+      hasTierAccess,
+      hasPermission,
+      hasFullAccess: hasTierAccess && hasPermission,
+      tier
+    }
+  } catch (error) {
+    console.error('Error checking full CRM access:', error)
+    return {
+      hasTierAccess: false,
+      hasPermission: false,
+      hasFullAccess: false,
+      tier: 'starter'
+    }
+  }
+}
+
+/**
+ * Check if user can access specific CRM features
+ * Combines tier and permission checks
+ */
+export async function canAccessCRMFeature(feature: string): Promise<boolean> {
+  try {
+    const tier = await getUserTier()
+    const hasTier = hasFeatureAccess(tier, feature)
+
+    if (!hasTier) return false
+
+    // For CRM features, also check RBAC permissions
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return false
+
+    // Admin/PM/Accountant roles should have CRM access
+    const hasPermission = await permissionService.hasPermissionDB(
+      user.id,
+      '',
+      'canManageCompanySettings'
+    )
+
+    return hasPermission
+  } catch (error) {
+    console.error('Error checking CRM feature access:', error)
+    return false
+  }
 }

@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { hasCRMAccess, getUserTier, type SubscriptionTier } from '@/lib/crm-permissions'
+import { hasFullCRMAccess, type SubscriptionTier } from '@/lib/crm-permissions'
+import { UnauthorizedAccess } from '@/components/auth/PermissionGate'
 import CRMUpgradePrompt from './CRMUpgradePrompt'
 
 interface CRMAccessWrapperProps {
@@ -9,8 +10,19 @@ interface CRMAccessWrapperProps {
   showCompactPrompt?: boolean
 }
 
+/**
+ * CRM Access Wrapper - Combines tier-based and RBAC permission checks
+ * Two-layer security:
+ * 1. Subscription tier must include CRM feature
+ * 2. User role must have sufficient permissions
+ */
 export default function CRMAccessWrapper({ children, showCompactPrompt = false }: CRMAccessWrapperProps) {
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null)
+  const [accessStatus, setAccessStatus] = useState<{
+    hasTierAccess: boolean
+    hasPermission: boolean
+    hasFullAccess: boolean
+    tier: SubscriptionTier
+  } | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -19,12 +31,16 @@ export default function CRMAccessWrapper({ children, showCompactPrompt = false }
 
   const checkAccess = async () => {
     try {
-      const userTier = await getUserTier()
-      const access = hasCRMAccess(userTier)
-      setHasAccess(access)
+      const status = await hasFullCRMAccess()
+      setAccessStatus(status)
     } catch (error) {
       console.error('Error checking CRM access:', error)
-      setHasAccess(false)
+      setAccessStatus({
+        hasTierAccess: false,
+        hasPermission: false,
+        hasFullAccess: false,
+        tier: 'starter'
+      })
     } finally {
       setLoading(false)
     }
@@ -41,9 +57,28 @@ export default function CRMAccessWrapper({ children, showCompactPrompt = false }
     )
   }
 
-  if (!hasAccess) {
+  if (!accessStatus) {
+    return (
+      <UnauthorizedAccess
+        message="Unable to verify CRM access. Please try again."
+      />
+    )
+  }
+
+  // Case 1: Tier doesn't include CRM - show upgrade prompt
+  if (!accessStatus.hasTierAccess) {
     return <CRMUpgradePrompt variant={showCompactPrompt ? 'compact' : 'full'} />
   }
 
+  // Case 2: Has tier but insufficient permissions - show permission denied
+  if (!accessStatus.hasPermission) {
+    return (
+      <UnauthorizedAccess
+        message="Your subscription includes CRM, but your user role does not have permission to access it. Contact your administrator to request CRM access."
+      />
+    )
+  }
+
+  // Case 3: Full access granted
   return <>{children}</>
 }
