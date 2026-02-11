@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { usePermissionGuard } from '@/hooks/usePermissionGuard'
+import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter'
 import toast, { Toaster } from 'react-hot-toast'
 import {
   UserIcon,
@@ -562,6 +563,11 @@ export default function ProfilePage() {
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="At least 8 characters"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <PasswordStrengthMeter
+                      password={newPassword}
+                      userInputs={[email, fullName]}
+                      showFeedback={true}
                     />
                   </div>
 
