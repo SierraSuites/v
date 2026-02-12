@@ -226,7 +226,7 @@ export async function PUT(
     // Update the role
     const updatedRole = await customRolesService.updateCustomRole(id, {
       role_name: updates.roleName,
-      description: updates.description,
+      description: updates.description ?? undefined,
       color: updates.color,
       icon: updates.icon,
       permissions: updates.permissions

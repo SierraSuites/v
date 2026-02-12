@@ -77,6 +77,20 @@ export default function UserRoleBadge({
       bgColor: '#F3F4F6',
       textColor: '#4B5563',
       borderColor: '#E5E7EB'
+    },
+    subcontractor: {
+      label: 'Subcontractor',
+      icon: '🔨',
+      bgColor: '#FEF3C7',
+      textColor: '#92400E',
+      borderColor: '#FDE68A'
+    },
+    accountant: {
+      label: 'Accountant',
+      icon: '📊',
+      bgColor: '#E0E7FF',
+      textColor: '#3730A3',
+      borderColor: '#C7D2FE'
     }
   }
 
