@@ -162,11 +162,11 @@ export default function AppShell({ children, user }: AppShellProps) {
     <div className={`flex h-screen overflow-hidden ${darkMode ? 'dark bg-[#10121b]' : 'bg-gray-50'}`}>
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 backdrop-blur-xl bg-opacity-40 ${
+        className={`static inset-y-0 left-0 z-50 backdrop-blur-xl bg-opacity-40 ${
           darkMode ? 'bg-[#10121b]' : 'bg-white'
         } border-r ${
           darkMode ? 'border-gray-800' : 'border-gray-200'
-        } transition-all duration-300 flex flex-col ${sidebarCollapsed ? 'w-20' : 'w-72'}`}
+        } transition-all duration-300 flex flex-col shrink-0 ${sidebarCollapsed ? 'w-20' : 'w-72'}`}
       >
         {/* Logo */}
         <div className={`p-6 ${darkMode ? 'border-b border-gray-800' : 'border-b border-gray-200'}`}>
