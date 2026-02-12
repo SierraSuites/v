@@ -467,9 +467,16 @@ export default function ProjectsPage() {
 
       if (session) {
         setUser(session.user)
-        // Get user plan from metadata
-        const plan = session.user.user_metadata?.selected_plan || "starter"
-        setUserPlan(plan)
+        // Read plan from user_profiles (secure, RLS-protected)
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('plan')
+          .eq('id', session.user.id)
+          .single()
+
+        if (profile?.plan) {
+          setUserPlan(profile.plan as "starter" | "professional" | "enterprise")
+        }
       } else {
         // For demo, use placeholder
         setUser({ user_metadata: { full_name: "John Doe" } })

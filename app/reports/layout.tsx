@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { usePermissionGuard } from '@/hooks/usePermissionGuard'
 import { Toaster } from "react-hot-toast"
 import AppShell from '@/components/dashboard/AppShell'
 
@@ -14,6 +15,12 @@ export default function ReportsLayout({
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+
+  // RBAC: Require analytics permission to access reports module
+  const { loading: permissionLoading } = usePermissionGuard({
+    permission: 'canViewAnalytics',
+    redirectTo: '/unauthorized'
+  })
 
   useEffect(() => {
     const loadUser = async () => {
@@ -35,7 +42,7 @@ export default function ReportsLayout({
     loadUser()
   }, [router])
 
-  if (loading) {
+  if (loading || permissionLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>

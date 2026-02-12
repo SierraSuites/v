@@ -1,7 +1,9 @@
 // Financial Management Supabase Service
 // Enterprise-grade invoice, payment, and expense management
+// WITH RBAC PERMISSION ENFORCEMENT
 
 import { createClient } from './client'
+import { permissionService } from '@/lib/permissions'
 import type {
   Invoice,
   InvoiceLineItem,
@@ -22,6 +24,79 @@ function getSupabase() {
 }
 
 // ============================================================================
+// PERMISSION GUARD HELPERS
+// ============================================================================
+
+/**
+ * Get authenticated user and their company ID
+ */
+async function getAuthContext(): Promise<{
+  userId: string
+  companyId: string
+} | null> {
+  try {
+    const supabase = getSupabase()
+    const { data: { user }, error } = await supabase.auth.getUser()
+
+    if (error || !user) {
+      console.error('Authentication required')
+      return null
+    }
+
+    // Get user's company from profile
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.company_id) {
+      console.error('User profile or company not found')
+      return null
+    }
+
+    return {
+      userId: user.id,
+      companyId: profile.company_id
+    }
+  } catch (error) {
+    console.error('Error getting auth context:', error)
+    return null
+  }
+}
+
+/**
+ * Check if user has required permission
+ */
+async function checkPermission(
+  permission: 'canManageFinances' | 'canViewFinancials' | 'canApproveExpenses',
+  userId: string,
+  companyId: string
+): Promise<boolean> {
+  try {
+    const hasPermission = await permissionService.hasPermissionDB(
+      userId,
+      companyId,
+      permission
+    )
+
+    // Log permission check for audit trail
+    await permissionService.logPermissionCheck(
+      `financial_${permission}`,
+      'financial_operation',
+      companyId,
+      hasPermission,
+      hasPermission ? undefined : 'Insufficient permissions'
+    )
+
+    return hasPermission
+  } catch (error) {
+    console.error('Error checking permission:', error)
+    return false
+  }
+}
+
+// ============================================================================
 // INVOICES
 // ============================================================================
 
@@ -33,6 +108,27 @@ export async function getInvoices(companyId: string, filters?: {
   dateTo?: string
 }) {
   try {
+    // RBAC: Check view financials permission
+    const authContext = await getAuthContext()
+    if (!authContext) {
+      return { data: null, error: 'Authentication required' }
+    }
+
+    const hasPermission = await checkPermission(
+      'canViewFinancials',
+      authContext.userId,
+      authContext.companyId
+    )
+
+    if (!hasPermission) {
+      return { data: null, error: 'Permission denied: canViewFinancials required' }
+    }
+
+    // Verify company ID matches user's company
+    if (companyId !== authContext.companyId) {
+      return { data: null, error: 'Access denied: Company mismatch' }
+    }
+
     const supabase = getSupabase()
     let query = supabase
       .from('invoices')
@@ -95,6 +191,22 @@ export async function getInvoices(companyId: string, filters?: {
 
 export async function getInvoice(invoiceId: string) {
   try {
+    // RBAC: Check view financials permission
+    const authContext = await getAuthContext()
+    if (!authContext) {
+      return { data: null, error: 'Authentication required' }
+    }
+
+    const hasPermission = await checkPermission(
+      'canViewFinancials',
+      authContext.userId,
+      authContext.companyId
+    )
+
+    if (!hasPermission) {
+      return { data: null, error: 'Permission denied: canViewFinancials required' }
+    }
+
     const supabase = getSupabase()
     const { data, error } = await supabase
       .from('invoices')
@@ -138,6 +250,11 @@ export async function getInvoice(invoiceId: string) {
 
     if (error) throw error
 
+    // Verify invoice belongs to user's company
+    if (data && data.company_id !== authContext.companyId) {
+      return { data: null, error: 'Access denied: Invoice not found in your company' }
+    }
+
     return { data: data as Invoice, error: null }
   } catch (error: any) {
     console.error('Error fetching invoice:', error)
@@ -147,14 +264,45 @@ export async function getInvoice(invoiceId: string) {
 
 export async function createInvoice(invoice: Partial<Invoice>) {
   try {
+    // RBAC: Check manage finances permission
+    const authContext = await getAuthContext()
+    if (!authContext) {
+      return { data: null, error: 'Authentication required' }
+    }
+
+    const hasPermission = await checkPermission(
+      'canManageFinances',
+      authContext.userId,
+      authContext.companyId
+    )
+
+    if (!hasPermission) {
+      return { data: null, error: 'Permission denied: canManageFinances required' }
+    }
+
+    // Ensure invoice is created for user's company
+    const invoiceData = {
+      ...invoice,
+      company_id: authContext.companyId,
+      created_by: authContext.userId
+    }
+
     const supabase = getSupabase()
     const { data, error } = await supabase
       .from('invoices')
-      .insert([invoice])
+      .insert([invoiceData])
       .select()
       .single()
 
     if (error) throw error
+
+    // Log the operation
+    await permissionService.logPermissionCheck(
+      'create_invoice',
+      'invoice',
+      data.id,
+      true
+    )
 
     return { data: data as Invoice, error: null }
   } catch (error: any) {
@@ -165,7 +313,35 @@ export async function createInvoice(invoice: Partial<Invoice>) {
 
 export async function updateInvoice(invoiceId: string, updates: Partial<Invoice>) {
   try {
+    // RBAC: Check manage finances permission
+    const authContext = await getAuthContext()
+    if (!authContext) {
+      return { data: null, error: 'Authentication required' }
+    }
+
+    const hasPermission = await checkPermission(
+      'canManageFinances',
+      authContext.userId,
+      authContext.companyId
+    )
+
+    if (!hasPermission) {
+      return { data: null, error: 'Permission denied: canManageFinances required' }
+    }
+
     const supabase = getSupabase()
+
+    // Verify invoice belongs to user's company
+    const { data: existingInvoice } = await supabase
+      .from('invoices')
+      .select('company_id')
+      .eq('id', invoiceId)
+      .single()
+
+    if (!existingInvoice || existingInvoice.company_id !== authContext.companyId) {
+      return { data: null, error: 'Access denied: Invoice not found in your company' }
+    }
+
     const { data, error } = await supabase
       .from('invoices')
       .update({
@@ -178,6 +354,14 @@ export async function updateInvoice(invoiceId: string, updates: Partial<Invoice>
 
     if (error) throw error
 
+    // Log the operation
+    await permissionService.logPermissionCheck(
+      'update_invoice',
+      'invoice',
+      invoiceId,
+      true
+    )
+
     return { data: data as Invoice, error: null }
   } catch (error: any) {
     console.error('Error updating invoice:', error)
@@ -187,13 +371,54 @@ export async function updateInvoice(invoiceId: string, updates: Partial<Invoice>
 
 export async function deleteInvoice(invoiceId: string) {
   try {
+    // RBAC: Check manage finances permission
+    const authContext = await getAuthContext()
+    if (!authContext) {
+      return { error: 'Authentication required' }
+    }
+
+    const hasPermission = await checkPermission(
+      'canManageFinances',
+      authContext.userId,
+      authContext.companyId
+    )
+
+    if (!hasPermission) {
+      return { error: 'Permission denied: canManageFinances required' }
+    }
+
     const supabase = getSupabase()
+
+    // Verify invoice belongs to user's company
+    const { data: existingInvoice } = await supabase
+      .from('invoices')
+      .select('company_id, status')
+      .eq('id', invoiceId)
+      .single()
+
+    if (!existingInvoice || existingInvoice.company_id !== authContext.companyId) {
+      return { error: 'Access denied: Invoice not found in your company' }
+    }
+
+    // Prevent deletion of paid invoices
+    if (existingInvoice.status === 'paid') {
+      return { error: 'Cannot delete paid invoices. Consider voiding instead.' }
+    }
+
     const { error } = await supabase
       .from('invoices')
       .delete()
       .eq('id', invoiceId)
 
     if (error) throw error
+
+    // Log the operation
+    await permissionService.logPermissionCheck(
+      'delete_invoice',
+      'invoice',
+      invoiceId,
+      true
+    )
 
     return { error: null }
   } catch (error: any) {
@@ -270,6 +495,27 @@ export async function generateNextInvoiceNumber(companyId: string): Promise<stri
 
 export async function getPayments(companyId: string, invoiceId?: string) {
   try {
+    // RBAC: Check view financials permission
+    const authContext = await getAuthContext()
+    if (!authContext) {
+      return { data: null, error: 'Authentication required' }
+    }
+
+    const hasPermission = await checkPermission(
+      'canViewFinancials',
+      authContext.userId,
+      authContext.companyId
+    )
+
+    if (!hasPermission) {
+      return { data: null, error: 'Permission denied: canViewFinancials required' }
+    }
+
+    // Verify company ID matches user's company
+    if (companyId !== authContext.companyId) {
+      return { data: null, error: 'Access denied: Company mismatch' }
+    }
+
     const supabase = getSupabase()
     let query = supabase
       .from('payments')
@@ -306,14 +552,45 @@ export async function getPayments(companyId: string, invoiceId?: string) {
 
 export async function recordPayment(payment: Partial<Payment>) {
   try {
+    // RBAC: Check manage finances permission
+    const authContext = await getAuthContext()
+    if (!authContext) {
+      return { data: null, error: 'Authentication required' }
+    }
+
+    const hasPermission = await checkPermission(
+      'canManageFinances',
+      authContext.userId,
+      authContext.companyId
+    )
+
+    if (!hasPermission) {
+      return { data: null, error: 'Permission denied: canManageFinances required' }
+    }
+
+    // Ensure payment is created for user's company
+    const paymentData = {
+      ...payment,
+      company_id: authContext.companyId,
+      recorded_by: authContext.userId
+    }
+
     const supabase = getSupabase()
     const { data, error } = await supabase
       .from('payments')
-      .insert([payment])
+      .insert([paymentData])
       .select()
       .single()
 
     if (error) throw error
+
+    // Log the operation
+    await permissionService.logPermissionCheck(
+      'record_payment',
+      'payment',
+      data.id,
+      true
+    )
 
     return { data: data as Payment, error: null }
   } catch (error: any) {
@@ -351,6 +628,27 @@ export async function getExpenses(companyId: string, filters?: {
   billableOnly?: boolean
 }) {
   try {
+    // RBAC: Check view financials permission
+    const authContext = await getAuthContext()
+    if (!authContext) {
+      return { data: null, error: 'Authentication required' }
+    }
+
+    const hasPermission = await checkPermission(
+      'canViewFinancials',
+      authContext.userId,
+      authContext.companyId
+    )
+
+    if (!hasPermission) {
+      return { data: null, error: 'Permission denied: canViewFinancials required' }
+    }
+
+    // Verify company ID matches user's company
+    if (companyId !== authContext.companyId) {
+      return { data: null, error: 'Access denied: Company mismatch' }
+    }
+
     const supabase = getSupabase()
     let query = supabase
       .from('expenses')
@@ -397,14 +695,45 @@ export async function getExpenses(companyId: string, filters?: {
 
 export async function createExpense(expense: Partial<Expense>) {
   try {
+    // RBAC: Check manage finances permission
+    const authContext = await getAuthContext()
+    if (!authContext) {
+      return { data: null, error: 'Authentication required' }
+    }
+
+    const hasPermission = await checkPermission(
+      'canManageFinances',
+      authContext.userId,
+      authContext.companyId
+    )
+
+    if (!hasPermission) {
+      return { data: null, error: 'Permission denied: canManageFinances required' }
+    }
+
+    // Ensure expense is created for user's company
+    const expenseData = {
+      ...expense,
+      company_id: authContext.companyId,
+      created_by: authContext.userId
+    }
+
     const supabase = getSupabase()
     const { data, error } = await supabase
       .from('expenses')
-      .insert([expense])
+      .insert([expenseData])
       .select()
       .single()
 
     if (error) throw error
+
+    // Log the operation
+    await permissionService.logPermissionCheck(
+      'create_expense',
+      'expense',
+      data.id,
+      true
+    )
 
     return { data: data as Expense, error: null }
   } catch (error: any) {
@@ -415,7 +744,49 @@ export async function createExpense(expense: Partial<Expense>) {
 
 export async function updateExpense(expenseId: string, updates: Partial<Expense>) {
   try {
+    // RBAC: Check manage finances OR approve expenses permission
+    const authContext = await getAuthContext()
+    if (!authContext) {
+      return { data: null, error: 'Authentication required' }
+    }
+
     const supabase = getSupabase()
+
+    // Verify expense belongs to user's company
+    const { data: existingExpense } = await supabase
+      .from('expenses')
+      .select('company_id, approval_status')
+      .eq('id', expenseId)
+      .single()
+
+    if (!existingExpense || existingExpense.company_id !== authContext.companyId) {
+      return { data: null, error: 'Access denied: Expense not found in your company' }
+    }
+
+    // If updating approval_status, need canApproveExpenses
+    if ('approval_status' in updates && updates.approval_status) {
+      const canApprove = await checkPermission(
+        'canApproveExpenses',
+        authContext.userId,
+        authContext.companyId
+      )
+
+      if (!canApprove) {
+        return { data: null, error: 'Permission denied: canApproveExpenses required' }
+      }
+    } else {
+      // For other updates, need canManageFinances
+      const canManage = await checkPermission(
+        'canManageFinances',
+        authContext.userId,
+        authContext.companyId
+      )
+
+      if (!canManage) {
+        return { data: null, error: 'Permission denied: canManageFinances required' }
+      }
+    }
+
     const { data, error } = await supabase
       .from('expenses')
       .update({
@@ -428,6 +799,14 @@ export async function updateExpense(expenseId: string, updates: Partial<Expense>
 
     if (error) throw error
 
+    // Log the operation
+    await permissionService.logPermissionCheck(
+      ('approval_status' in updates && updates.approval_status) ? 'approve_expense' : 'update_expense',
+      'expense',
+      expenseId,
+      true
+    )
+
     return { data: data as Expense, error: null }
   } catch (error: any) {
     console.error('Error updating expense:', error)
@@ -437,13 +816,54 @@ export async function updateExpense(expenseId: string, updates: Partial<Expense>
 
 export async function deleteExpense(expenseId: string) {
   try {
+    // RBAC: Check manage finances permission
+    const authContext = await getAuthContext()
+    if (!authContext) {
+      return { error: 'Authentication required' }
+    }
+
+    const hasPermission = await checkPermission(
+      'canManageFinances',
+      authContext.userId,
+      authContext.companyId
+    )
+
+    if (!hasPermission) {
+      return { error: 'Permission denied: canManageFinances required' }
+    }
+
     const supabase = getSupabase()
+
+    // Verify expense belongs to user's company
+    const { data: existingExpense } = await supabase
+      .from('expenses')
+      .select('company_id, approval_status')
+      .eq('id', expenseId)
+      .single()
+
+    if (!existingExpense || existingExpense.company_id !== authContext.companyId) {
+      return { error: 'Access denied: Expense not found in your company' }
+    }
+
+    // Prevent deletion of approved expenses
+    if (existingExpense.approval_status === 'approved') {
+      return { error: 'Cannot delete approved expenses. Consider rejecting first.' }
+    }
+
     const { error } = await supabase
       .from('expenses')
       .delete()
       .eq('id', expenseId)
 
     if (error) throw error
+
+    // Log the operation
+    await permissionService.logPermissionCheck(
+      'delete_expense',
+      'expense',
+      expenseId,
+      true
+    )
 
     return { error: null }
   } catch (error: any) {
@@ -461,6 +881,27 @@ export async function getFinancialStats(companyId: string): Promise<{
   error: string | null
 }> {
   try {
+    // RBAC: Check view financials permission
+    const authContext = await getAuthContext()
+    if (!authContext) {
+      return { data: null, error: 'Authentication required' }
+    }
+
+    const hasPermission = await checkPermission(
+      'canViewFinancials',
+      authContext.userId,
+      authContext.companyId
+    )
+
+    if (!hasPermission) {
+      return { data: null, error: 'Permission denied: canViewFinancials required' }
+    }
+
+    // Verify company ID matches user's company
+    if (companyId !== authContext.companyId) {
+      return { data: null, error: 'Access denied: Company mismatch' }
+    }
+
     const supabase = getSupabase()
     // Call Supabase function for complex stats
     const { data, error } = await supabase.rpc('get_financial_stats', {

@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { OAuthButtons } from "@/components/auth/OAuthButtons"
 import { createClient } from "@/lib/supabase/client"
 import { loginSchema } from "@/lib/validation"
 
@@ -18,6 +19,13 @@ function LoginForm() {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
+  const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null)
+  const [lockedUntil, setLockedUntil] = useState<string | null>(null)
+
+  // 2FA States
+  const [requires2FA, setRequires2FA] = useState(false)
+  const [userId2FA, setUserId2FA] = useState<string | null>(null)
+  const [twoFactorCode, setTwoFactorCode] = useState("")
 
   useEffect(() => {
     // Check if user was redirected after email verification
@@ -26,39 +34,132 @@ function LoginForm() {
     }
   }, [searchParams])
 
+  // Format locked until time for user display
+  const formatLockedTime = (lockedUntilISO: string): string => {
+    const lockedDate = new Date(lockedUntilISO)
+    const now = new Date()
+    const minutesRemaining = Math.ceil((lockedDate.getTime() - now.getTime()) / (1000 * 60))
+
+    if (minutesRemaining <= 1) return 'less than a minute'
+    if (minutesRemaining < 60) return `${minutesRemaining} minutes`
+
+    const hours = Math.floor(minutesRemaining / 60)
+    const mins = minutesRemaining % 60
+    return mins > 0 ? `${hours} hours and ${mins} minutes` : `${hours} hours`
+  }
+
+  const handleVerify2FA = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setIsLoading(true)
+
+    if (!twoFactorCode || (twoFactorCode.length !== 6 && twoFactorCode.length !== 9)) {
+      setError("Please enter a valid 6-digit code or backup code")
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/auth/2fa/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId2FA,
+          token: twoFactorCode,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Invalid verification code')
+        setIsLoading(false)
+        return
+      }
+
+      // 2FA verified - complete login and redirect
+      router.push("/dashboard")
+      router.refresh()
+    } catch (err: any) {
+      setError("An unexpected error occurred. Please try again.")
+      setIsLoading(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    setAttemptsRemaining(null)
+    setLockedUntil(null)
     setIsLoading(true)
 
     try {
       // Validate inputs
       const validated = loginSchema.parse({ email, password, rememberMe })
 
-      // Create Supabase client
-      const supabase = createClient()
-
-      // Sign in with Supabase
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: validated.email,
-        password: validated.password,
+      // Use new API endpoint with rate limiting and brute force protection
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: validated.email,
+          password: validated.password,
+        }),
       })
 
-      if (signInError) {
-        // Handle specific error cases
-        if (signInError.message.includes("Invalid login credentials")) {
-          setError("Invalid email or password. Please try again.")
-        } else if (signInError.message.includes("Email not confirmed")) {
-          setError("Please verify your email address before signing in.")
-        } else {
-          setError(signInError.message)
+      const data = await response.json()
+
+      // Handle rate limiting (429)
+      if (response.status === 429) {
+        setError(data.error || 'Too many login attempts. Please try again later.')
+        if (data.lockedUntil) {
+          setLockedUntil(data.lockedUntil)
         }
         setIsLoading(false)
         return
       }
 
-      if (data.user) {
-        // Successfully logged in - redirect to dashboard
+      // Handle account lockout (423)
+      if (response.status === 423) {
+        setError(data.error || 'Account temporarily locked.')
+        if (data.lockedUntil) {
+          setLockedUntil(data.lockedUntil)
+        }
+        setIsLoading(false)
+        return
+      }
+
+      // Handle authentication failure (401)
+      if (response.status === 401) {
+        setError(data.error || 'Invalid email or password.')
+        if (typeof data.attemptsRemaining === 'number') {
+          setAttemptsRemaining(data.attemptsRemaining)
+        }
+        setIsLoading(false)
+        return
+      }
+
+      // Handle other errors
+      if (!response.ok) {
+        setError(data.error || 'An unexpected error occurred. Please try again.')
+        setIsLoading(false)
+        return
+      }
+
+      // Check if 2FA is required
+      if (data.requires2FA) {
+        setRequires2FA(true)
+        setUserId2FA(data.userId)
+        setIsLoading(false)
+        return
+      }
+
+      // Success - redirect to dashboard
+      if (data.success) {
         router.push("/dashboard")
         router.refresh()
       }
@@ -80,9 +181,13 @@ function LoginForm() {
           <Link href="/" className="text-2xl font-bold">
             The Sierra Suites
           </Link>
-          <h1 className="mt-6 text-3xl font-bold">Welcome Back</h1>
+          <h1 className="mt-6 text-3xl font-bold">
+            {requires2FA ? "Two-Factor Authentication" : "Welcome Back"}
+          </h1>
           <p className="mt-2 text-muted-foreground">
-            Sign in to your account to continue
+            {requires2FA
+              ? "Enter the 6-digit code from your authenticator app"
+              : "Sign in to your account to continue"}
           </p>
         </div>
 
@@ -98,75 +203,133 @@ function LoginForm() {
           {error && (
             <div className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
               <p className="text-sm text-destructive font-medium">{error}</p>
+              {attemptsRemaining !== null && attemptsRemaining > 0 && (
+                <p className="text-xs text-destructive/80 mt-2">
+                  {attemptsRemaining} {attemptsRemaining === 1 ? 'attempt' : 'attempts'} remaining before account lockout
+                </p>
+              )}
+              {lockedUntil && (
+                <p className="text-xs text-destructive/80 mt-2">
+                  Account will be unlocked in {formatLockedTime(lockedUntil)}
+                </p>
+              )}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-2">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-                required
-                className="w-full px-4 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="you@company.com"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label htmlFor="password" className="block text-sm font-medium">
-                  Password
+          {requires2FA ? (
+            // 2FA Verification Form
+            <form onSubmit={handleVerify2FA} className="space-y-6">
+              <div>
+                <label htmlFor="twoFactorCode" className="block text-sm font-medium mb-2">
+                  Verification Code
                 </label>
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-[#1E3A8A] hover:underline"
-                >
-                  Forgot password?
+                <input
+                  id="twoFactorCode"
+                  type="text"
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ""))}
+                  disabled={isLoading}
+                  required
+                  className="w-full px-4 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed text-center text-2xl tracking-widest"
+                  placeholder="000000"
+                  maxLength={6}
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Or enter a backup code if you don't have access to your authenticator
+                </p>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Verifying..." : "Verify Code"}
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setRequires2FA(false)
+                  setUserId2FA(null)
+                  setTwoFactorCode("")
+                  setError("")
+                }}
+                className="w-full text-sm text-muted-foreground hover:text-foreground"
+              >
+                ← Back to login
+              </button>
+            </form>
+          ) : (
+            // Standard Login Form
+            <>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
+                    required
+                    className="w-full px-4 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="you@company.com"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label htmlFor="password" className="block text-sm font-medium">
+                      Password
+                    </label>
+                    <Link
+                      href="/forgot-password"
+                      className="text-sm text-[#1E3A8A] hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                    required
+                    className="w-full px-4 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="Enter your password"
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    id="rememberMe"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    disabled={isLoading}
+                    className="rounded border-input"
+                  />
+                  <label htmlFor="rememberMe" className="ml-2 text-sm text-muted-foreground">
+                    Remember me for 30 days
+                  </label>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
+
+              <OAuthButtons showDivider={true} />
+
+              <div className="mt-6 text-center text-sm text-muted-foreground">
+                Don't have an account?{" "}
+                <Link href="/register" className="text-primary hover:underline font-medium">
+                  Sign up
                 </Link>
               </div>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-                required
-                className="w-full px-4 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="Enter your password"
-              />
-            </div>
-
-            <div className="flex items-center">
-              <input
-                id="rememberMe"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                disabled={isLoading}
-                className="rounded border-input"
-              />
-              <label htmlFor="rememberMe" className="ml-2 text-sm text-muted-foreground">
-                Remember me for 30 days
-              </label>
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link href="/register" className="text-primary hover:underline font-medium">
-              Sign up
-            </Link>
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>

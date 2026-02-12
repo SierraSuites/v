@@ -1,4 +1,78 @@
 import { createClient } from "@/lib/supabase/client"
+import { permissionService } from '@/lib/permissions'
+
+// ============================================================================
+// RBAC PERMISSION GUARD HELPERS
+// ============================================================================
+
+/**
+ * Get authenticated user and their company ID
+ */
+async function getAuthContext(): Promise<{
+  userId: string
+  companyId: string
+} | null> {
+  try {
+    const supabase = createClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
+
+    if (error || !user) {
+      console.error('Authentication required')
+      return null
+    }
+
+    // Get user's company from profile
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.company_id) {
+      console.error('User profile or company not found')
+      return null
+    }
+
+    return {
+      userId: user.id,
+      companyId: profile.company_id
+    }
+  } catch (error) {
+    console.error('Error getting auth context:', error)
+    return null
+  }
+}
+
+/**
+ * Check if user has required task permission
+ */
+async function checkTaskPermission(
+  permission: 'canManageTasks' | 'canAssignTasks' | 'canViewAllTasks',
+  userId: string,
+  companyId: string
+): Promise<boolean> {
+  try {
+    const hasPermission = await permissionService.hasPermissionDB(
+      userId,
+      companyId,
+      permission
+    )
+
+    // Log permission check for audit trail
+    await permissionService.logPermissionCheck(
+      `task_${permission}`,
+      'task',
+      companyId,
+      hasPermission,
+      hasPermission ? undefined : 'Insufficient permissions'
+    )
+
+    return hasPermission
+  } catch (error) {
+    console.error('Error checking permission:', error)
+    return false
+  }
+}
 
 export type Task = {
   id: string
@@ -47,6 +121,7 @@ export type TaskUpdate = Partial<TaskInsert>
 
 /**
  * Fetch all tasks for the current user with pagination
+ * RBAC: Enforces canViewAllTasks or returns only assigned tasks
  */
 export async function getTasks(options?: {
   page?: number
@@ -55,6 +130,20 @@ export async function getTasks(options?: {
   sortOrder?: 'asc' | 'desc'
 }) {
   const supabase = createClient()
+
+  // RBAC: Check authentication and permissions
+  const authContext = await getAuthContext()
+  if (!authContext) {
+    return { data: null, error: new Error('Authentication required'), count: 0, totalPages: 0 }
+  }
+
+  // Check if user can view all tasks
+  const canViewAll = await checkTaskPermission(
+    'canViewAllTasks',
+    authContext.userId,
+    authContext.companyId
+  )
+
   const page = options?.page || 1
   const pageSize = options?.pageSize || 50
   const sortBy = options?.sortBy || 'due_date'
@@ -63,11 +152,16 @@ export async function getTasks(options?: {
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
 
-  const query = supabase
+  let query = supabase
     .from("tasks")
     .select("*", { count: 'exact' })
     .order(sortBy, { ascending: sortOrder === 'asc' })
     .range(from, to)
+
+  if (!canViewAll) {
+    // User can only see tasks assigned to them
+    query = query.eq('assignee_id', authContext.userId)
+  }
 
   const { data, error, count } = await query
 
@@ -282,23 +376,31 @@ export async function getTaskById(taskId: string) {
 
 /**
  * Create a new task
+ * RBAC: Requires canManageTasks permission
  */
 export async function createTask(task: TaskInsert) {
   console.log('createTask function called with:', task)
   const supabase = createClient()
 
-  // Get the current user
-  const { data: { user } } = await supabase.auth.getUser()
-  console.log('User authenticated for task creation:', user?.id)
+  // RBAC: Check authentication and permissions
+  const authContext = await getAuthContext()
+  if (!authContext) {
+    return { data: null, error: new Error('Authentication required') }
+  }
 
-  if (!user) {
-    console.error('User not authenticated in createTask')
-    return { data: null, error: new Error("User not authenticated") }
+  const canManage = await checkTaskPermission(
+    'canManageTasks',
+    authContext.userId,
+    authContext.companyId
+  )
+
+  if (!canManage) {
+    return { data: null, error: new Error('Permission denied: canManageTasks required') }
   }
 
   const taskToInsert = {
     ...task,
-    user_id: user.id
+    user_id: authContext.userId
   }
   console.log('Inserting task into database:', taskToInsert)
 
@@ -320,15 +422,56 @@ export async function createTask(task: TaskInsert) {
     return { data: null, error }
   }
 
+  // Log the operation
+  await permissionService.logPermissionCheck(
+    'create_task',
+    'task',
+    data.id,
+    true
+  )
+
   console.log('✅ Task created successfully:', data)
   return { data, error: null }
 }
 
 /**
  * Update an existing task
+ * RBAC: Requires canManageTasks permission (or canAssignTasks if only changing assignee)
  */
 export async function updateTask(taskId: string, updates: TaskUpdate) {
   const supabase = createClient()
+
+  // RBAC: Check authentication and permissions
+  const authContext = await getAuthContext()
+  if (!authContext) {
+    return { data: null, error: new Error('Authentication required') }
+  }
+
+  // If only updating assignee, check canAssignTasks permission
+  const isOnlyAssigneeUpdate = Object.keys(updates).length === 1 && 'assignee_id' in updates
+
+  if (isOnlyAssigneeUpdate) {
+    const canAssign = await checkTaskPermission(
+      'canAssignTasks',
+      authContext.userId,
+      authContext.companyId
+    )
+
+    if (!canAssign) {
+      return { data: null, error: new Error('Permission denied: canAssignTasks required') }
+    }
+  } else {
+    // For other updates, need canManageTasks
+    const canManage = await checkTaskPermission(
+      'canManageTasks',
+      authContext.userId,
+      authContext.companyId
+    )
+
+    if (!canManage) {
+      return { data: null, error: new Error('Permission denied: canManageTasks required') }
+    }
+  }
 
   const { data, error } = await supabase
     .from("tasks")
@@ -342,14 +485,39 @@ export async function updateTask(taskId: string, updates: TaskUpdate) {
     return { data: null, error }
   }
 
+  // Log the operation
+  await permissionService.logPermissionCheck(
+    isOnlyAssigneeUpdate ? 'assign_task' : 'update_task',
+    'task',
+    taskId,
+    true
+  )
+
   return { data, error: null }
 }
 
 /**
  * Delete a task
+ * RBAC: Requires canManageTasks permission
  */
 export async function deleteTask(taskId: string) {
   const supabase = createClient()
+
+  // RBAC: Check authentication and permissions
+  const authContext = await getAuthContext()
+  if (!authContext) {
+    return { error: new Error('Authentication required') }
+  }
+
+  const canManage = await checkTaskPermission(
+    'canManageTasks',
+    authContext.userId,
+    authContext.companyId
+  )
+
+  if (!canManage) {
+    return { error: new Error('Permission denied: canManageTasks required') }
+  }
 
   const { error } = await supabase
     .from("tasks")
@@ -360,6 +528,14 @@ export async function deleteTask(taskId: string) {
     console.error("Error deleting task:", error)
     return { error }
   }
+
+  // Log the operation
+  await permissionService.logPermissionCheck(
+    'delete_task',
+    'task',
+    taskId,
+    true
+  )
 
   return { error: null }
 }

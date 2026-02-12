@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { InternationalPhoneInput } from "@/components/auth/InternationalPhoneInput"
 import { CurrencySelector } from "@/components/auth/CurrencySelector"
+import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter"
+import { OAuthButtons } from "@/components/auth/OAuthButtons"
 import { createClient } from "@/lib/supabase/client"
 import { countries } from "@/lib/countries"
 import { priceMapping, formatPrice, getCurrencyByCountry } from "@/lib/currencies"
@@ -471,9 +473,11 @@ export default function RegisterPage() {
                     {errors.password && (
                       <p className="text-sm text-destructive mt-1">{errors.password}</p>
                     )}
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Must be at least 8 characters with uppercase, lowercase, and number
-                    </p>
+                    <PasswordStrengthMeter
+                      password={step1Data.password}
+                      userInputs={[step1Data.email, step1Data.fullName, step1Data.companyName]}
+                      showFeedback={true}
+                    />
                   </div>
 
                   {/* Confirm Password */}
@@ -506,6 +510,15 @@ export default function RegisterPage() {
                   <Button type="button" onClick={handleNext} className="w-full">
                     Continue to Plan Selection
                   </Button>
+
+                  <OAuthButtons showDivider={true} />
+
+                  <p className="text-xs text-center text-muted-foreground">
+                    Already have an account?{" "}
+                    <Link href="/login" className="text-primary hover:underline font-medium">
+                      Sign in
+                    </Link>
+                  </p>
                 </div>
               )}
 

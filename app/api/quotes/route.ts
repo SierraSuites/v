@@ -9,6 +9,7 @@ import { z } from 'zod'
 import { getQuotes, createQuote, getQuoteCount } from '@/lib/supabase/quotes'
 import type { QuoteFilters, QuoteSortOptions, QuotePaginationOptions } from '@/types/quotes'
 import { requireAuth, rateLimit, addRateLimitHeaders, handleApiError } from '@/lib/api/auth-middleware'
+import { requirePermission } from '@/lib/api-permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -147,18 +148,18 @@ const CreateQuoteSchema = z.object({
  * GET /api/quotes
  * List all quotes with optional filtering, sorting, and pagination
  *
- * @security Requires authentication
+ * @security Requires authentication + canViewFinancials permission
  * @rateLimit 100 requests per minute
  * @validation Query parameters validated with Zod
  */
 export async function GET(request: NextRequest) {
   try {
-    // 1. AUTHENTICATION
-    const { data: authData, error: authError } = await requireAuth(request)
-    if (authError) return authError
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canViewFinancials')
+    if (!authResult.authorized) return authResult.error
 
     // 2. RATE LIMITING
-    const rateLimitError = rateLimit(request, `quotes-list-${authData!.user.id}`, 100, 60000)
+    const rateLimitError = rateLimit(request, `quotes-list-${authResult.userId}`, 100, 60000)
     if (rateLimitError) return rateLimitError
 
     // 3. PARSE & VALIDATE QUERY PARAMETERS
@@ -237,7 +238,7 @@ export async function GET(request: NextRequest) {
     })
 
     // 10. ADD RATE LIMIT HEADERS
-    return addRateLimitHeaders(response, `quotes-list-${authData!.user.id}`, 100)
+    return addRateLimitHeaders(response, `quotes-list-${authResult.userId}`, 100)
 
   } catch (error) {
     console.error('[GET /api/quotes] Unhandled exception:', error)
@@ -253,18 +254,18 @@ export async function GET(request: NextRequest) {
  * POST /api/quotes
  * Create a new quote
  *
- * @security Requires authentication
+ * @security Requires authentication + canManageFinances permission
  * @rateLimit 20 creates per minute
  * @validation Request body validated with Zod
  */
 export async function POST(request: NextRequest) {
   try {
-    // 1. AUTHENTICATION
-    const { data: authData, error: authError } = await requireAuth(request)
-    if (authError) return authError
+    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
+    const authResult = await requirePermission('canManageFinances')
+    if (!authResult.authorized) return authResult.error
 
     // 2. RATE LIMITING (stricter for write operations)
-    const rateLimitError = rateLimit(request, `quotes-create-${authData!.user.id}`, 20, 60000)
+    const rateLimitError = rateLimit(request, `quotes-create-${authResult.userId}`, 20, 60000)
     if (rateLimitError) return rateLimitError
 
     // 3. PARSE REQUEST BODY
@@ -339,7 +340,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
 
-    return addRateLimitHeaders(response, `quotes-create-${authData!.user.id}`, 20)
+    return addRateLimitHeaders(response, `quotes-create-${authResult.userId}`, 20)
 
   } catch (error) {
     console.error('[POST /api/quotes] Unhandled exception:', error)

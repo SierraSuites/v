@@ -114,6 +114,9 @@ export async function GET(
       )
     }
 
+    // Await params in Next.js 15
+    const { id } = await params
+
     // Get the custom role
     const role = await customRolesService.getCustomRole(id)
 
@@ -182,6 +185,9 @@ export async function PUT(
       return permissionCheck.error
     }
 
+    // Await params in Next.js 15
+    const { id } = await params
+
     // Verify role exists and belongs to user's company
     const role = await customRolesService.getCustomRole(id)
     if (!role) {
@@ -226,7 +232,7 @@ export async function PUT(
     // Update the role
     const updatedRole = await customRolesService.updateCustomRole(id, {
       role_name: updates.roleName,
-      description: updates.description ?? undefined,
+      description: updates.description ?? undefined, // Convert null to undefined
       color: updates.color,
       icon: updates.icon,
       permissions: updates.permissions
@@ -280,6 +286,9 @@ export async function DELETE(
     if (!permissionCheck.hasPermission) {
       return permissionCheck.error
     }
+
+    // Await params in Next.js 15
+    const { id } = await params
 
     // Verify role exists and belongs to user's company
     const role = await customRolesService.getCustomRole(id)

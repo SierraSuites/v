@@ -1,0 +1,2387 @@
+
+-- STEP 1: Create Essential Tables
+-- ============================================================
+
+-- 1. User Profiles Table (extends auth.users)
+-- Needed for: Dashboard to show user name, company, tier
+create table user_profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  full_name text,
+  company_name text,
+  country text,
+  phone text,
+  avatar_url text,
+  plan text check (plan in ('starter', 'professional', 'enterprise')) default 'starter',
+  stripe_customer_id text,
+  stripe_subscription_id text,
+  subscription_status text,
+  trial_ends_at timestamp with time zone,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+-- 2. Projects Table
+-- Needed for: Dashboard stats (total projects, active, completed)
+create table projects (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  name text not null,
+  client text,
+  status text check (status in ('active', 'on-hold', 'completed')) default 'active',
+  budget numeric,
+  progress integer default 0 check (progress >= 0 and progress <= 100),
+  due_date timestamp with time zone,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+-- 3. Tasks Table
+-- Needed for: Dashboard stats (tasks today, overdue, this week, completion rate)
+create table tasks (
+  id uuid primary key default uuid_generate_v4(),
+  project_id uuid references projects(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  title text not null,
+  description text,
+  status text check (status in ('pending', 'in-progress', 'completed')) default 'pending',
+  priority text check (priority in ('low', 'medium', 'high', 'urgent')) default 'medium',
+  due_date timestamp with time zone,
+  completed_at timestamp with time zone,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+-- 4. Photos Table
+-- Needed for: Dashboard stats (recent photos count, storage used)
+create table photos (
+  id uuid primary key default uuid_generate_v4(),
+  project_id uuid references projects(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  url text not null,
+  caption text,
+  size_bytes bigint not null,
+  width integer,
+  height integer,
+  created_at timestamp with time zone default now()
+);
+
+-- 5. Activities Table
+-- Needed for: Dashboard activity feed
+create table activities (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  type text not null,
+  title text not null,
+  description text,
+  metadata jsonb,
+  created_at timestamp with time zone default now()
+);
+
+-- 6. Notifications Table
+-- Needed for: Dashboard notification bell dropdown
+create table notifications (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  type text check (type in ('info', 'success', 'warning', 'error')) default 'info',
+  title text not null,
+  message text not null,
+  read boolean default false,
+  action_url text,
+  created_at timestamp with time zone default now()
+);
+
+
+-- STEP 2: Create Indexes for Performance
+-- ============================================================
+
+-- User profiles indexes
+create index idx_user_profiles_plan on user_profiles(plan);
+
+-- Projects indexes
+create index idx_projects_user_id on projects(user_id);
+create index idx_projects_status on projects(status);
+create index idx_projects_due_date on projects(due_date);
+
+-- Tasks indexes
+create index idx_tasks_user_id on tasks(user_id);
+create index idx_tasks_project_id on tasks(project_id);
+create index idx_tasks_status on tasks(status);
+create index idx_tasks_due_date on tasks(due_date);
+
+-- Photos indexes
+create index idx_photos_user_id on photos(user_id);
+create index idx_photos_project_id on photos(project_id);
+create index idx_photos_created_at on photos(created_at desc);
+
+-- Activities indexes
+create index idx_activities_user_id on activities(user_id);
+create index idx_activities_created_at on activities(created_at desc);
+
+-- Notifications indexes
+create index idx_notifications_user_id on notifications(user_id);
+create index idx_notifications_read on notifications(read);
+create index idx_notifications_created_at on notifications(created_at desc);
+
+
+-- STEP 3: Enable Row Level Security (RLS)
+-- ============================================================
+
+alter table user_profiles enable row level security;
+alter table projects enable row level security;
+alter table tasks enable row level security;
+alter table photos enable row level security;
+alter table activities enable row level security;
+alter table notifications enable row level security;
+
+
+-- STEP 4: Create RLS Policies
+-- ============================================================
+
+-- User Profiles Policies
+create policy "Users can view own profile"
+  on user_profiles for select
+  using (auth.uid() = id);
+
+create policy "Users can update own profile"
+  on user_profiles for update
+  using (auth.uid() = id);
+
+create policy "Users can insert own profile"
+  on user_profiles for insert
+  with check (auth.uid() = id);
+
+-- Projects Policies
+create policy "Users can view own projects"
+  on projects for select
+  using (auth.uid() = user_id);
+
+create policy "Users can create own projects"
+  on projects for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update own projects"
+  on projects for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete own projects"
+  on projects for delete
+  using (auth.uid() = user_id);
+
+-- Tasks Policies
+create policy "Users can view own tasks"
+  on tasks for select
+  using (auth.uid() = user_id);
+
+create policy "Users can create own tasks"
+  on tasks for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update own tasks"
+  on tasks for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete own tasks"
+  on tasks for delete
+  using (auth.uid() = user_id);
+
+-- Photos Policies
+create policy "Users can view own photos"
+  on photos for select
+  using (auth.uid() = user_id);
+
+create policy "Users can upload own photos"
+  on photos for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can delete own photos"
+  on photos for delete
+  using (auth.uid() = user_id);
+
+-- Activities Policies
+create policy "Users can view own activities"
+  on activities for select
+  using (auth.uid() = user_id);
+
+create policy "Users can create own activities"
+  on activities for insert
+  with check (auth.uid() = user_id);
+
+-- Notifications Policies
+create policy "Users can view own notifications"
+  on notifications for select
+  using (auth.uid() = user_id);
+
+create policy "Users can update own notifications"
+  on notifications for update
+  using (auth.uid() = user_id);
+
+
+-- STEP 5: Create Functions for Auto-Updates
+-- ============================================================
+
+-- Function to update updated_at timestamp
+create or replace function update_updated_at_column()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+-- Apply to tables with updated_at
+create trigger update_projects_updated_at
+  before update on projects
+  for each row execute function update_updated_at_column();
+
+create trigger update_tasks_updated_at
+  before update on tasks
+  for each row execute function update_updated_at_column();
+
+create trigger update_user_profiles_updated_at
+  before update on user_profiles
+  for each row execute function update_updated_at_column();
+
+
+-- STEP 6: Create Function to Auto-Create User Profile
+-- ============================================================
+
+create or replace function handle_new_user()
+returns trigger as $$
+begin
+  insert into public.user_profiles (id, full_name, plan)
+  values (
+    new.id,
+    new.raw_user_meta_data->>'full_name',
+    'starter'
+  );
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger to create profile on signup
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function handle_new_user();
+
+
+-- STEP 7: Create Storage Buckets
+-- ============================================================
+
+-- Photos bucket for FieldSnap (when built)
+insert into storage.buckets (id, name, public)
+values ('photos', 'photos', false);
+
+-- Avatars bucket for user profile pictures
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true);
+
+
+-- STEP 8: Storage Policies
+-- ============================================================
+
+-- Photos bucket policies
+create policy "Users can upload own photos"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'photos' and
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "Users can view own photos"
+  on storage.objects for select
+  using (
+    bucket_id = 'photos' and
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "Users can delete own photos"
+  on storage.objects for delete
+  using (
+    bucket_id = 'photos' and
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- Avatars bucket policies (public read)
+create policy "Anyone can view avatars"
+  on storage.objects for select
+  using (bucket_id = 'avatars');
+
+create policy "Users can upload own avatar"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'avatars' and
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "Users can update own avatar"
+  on storage.objects for update
+  using (
+    bucket_id = 'avatars' and
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+
+#1
+
+
+#2
+
+
+-- Verification queries (run these to check):
+-- SELECT * FROM user_profiles LIMIT 1;
+-- SELECT tablename FROM pg_tables WHERE schemaname = 'public';
+-- SELECT * FROM storage.buckets;
+
+
+#3
+
+DROP TABLE IF EXISTS tasks CASCADE;
+
+-- Recreate tasks table with all TaskFlow features
+create table tasks (
+  -- Core identification
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+
+  -- Basic information
+  title text not null,
+  description text,
+  project_id uuid references projects(id) on delete cascade,
+  project_name text,
+
+  -- Construction categorization
+  trade text check (trade in ('electrical', 'plumbing', 'hvac', 'concrete', 'framing', 'finishing', 'general')) default 'general',
+  phase text check (phase in ('pre-construction', 'foundation', 'framing', 'mep', 'finishing', 'closeout')) default 'pre-construction',
+
+  -- Status and priority
+  status text check (status in ('not-started', 'in-progress', 'review', 'completed', 'blocked')) default 'not-started',
+  priority text check (priority in ('critical', 'high', 'medium', 'low')) default 'medium',
+
+  -- Assignment
+  assignee_id uuid references auth.users(id) on delete set null,
+  assignee_name text,
+  assignee_avatar text,
+
+  -- Scheduling
+  start_date date,
+  due_date date not null,
+  duration integer default 1, -- in days
+  progress integer default 0 check (progress >= 0 and progress <= 100),
+
+  -- Time tracking
+  estimated_hours numeric default 8,
+  actual_hours numeric default 0,
+
+  -- Dependencies and relationships
+  dependencies text[] default '{}', -- array of task IDs
+
+  -- Metadata
+  attachments integer default 0,
+  comments integer default 0,
+  location text,
+
+  -- Weather considerations
+  weather_dependent boolean default false,
+  weather_buffer integer default 0, -- buffer days for weather delays
+
+  -- Inspection requirements
+  inspection_required boolean default false,
+  inspection_type text,
+
+  -- Resource management
+  crew_size integer default 1,
+  equipment text[] default '{}', -- array of equipment names
+  materials text[] default '{}', -- array of material names
+  certifications text[] default '{}', -- required certifications
+
+  -- Safety and quality
+  safety_protocols text[] default '{}',
+  quality_standards text[] default '{}',
+  documentation text[] default '{}', -- required documentation
+
+  -- Advanced settings
+  notify_inspector boolean default false,
+  client_visibility boolean default false,
+
+  -- Timestamps
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now(),
+  completed_at timestamp with time zone
+);
+
+-- Create indexes for better query performance
+create index idx_tasks_user_id on tasks(user_id);
+create index idx_tasks_project_id on tasks(project_id);
+create index idx_tasks_assignee_id on tasks(assignee_id);
+create index idx_tasks_status on tasks(status);
+create index idx_tasks_priority on tasks(priority);
+create index idx_tasks_trade on tasks(trade);
+create index idx_tasks_phase on tasks(phase);
+create index idx_tasks_due_date on tasks(due_date);
+create index idx_tasks_weather_dependent on tasks(weather_dependent);
+create index idx_tasks_inspection_required on tasks(inspection_required);
+
+-- ============================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- ============================================================
+
+-- Enable RLS on tasks table
+alter table tasks enable row level security;
+
+-- Policy: Users can view their own tasks
+create policy "Users can view their own tasks"
+  on tasks for select
+  using (auth.uid() = user_id);
+
+-- Policy: Users can insert their own tasks
+create policy "Users can insert their own tasks"
+  on tasks for insert
+  with check (auth.uid() = user_id);
+
+-- Policy: Users can update their own tasks
+create policy "Users can update their own tasks"
+  on tasks for update
+  using (auth.uid() = user_id);
+
+-- Policy: Users can delete their own tasks
+create policy "Users can delete their own tasks"
+  on tasks for delete
+  using (auth.uid() = user_id);
+
+-- Policy: Assigned users can view tasks assigned to them
+create policy "Assigned users can view their assigned tasks"
+  on tasks for select
+  using (auth.uid() = assignee_id);
+
+-- Policy: Assigned users can update tasks assigned to them (for progress updates)
+create policy "Assigned users can update their assigned tasks"
+  on tasks for update
+  using (auth.uid() = assignee_id);
+
+-- ============================================================
+-- AUTOMATIC TIMESTAMP UPDATE TRIGGER
+-- ============================================================
+
+-- Function to update updated_at timestamp
+create or replace function update_updated_at_column()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+-- Trigger for tasks table
+drop trigger if exists update_tasks_updated_at on tasks;
+create trigger update_tasks_updated_at
+  before update on tasks
+  for each row
+  execute function update_updated_at_column();
+
+-- ============================================================
+-- AUTOMATIC COMPLETED_AT UPDATE TRIGGER
+-- ============================================================
+
+-- Function to set completed_at when status changes to completed
+create or replace function set_completed_at()
+returns trigger as $$
+begin
+  if new.status = 'completed' and old.status != 'completed' then
+    new.completed_at = now();
+    new.progress = 100;
+  elsif new.status != 'completed' and old.status = 'completed' then
+    new.completed_at = null;
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+-- Trigger for automatic completed_at
+drop trigger if exists set_task_completed_at on tasks;
+create trigger set_task_completed_at
+  before update on tasks
+  for each row
+  execute function set_completed_at();
+
+-- ============================================================
+-- TEAM MEMBERS TABLE
+-- ============================================================
+
+create table if not exists team_members (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  name text not null,
+  avatar text,
+  role text,
+  trades text[] default '{}',
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+-- Enable RLS
+alter table team_members enable row level security;
+
+-- Policies
+create policy "Users can view their own team members"
+  on team_members for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert their own team members"
+  on team_members for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update their own team members"
+  on team_members for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete their own team members"
+  on team_members for delete
+  using (auth.uid() = user_id);
+
+-- ============================================================
+-- TASK COMMENTS TABLE
+-- ============================================================
+
+create table if not exists task_comments (
+  id uuid primary key default uuid_generate_v4(),
+  task_id uuid references tasks(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  comment text not null,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+-- Enable RLS
+alter table task_comments enable row level security;
+
+-- Policies
+create policy "Users can view comments on their tasks"
+  on task_comments for select
+  using (
+    exists (
+      select 1 from tasks
+      where tasks.id = task_comments.task_id
+      and (tasks.user_id = auth.uid() or tasks.assignee_id = auth.uid())
+    )
+  );
+
+create policy "Users can add comments to their tasks"
+  on task_comments for insert
+  with check (
+    exists (
+      select 1 from tasks
+      where tasks.id = task_comments.task_id
+      and (tasks.user_id = auth.uid() or tasks.assignee_id = auth.uid())
+    )
+  );
+
+-- ============================================================
+-- TASK ATTACHMENTS TABLE
+-- ============================================================
+
+create table if not exists task_attachments (
+  id uuid primary key default uuid_generate_v4(),
+  task_id uuid references tasks(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  file_name text not null,
+  file_url text not null,
+  file_size bigint,
+  file_type text,
+  created_at timestamp with time zone default now()
+);
+
+-- Enable RLS
+alter table task_attachments enable row level security;
+
+-- Policies
+create policy "Users can view attachments on their tasks"
+  on task_attachments for select
+  using (
+    exists (
+      select 1 from tasks
+      where tasks.id = task_attachments.task_id
+      and (tasks.user_id = auth.uid() or tasks.assignee_id = auth.uid())
+    )
+  );
+
+create policy "Users can add attachments to their tasks"
+  on task_attachments for insert
+  with check (
+    exists (
+      select 1 from tasks
+      where tasks.id = task_attachments.task_id
+      and (tasks.user_id = auth.uid() or tasks.assignee_id = auth.uid())
+    )
+  );
+
+-- ============================================================
+-- REALTIME PUBLICATION
+-- ============================================================
+
+alter publication supabase_realtime add table tasks;
+alter publication supabase_realtime add table task_comments;
+alter publication supabase_realtime add table task_attachments;
+
+-- ============================================================
+-- COMPLETED!
+-- Tasks table has been upgraded with full TaskFlow features
+-- ============================================================
+
+
+#4
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP TRIGGER IF EXISTS on_auth_user_confirmed ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user();
+DROP FUNCTION IF EXISTS public.handle_user_confirmed();
+
+-- Create function to handle new user registration (creates profile immediately)
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Insert a new profile for the user when they register
+  -- Profile is created even before email confirmation
+  INSERT INTO public.user_profiles (
+    id,
+    full_name,
+    company_name,
+    country,
+    phone,
+    plan,
+    created_at,
+    updated_at
+  )
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'company_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'country', 'US'),
+    COALESCE(NEW.raw_user_meta_data->>'phone', ''),
+    COALESCE(NEW.raw_user_meta_data->>'selected_plan', 'starter'),
+    NOW(),
+    NOW()
+  )
+  ON CONFLICT (id) DO NOTHING; -- Prevent duplicates if profile already exists
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create trigger to call function on user creation
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+
+-- Also ensure profile exists when email is confirmed (backup)
+CREATE OR REPLACE FUNCTION public.handle_user_confirmed()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Double-check profile exists when email is confirmed
+  INSERT INTO public.user_profiles (
+    id,
+    full_name,
+    company_name,
+    country,
+    phone,
+    plan,
+    created_at,
+    updated_at
+  )
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'company_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'country', 'US'),
+    COALESCE(NEW.raw_user_meta_data->>'phone', ''),
+    COALESCE(NEW.raw_user_meta_data->>'selected_plan', 'starter'),
+    NOW(),
+    NOW()
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    updated_at = NOW();
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create trigger for email confirmation
+CREATE TRIGGER on_auth_user_confirmed
+  AFTER UPDATE OF email_confirmed_at ON auth.users
+  FOR EACH ROW
+  WHEN (OLD.email_confirmed_at IS NULL AND NEW.email_confirmed_at IS NOT NULL)
+  EXECUTE FUNCTION public.handle_user_confirmed();
+
+-- Grant necessary permissions
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON public.user_profiles TO anon, authenticated;
+
+
+#5
+
+DROP TABLE IF EXISTS tasks CASCADE;
+
+-- Recreate tasks table with all TaskFlow features
+create table tasks (
+  -- Core identification
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+
+  -- Basic information
+  title text not null,
+  description text,
+  project_id uuid references projects(id) on delete cascade,
+  project_name text,
+
+  -- Construction categorization
+  trade text check (trade in ('electrical', 'plumbing', 'hvac', 'concrete', 'framing', 'finishing', 'general')) default 'general',
+  phase text check (phase in ('pre-construction', 'foundation', 'framing', 'mep', 'finishing', 'closeout')) default 'pre-construction',
+
+  -- Status and priority
+  status text check (status in ('not-started', 'in-progress', 'review', 'completed', 'blocked')) default 'not-started',
+  priority text check (priority in ('critical', 'high', 'medium', 'low')) default 'medium',
+
+  -- Assignment
+  assignee_id uuid references auth.users(id) on delete set null,
+  assignee_name text,
+  assignee_avatar text,
+
+  -- Scheduling
+  start_date date,
+  due_date date not null,
+  duration integer default 1, -- in days
+  progress integer default 0 check (progress >= 0 and progress <= 100),
+
+  -- Time tracking
+  estimated_hours numeric default 8,
+  actual_hours numeric default 0,
+
+  -- Dependencies and relationships
+  dependencies text[] default '{}', -- array of task IDs
+
+  -- Metadata
+  attachments integer default 0,
+  comments integer default 0,
+  location text,
+
+  -- Weather considerations
+  weather_dependent boolean default false,
+  weather_buffer integer default 0, -- buffer days for weather delays
+
+  -- Inspection requirements
+  inspection_required boolean default false,
+  inspection_type text,
+
+  -- Resource management
+  crew_size integer default 1,
+  equipment text[] default '{}', -- array of equipment names
+  materials text[] default '{}', -- array of material names
+  certifications text[] default '{}', -- required certifications
+
+  -- Safety and quality
+  safety_protocols text[] default '{}',
+  quality_standards text[] default '{}',
+  documentation text[] default '{}', -- required documentation
+
+  -- Advanced settings
+  notify_inspector boolean default false,
+  client_visibility boolean default false,
+
+  -- Timestamps
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now(),
+  completed_at timestamp with time zone
+);
+
+-- Create indexes for better query performance
+create index idx_tasks_user_id on tasks(user_id);
+create index idx_tasks_project_id on tasks(project_id);
+create index idx_tasks_assignee_id on tasks(assignee_id);
+create index idx_tasks_status on tasks(status);
+create index idx_tasks_priority on tasks(priority);
+create index idx_tasks_trade on tasks(trade);
+create index idx_tasks_phase on tasks(phase);
+create index idx_tasks_due_date on tasks(due_date);
+create index idx_tasks_weather_dependent on tasks(weather_dependent);
+create index idx_tasks_inspection_required on tasks(inspection_required);
+
+-- ============================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- ============================================================
+
+-- Enable RLS on tasks table
+alter table tasks enable row level security;
+
+-- Policy: Users can view their own tasks
+create policy "Users can view their own tasks"
+  on tasks for select
+  using (auth.uid() = user_id);
+
+-- Policy: Users can insert their own tasks
+create policy "Users can insert their own tasks"
+  on tasks for insert
+  with check (auth.uid() = user_id);
+
+-- Policy: Users can update their own tasks
+create policy "Users can update their own tasks"
+  on tasks for update
+  using (auth.uid() = user_id);
+
+-- Policy: Users can delete their own tasks
+create policy "Users can delete their own tasks"
+  on tasks for delete
+  using (auth.uid() = user_id);
+
+-- Policy: Assigned users can view tasks assigned to them
+create policy "Assigned users can view their assigned tasks"
+  on tasks for select
+  using (auth.uid() = assignee_id);
+
+-- Policy: Assigned users can update tasks assigned to them (for progress updates)
+create policy "Assigned users can update their assigned tasks"
+  on tasks for update
+  using (auth.uid() = assignee_id);
+
+-- ============================================================
+-- AUTOMATIC TIMESTAMP UPDATE TRIGGER
+-- ============================================================
+
+-- Function to update updated_at timestamp
+create or replace function update_updated_at_column()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+-- Trigger for tasks table
+drop trigger if exists update_tasks_updated_at on tasks;
+create trigger update_tasks_updated_at
+  before update on tasks
+  for each row
+  execute function update_updated_at_column();
+
+-- ============================================================
+-- AUTOMATIC COMPLETED_AT UPDATE TRIGGER
+-- ============================================================
+
+-- Function to set completed_at when status changes to completed
+create or replace function set_completed_at()
+returns trigger as $$
+begin
+  if new.status = 'completed' and old.status != 'completed' then
+    new.completed_at = now();
+    new.progress = 100;
+  elsif new.status != 'completed' and old.status = 'completed' then
+    new.completed_at = null;
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+-- Trigger for automatic completed_at
+drop trigger if exists set_task_completed_at on tasks;
+create trigger set_task_completed_at
+  before update on tasks
+  for each row
+  execute function set_completed_at();
+
+-- ============================================================
+-- TEAM MEMBERS TABLE
+-- ============================================================
+
+-- Drop existing table if it exists and recreate
+DROP TABLE IF EXISTS team_members CASCADE;
+
+create table team_members (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  name text not null,
+  avatar text,
+  role text,
+  trades text[] default '{}',
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+-- Enable RLS
+alter table team_members enable row level security;
+
+-- Policies
+create policy "Users can view their own team members"
+  on team_members for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert their own team members"
+  on team_members for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update their own team members"
+  on team_members for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete their own team members"
+  on team_members for delete
+  using (auth.uid() = user_id);
+
+-- ============================================================
+-- TASK COMMENTS TABLE
+-- ============================================================
+
+-- Drop existing table if it exists and recreate
+DROP TABLE IF EXISTS task_comments CASCADE;
+
+create table task_comments (
+  id uuid primary key default uuid_generate_v4(),
+  task_id uuid references tasks(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  comment text not null,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+-- Enable RLS
+alter table task_comments enable row level security;
+
+-- Policies
+create policy "Users can view comments on their tasks"
+  on task_comments for select
+  using (
+    exists (
+      select 1 from tasks
+      where tasks.id = task_comments.task_id
+      and (tasks.user_id = auth.uid() or tasks.assignee_id = auth.uid())
+    )
+  );
+
+create policy "Users can add comments to their tasks"
+  on task_comments for insert
+  with check (
+    exists (
+      select 1 from tasks
+      where tasks.id = task_comments.task_id
+      and (tasks.user_id = auth.uid() or tasks.assignee_id = auth.uid())
+    )
+  );
+
+-- ============================================================
+-- TASK ATTACHMENTS TABLE
+-- ============================================================
+
+-- Drop existing table if it exists and recreate
+DROP TABLE IF EXISTS task_attachments CASCADE;
+
+create table task_attachments (
+  id uuid primary key default uuid_generate_v4(),
+  task_id uuid references tasks(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  file_name text not null,
+  file_url text not null,
+  file_size bigint,
+  file_type text,
+  created_at timestamp with time zone default now()
+);
+
+-- Enable RLS
+alter table task_attachments enable row level security;
+
+-- Policies
+create policy "Users can view attachments on their tasks"
+  on task_attachments for select
+  using (
+    exists (
+      select 1 from tasks
+      where tasks.id = task_attachments.task_id
+      and (tasks.user_id = auth.uid() or tasks.assignee_id = auth.uid())
+    )
+  );
+
+create policy "Users can add attachments to their tasks"
+  on task_attachments for insert
+  with check (
+    exists (
+      select 1 from tasks
+      where tasks.id = task_attachments.task_id
+      and (tasks.user_id = auth.uid() or tasks.assignee_id = auth.uid())
+    )
+  );
+
+-- ============================================================
+-- REALTIME PUBLICATION
+-- ============================================================
+
+alter publication supabase_realtime add table tasks;
+alter publication supabase_realtime add table task_comments;
+alter publication supabase_realtime add table task_attachments;
+
+-- ============================================================
+-- COMPLETED!
+-- Tasks table has been upgraded with full TaskFlow features
+-- ============================================================
+
+
+#6
+
+DROP TABLE IF EXISTS public.projects CASCADE;
+
+-- ============================================
+-- 1. PROJECTS TABLE (Full Version)
+-- ============================================
+CREATE TABLE public.projects (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+
+  -- Basic Information
+  name TEXT NOT NULL,
+  client TEXT NOT NULL,
+  address TEXT NOT NULL,
+  city TEXT,
+  state TEXT,
+  zip_code TEXT,
+  country TEXT DEFAULT 'US',
+  type TEXT CHECK (type IN ('residential', 'commercial', 'industrial', 'infrastructure', 'renovation')) DEFAULT 'residential',
+  description TEXT,
+
+  -- Status & Progress
+  status TEXT CHECK (status IN ('planning', 'active', 'on-hold', 'completed', 'cancelled')) DEFAULT 'planning',
+  progress INTEGER DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
+
+  -- Timeline
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+
+  -- Budget
+  estimated_budget DECIMAL(15, 2) DEFAULT 0,
+  spent DECIMAL(15, 2) DEFAULT 0,
+  currency TEXT DEFAULT 'USD',
+
+  -- Team & Resources
+  project_manager_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  equipment TEXT[], -- Array of equipment names
+  certifications_required TEXT[], -- Array of required certifications
+
+  -- Settings
+  document_categories TEXT[], -- Array of document categories
+  notification_settings JSONB DEFAULT '{"emailUpdates": true, "milestoneAlerts": true, "budgetAlerts": true, "teamNotifications": true}'::jsonb,
+  client_visibility BOOLEAN DEFAULT false,
+
+  -- Metadata
+  is_favorite BOOLEAN DEFAULT false,
+  thumbnail TEXT,
+
+  -- Timestamps
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CONSTRAINT valid_dates CHECK (end_date >= start_date)
+);
+
+-- Create indexes for faster queries
+CREATE INDEX projects_user_id_idx ON public.projects(user_id);
+CREATE INDEX projects_status_idx ON public.projects(status);
+CREATE INDEX projects_type_idx ON public.projects(type);
+CREATE INDEX projects_created_at_idx ON public.projects(created_at DESC);
+
+-- ============================================
+-- 2. PROJECT PHASES TABLE
+-- ============================================
+DROP TABLE IF EXISTS public.project_phases CASCADE;
+
+CREATE TABLE public.project_phases (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+
+  name TEXT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  status TEXT CHECK (status IN ('pending', 'in-progress', 'completed')) DEFAULT 'pending',
+  progress INTEGER DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CONSTRAINT valid_phase_dates CHECK (end_date >= start_date)
+);
+
+CREATE INDEX project_phases_project_id_idx ON public.project_phases(project_id);
+
+-- ============================================
+-- 3. PROJECT MEMBERS TABLE
+-- ============================================
+DROP TABLE IF EXISTS public.project_members CASCADE;
+
+CREATE TABLE public.project_members (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+
+  role TEXT NOT NULL, -- e.g., 'Architect', 'Superintendent', 'Foreman'
+  permissions TEXT[] DEFAULT ARRAY['view'], -- e.g., ['view', 'edit', 'delete']
+
+  added_at TIMESTAMPTZ DEFAULT NOW(),
+
+  UNIQUE(project_id, user_id)
+);
+
+CREATE INDEX project_members_project_id_idx ON public.project_members(project_id);
+CREATE INDEX project_members_user_id_idx ON public.project_members(user_id);
+
+-- ============================================
+-- 4. PROJECT DOCUMENTS TABLE
+-- ============================================
+DROP TABLE IF EXISTS public.project_documents CASCADE;
+
+CREATE TABLE public.project_documents (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+  uploaded_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+
+  name TEXT NOT NULL,
+  category TEXT NOT NULL, -- e.g., 'Plans & Blueprints', 'Permits', 'Invoices'
+  file_path TEXT NOT NULL, -- Storage bucket path
+  file_size BIGINT, -- Size in bytes
+  file_type TEXT, -- MIME type
+
+  description TEXT,
+  tags TEXT[],
+
+  uploaded_at TIMESTAMPTZ DEFAULT NOW(),
+
+  UNIQUE(project_id, file_path)
+);
+
+CREATE INDEX project_documents_project_id_idx ON public.project_documents(project_id);
+CREATE INDEX project_documents_category_idx ON public.project_documents(category);
+
+-- ============================================
+-- 5. PROJECT MILESTONES TABLE
+-- ============================================
+DROP TABLE IF EXISTS public.project_milestones CASCADE;
+
+CREATE TABLE public.project_milestones (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+  phase_id UUID REFERENCES public.project_phases(id) ON DELETE SET NULL,
+
+  name TEXT NOT NULL,
+  description TEXT,
+  due_date DATE NOT NULL,
+  completed_at TIMESTAMPTZ,
+  status TEXT CHECK (status IN ('pending', 'in-progress', 'completed', 'cancelled')) DEFAULT 'pending',
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX project_milestones_project_id_idx ON public.project_milestones(project_id);
+CREATE INDEX project_milestones_due_date_idx ON public.project_milestones(due_date);
+
+-- ============================================
+-- 6. BUDGET TRACKING TABLE
+-- ============================================
+DROP TABLE IF EXISTS public.project_expenses CASCADE;
+
+CREATE TABLE public.project_expenses (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+
+  category TEXT NOT NULL, -- e.g., 'Labor', 'Materials', 'Equipment', 'Permits'
+  description TEXT,
+  amount DECIMAL(15, 2) NOT NULL,
+  currency TEXT DEFAULT 'USD',
+
+  date DATE NOT NULL,
+  vendor TEXT,
+  invoice_number TEXT,
+  payment_status TEXT CHECK (payment_status IN ('pending', 'paid', 'overdue')) DEFAULT 'pending',
+
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX project_expenses_project_id_idx ON public.project_expenses(project_id);
+CREATE INDEX project_expenses_category_idx ON public.project_expenses(category);
+CREATE INDEX project_expenses_date_idx ON public.project_expenses(date DESC);
+
+-- ============================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- ============================================
+
+-- Enable RLS on all tables
+ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_phases ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_milestones ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_expenses ENABLE ROW LEVEL SECURITY;
+
+-- ============================================
+-- PROJECTS TABLE POLICIES
+-- ============================================
+
+-- Users can view their own projects
+CREATE POLICY "Users can view their own projects"
+  ON public.projects FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- Users can view projects where they are members
+CREATE POLICY "Users can view projects where they are members"
+  ON public.projects FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.project_members
+      WHERE project_members.project_id = projects.id
+      AND project_members.user_id = auth.uid()
+    )
+  );
+
+-- Users can insert their own projects
+CREATE POLICY "Users can insert their own projects"
+  ON public.projects FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- Users can update their own projects
+CREATE POLICY "Users can update their own projects"
+  ON public.projects FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- Users with edit permissions can update projects
+CREATE POLICY "Project members with edit permission can update projects"
+  ON public.projects FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.project_members
+      WHERE project_members.project_id = projects.id
+      AND project_members.user_id = auth.uid()
+      AND 'edit' = ANY(project_members.permissions)
+    )
+  );
+
+-- Users can delete their own projects
+CREATE POLICY "Users can delete their own projects"
+  ON public.projects FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- ============================================
+-- PROJECT PHASES POLICIES
+-- ============================================
+
+CREATE POLICY "Users can view phases of their projects"
+  ON public.project_phases FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_phases.project_id
+      AND (projects.user_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM public.project_members
+        WHERE project_members.project_id = projects.id
+        AND project_members.user_id = auth.uid()
+      ))
+    )
+  );
+
+CREATE POLICY "Project owners can manage phases"
+  ON public.project_phases FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_phases.project_id
+      AND projects.user_id = auth.uid()
+    )
+  );
+
+-- ============================================
+-- PROJECT MEMBERS POLICIES
+-- ============================================
+
+CREATE POLICY "Users can view project members"
+  ON public.project_members FOR SELECT
+  USING (
+    user_id = auth.uid() OR
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_members.project_id
+      AND projects.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Project owners can manage members"
+  ON public.project_members FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_members.project_id
+      AND projects.user_id = auth.uid()
+    )
+  );
+
+-- ============================================
+-- PROJECT DOCUMENTS POLICIES
+-- ============================================
+
+CREATE POLICY "Users can view project documents"
+  ON public.project_documents FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_documents.project_id
+      AND (projects.user_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM public.project_members
+        WHERE project_members.project_id = projects.id
+        AND project_members.user_id = auth.uid()
+      ))
+    )
+  );
+
+CREATE POLICY "Project members can upload documents"
+  ON public.project_documents FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_documents.project_id
+      AND (projects.user_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM public.project_members
+        WHERE project_members.project_id = projects.id
+        AND project_members.user_id = auth.uid()
+      ))
+    )
+  );
+
+CREATE POLICY "Project owners can manage documents"
+  ON public.project_documents FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_documents.project_id
+      AND projects.user_id = auth.uid()
+    )
+  );
+
+-- ============================================
+-- PROJECT MILESTONES POLICIES
+-- ============================================
+
+CREATE POLICY "Users can view project milestones"
+  ON public.project_milestones FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_milestones.project_id
+      AND (projects.user_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM public.project_members
+        WHERE project_members.project_id = projects.id
+        AND project_members.user_id = auth.uid()
+      ))
+    )
+  );
+
+CREATE POLICY "Project owners can manage milestones"
+  ON public.project_milestones FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_milestones.project_id
+      AND projects.user_id = auth.uid()
+    )
+  );
+
+-- ============================================
+-- PROJECT EXPENSES POLICIES
+-- ============================================
+
+CREATE POLICY "Users can view project expenses"
+  ON public.project_expenses FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_expenses.project_id
+      AND (projects.user_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM public.project_members
+        WHERE project_members.project_id = projects.id
+        AND project_members.user_id = auth.uid()
+      ))
+    )
+  );
+
+CREATE POLICY "Project members can add expenses"
+  ON public.project_expenses FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_expenses.project_id
+      AND (projects.user_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM public.project_members
+        WHERE project_members.project_id = projects.id
+        AND project_members.user_id = auth.uid()
+      ))
+    )
+  );
+
+CREATE POLICY "Project owners can manage expenses"
+  ON public.project_expenses FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_expenses.project_id
+      AND projects.user_id = auth.uid()
+    )
+  );
+
+-- ============================================
+-- FUNCTIONS & TRIGGERS
+-- ============================================
+
+-- Trigger for projects table
+DROP TRIGGER IF EXISTS update_projects_updated_at ON public.projects;
+CREATE TRIGGER update_projects_updated_at
+  BEFORE UPDATE ON public.projects
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger for project_phases table
+DROP TRIGGER IF EXISTS update_project_phases_updated_at ON public.project_phases;
+CREATE TRIGGER update_project_phases_updated_at
+  BEFORE UPDATE ON public.project_phases
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger for project_milestones table
+DROP TRIGGER IF EXISTS update_project_milestones_updated_at ON public.project_milestones;
+CREATE TRIGGER update_project_milestones_updated_at
+  BEFORE UPDATE ON public.project_milestones
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Function to auto-update project spent amount when expenses change
+CREATE OR REPLACE FUNCTION update_project_spent()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.projects
+  SET spent = (
+    SELECT COALESCE(SUM(amount), 0)
+    FROM public.project_expenses
+    WHERE project_id = COALESCE(NEW.project_id, OLD.project_id)
+  )
+  WHERE id = COALESCE(NEW.project_id, OLD.project_id);
+
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to update spent when expense is added/updated/deleted
+DROP TRIGGER IF EXISTS update_project_spent_on_expense_change ON public.project_expenses;
+CREATE TRIGGER update_project_spent_on_expense_change
+  AFTER INSERT OR UPDATE OR DELETE ON public.project_expenses
+  FOR EACH ROW
+  EXECUTE FUNCTION update_project_spent();
+
+-- ============================================
+-- COMPLETED!
+-- Projects table and all related tables have been upgraded
+-- ============================================
+
+
+#7
+CREATE TABLE IF NOT EXISTS public.media_assets (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  project_id UUID REFERENCES public.projects(id) ON DELETE SET NULL,
+
+  -- File Information
+  url TEXT NOT NULL,
+  thumbnail_url TEXT,
+  filename TEXT NOT NULL,
+  file_size BIGINT NOT NULL,
+  mime_type TEXT NOT NULL,
+  width INTEGER,
+  height INTEGER,
+
+  -- Capture Metadata
+  captured_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  capture_device TEXT, -- Camera model, drone type, etc.
+  capture_source TEXT CHECK (capture_source IN ('mobile', 'drone', '360camera', 'security', 'scanner', 'api')) DEFAULT 'mobile',
+
+  -- Geolocation Data
+  gps_latitude DECIMAL(10, 8),
+  gps_longitude DECIMAL(11, 8),
+  gps_altitude DECIMAL(10, 2),
+  gps_accuracy DECIMAL(10, 2),
+  gps_heading DECIMAL(5, 2), -- Compass direction
+
+  -- Weather Conditions at Capture
+  weather_condition TEXT,
+  weather_temperature DECIMAL(5, 2),
+  weather_humidity INTEGER,
+  weather_wind_speed DECIMAL(5, 2),
+  weather_visibility DECIMAL(5, 2),
+
+  -- Blueprint Alignment
+  blueprint_coordinates JSONB, -- { x, y, floor, room, zone }
+  blueprint_id UUID, -- Reference to blueprint document
+
+  -- User Annotations
+  description TEXT,
+  tags TEXT[] DEFAULT '{}',
+  annotations JSONB DEFAULT '[]', -- Array of annotation objects
+
+  -- AI Analysis Results
+  ai_tags TEXT[] DEFAULT '{}',
+  ai_analysis JSONB, -- Comprehensive AI analysis results
+  ai_confidence DECIMAL(5, 4),
+  ai_processing_status TEXT CHECK (ai_processing_status IN ('pending', 'processing', 'completed', 'failed')) DEFAULT 'pending',
+  ai_processed_at TIMESTAMPTZ,
+
+  -- Quality & Safety
+  quality_score INTEGER CHECK (quality_score >= 0 AND quality_score <= 100),
+  safety_issues JSONB DEFAULT '[]',
+  defects_detected JSONB DEFAULT '[]',
+  compliance_status TEXT CHECK (compliance_status IN ('compliant', 'non-compliant', 'needs_review')) DEFAULT 'needs_review',
+
+  -- Review Status
+  status TEXT CHECK (status IN ('pending', 'approved', 'rejected', 'flagged')) DEFAULT 'pending',
+  reviewed_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  reviewed_at TIMESTAMPTZ,
+  review_notes TEXT,
+
+  -- Organization
+  album_ids UUID[] DEFAULT '{}',
+  is_favorite BOOLEAN DEFAULT false,
+  is_archived BOOLEAN DEFAULT false,
+
+  -- Metadata
+  exif_data JSONB, -- Full EXIF data from photo
+  custom_metadata JSONB DEFAULT '{}',
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS media_assets_user_id_idx ON public.media_assets(user_id);
+CREATE INDEX IF NOT EXISTS media_assets_project_id_idx ON public.media_assets(project_id);
+CREATE INDEX IF NOT EXISTS media_assets_captured_at_idx ON public.media_assets(captured_at DESC);
+CREATE INDEX IF NOT EXISTS media_assets_status_idx ON public.media_assets(status);
+CREATE INDEX IF NOT EXISTS media_assets_tags_idx ON public.media_assets USING GIN(tags);
+CREATE INDEX IF NOT EXISTS media_assets_ai_tags_idx ON public.media_assets USING GIN(ai_tags);
+CREATE INDEX IF NOT EXISTS media_assets_gps_idx ON public.media_assets(gps_latitude, gps_longitude) WHERE gps_latitude IS NOT NULL;
+
+-- ============================================
+-- 2. SMART ALBUMS (Dynamic & Manual Collections)
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.smart_albums (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  project_id UUID REFERENCES public.projects(id) ON DELETE SET NULL,
+
+  name TEXT NOT NULL,
+  description TEXT,
+  album_type TEXT CHECK (album_type IN ('manual', 'smart', 'ai_curated')) DEFAULT 'manual',
+
+  -- Smart Album Rules (for dynamic albums)
+  rules JSONB, -- Query rules for auto-population
+
+  -- Appearance
+  cover_image_url TEXT,
+  color TEXT DEFAULT '#FF6B6B',
+  icon TEXT,
+
+  -- Visibility
+  is_public BOOLEAN DEFAULT false,
+  is_shared BOOLEAN DEFAULT false,
+  shared_with UUID[], -- Array of user IDs
+
+  -- Stats
+  photo_count INTEGER DEFAULT 0,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS smart_albums_user_id_idx ON public.smart_albums(user_id);
+CREATE INDEX IF NOT EXISTS smart_albums_project_id_idx ON public.smart_albums(project_id);
+
+-- ============================================
+-- 3. AI ANALYSIS HISTORY (Audit trail)
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.ai_analysis_history (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  media_asset_id UUID REFERENCES public.media_assets(id) ON DELETE CASCADE NOT NULL,
+
+  analysis_type TEXT NOT NULL, -- 'object_detection', 'defect_detection', 'safety_check', etc.
+  model_version TEXT NOT NULL,
+
+  input_params JSONB,
+  results JSONB NOT NULL,
+  confidence DECIMAL(5, 4),
+
+  processing_time_ms INTEGER,
+  processing_cost DECIMAL(10, 6), -- API cost tracking
+
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS ai_analysis_history_media_asset_id_idx ON public.ai_analysis_history(media_asset_id);
+CREATE INDEX IF NOT EXISTS ai_analysis_history_analysis_type_idx ON public.ai_analysis_history(analysis_type);
+
+-- ============================================
+-- 4. PHOTO ANNOTATIONS (Markup & Issues)
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.photo_annotations (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  media_asset_id UUID REFERENCES public.media_assets(id) ON DELETE CASCADE NOT NULL,
+  created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+
+  annotation_type TEXT CHECK (annotation_type IN ('rectangle', 'circle', 'arrow', 'text', 'polygon', 'measurement')) NOT NULL,
+
+  -- Geometry
+  coordinates JSONB NOT NULL, -- Shape-specific coordinate data
+  color TEXT DEFAULT '#FF6B6B',
+  stroke_width INTEGER DEFAULT 2,
+
+  -- Content
+  text_content TEXT,
+  measurement_value DECIMAL(10, 2),
+  measurement_unit TEXT,
+
+  -- Issue Tracking
+  is_issue BOOLEAN DEFAULT false,
+  issue_type TEXT,
+  issue_severity TEXT CHECK (issue_severity IN ('low', 'medium', 'high', 'critical')),
+  assigned_to UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  due_date DATE,
+  resolved_at TIMESTAMPTZ,
+  resolved_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS photo_annotations_media_asset_id_idx ON public.photo_annotations(media_asset_id);
+CREATE INDEX IF NOT EXISTS photo_annotations_created_by_idx ON public.photo_annotations(created_by);
+CREATE INDEX IF NOT EXISTS photo_annotations_assigned_to_idx ON public.photo_annotations(assigned_to) WHERE assigned_to IS NOT NULL;
+
+-- ============================================
+-- 5. PHOTO COMMENTS (Collaboration)
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.photo_comments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  media_asset_id UUID REFERENCES public.media_assets(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  parent_comment_id UUID REFERENCES public.photo_comments(id) ON DELETE CASCADE,
+
+  comment_text TEXT NOT NULL,
+  mentions UUID[], -- Array of mentioned user IDs
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS photo_comments_media_asset_id_idx ON public.photo_comments(media_asset_id);
+CREATE INDEX IF NOT EXISTS photo_comments_user_id_idx ON public.photo_comments(user_id);
+
+-- ============================================
+-- 6. STORAGE USAGE TRACKING
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.storage_usage (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+
+  total_bytes BIGINT DEFAULT 0,
+  photo_count INTEGER DEFAULT 0,
+  video_count INTEGER DEFAULT 0,
+  document_count INTEGER DEFAULT 0,
+
+  last_calculated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  UNIQUE(user_id)
+);
+
+-- ============================================
+-- 7. VISUAL ANALYTICS CACHE
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.visual_analytics (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+
+  metric_type TEXT NOT NULL, -- 'progress', 'quality', 'safety', 'coverage'
+  metric_date DATE NOT NULL,
+
+  metric_value DECIMAL(10, 4),
+  metric_data JSONB, -- Detailed breakdown
+
+  calculated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  UNIQUE(project_id, metric_type, metric_date)
+);
+
+CREATE INDEX IF NOT EXISTS visual_analytics_project_id_idx ON public.visual_analytics(project_id);
+CREATE INDEX IF NOT EXISTS visual_analytics_metric_type_idx ON public.visual_analytics(metric_type);
+
+-- ============================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- ============================================
+
+ALTER TABLE public.media_assets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.smart_albums ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ai_analysis_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.photo_annotations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.photo_comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.storage_usage ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.visual_analytics ENABLE ROW LEVEL SECURITY;
+
+-- Media Assets Policies
+CREATE POLICY "Users can view their own media"
+  ON public.media_assets FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can view project media if they have access"
+  ON public.media_assets FOR SELECT
+  USING (
+    project_id IN (
+      SELECT id FROM public.projects
+      WHERE user_id = auth.uid()
+      OR EXISTS (
+        SELECT 1 FROM public.project_members
+        WHERE project_id = projects.id
+        AND user_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "Users can insert their own media"
+  ON public.media_assets FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own media"
+  ON public.media_assets FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own media"
+  ON public.media_assets FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- Smart Albums Policies
+CREATE POLICY "Users can manage their own albums"
+  ON public.smart_albums FOR ALL
+  USING (auth.uid() = user_id);
+
+-- Annotations Policies
+CREATE POLICY "Users can view annotations on accessible media"
+  ON public.photo_annotations FOR SELECT
+  USING (
+    media_asset_id IN (
+      SELECT id FROM public.media_assets
+      WHERE user_id = auth.uid()
+      OR project_id IN (
+        SELECT id FROM public.projects WHERE user_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "Users can create annotations"
+  ON public.photo_annotations FOR INSERT
+  WITH CHECK (auth.uid() = created_by);
+
+-- Comments Policies
+CREATE POLICY "Users can view comments on accessible media"
+  ON public.photo_comments FOR SELECT
+  USING (
+    media_asset_id IN (
+      SELECT id FROM public.media_assets
+      WHERE user_id = auth.uid()
+      OR project_id IN (
+        SELECT id FROM public.projects WHERE user_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "Users can create comments"
+  ON public.photo_comments FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- Storage Usage Policies
+CREATE POLICY "Users can view their own storage usage"
+  ON public.storage_usage FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- ============================================
+-- FUNCTIONS & TRIGGERS
+-- ============================================
+
+-- Auto-update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_media_assets_updated_at
+  BEFORE UPDATE ON public.media_assets
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_smart_albums_updated_at
+  BEFORE UPDATE ON public.smart_albums
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_photo_annotations_updated_at
+  BEFORE UPDATE ON public.photo_annotations
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Auto-update storage usage
+CREATE OR REPLACE FUNCTION update_storage_usage()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    INSERT INTO public.storage_usage (user_id, total_bytes, photo_count)
+    VALUES (NEW.user_id, NEW.file_size, 1)
+    ON CONFLICT (user_id) DO UPDATE
+    SET total_bytes = storage_usage.total_bytes + NEW.file_size,
+        photo_count = storage_usage.photo_count + 1,
+        last_calculated_at = NOW();
+  ELSIF TG_OP = 'DELETE' THEN
+    UPDATE public.storage_usage
+    SET total_bytes = total_bytes - OLD.file_size,
+        photo_count = photo_count - 1,
+        last_calculated_at = NOW()
+    WHERE user_id = OLD.user_id;
+  END IF;
+
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_storage_on_media_change
+  AFTER INSERT OR DELETE ON public.media_assets
+  FOR EACH ROW
+  EXECUTE FUNCTION update_storage_usage();
+
+-- ============================================
+-- STORAGE BUCKETS (Create in Supabase Dashboard)
+-- ============================================
+-- 1. Bucket: 'media-assets'
+--    - Public: false
+--    - File size limit: 100MB per file
+--    - Allowed MIME types: image/*, video/*
+--    - Enable image transformations
+--    - Auto-generate thumbnails
+
+-- 2. Bucket: 'blueprints'
+--    - Public: false
+--    - File size limit: 50MB
+--    - Allowed MIME types: application/pdf, image/*
+
+-- ============================================
+-- COMPLETE!
+-- ============================================
+-- Run this script in Supabase SQL Editor to create all tables and policies
+-- Then set up storage buckets in the Storage section
+-- Configure Cloudinary or Supabase Storage for media hosting
+
+
+#8
+
+DROP TABLE IF EXISTS public.projects CASCADE;
+
+-- ============================================
+-- 1. PROJECTS TABLE (Full Version)
+-- ============================================
+CREATE TABLE public.projects (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+
+  -- Basic Information
+  name TEXT NOT NULL,
+  client TEXT NOT NULL,
+  address TEXT NOT NULL,
+  city TEXT,
+  state TEXT,
+  zip_code TEXT,
+  country TEXT DEFAULT 'US',
+  type TEXT CHECK (type IN ('residential', 'commercial', 'industrial', 'infrastructure', 'renovation')) DEFAULT 'residential',
+  description TEXT,
+
+  -- Status & Progress
+  status TEXT CHECK (status IN ('planning', 'active', 'on-hold', 'completed', 'cancelled')) DEFAULT 'planning',
+  progress INTEGER DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
+
+  -- Timeline
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+
+  -- Budget
+  estimated_budget DECIMAL(15, 2) DEFAULT 0,
+  spent DECIMAL(15, 2) DEFAULT 0,
+  currency TEXT DEFAULT 'USD',
+
+  -- Team & Resources
+  project_manager_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  equipment TEXT[], -- Array of equipment names
+  certifications_required TEXT[], -- Array of required certifications
+
+  -- Settings
+  document_categories TEXT[], -- Array of document categories
+  notification_settings JSONB DEFAULT '{"emailUpdates": true, "milestoneAlerts": true, "budgetAlerts": true, "teamNotifications": true}'::jsonb,
+  client_visibility BOOLEAN DEFAULT false,
+
+  -- Metadata
+  is_favorite BOOLEAN DEFAULT false,
+  thumbnail TEXT,
+
+  -- Timestamps
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CONSTRAINT valid_dates CHECK (end_date >= start_date)
+);
+
+-- Create indexes for faster queries
+CREATE INDEX projects_user_id_idx ON public.projects(user_id);
+CREATE INDEX projects_status_idx ON public.projects(status);
+CREATE INDEX projects_type_idx ON public.projects(type);
+CREATE INDEX projects_created_at_idx ON public.projects(created_at DESC);
+
+-- ============================================
+-- 2. PROJECT PHASES TABLE
+-- ============================================
+DROP TABLE IF EXISTS public.project_phases CASCADE;
+
+CREATE TABLE public.project_phases (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+
+  name TEXT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  status TEXT CHECK (status IN ('pending', 'in-progress', 'completed')) DEFAULT 'pending',
+  progress INTEGER DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CONSTRAINT valid_phase_dates CHECK (end_date >= start_date)
+);
+
+CREATE INDEX project_phases_project_id_idx ON public.project_phases(project_id);
+
+-- ============================================
+-- 3. PROJECT MEMBERS TABLE
+-- ============================================
+DROP TABLE IF EXISTS public.project_members CASCADE;
+
+CREATE TABLE public.project_members (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+
+  role TEXT NOT NULL, -- e.g., 'Architect', 'Superintendent', 'Foreman'
+  permissions TEXT[] DEFAULT ARRAY['view'], -- e.g., ['view', 'edit', 'delete']
+
+  added_at TIMESTAMPTZ DEFAULT NOW(),
+
+  UNIQUE(project_id, user_id)
+);
+
+CREATE INDEX project_members_project_id_idx ON public.project_members(project_id);
+CREATE INDEX project_members_user_id_idx ON public.project_members(user_id);
+
+-- ============================================
+-- 4. PROJECT DOCUMENTS TABLE
+-- ============================================
+DROP TABLE IF EXISTS public.project_documents CASCADE;
+
+CREATE TABLE public.project_documents (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+  uploaded_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+
+  name TEXT NOT NULL,
+  category TEXT NOT NULL, -- e.g., 'Plans & Blueprints', 'Permits', 'Invoices'
+  file_path TEXT NOT NULL, -- Storage bucket path
+  file_size BIGINT, -- Size in bytes
+  file_type TEXT, -- MIME type
+
+  description TEXT,
+  tags TEXT[],
+
+  uploaded_at TIMESTAMPTZ DEFAULT NOW(),
+
+  UNIQUE(project_id, file_path)
+);
+
+CREATE INDEX project_documents_project_id_idx ON public.project_documents(project_id);
+CREATE INDEX project_documents_category_idx ON public.project_documents(category);
+
+-- ============================================
+-- 5. PROJECT MILESTONES TABLE
+-- ============================================
+DROP TABLE IF EXISTS public.project_milestones CASCADE;
+
+CREATE TABLE public.project_milestones (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+  phase_id UUID REFERENCES public.project_phases(id) ON DELETE SET NULL,
+
+  name TEXT NOT NULL,
+  description TEXT,
+  due_date DATE NOT NULL,
+  completed_at TIMESTAMPTZ,
+  status TEXT CHECK (status IN ('pending', 'in-progress', 'completed', 'cancelled')) DEFAULT 'pending',
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX project_milestones_project_id_idx ON public.project_milestones(project_id);
+CREATE INDEX project_milestones_due_date_idx ON public.project_milestones(due_date);
+
+-- ============================================
+-- 6. BUDGET TRACKING TABLE
+-- ============================================
+DROP TABLE IF EXISTS public.project_expenses CASCADE;
+
+CREATE TABLE public.project_expenses (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+
+  category TEXT NOT NULL, -- e.g., 'Labor', 'Materials', 'Equipment', 'Permits'
+  description TEXT,
+  amount DECIMAL(15, 2) NOT NULL,
+  currency TEXT DEFAULT 'USD',
+
+  date DATE NOT NULL,
+  vendor TEXT,
+  invoice_number TEXT,
+  payment_status TEXT CHECK (payment_status IN ('pending', 'paid', 'overdue')) DEFAULT 'pending',
+
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX project_expenses_project_id_idx ON public.project_expenses(project_id);
+CREATE INDEX project_expenses_category_idx ON public.project_expenses(category);
+CREATE INDEX project_expenses_date_idx ON public.project_expenses(date DESC);
+
+-- ============================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- ============================================
+
+-- Enable RLS on all tables
+ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_phases ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_milestones ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_expenses ENABLE ROW LEVEL SECURITY;
+
+-- ============================================
+-- PROJECTS TABLE POLICIES
+-- ============================================
+
+-- Users can view their own projects
+CREATE POLICY "Users can view their own projects"
+  ON public.projects FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- Users can view projects where they are members
+CREATE POLICY "Users can view projects where they are members"
+  ON public.projects FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.project_members
+      WHERE project_members.project_id = projects.id
+      AND project_members.user_id = auth.uid()
+    )
+  );
+
+-- Users can insert their own projects
+CREATE POLICY "Users can insert their own projects"
+  ON public.projects FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- Users can update their own projects
+CREATE POLICY "Users can update their own projects"
+  ON public.projects FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- Users with edit permissions can update projects
+CREATE POLICY "Project members with edit permission can update projects"
+  ON public.projects FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.project_members
+      WHERE project_members.project_id = projects.id
+      AND project_members.user_id = auth.uid()
+      AND 'edit' = ANY(project_members.permissions)
+    )
+  );
+
+-- Users can delete their own projects
+CREATE POLICY "Users can delete their own projects"
+  ON public.projects FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- ============================================
+-- PROJECT PHASES POLICIES
+-- ============================================
+
+CREATE POLICY "Users can view phases of their projects"
+  ON public.project_phases FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_phases.project_id
+      AND (projects.user_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM public.project_members
+        WHERE project_members.project_id = projects.id
+        AND project_members.user_id = auth.uid()
+      ))
+    )
+  );
+
+CREATE POLICY "Project owners can manage phases"
+  ON public.project_phases FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_phases.project_id
+      AND projects.user_id = auth.uid()
+    )
+  );
+
+-- ============================================
+-- PROJECT MEMBERS POLICIES
+-- ============================================
+
+CREATE POLICY "Users can view project members"
+  ON public.project_members FOR SELECT
+  USING (
+    user_id = auth.uid() OR
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_members.project_id
+      AND projects.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Project owners can manage members"
+  ON public.project_members FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_members.project_id
+      AND projects.user_id = auth.uid()
+    )
+  );
+
+-- ============================================
+-- PROJECT DOCUMENTS POLICIES
+-- ============================================
+
+CREATE POLICY "Users can view project documents"
+  ON public.project_documents FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_documents.project_id
+      AND (projects.user_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM public.project_members
+        WHERE project_members.project_id = projects.id
+        AND project_members.user_id = auth.uid()
+      ))
+    )
+  );
+
+CREATE POLICY "Project members can upload documents"
+  ON public.project_documents FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_documents.project_id
+      AND (projects.user_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM public.project_members
+        WHERE project_members.project_id = projects.id
+        AND project_members.user_id = auth.uid()
+      ))
+    )
+  );
+
+CREATE POLICY "Project owners can manage documents"
+  ON public.project_documents FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_documents.project_id
+      AND projects.user_id = auth.uid()
+    )
+  );
+
+-- ============================================
+-- PROJECT MILESTONES POLICIES
+-- ============================================
+
+CREATE POLICY "Users can view project milestones"
+  ON public.project_milestones FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_milestones.project_id
+      AND (projects.user_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM public.project_members
+        WHERE project_members.project_id = projects.id
+        AND project_members.user_id = auth.uid()
+      ))
+    )
+  );
+
+CREATE POLICY "Project owners can manage milestones"
+  ON public.project_milestones FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_milestones.project_id
+      AND projects.user_id = auth.uid()
+    )
+  );
+
+-- ============================================
+-- PROJECT EXPENSES POLICIES
+-- ============================================
+
+CREATE POLICY "Users can view project expenses"
+  ON public.project_expenses FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_expenses.project_id
+      AND (projects.user_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM public.project_members
+        WHERE project_members.project_id = projects.id
+        AND project_members.user_id = auth.uid()
+      ))
+    )
+  );
+
+CREATE POLICY "Project members can add expenses"
+  ON public.project_expenses FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_expenses.project_id
+      AND (projects.user_id = auth.uid() OR EXISTS (
+        SELECT 1 FROM public.project_members
+        WHERE project_members.project_id = projects.id
+        AND project_members.user_id = auth.uid()
+      ))
+    )
+  );
+
+CREATE POLICY "Project owners can manage expenses"
+  ON public.project_expenses FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id = project_expenses.project_id
+      AND projects.user_id = auth.uid()
+    )
+  );
+
+-- ============================================
+-- FUNCTIONS & TRIGGERS
+-- ============================================
+
+-- Trigger for projects table
+DROP TRIGGER IF EXISTS update_projects_updated_at ON public.projects;
+CREATE TRIGGER update_projects_updated_at
+  BEFORE UPDATE ON public.projects
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger for project_phases table
+DROP TRIGGER IF EXISTS update_project_phases_updated_at ON public.project_phases;
+CREATE TRIGGER update_project_phases_updated_at
+  BEFORE UPDATE ON public.project_phases
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger for project_milestones table
+DROP TRIGGER IF EXISTS update_project_milestones_updated_at ON public.project_milestones;
+CREATE TRIGGER update_project_milestones_updated_at
+  BEFORE UPDATE ON public.project_milestones
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Function to auto-update project spent amount when expenses change
+CREATE OR REPLACE FUNCTION update_project_spent()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.projects
+  SET spent = (
+    SELECT COALESCE(SUM(amount), 0)
+    FROM public.project_expenses
+    WHERE project_id = COALESCE(NEW.project_id, OLD.project_id)
+  )
+  WHERE id = COALESCE(NEW.project_id, OLD.project_id);
+
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to update spent when expense is added/updated/deleted
+DROP TRIGGER IF EXISTS update_project_spent_on_expense_change ON public.project_expenses;
+CREATE TRIGGER update_project_spent_on_expense_change
+  AFTER INSERT OR UPDATE OR DELETE ON public.project_expenses
+  FOR EACH ROW
+  EXECUTE FUNCTION update_project_spent();
+
+-- ============================================
+-- COMPLETED!
+-- Projects table and all related tables have been upgraded
+-- ============================================
+
+
+#9
+
+-- 1. Check if projects table exists
+SELECT EXISTS (
+   SELECT FROM information_schema.tables
+   WHERE table_schema = 'public'
+   AND table_name = 'projects'
+) as projects_table_exists;
+
+-- 2. List all columns in projects table
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'projects'
+ORDER BY ordinal_position;
+
+-- 3. Check if required columns exist
+SELECT
+  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'projects' AND column_name = 'name') as has_name,
+  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'projects' AND column_name = 'client') as has_client,
+  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'projects' AND column_name = 'address') as has_address,
+  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'projects' AND column_name = 'type') as has_type,
+  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'projects' AND column_name = 'start_date') as has_start_date,
+  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'projects' AND column_name = 'end_date') as has_end_date,
+  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'projects' AND column_name = 'is_favorite') as has_is_favorite;
+
+-- ============================================================
+-- RESULTS INTERPRETATION:
+--
+-- If projects_table_exists = false:
+--   → You need to run ESSENTIAL_SQL_SETUP.sql first
+--
+-- If any required column shows 'false':
+--   → You need to run UPGRADE_PROJECTS_TABLE.sql
+--   → The basic table exists but doesn't have all required columns
+--
+-- If all columns show 'true':
+--   → Table schema is correct, the issue is elsewhere
+-- ============================================================

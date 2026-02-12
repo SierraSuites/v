@@ -11,9 +11,10 @@ import {
   getFinancialStats,
   getAgingReport,
   subscribeToInvoices,
-  subscribeToPayments
+  subscribeToPayments,
+  recordPayment
 } from '@/lib/supabase/financial'
-import type { Invoice, FinancialStats } from '@/types/financial'
+import type { Invoice, FinancialStats, Payment, PaymentMethod } from '@/types/financial'
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -23,11 +24,20 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   ClockIcon,
-  CurrencyDollarIcon
+  CurrencyDollarIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
+import { usePermissionGuard } from '@/hooks/usePermissionGuard'
+import toast, { Toaster } from 'react-hot-toast'
 
 export default function FinancialPage() {
   const router = useRouter()
+
+  // RBAC: Require canViewFinancials permission
+  const { loading: permissionLoading } = usePermissionGuard({
+    permission: 'canViewFinancials',
+    redirectTo: '/unauthorized'
+  })
 
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [stats, setStats] = useState<FinancialStats | null>(null)
@@ -41,6 +51,16 @@ export default function FinancialPage() {
 
   // Tabs
   const [activeTab, setActiveTab] = useState<'invoices' | 'payments' | 'expenses'>('invoices')
+
+  // Record Payment Modal
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+  const [paymentAmount, setPaymentAmount] = useState('')
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0])
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('check')
+  const [referenceNumber, setReferenceNumber] = useState('')
+  const [paymentNotes, setPaymentNotes] = useState('')
+  const [savingPayment, setSavingPayment] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -195,7 +215,76 @@ export default function FinancialPage() {
     })
   }
 
-  if (loading) {
+  function openPaymentModal(invoice: Invoice) {
+    setSelectedInvoice(invoice)
+    setPaymentAmount(invoice.balance_due.toString())
+    setPaymentDate(new Date().toISOString().split('T')[0])
+    setPaymentMethod('check')
+    setReferenceNumber('')
+    setPaymentNotes('')
+    setShowPaymentModal(true)
+  }
+
+  async function handleRecordPayment() {
+    if (!selectedInvoice || !profile?.company_id) return
+
+    // Validation
+    const amount = parseFloat(paymentAmount)
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid payment amount')
+      return
+    }
+
+    if (amount > selectedInvoice.balance_due) {
+      toast.error('Payment amount cannot exceed balance due')
+      return
+    }
+
+    if (!paymentDate) {
+      toast.error('Payment date is required')
+      return
+    }
+
+    setSavingPayment(true)
+    const loadingToast = toast.loading('Recording payment...')
+
+    try {
+      const paymentData: Partial<Payment> = {
+        invoice_id: selectedInvoice.id,
+        company_id: profile.company_id,
+        payment_date: paymentDate,
+        amount,
+        payment_method: paymentMethod,
+        reference_number: referenceNumber || undefined,
+        notes: paymentNotes || undefined
+      }
+
+      const { data, error } = await recordPayment(paymentData)
+
+      if (error) {
+        toast.error(`Error recording payment: ${error}`, { id: loadingToast })
+        return
+      }
+
+      toast.success('Payment recorded successfully!', { id: loadingToast })
+      setShowPaymentModal(false)
+
+      // Reload data
+      if (profile?.company_id) {
+        await Promise.all([
+          loadInvoices(profile.company_id),
+          loadFinancialStats(profile.company_id)
+        ])
+      }
+    } catch (error: any) {
+      console.error('Error recording payment:', error)
+      toast.error(error?.message || 'Error recording payment', { id: loadingToast })
+    } finally {
+      setSavingPayment(false)
+    }
+  }
+
+  if (loading || permissionLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -207,25 +296,27 @@ export default function FinancialPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Financial Management</h1>
-            <p className="mt-1 text-gray-600">
-              Invoices, payments, and expense tracking
-            </p>
+    <>
+      <Toaster position="top-right" />
+      <div className="min-h-screen bg-gray-50 p-6">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Financial Management</h1>
+              <p className="mt-1 text-gray-600">
+                Invoices, payments, and expense tracking
+              </p>
+            </div>
+            <button
+              onClick={() => router.push('/financial/invoices/new')}
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <PlusIcon className="w-5 h-5" />
+              New Invoice
+            </button>
           </div>
-          <button
-            onClick={() => router.push('/financial/invoices/new')}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <PlusIcon className="w-5 h-5" />
-            New Invoice
-          </button>
         </div>
-      </div>
 
       {/* Financial Stats Dashboard */}
       {stats && (
@@ -492,15 +583,28 @@ export default function FinancialPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            router.push(`/financial/invoices/${invoice.id}`)
-                          }}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          View
-                        </button>
+                        <div className="flex items-center justify-end gap-3">
+                          {invoice.balance_due > 0 && invoice.status !== 'paid' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openPaymentModal(invoice)
+                              }}
+                              className="text-green-600 hover:text-green-900 font-medium"
+                            >
+                              Record Payment
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/financial/invoices/${invoice.id}`)
+                            }}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            View
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -528,6 +632,158 @@ export default function FinancialPage() {
           <p className="mt-2 text-gray-600">Expense tracking coming soon</p>
         </div>
       )}
-    </div>
+
+      {/* Record Payment Modal */}
+      {showPaymentModal && selectedInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Record Payment</h3>
+                <p className="mt-1 text-sm text-gray-600">
+                  Invoice #{selectedInvoice.invoice_number}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              {/* Invoice Info */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Total Amount:</span>
+                  <span className="font-medium text-gray-900">
+                    {formatCurrency(selectedInvoice.total_amount)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm mt-2">
+                  <span className="text-gray-600">Already Paid:</span>
+                  <span className="font-medium text-gray-900">
+                    {formatCurrency(selectedInvoice.amount_paid)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm mt-2 pt-2 border-t border-gray-200">
+                  <span className="text-gray-600 font-medium">Balance Due:</span>
+                  <span className="font-bold text-blue-600">
+                    {formatCurrency(selectedInvoice.balance_due)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Payment Amount */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Amount *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                    $
+                  </span>
+                  <input
+                    type="number"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    min="0"
+                    max={selectedInvoice.balance_due}
+                    step="0.01"
+                    className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Payment Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Date *
+                </label>
+                <input
+                  type="date"
+                  value={paymentDate}
+                  onChange={(e) => setPaymentDate(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              {/* Payment Method */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Method *
+                </label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="check">Check</option>
+                  <option value="ach">ACH Transfer</option>
+                  <option value="wire">Wire Transfer</option>
+                  <option value="credit_card">Credit Card</option>
+                  <option value="debit_card">Debit Card</option>
+                  <option value="cash">Cash</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              {/* Reference Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reference Number
+                </label>
+                <input
+                  type="text"
+                  value={referenceNumber}
+                  onChange={(e) => setReferenceNumber(e.target.value)}
+                  placeholder="Check number, transaction ID, etc."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes
+                </label>
+                <textarea
+                  value={paymentNotes}
+                  onChange={(e) => setPaymentNotes(e.target.value)}
+                  placeholder="Optional payment notes"
+                  rows={2}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                disabled={savingPayment}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRecordPayment}
+                disabled={savingPayment}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                <BanknotesIcon className="w-5 h-5" />
+                {savingPayment ? 'Recording...' : 'Record Payment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
+    </>
   )
 }
