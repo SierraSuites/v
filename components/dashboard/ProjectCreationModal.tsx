@@ -140,6 +140,7 @@ export default function ProjectCreationModal({
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [newPhase, setNewPhase] = useState({ name: '', startDate: '', endDate: '' })
+  const [phaseErrors, setPhaseErrors] = useState<Record<string, string>>({})
   const [customEquipment, setCustomEquipment] = useState('')
   const [customCertification, setCustomCertification] = useState('')
 
@@ -260,13 +261,25 @@ export default function ProjectCreationModal({
   }
 
   const addPhase = () => {
-    if (newPhase.name && newPhase.startDate && newPhase.endDate) {
-      setFormData(prev => ({
-        ...prev,
-        phases: [...(prev.phases || []), { ...newPhase }]
-      }))
-      setNewPhase({ name: '', startDate: '', endDate: '' })
+    const newPhaseErrors: Record<string, string> = {}
+    if (!newPhase.name.trim()) newPhaseErrors.phaseName = 'Phase name is required'
+    if (!newPhase.startDate) newPhaseErrors.phaseStartDate = 'Start date is required'
+    if (!newPhase.endDate) newPhaseErrors.phaseEndDate = 'End date is required'
+    if (newPhase.startDate && newPhase.endDate && new Date(newPhase.endDate) <= new Date(newPhase.startDate)) {
+      newPhaseErrors.phaseEndDate = 'End date must be after start date'
     }
+
+    if (Object.keys(newPhaseErrors).length > 0) {
+      setPhaseErrors(newPhaseErrors)
+      return
+    }
+
+    setPhaseErrors({})
+    setFormData(prev => ({
+      ...prev,
+      phases: [...(prev.phases || []), { ...newPhase }]
+    }))
+    setNewPhase({ name: '', startDate: '', endDate: '' })
   }
 
   const removePhase = (index: number) => {
@@ -575,35 +588,64 @@ export default function ProjectCreationModal({
 
               {/* Add New Phase */}
               <div className="p-4 rounded-lg space-y-3" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}>
-                <input
-                  type="text"
-                  value={newPhase.name}
-                  onChange={(e) => setNewPhase(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 rounded text-sm"
-                  style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', color: '#1A1A1A' }}
-                  placeholder="Phase name (e.g., Foundation, Framing)"
-                />
+                <div>
+                  <input
+                    type="text"
+                    value={newPhase.name}
+                    onChange={(e) => {
+                      setNewPhase(prev => ({ ...prev, name: e.target.value }))
+                      if (phaseErrors.phaseName) setPhaseErrors(prev => ({ ...prev, phaseName: '' }))
+                    }}
+                    className="w-full px-3 py-2 rounded text-sm"
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      border: phaseErrors.phaseName ? '2px solid #DC2626' : '1px solid #E0E0E0',
+                      color: '#1A1A1A'
+                    }}
+                    placeholder="Phase name (e.g., Foundation, Framing)"
+                  />
+                  {phaseErrors.phaseName && <p className="text-xs mt-1" style={{ color: '#DC2626' }}>{phaseErrors.phaseName}</p>}
+                </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="date"
-                    value={newPhase.startDate}
-                    onChange={(e) => setNewPhase(prev => ({ ...prev, startDate: e.target.value }))}
-                    className="px-3 py-2 rounded text-sm"
-                    style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', color: '#1A1A1A' }}
-                  />
-                  <input
-                    type="date"
-                    value={newPhase.endDate}
-                    onChange={(e) => setNewPhase(prev => ({ ...prev, endDate: e.target.value }))}
-                    className="px-3 py-2 rounded text-sm"
-                    style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', color: '#1A1A1A' }}
-                  />
+                  <div>
+                    <input
+                      type="date"
+                      value={newPhase.startDate}
+                      onChange={(e) => {
+                        setNewPhase(prev => ({ ...prev, startDate: e.target.value }))
+                        if (phaseErrors.phaseStartDate) setPhaseErrors(prev => ({ ...prev, phaseStartDate: '' }))
+                      }}
+                      className="w-full px-3 py-2 rounded text-sm"
+                      style={{
+                        backgroundColor: '#FFFFFF',
+                        border: phaseErrors.phaseStartDate ? '2px solid #DC2626' : '1px solid #E0E0E0',
+                        color: '#1A1A1A'
+                      }}
+                    />
+                    {phaseErrors.phaseStartDate && <p className="text-xs mt-1" style={{ color: '#DC2626' }}>{phaseErrors.phaseStartDate}</p>}
+                  </div>
+                  <div>
+                    <input
+                      type="date"
+                      value={newPhase.endDate}
+                      onChange={(e) => {
+                        setNewPhase(prev => ({ ...prev, endDate: e.target.value }))
+                        if (phaseErrors.phaseEndDate) setPhaseErrors(prev => ({ ...prev, phaseEndDate: '' }))
+                      }}
+                      className="w-full px-3 py-2 rounded text-sm"
+                      style={{
+                        backgroundColor: '#FFFFFF',
+                        border: phaseErrors.phaseEndDate ? '2px solid #DC2626' : '1px solid #E0E0E0',
+                        color: '#1A1A1A'
+                      }}
+                    />
+                    {phaseErrors.phaseEndDate && <p className="text-xs mt-1" style={{ color: '#DC2626' }}>{phaseErrors.phaseEndDate}</p>}
+                  </div>
                 </div>
                 <button
                   onClick={addPhase}
                   className="w-full py-2 rounded-lg text-sm font-semibold transition-colors"
                   style={{ backgroundColor: '#4ECDC4', color: '#FFFFFF' }}
-                  disabled={!newPhase.name || !newPhase.startDate || !newPhase.endDate}
                 >
                   + Add Phase
                 </button>
