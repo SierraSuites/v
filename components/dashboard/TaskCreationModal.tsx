@@ -527,7 +527,7 @@ export default function TaskCreationModal({
                     const selected = Array.from(e.target.selectedOptions, option => option.value)
                     handleInputChange("dependencies", selected)
                   }}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent min-h-[120px]"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent min-h-30"
                 >
                   {existingTasks
                     .filter(task => task.id !== editingTask?.id)
