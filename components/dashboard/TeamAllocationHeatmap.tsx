@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 type Task = {
   id: string
@@ -36,6 +37,8 @@ export default function TeamAllocationHeatmap({ tasks, teamMembers }: TeamAlloca
     date.setDate(today.getDate() + i)
     return date
   })
+
+  const { colors, darkMode } = useThemeColors()
 
   // Calculate workload for each team member on each day
   const getWorkloadForDay = (memberId: string, date: Date) => {
@@ -75,28 +78,28 @@ export default function TeamAllocationHeatmap({ tasks, teamMembers }: TeamAlloca
   }
 
   return (
-    <div className="rounded-xl p-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+    <div className="rounded-xl p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-bold mb-1" style={{ color: '#1A1A1A' }}>Team Allocation Heatmap</h3>
-          <p className="text-sm" style={{ color: '#4A4A4A' }}>Workload distribution for the next 7 days</p>
+          <h3 className="text-lg font-bold mb-1" style={{ color: colors.text }}>Team Allocation Heatmap</h3>
+          <p className="text-sm" style={{ color: colors.textMuted }}>Workload distribution for the next 7 days</p>
         </div>
         <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded" style={{ backgroundColor: '#E6F9EA', border: '1px solid #6BCB77' }}></div>
-            <span style={{ color: '#4A4A4A' }}>Light (≤4h)</span>
+            <span style={{ color: colors.textMuted }}>Light (≤4h)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded" style={{ backgroundColor: '#FFF9E6', border: '1px solid #FFD93D' }}></div>
-            <span style={{ color: '#4A4A4A' }}>Normal (≤8h)</span>
+            <span style={{ color: colors.textMuted }}>Normal (≤8h)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded" style={{ backgroundColor: '#FEF3C7', border: '1px solid #F59E0B' }}></div>
-            <span style={{ color: '#4A4A4A' }}>Busy (≤12h)</span>
+            <span style={{ color: colors.textMuted }}>Busy (≤12h)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded" style={{ backgroundColor: '#FEE2E2', border: '1px solid #DC2626' }}></div>
-            <span style={{ color: '#4A4A4A' }}>Overloaded (&gt;12h)</span>
+            <span style={{ color: colors.textMuted }}>Overloaded (&gt;12h)</span>
           </div>
         </div>
       </div>
@@ -105,8 +108,8 @@ export default function TeamAllocationHeatmap({ tasks, teamMembers }: TeamAlloca
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              <th className="text-left p-3 sticky left-0 z-10" style={{ backgroundColor: '#F8F9FA', borderBottom: '2px solid #E0E0E0' }}>
-                <span className="text-sm font-semibold" style={{ color: '#4A4A4A' }}>Team Member</span>
+              <th className="text-left p-3 sticky left-0 z-10" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                <span className="text-sm font-semibold" style={{ color: colors.text }}>Team Member</span>
               </th>
               {next7Days.map((date) => {
                 const formatted = formatDate(date)

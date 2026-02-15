@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { ToastProvider } from "@/components/ToastNotification"
+import { ThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -20,11 +21,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body className={`font-sans antialiased`}>
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <ThemeProvider attribute="class" defaultTheme="light" storageKey="theme">
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

@@ -5,6 +5,8 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useThemeColors } from "@/lib/hooks/useThemeColors"
+
 
 // Dashboard Components
 import DashboardStats from '@/components/dashboard/DashboardStats'
@@ -60,6 +62,9 @@ export default function DashboardPage() {
   const [recentProjects, setRecentProjects] = useState<Project[]>([])
   const [recentActivities, setRecentActivities] = useState<Activity[]>([])
   const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([])
+
+  // Theme
+  const { colors, darkMode } = useThemeColors()
 
   // ============================================================================
   // LOAD ALL DATA VIA API
@@ -143,10 +148,10 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#0d0f17] flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
         </div>
       </div>
     )
@@ -160,7 +165,7 @@ export default function DashboardPage() {
   const userName = userData.full_name?.split(' ')[0] || 'User'
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0d0f17]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Banner */}
         {!dismissedWelcome && (

@@ -29,6 +29,7 @@ import CalendarView from "@/components/dashboard/CalendarView"
 import GanttChartView from "@/components/dashboard/GanttChartView"
 import WeatherWidget from "@/components/dashboard/WeatherWidget"
 import { ErrorBoundary, ConstructionErrorBoundary } from "@/components/ErrorBoundary"
+import { useThemeColors } from "@/lib/hooks/useThemeColors"
 
 // Task type definition
 type Task = {
@@ -95,6 +96,7 @@ function DroppableColumn({
   children: React.ReactNode
 }) {
   const { setNodeRef } = useDroppable({ id })
+  const { colors, darkMode } = useThemeColors()
 
   return (
     <div ref={setNodeRef} className="w-80 flex-shrink-0">
@@ -104,7 +106,7 @@ function DroppableColumn({
             <span className="text-lg">{style.icon}</span>
             <h3 className="font-bold text-sm" style={{ color: style.color }}>{style.label}</h3>
           </div>
-          <span className="text-sm font-semibold px-2 py-1 rounded" style={{ backgroundColor: '#FFFFFF', color: style.color }}>
+          <span className="text-sm font-semibold px-2 py-1 rounded" style={{ backgroundColor: colors.bg, color: style.color }}>
             {count}
           </span>
         </div>
@@ -116,6 +118,7 @@ function DroppableColumn({
 
 export default function TaskFlowPage() {
   const router = useRouter()
+  const { colors, darkMode } = useThemeColors()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"dashboard" | "calendar" | "gantt" | "kanban" | "list">("dashboard")
@@ -720,10 +723,10 @@ export default function TaskFlowPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.bgAlt }}>
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#FF6B6B', borderTopColor: 'transparent' }}></div>
-          <p style={{ color: '#4A4A4A' }}>Loading TaskFlow...</p>
+          <p style={{ color: colors.textMuted }}>Loading TaskFlow...</p>
         </div>
       </div>
     )
@@ -732,12 +735,12 @@ export default function TaskFlowPage() {
   return (
     <>
         {/* Header */}
-        <header className="sticky top-0 z-40" style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05)' }}>
+        <header className="sticky top-0 z-40" style={{ backgroundColor: colors.bg, borderBottom: colors.borderBottom, boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05)' }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{getGreeting()}</h1>
-                <p className="text-sm mt-1" style={{ color: '#4A4A4A' }}>
+                <h1 className="text-2xl font-bold" style={{ color: colors.text }}>{getGreeting()}</h1>
+                <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
                   You have {stats.dueToday} tasks due today and {stats.overdue} overdue
                 </p>
               </div>
@@ -758,32 +761,32 @@ export default function TaskFlowPage() {
             {/* View Toggle & Filters */}
             <div className="flex items-center justify-between gap-4">
               {/* View Toggle */}
-              <div className="flex items-center gap-2 rounded-lg p-1" style={{ backgroundColor: '#F8F9FA' }}>
+              <div className="flex items-center gap-2 rounded-lg p-1" style={{ backgroundColor: colors.bgAlt }}>
                 <button
                   onClick={() => setViewMode("dashboard")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "dashboard" ? "shadow-sm" : ""}`}
-                  style={viewMode === "dashboard" ? { backgroundColor: '#FFFFFF', color: '#1A1A1A' } : { color: '#4A4A4A' }}
+                  style={viewMode === "dashboard" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
                 >
                   📋 Dashboard
                 </button>
                 <button
                   onClick={() => setViewMode("kanban")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "kanban" ? "shadow-sm" : ""}`}
-                  style={viewMode === "kanban" ? { backgroundColor: '#FFFFFF', color: '#1A1A1A' } : { color: '#4A4A4A' }}
+                  style={viewMode === "kanban" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
                 >
                   🎯 Kanban
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "list" ? "shadow-sm" : ""}`}
-                  style={viewMode === "list" ? { backgroundColor: '#FFFFFF', color: '#1A1A1A' } : { color: '#4A4A4A' }}
+                  style={viewMode === "list" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
                 >
                   📱 List
                 </button>
                 <button
                   onClick={() => setViewMode("calendar")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "calendar" ? "shadow-sm" : ""}`}
-                  style={viewMode === "calendar" ? { backgroundColor: '#FFFFFF', color: '#1A1A1A' } : { color: '#4A4A4A' }}
+                  style={viewMode === "calendar" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
                   disabled={userPlan === "starter"}
                 >
                   🗓️ Calendar {userPlan === "starter" && <span className="text-xs">🔒</span>}
@@ -791,7 +794,7 @@ export default function TaskFlowPage() {
                 <button
                   onClick={() => setViewMode("gantt")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "gantt" ? "shadow-sm" : ""}`}
-                  style={viewMode === "gantt" ? { backgroundColor: '#FFFFFF', color: '#1A1A1A' } : { color: '#4A4A4A' }}
+                  style={viewMode === "gantt" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
                   disabled={userPlan === "starter"}
                 >
                   📊 Gantt {userPlan === "starter" && <span className="text-xs">🔒</span>}
@@ -804,7 +807,7 @@ export default function TaskFlowPage() {
                   value={selectedProject}
                   onChange={(e) => setSelectedProject(e.target.value)}
                   className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                  style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+                  style={{ border: colors.border, color: colors.text }}
                 >
                   <option value="all">All Projects</option>
                   <option value="proj-1">Downtown Office</option>
@@ -817,7 +820,7 @@ export default function TaskFlowPage() {
                   value={selectedTrade}
                   onChange={(e) => setSelectedTrade(e.target.value)}
                   className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                  style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+                  style={{ border: colors.border, color: colors.text }}
                 >
                   <option value="all">All Trades</option>
                   <option value="electrical">⚡ Electrical</option>
@@ -832,7 +835,7 @@ export default function TaskFlowPage() {
                   value={selectedPriority}
                   onChange={(e) => setSelectedPriority(e.target.value)}
                   className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                  style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+                  style={{ border: colors.border, color: colors.text }}
                 >
                   <option value="all">All Priorities</option>
                   <option value="critical">🔥 Critical</option>
@@ -852,50 +855,50 @@ export default function TaskFlowPage() {
               <div className="space-y-6">
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                  <div className="rounded-xl p-4" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">✅</span>
-                      <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Total</p>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Total</p>
                     </div>
-                    <p className="text-3xl font-bold" style={{ color: '#1A1A1A' }}>{stats.total}</p>
+                    <p className="text-3xl font-bold" style={{ color: colors.text }}>{stats.total}</p>
                   </div>
 
-                  <div className="rounded-xl p-4" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">🚧</span>
-                      <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>In Progress</p>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>In Progress</p>
                     </div>
                     <p className="text-3xl font-bold" style={{ color: '#6A9BFD' }}>{stats.inProgress}</p>
                   </div>
 
-                  <div className="rounded-xl p-4" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">✅</span>
-                      <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Completed</p>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Completed</p>
                     </div>
                     <p className="text-3xl font-bold" style={{ color: '#6BCB77' }}>{stats.completed}</p>
                   </div>
 
-                  <div className="rounded-xl p-4" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">🚨</span>
-                      <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Blocked</p>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Blocked</p>
                     </div>
                     <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>{stats.blocked}</p>
                   </div>
 
-                  <div className="rounded-xl p-4" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">📅</span>
-                      <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Due Today</p>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Due Today</p>
                     </div>
                     <p className="text-3xl font-bold" style={{ color: '#FFD93D' }}>{stats.dueToday}</p>
                   </div>
 
-                  <div className="rounded-xl p-4" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">⏰</span>
-                      <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Overdue</p>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Overdue</p>
                     </div>
                     <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>{stats.overdue}</p>
                   </div>
@@ -908,7 +911,7 @@ export default function TaskFlowPage() {
                       <span className="text-2xl">🚨</span>
                       <div className="flex-1">
                         <h3 className="font-semibold mb-1" style={{ color: '#DC2626' }}>Critical Alerts</h3>
-                        <p className="text-sm mb-2" style={{ color: '#4A4A4A' }}>
+                        <p className="text-sm mb-2" style={{ color: colors.textMuted }}>
                           You have {stats.overdue} overdue task{stats.overdue !== 1 ? 's' : ''} that need immediate attention
                         </p>
                         <button className="text-sm font-semibold" style={{ color: '#DC2626' }}>
@@ -921,17 +924,17 @@ export default function TaskFlowPage() {
 
                 {/* Weather Widget */}
                 <ConstructionErrorBoundary>
-                  <WeatherWidget tasks={filteredTasks} countryCode="US" />
+                    <WeatherWidget tasks={filteredTasks} countryCode="US" />
                 </ConstructionErrorBoundary>
 
                 {/* My Tasks Today */}
-                <div className="rounded-xl p-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold" style={{ color: '#1A1A1A' }}>Your Tasks Today</h3>
+                    <h3 className="text-lg font-bold" style={{ color: colors.text }}>Your Tasks Today</h3>
                     <div className="flex items-center gap-2">
                       <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: `conic-gradient(#6BCB77 ${(myTasks.filter(t => t.status === 'completed').length / myTasks.length) * 100}%, #E0E0E0 0)` }}>
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FFFFFF' }}>
-                          <span className="text-sm font-bold" style={{ color: '#1A1A1A' }}>
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.bg }}>
+                          <span className="text-sm font-bold" style={{ color: colors.text }}>
                             {myTasks.filter(t => t.status === 'completed').length}/{myTasks.length}
                           </span>
                         </div>
@@ -954,12 +957,12 @@ export default function TaskFlowPage() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-lg">{priorityStyles[task.priority].icon}</span>
-                              <h4 className="font-semibold text-sm" style={{ color: '#1A1A1A' }}>{task.title}</h4>
+                              <h4 className="font-semibold text-sm" style={{ color: colors.text }}>{task.title}</h4>
                               {task.weatherDependent && <span className="text-sm">🌤️</span>}
                               {task.inspectionRequired && <span className="text-sm">🔍</span>}
                             </div>
-                            <p className="text-xs mb-2" style={{ color: '#4A4A4A' }}>{task.project} • {task.location}</p>
-                            <div className="flex items-center gap-3 text-xs" style={{ color: '#4A4A4A' }}>
+                            <p className="text-xs mb-2" style={{ color: colors.textMuted }}>{task.project} • {task.location}</p>
+                            <div className="flex items-center gap-3 text-xs" style={{ color: colors.textMuted }}>
                               <span>📅 Due: {new Date(task.dueDate).toLocaleDateString()}</span>
                               <span>⏱️ {task.estimatedHours}h est</span>
                               {task.attachments > 0 && <span>📎 {task.attachments}</span>}
@@ -978,11 +981,11 @@ export default function TaskFlowPage() {
 
                         {/* Progress Bar */}
                         <div className="mt-3">
-                          <div className="flex items-center justify-between text-xs mb-1" style={{ color: '#4A4A4A' }}>
+                          <div className="flex items-center justify-between text-xs mb-1" style={{ color: colors.textMuted }}>
                             <span>Progress</span>
                             <span className="font-semibold">{task.progress}%</span>
                           </div>
-                          <div className="w-full rounded-full h-2" style={{ backgroundColor: '#E0E0E0' }}>
+                          <div className="w-full rounded-full h-2" style={{ backgroundColor: colors.bgMuted }}>
                             <div
                               className="h-2 rounded-full transition-all"
                               style={{
@@ -1037,8 +1040,8 @@ export default function TaskFlowPage() {
                 </div>
                 <DragOverlay>
                   {activeId ? (
-                    <div className="rounded-lg p-3 cursor-grabbing" style={{ backgroundColor: '#FFFFFF', boxShadow: '0 8px 16px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1)', opacity: 0.9 }}>
-                      <p className="font-semibold text-sm" style={{ color: '#1A1A1A' }}>
+                    <div className="rounded-lg p-3 cursor-grabbing" style={{ backgroundColor: colors.bg, boxShadow: '0 8px 16px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1)', opacity: 0.9 }}>
+                      <p className="font-semibold text-sm" style={{ color: colors.text }}>
                         {tasks.find(t => t.id === activeId)?.title || "Task"}
                       </p>
                     </div>
@@ -1049,28 +1052,28 @@ export default function TaskFlowPage() {
 
             {/* List View */}
             {viewMode === "list" && (
-              <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+              <div className="rounded-xl overflow-hidden" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead style={{ backgroundColor: '#F8F9FA', borderBottom: '1px solid #E0E0E0' }}>
+                    <thead style={{ backgroundColor: colors.bgAlt, borderBottom: colors.borderBottom }}>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Task</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Priority</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Trade</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Assignee</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Due Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Progress</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Task</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Priority</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Trade</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Assignee</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Due Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Progress</th>
                       </tr>
                     </thead>
                     <tbody style={{ borderTop: '1px solid #E0E0E0' }}>
                       {filteredTasks.map((task) => (
-                        <tr key={task.id} className="transition-colors hover:bg-gray-50" style={{ borderBottom: '1px solid #E0E0E0' }}>
+                        <tr key={task.id} className="transition-colors hover:bg-gray-50" style={{ borderBottom: colors.borderBottom }}>
                           <td className="px-6 py-4">
                             <div className="flex items-start gap-3">
                               <div className="flex-1">
-                                <p className="font-semibold text-sm mb-1" style={{ color: '#1A1A1A' }}>{task.title}</p>
-                                <p className="text-xs" style={{ color: '#4A4A4A' }}>{task.project}</p>
+                                <p className="font-semibold text-sm mb-1" style={{ color: colors.text }}>{task.title}</p>
+                                <p className="text-xs" style={{ color: colors.textMuted }}>{task.project}</p>
                               </div>
                             </div>
                           </td>
@@ -1094,18 +1097,18 @@ export default function TaskFlowPage() {
                               <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold" style={{ background: 'linear-gradient(135deg, #4ECDC4 0%, #5FD9CF 100%)' }}>
                                 {task.assigneeAvatar}
                               </div>
-                              <span className="text-sm" style={{ color: '#1A1A1A' }}>{task.assignee}</span>
+                              <span className="text-sm" style={{ color: colors.text }}>{task.assignee}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <span className="text-sm" style={{ color: '#1A1A1A' }}>{new Date(task.dueDate).toLocaleDateString()}</span>
+                            <span className="text-sm" style={{ color: colors.text }}>{new Date(task.dueDate).toLocaleDateString()}</span>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
-                              <div className="w-24 rounded-full h-2" style={{ backgroundColor: '#E0E0E0' }}>
+                              <div className="w-24 rounded-full h-2" style={{ backgroundColor: colors.bgMuted }}>
                                 <div className="h-2 rounded-full" style={{ width: `${task.progress}%`, backgroundColor: tradeColors[task.trade].border }}></div>
                               </div>
-                              <span className="text-sm font-medium min-w-[3rem]" style={{ color: '#1A1A1A' }}>{task.progress}%</span>
+                              <span className="text-sm font-medium min-w-[3rem]" style={{ color: colors.text }}>{task.progress}%</span>
                             </div>
                           </td>
                         </tr>
@@ -1118,12 +1121,12 @@ export default function TaskFlowPage() {
 
             {/* Calendar & Gantt Views (Pro+) */}
             {(viewMode === "calendar" || viewMode === "gantt") && userPlan === "starter" && (
-              <div className="rounded-xl p-12 text-center" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+              <div className="rounded-xl p-12 text-center" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                 <span className="text-6xl mb-4 block">🔒</span>
-                <h3 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>
+                <h3 className="text-xl font-bold mb-2" style={{ color: colors.text }}>
                   {viewMode === "calendar" ? "Calendar View" : "Gantt Chart"} - Pro Feature
                 </h3>
-                <p className="mb-6" style={{ color: '#4A4A4A' }}>
+                <p className="mb-6" style={{ color: colors.textMuted }}>
                   Upgrade to Pro or Enterprise to unlock advanced scheduling and timeline views
                 </p>
                 <Link
