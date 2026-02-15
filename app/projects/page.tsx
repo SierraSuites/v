@@ -7,7 +7,6 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { useThemeColors } from "@/lib/hooks/useThemeColors"
 import ProjectCreationModal from "@/components/dashboard/ProjectCreationModal"
 import { useToast } from "@/components/ToastNotification"
 import {
@@ -76,7 +75,7 @@ type Project = {
 export default function ProjectsPage() {
   const router = useRouter()
   const toast = useToast()
-  const { colors } = useThemeColors()
+  // const { colors } = useThemeColors()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
@@ -552,7 +551,7 @@ export default function ProjectsPage() {
   // Quality Guide line 1774: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0d0f17]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header skeleton */}
           <div className="flex items-center justify-between mb-8">
@@ -936,10 +935,23 @@ export default function ProjectsPage() {
                     <div className="rounded-lg p-2" style={{ backgroundColor: colors.bgAlt }}>
                       <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Budget</p>
                       <p className="text-sm font-semibold" style={{ color: colors.text }}>{formatCurrency(project.budget)}</p>
+                      {project.budget > 0 && (() => {
+                        const pct = (project.spent / project.budget) * 100
+                        const color = pct > 100 ? '#EF4444' : pct > 95 ? '#F59E0B' : '#22C55E'
+                        return <p className="text-xs font-medium mt-0.5" style={{ color }}>{pct.toFixed(0)}% used</p>
+                      })()}
                     </div>
                     <div className="rounded-lg p-2" style={{ backgroundColor: colors.bgAlt }}>
-                      <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Spent</p>
-                      <p className="text-sm font-semibold" style={{ color: colors.text }}>{formatCurrency(project.spent)}</p>
+                      <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Timeline</p>
+                      {(() => {
+                        const daysLeft = Math.ceil((new Date(project.endDate).getTime() - new Date().getTime()) / 86400000)
+                        const isOverdue = daysLeft < 0 && project.status !== 'completed'
+                        return (
+                          <p className="text-sm font-semibold" style={{ color: isOverdue ? '#EF4444' : daysLeft <= 7 ? '#F59E0B' : colors.text }}>
+                            {project.status === 'completed' ? 'Done' : isOverdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d left`}
+                          </p>
+                        )
+                      })()}
                     </div>
                   </div>
 
@@ -958,10 +970,12 @@ export default function ProjectsPage() {
                       ))}
                       {project.teamMembers.length > 3 && (
                         <div className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-semibold" style={{ backgroundColor: colors.bgMuted, color: colors.textMuted }}>
+                        <div className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-semibold" style={{ backgroundColor: colors.bgMuted, color: colors.textMuted }}>
                           +{project.teamMembers.length - 3}
                         </div>
                       )}
                     </div>
+                    <span className="text-xs" style={{ color: colors.textMuted }}>{project.lastActivity}</span>
                     <span className="text-xs" style={{ color: colors.textMuted }}>{project.lastActivity}</span>
                   </div>
                 </div>

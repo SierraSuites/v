@@ -95,7 +95,7 @@ function DroppableColumn({
   children: React.ReactNode
 }) {
   const { setNodeRef } = useDroppable({ id })
-  const { colors } = useThemeColors()
+  const { colors, darkMode } = useThemeColors()
 
   return (
     <div ref={setNodeRef} className="w-80 shrink-0">
@@ -855,7 +855,7 @@ export default function TaskFlowPage() {
                   value={selectedProject}
                   onChange={(e) => setSelectedProject(e.target.value)}
                   className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                  style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+                  style={{ border: colors.border, color: colors.text }}
                 >
                   <option value="all">All Projects</option>
                   <option value="proj-1">Downtown Office</option>

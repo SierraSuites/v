@@ -52,6 +52,7 @@ export default function ActivityFeed({ activities }: ActivityFeedProps) {
     if (minutes > 0) return `${minutes}m ago`
     return 'just now'
   }
+  const { colors, darkMode } = useThemeColors()
 
   return (
     <div className="rounded-lg shadow p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
@@ -64,8 +65,12 @@ export default function ActivityFeed({ activities }: ActivityFeedProps) {
           </div>
         ) : (
           activities.map((activity) => (
-            <div key={activity.id} className="flex items-start space-x-3">
-              <div className="shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-lg">
+            <div
+              key={activity.id}
+              className="flex gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              {/* Quality Guide line 636-641: Colored icon circle */}
+              <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${getActivityColor(activity.action)}`}>
                 {getActivityIcon(activity.action)}
               </div>
               <div className="flex-1 min-w-0">

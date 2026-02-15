@@ -40,6 +40,7 @@ interface DashboardStatsData {
 
 export default function DashboardStats() {
   const { colors, darkMode } = useThemeColors()
+  const router = useRouter()
   const [stats, setStats] = useState<DashboardStatsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
