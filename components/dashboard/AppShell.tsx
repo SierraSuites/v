@@ -23,11 +23,13 @@ interface AppShellProps {
 
 export default function AppShell({ children, user }: AppShellProps) {
   const router = useRouter()
-  const { theme, setTheme } = useTheme()
-  const darkMode = theme === 'dark'
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const darkMode = mounted ? theme === 'dark' : false
   const [notificationCount] = useState(3)
   const [expandedNav, setExpandedNav] = useState<string | null>(null)
 
