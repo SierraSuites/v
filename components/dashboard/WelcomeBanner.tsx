@@ -21,10 +21,7 @@ export default function WelcomeBanner({ userName, greeting, onDismiss }: Welcome
           </p>
           {/* Quick Actions - Spec Section 7: Common actions without navigation hunting */}
           <div className="flex flex-wrap gap-3">
-            <Link
-              href="/projects"
-              className="px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors"
-            >
+            <button className="px-4 py-2 bg-white/90 dark:bg-white/10 text-blue-600 dark:text-blue-200 rounded-lg font-medium hover:bg-white dark:hover:bg-white/20 transition-colors">
               + New Project
             </Link>
             <Link
