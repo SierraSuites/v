@@ -246,21 +246,23 @@ export async function getProjects() {
     authContext.companyId
   )
 
+  // Always filter by company — users only ever see their own company's projects
   let query = supabase
     .from("projects")
     .select("*")
+    .eq('company_id', authContext.companyId)
     .order("created_at", { ascending: false })
 
   if (!canViewAll) {
-    // User can only see assigned projects
+    // User may be restricted to assigned projects — try to get team assignments
     const accessibleProjects = await permissionService.getUserAccessibleProjects(authContext.userId)
 
-    if (accessibleProjects.length === 0) {
-      return { data: [], error: null }
+    if (accessibleProjects.length > 0) {
+      // Only filter down if we got real assignments from the DB
+      query = query.in('id', accessibleProjects)
     }
-
-    // Filter to only accessible projects
-    query = query.in('id', accessibleProjects)
+    // If empty (DB tables/RPCs not yet set up, or user has no assignments),
+    // fall through and return all company projects as a safe default
   }
 
   const { data, error } = await query

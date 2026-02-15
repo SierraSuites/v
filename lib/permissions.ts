@@ -556,17 +556,11 @@ export const permissionService = {
       targetUserId = user.id
     }
 
-    // Get projects through team membership
+    // Get projects through direct project team membership
     const { data, error } = await supabase
-      .from('project_teams')
-      .select(`
-        project_id,
-        team_id,
-        team_members!inner(user_id)
-      `)
-      .eq('team_members.user_id', targetUserId)
-      .is('removed_at', null)
-      .is('team_members.removed_at', null)
+      .from('project_team_members')
+      .select('project_id')
+      .eq('user_id', targetUserId)
 
     if (error) {
       console.error('Error getting accessible projects:', error)
