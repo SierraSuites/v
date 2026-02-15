@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDashboardRealtime } from '@/hooks/useDashboardRealtime'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import DashboardEmptyState from './DashboardEmptyState'
 
 interface DashboardStatsData {
@@ -38,7 +39,7 @@ interface DashboardStatsData {
 }
 
 export default function DashboardStats() {
-  const router = useRouter()
+  const { colors, darkMode } = useThemeColors()
   const [stats, setStats] = useState<DashboardStatsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -109,14 +110,12 @@ export default function DashboardStats() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {[1, 2, 3, 4].map(i => (
-          <div key={i} className="relative overflow-hidden bg-white rounded-xl border p-6 shadow-sm animate-pulse">
-            <div className="w-12 h-12 bg-gray-200 rounded-lg mb-4" />
-            <div className="h-4 bg-gray-200 rounded w-24 mb-2" />
-            <div className="h-8 bg-gray-200 rounded w-16 mb-2" />
-            <div className="h-3 bg-gray-200 rounded w-20 mb-4" />
-            <div className="pt-3 border-t border-gray-100 space-y-2">
-              <div className="h-3 bg-gray-200 rounded" />
-              <div className="h-3 bg-gray-200 rounded" />
+          <div key={i} className="bg-white dark:bg-[#0d0f17] rounded-lg shadow p-6 animate-pulse">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-4"></div>
+            <div className="space-y-3">
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
             </div>
           </div>
         ))}
@@ -166,26 +165,19 @@ export default function DashboardStats() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {/* Active Projects Card - Spec Section 1A: Click: Navigate to /projects */}
-      <button
-        onClick={() => router.push('/projects?status=active')}
-        className="relative overflow-hidden bg-white rounded-xl border p-6 shadow-sm hover:shadow-md transition-all hover:scale-[1.02] text-left cursor-pointer"
-      >
-        {/* Gradient background circle - Quality guide StatCard pattern */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500 to-blue-600 opacity-10 rounded-full -translate-y-1/2 translate-x-1/2" />
-
+      {/* Active Projects Card */}
+      <div className="rounded-lg shadow hover:shadow-md transition-shadow p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium text-gray-500">Active Projects</h3>
-          {/* Gradient icon badge - Quality guide line 465-471 */}
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <h3 className="text-sm font-medium" style={{ color: colors.textMuted }}>Active Projects</h3>
+          <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E0F2FF' }}>
+            <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
           </div>
         </div>
         <div className="space-y-3">
           <div>
-            <div className="text-3xl font-bold text-gray-900">{stats.activeProjects}</div>
+            <div className="text-3xl font-bold" style={{ color: colors.text }}>{stats.activeProjects}</div>
             <p className="text-xs text-gray-500 mt-1">In progress</p>
           </div>
           <div className="pt-3 border-t border-gray-100 space-y-2">
@@ -207,31 +199,19 @@ export default function DashboardStats() {
         </div>
       </button>
 
-      {/* Tasks Card - Spec Section 1B: Click: Navigate to /taskflow */}
-      {/* Color: Red if overdue >0, Yellow if 5-10, Green if <5 */}
-      <button
-        onClick={() => router.push('/taskflow')}
-        className={`relative overflow-hidden bg-white rounded-xl border p-6 shadow-sm hover:shadow-md transition-all hover:scale-[1.02] text-left cursor-pointer ${
-          stats.tasksOverdue > 0 ? 'ring-2 ring-red-500' : ''
-        }`}
-      >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500 to-green-600 opacity-10 rounded-full -translate-y-1/2 translate-x-1/2" />
-
+      {/* Tasks Completed Card */}
+      <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium text-gray-500">Tasks Completed</h3>
-          <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-gradient-to-br ${
-            stats.tasksOverdue > 0
-              ? 'from-red-500 to-red-600'
-              : 'from-green-500 to-green-600'
-          }`}>
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <h3 className="text-sm font-medium" style={{ color: colors.textMuted }}>Tasks Completed</h3>
+          <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#D1FAE5' }}>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#10B981' }}>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
         </div>
         <div className="space-y-3">
           <div>
-            <div className="text-3xl font-bold text-gray-900">{stats.tasksCompleted}</div>
+            <div className="text-3xl font-bold" style={{ color: colors.text }}>{stats.tasksCompleted}</div>
             <p className="text-xs text-gray-500 mt-1">{stats.completionRate}% completion rate</p>
           </div>
           <div className="pt-3 border-t border-gray-100 space-y-2">
@@ -254,28 +234,20 @@ export default function DashboardStats() {
         </div>
       </button>
 
-      {/* Quote Value Card - Spec: Click: Navigate to quotes */}
-      <button
-        onClick={() => router.push('/quotes')}
-        className="relative overflow-hidden bg-white rounded-xl border p-6 shadow-sm hover:shadow-md transition-all hover:scale-[1.02] text-left cursor-pointer"
-      >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500 to-purple-600 opacity-10 rounded-full -translate-y-1/2 translate-x-1/2" />
-
+      {/* Quote Value Card */}
+      <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium text-gray-500">Quote Value</h3>
-          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <h3 className="text-sm font-medium" style={{ color: colors.textMuted }}>Quote Value</h3>
+          <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#EDE9FE' }}>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#8B5CF6' }}>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
         </div>
         <div className="space-y-3">
           <div>
-            <div className="text-3xl font-bold text-gray-900">
-              ${stats.totalQuoteValue >= 1000
-                ? `${(stats.totalQuoteValue / 1000).toFixed(1)}k`
-                : stats.totalQuoteValue.toFixed(0)
-              }
+            <div className="text-3xl font-bold" style={{ color: colors.text }}>
+              ${(stats.totalQuoteValue / 1000).toFixed(1)}k
             </div>
             <p className="text-xs text-gray-500 mt-1">Accepted quotes</p>
           </div>
@@ -297,32 +269,19 @@ export default function DashboardStats() {
         </div>
       </button>
 
-      {/* Critical Items Card - Spec: urgent ring animation when critical > 0 */}
-      <button
-        onClick={() => router.push('/punchlist')}
-        className={`relative overflow-hidden bg-white rounded-xl border p-6 shadow-sm hover:shadow-md transition-all hover:scale-[1.02] text-left cursor-pointer ${
-          stats.criticalItems > 0 ? 'ring-2 ring-red-500 animate-pulse' : ''
-        }`}
-      >
-        <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${
-          stats.criticalItems > 0 ? 'from-red-500 to-red-600' : 'from-gray-400 to-gray-500'
-        } opacity-10 rounded-full -translate-y-1/2 translate-x-1/2`} />
-
+      {/* Critical Items Card */}
+      <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium text-gray-500">Critical Items</h3>
-          <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-gradient-to-br ${
-            stats.criticalItems > 0
-              ? 'from-red-500 to-red-600'
-              : 'from-gray-400 to-gray-500'
-          }`}>
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <h3 className="text-sm font-medium" style={{ color: colors.textMuted }}>Critical Items</h3>
+          <div className={`w-12 h-12 ${stats.criticalItems > 0 ? 'bg-red-100' : 'bg-gray-100'} rounded-lg flex items-center justify-center`}>
+            <svg className={`w-6 h-6 ${stats.criticalItems > 0 ? 'text-red-600' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
         </div>
         <div className="space-y-3">
           <div>
-            <div className={`text-3xl font-bold ${stats.criticalItems > 0 ? 'text-red-600' : 'text-gray-900'}`}>
+            <div className={`text-3xl font-bold`} style={{ color: stats.criticalItems > 0 ? '#DC2626' : colors.text }}>
               {stats.criticalItems}
             </div>
             <p className="text-xs text-gray-500 mt-1">Needs attention</p>

@@ -7,6 +7,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { useThemeColors } from "@/lib/hooks/useThemeColors"
 import ProjectCreationModal from "@/components/dashboard/ProjectCreationModal"
 import { useToast } from "@/components/ToastNotification"
 import {
@@ -89,6 +90,9 @@ export default function ProjectsPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [expandedNav, setExpandedNav] = useState<string | null>(null)
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
+
+  // Theme
+  const { colors, darkMode } = useThemeColors()
 
   // User plan (for tier-based limits)
   const [userPlan, setUserPlan] = useState<"starter" | "professional" | "enterprise">("professional")
@@ -609,181 +613,9 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#F8F9FA' }}>
-      {/* Sidebar */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-50 transition-all duration-300 flex flex-col ${sidebarCollapsed ? 'w-20' : 'w-72'}`} style={{ backgroundColor: '#FFFFFF', borderRight: '1px solid #E0E0E0', boxShadow: '2px 0 4px rgba(0,0,0,0.02), 1px 0 2px rgba(0,0,0,0.05)' }}>
-        {/* Logo & Company */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            {!sidebarCollapsed && (
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8787 100%)', boxShadow: '0 2px 4px rgba(255,107,107,0.2), 0 1px 2px rgba(255,107,107,0.3)' }}>
-                  <span className="text-white font-bold text-sm">SS</span>
-                </div>
-                <h1 className="text-lg font-bold tracking-tight" style={{ color: '#1A1A1A' }}>
-                  The Sierra Suites
-                </h1>
-              </div>
-            )}
-            <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
-            >
-              <svg className={`w-5 h-5 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''} text-gray-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* User Profile Widget */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="relative">
-            <button
-              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-              className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 transition-all duration-200 ${sidebarCollapsed ? 'justify-center' : ''}`}
-            >
-              <div className="relative">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm" style={{ background: 'linear-gradient(135deg, #4ECDC4 0%, #5FD9CF 100%)', boxShadow: '0 2px 4px rgba(78,205,196,0.2), 0 1px 2px rgba(78,205,196,0.3)' }}>
-                  {userData.full_name?.charAt(0) || "U"}
-                </div>
-                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: '#6BCB77' }}></div>
-              </div>
-              {!sidebarCollapsed && (
-                <div className="flex-1 text-left">
-                  <p className="font-semibold text-sm truncate text-gray-900">{userData.full_name || "User"}</p>
-                  <p className="text-xs truncate text-gray-500">{userData.company_name || "Company"}</p>
-                  <span className={`inline-block mt-1.5 px-2 py-0.5 text-xs font-semibold text-white rounded-md ${planColors[userPlan]} shadow-sm`}>
-                    {planNames[userPlan]}
-                  </span>
-                </div>
-              )}
-            </button>
-
-            {showProfileDropdown && !sidebarCollapsed && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white backdrop-blur-xl border border-gray-200 rounded-xl shadow-2xl py-2 z-10">
-                <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 text-gray-700 transition-colors">
-                  <span>👤</span> Profile
-                </Link>
-                <Link href="/settings" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 text-gray-700 transition-colors">
-                  <span>⚙️</span> Settings
-                </Link>
-                <Link href="/billing" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 text-gray-700 transition-colors">
-                  <span>💳</span> Billing
-                </Link>
-                <hr className="my-2 border-gray-200" />
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 text-left px-4 py-2.5 text-sm hover:bg-gray-50 text-red-500 transition-colors"
-                >
-                  <span>🚪</span> Logout
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Navigation - Scrollable */}
-        <nav className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
-          <ul className="space-y-1.5">
-            {navigationItems.map((item) => (
-              <li key={item.name}>
-                {item.subItems ? (
-                  <>
-                    <button
-                      onClick={() => toggleNav(item.name)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-100 transition-all duration-200 group ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl transition-transform group-hover:scale-110">{item.icon}</span>
-                        {!sidebarCollapsed && (
-                          <span className="font-medium text-sm text-gray-700">{item.name}</span>
-                        )}
-                      </div>
-                      {!sidebarCollapsed && (
-                        <svg className={`w-4 h-4 transition-transform ${expandedNav === item.name ? 'rotate-90' : ''} text-gray-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      )}
-                    </button>
-                    {expandedNav === item.name && !sidebarCollapsed && (
-                      <ul className="ml-9 mt-1.5 space-y-1">
-                        {item.subItems.map((subItem) => (
-                          <li key={subItem.name}>
-                            <Link
-                              href={subItem.href}
-                              className="block px-3 py-2 text-sm rounded-lg transition-all duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                            >
-                              {subItem.name}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </>
-                ) : (
-                  <Link
-                    href={item.locked ? "#" : item.href}
-                    onClick={(e) => {
-                      if (item.locked) {
-                        e.preventDefault()
-                        alert(`This feature requires ${item.badge} plan. Upgrade to access!`)
-                      }
-                    }}
-                    className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
-                      item.href === "/projects"
-                        ? "text-white shadow-lg"
-                        : item.locked
-                        ? "opacity-50 cursor-not-allowed hover:bg-gray-100/30"
-                        : "hover:bg-gray-100 text-gray-700"
-                    } ${sidebarCollapsed ? 'justify-center' : ''}`}
-                    style={item.href === "/projects" ? { background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8787 100%)', boxShadow: '0 2px 4px rgba(255,107,107,0.15), 0 1px 2px rgba(255,107,107,0.25)' } : {}}
-                  >
-                    <span className="text-xl transition-transform group-hover:scale-110">{item.icon}</span>
-                    {!sidebarCollapsed && (
-                      <>
-                        <span className="font-medium text-sm flex-1">{item.name}</span>
-                        {item.locked && (
-                          <span className="text-xs opacity-60">🔒</span>
-                        )}
-                        {item.badge && (
-                          <span className="text-xs px-2 py-1 bg-linear-to-r from-amber-500 to-amber-600 text-white rounded-md font-semibold shadow-sm">
-                            {item.badge}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        {/* Bottom Section - Upgrade Card */}
-        <div className="p-4 border-t border-gray-200">
-          {userPlan !== "enterprise" && !sidebarCollapsed && (
-            <div className="p-4 rounded-xl text-white relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #4ECDC4 0%, #5FD9CF 100%)', boxShadow: '0 4px 6px rgba(78,205,196,0.15), 0 2px 4px rgba(78,205,196,0.25)' }}>
-              <div className="absolute inset-0 bg-linear-to-br from-white/10 to-transparent"></div>
-              <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">✨</span>
-                  <h4 className="font-bold text-sm">Upgrade to {userPlan === "starter" ? "Pro" : "Enterprise"}</h4>
-                </div>
-                <p className="text-xs opacity-95 mb-3 leading-relaxed">Unlock advanced features and AI-powered tools</p>
-                <Link href="/pricing" className="block text-center px-4 py-2 bg-white/95 backdrop-blur-sm rounded-lg text-xs font-bold hover:bg-white transition-all duration-200 hover:scale-105" style={{ color: '#4ECDC4', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                  Upgrade Now
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+    <>
         {/* Header */}
-        <header className="sticky top-0 z-40" style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05)' }}>
+        <header className="sticky top-0 z-40" style={{ backgroundColor: colors.bg, borderBottom: colors.borderBottom, boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -803,7 +635,7 @@ export default function ProjectsPage() {
                     ? "text-white"
                     : "cursor-not-allowed"
                 }`}
-                style={canCreateProject ? { background: 'linear-gradient(to bottom, #FF6B6B 0%, #FF5252 100%)', boxShadow: '0 2px 4px rgba(255,107,107,0.2), 0 1px 2px rgba(255,107,107,0.3)' } : { backgroundColor: '#E0E0E0', color: '#4A4A4A' }}
+                style={canCreateProject ? { background: 'linear-gradient(to bottom, #FF6B6B 0%, #FF5252 100%)', boxShadow: '0 2px 4px rgba(255,107,107,0.2), 0 1px 2px rgba(255,107,107,0.3)' } : { backgroundColor: colors.bgMuted, color: colors.textMuted }}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -823,10 +655,10 @@ export default function ProjectsPage() {
             <div className="flex items-start gap-3">
               <span className="text-2xl">⚠️</span>
               <div className="flex-1">
-                <h3 className="font-semibold mb-1" style={{ color: '#1A1A1A' }}>
+                <h3 className="font-semibold mb-1" style={{ color: colors.text }}>
                   {projects.length >= projectLimits.starter ? "Project Limit Reached" : "Approaching Project Limit"}
                 </h3>
-                <p className="text-sm mb-3" style={{ color: '#4A4A4A' }}>
+                <p className="text-sm mb-3" style={{ color: colors.textMuted }}>
                   {projects.length >= projectLimits.starter
                     ? `You've reached the maximum of ${projectLimits.starter} projects on the Starter plan.`
                     : `You're using ${projects.length} of ${projectLimits.starter} projects. Upgrade to Pro for up to 50 projects.`
@@ -849,64 +681,92 @@ export default function ProjectsPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E0F2FF' }}>
                 <span className="text-xl">🏗️</span>
               </div>
-              <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Total</p>
+              <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Total</p>
             </div>
-            <p className="text-3xl font-bold" style={{ color: '#1A1A1A' }}>{stats.total}</p>
+            <p className="text-3xl font-bold" style={{ color: colors.text }}>{stats.total}</p>
           </div>
 
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E6F9EA' }}>
                 <span className="text-xl">🚀</span>
               </div>
-              <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Active</p>
+              <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Active</p>
             </div>
             <p className="text-3xl font-bold" style={{ color: '#6BCB77' }}>{stats.active}</p>
           </div>
 
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E5F4FF' }}>
                 <span className="text-xl">📋</span>
               </div>
-              <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Planning</p>
+              <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Planning</p>
             </div>
             <p className="text-3xl font-bold" style={{ color: '#6A9BFD' }}>{stats.planning}</p>
           </div>
 
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFF9E6' }}>
                 <span className="text-xl">⏸️</span>
               </div>
-              <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>On Hold</p>
+              <p className="text-sm font-medium" style={{ color: colors.textMuted }}>On Hold</p>
             </div>
             <p className="text-3xl font-bold" style={{ color: '#FFD93D' }}>{stats.onHold}</p>
           </div>
 
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F8F9FA' }}>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.bgAlt }}>
                 <span className="text-xl">✅</span>
               </div>
-              <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Completed</p>
+              <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Completed</p>
             </div>
-            <p className="text-3xl font-bold" style={{ color: '#4A4A4A' }}>{stats.completed}</p>
+            <p className="text-3xl font-bold" style={{ color: colors.textMuted }}>{stats.completed}</p>
           </div>
         </div>
 
+        {/* Project Sub-Pages */}
+        <div className="flex items-center gap-3 mb-6">
+          <Link
+            href="/projects/design-selections"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all hover:-translate-y-0.5"
+            style={{ backgroundColor: colors.bg, border: colors.border, color: colors.text, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
+          >
+            <span>🎨</span>
+            Design Selections
+          </Link>
+          <Link
+            href="/projects/approvals"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all hover:-translate-y-0.5"
+            style={{ backgroundColor: colors.bg, border: colors.border, color: colors.text, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
+          >
+            <span>✅</span>
+            Approvals
+          </Link>
+          <Link
+            href="/projects/turnover"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all hover:-translate-y-0.5"
+            style={{ backgroundColor: colors.bg, border: colors.border, color: colors.text, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
+          >
+            <span>📦</span>
+            Turnover
+          </Link>
+        </div>
+
         {/* Filters and View Toggle */}
-        <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+        <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
           <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
             {/* Search */}
             <div className="flex-1 w-full lg:w-auto">
               <div className="relative">
-                <svg className="absolute left-3 top-3 w-5 h-5" style={{ color: '#4A4A4A' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-3 top-3 w-5 h-5" style={{ color: colors.textMuted }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
@@ -915,7 +775,7 @@ export default function ProjectsPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 rounded-lg focus:outline-none"
-                  style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+                  style={{ border: colors.border, color: colors.text, backgroundColor: colors.bg }}
                 />
               </div>
             </div>
@@ -926,7 +786,7 @@ export default function ProjectsPage() {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+                style={{ border: colors.border, color: colors.text, backgroundColor: colors.bg }}
               >
                 <option value="all">All Status</option>
                 <option value="planning">Planning</option>
@@ -940,7 +800,7 @@ export default function ProjectsPage() {
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
                 className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+                style={{ border: colors.border, color: colors.text, backgroundColor: colors.bg }}
               >
                 <option value="all">All Types</option>
                 <option value="residential">Residential</option>
@@ -953,7 +813,7 @@ export default function ProjectsPage() {
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+                style={{ border: colors.border, color: colors.text, backgroundColor: colors.bg }}
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
@@ -962,13 +822,13 @@ export default function ProjectsPage() {
               </select>
 
               {/* View Toggle */}
-              <div className="flex items-center rounded-lg p-1" style={{ backgroundColor: '#F8F9FA' }}>
+              <div className="flex items-center rounded-lg p-1" style={{ backgroundColor: colors.bgAlt }}>
                 <button
                   onClick={() => setViewMode("grid")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     viewMode === "grid" ? "shadow-sm" : ""
                   }`}
-                  style={viewMode === "grid" ? { backgroundColor: '#FFFFFF', color: '#1A1A1A' } : { color: '#4A4A4A' }}
+                  style={viewMode === "grid" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -979,7 +839,7 @@ export default function ProjectsPage() {
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     viewMode === "list" ? "shadow-sm" : ""
                   }`}
-                  style={viewMode === "list" ? { backgroundColor: '#FFFFFF', color: '#1A1A1A' } : { color: '#4A4A4A' }}
+                  style={viewMode === "list" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -992,11 +852,11 @@ export default function ProjectsPage() {
 
         {/* Projects Grid/List */}
         {filteredProjects.length === 0 ? (
-          <div className="rounded-xl p-12 text-center" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-12 text-center" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="max-w-md mx-auto">
               <span className="text-6xl mb-4 block">🏗️</span>
-              <h3 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>No projects found</h3>
-              <p className="mb-6" style={{ color: '#4A4A4A' }}>
+              <h3 className="text-xl font-bold mb-2" style={{ color: colors.text }}>No projects found</h3>
+              <p className="mb-6" style={{ color: colors.textMuted }}>
                 {searchQuery || statusFilter !== "all" || typeFilter !== "all"
                   ? "Try adjusting your filters or search query"
                   : "Get started by creating your first construction project"
@@ -1023,10 +883,10 @@ export default function ProjectsPage() {
                 key={project.id}
                 href={`/projects/${project.id}`}
                 className="group rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
-                style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
+                style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
               >
                 {/* Project Thumbnail */}
-                <div className="relative h-48 bg-gray-100 overflow-hidden">
+                <div className="relative h-48 bg-gray-100 dark:bg-gray-800 overflow-hidden">
                   <img
                     src={project.thumbnail}
                     alt={project.name}
@@ -1052,18 +912,18 @@ export default function ProjectsPage() {
 
                 {/* Project Info */}
                 <div className="p-5">
-                  <h3 className="font-bold text-lg mb-1 transition-colors" style={{ color: '#1A1A1A' }}>
+                  <h3 className="font-bold text-lg mb-1 transition-colors" style={{ color: colors.text }}>
                     {project.name}
                   </h3>
-                  <p className="text-sm mb-4" style={{ color: '#4A4A4A' }}>{project.client}</p>
+                  <p className="text-sm mb-4" style={{ color: colors.textMuted }}>{project.client}</p>
 
                   {/* Progress Bar */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between text-sm mb-1">
-                      <span style={{ color: '#4A4A4A' }}>Progress</span>
-                      <span className="font-semibold" style={{ color: '#1A1A1A' }}>{project.progress}%</span>
+                      <span style={{ color: colors.textMuted }}>Progress</span>
+                      <span className="font-semibold" style={{ color: colors.text }}>{project.progress}%</span>
                     </div>
-                    <div className="w-full rounded-full h-2" style={{ backgroundColor: '#E0E0E0' }}>
+                    <div className="w-full rounded-full h-2" style={{ backgroundColor: colors.bgMuted }}>
                       <div
                         className={`h-2 rounded-full transition-all duration-300 ${getStatusColor(project.status)}`}
                         style={{ width: `${project.progress}%` }}
@@ -1073,26 +933,13 @@ export default function ProjectsPage() {
 
                   {/* Stats - Spec Section 1 lines 88-92: Budget health + schedule */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="rounded-lg p-2" style={{ backgroundColor: '#F8F9FA' }}>
-                      <p className="text-xs mb-0.5" style={{ color: '#4A4A4A' }}>Budget</p>
-                      <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{formatCurrency(project.budget)}</p>
-                      {project.budget > 0 && (() => {
-                        const pct = (project.spent / project.budget) * 100
-                        const color = pct > 100 ? '#EF4444' : pct > 95 ? '#F59E0B' : '#22C55E'
-                        return <p className="text-xs font-medium mt-0.5" style={{ color }}>{pct.toFixed(0)}% used</p>
-                      })()}
+                    <div className="rounded-lg p-2" style={{ backgroundColor: colors.bgAlt }}>
+                      <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Budget</p>
+                      <p className="text-sm font-semibold" style={{ color: colors.text }}>{formatCurrency(project.budget)}</p>
                     </div>
-                    <div className="rounded-lg p-2" style={{ backgroundColor: '#F8F9FA' }}>
-                      <p className="text-xs mb-0.5" style={{ color: '#4A4A4A' }}>Timeline</p>
-                      {(() => {
-                        const daysLeft = Math.ceil((new Date(project.endDate).getTime() - new Date().getTime()) / 86400000)
-                        const isOverdue = daysLeft < 0 && project.status !== 'completed'
-                        return (
-                          <p className="text-sm font-semibold" style={{ color: isOverdue ? '#EF4444' : daysLeft <= 7 ? '#F59E0B' : '#1A1A1A' }}>
-                            {project.status === 'completed' ? 'Done' : isOverdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d left`}
-                          </p>
-                        )
-                      })()}
+                    <div className="rounded-lg p-2" style={{ backgroundColor: colors.bgAlt }}>
+                      <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Spent</p>
+                      <p className="text-sm font-semibold" style={{ color: colors.text }}>{formatCurrency(project.spent)}</p>
                     </div>
                   </div>
 
@@ -1110,35 +957,35 @@ export default function ProjectsPage() {
                         </div>
                       ))}
                       {project.teamMembers.length > 3 && (
-                        <div className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-semibold" style={{ backgroundColor: '#E0E0E0', color: '#4A4A4A' }}>
+                        <div className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-semibold" style={{ backgroundColor: colors.bgMuted, color: colors.textMuted }}>
                           +{project.teamMembers.length - 3}
                         </div>
                       )}
                     </div>
-                    <span className="text-xs" style={{ color: '#4A4A4A' }}>{project.lastActivity}</span>
+                    <span className="text-xs" style={{ color: colors.textMuted }}>{project.lastActivity}</span>
                   </div>
                 </div>
               </Link>
             ))}
           </div>
         ) : (
-          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead style={{ backgroundColor: '#F8F9FA', borderBottom: '1px solid #E0E0E0' }}>
+                <thead style={{ backgroundColor: colors.bgAlt, borderBottom: colors.borderBottom }}>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Project</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Progress</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Timeline</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Team</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Budget</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Project</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Progress</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Timeline</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Team</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Budget</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody style={{ borderTop: '1px solid #E0E0E0' }}>
                   {filteredProjects.map((project) => (
-                    <tr key={project.id} className="transition-colors" style={{ borderBottom: '1px solid #E0E0E0' }}>
+                    <tr key={project.id} className="transition-colors" style={{ borderBottom: colors.borderBottom }}>
                       <td className="px-6 py-4">
                         <Link href={`/projects/${project.id}`} className="flex items-center gap-3 group">
                           <img
@@ -1147,10 +994,10 @@ export default function ProjectsPage() {
                             className="w-12 h-12 rounded-lg object-cover"
                           />
                           <div className="min-w-0">
-                            <p className="font-semibold transition-colors truncate" style={{ color: '#1A1A1A' }}>
+                            <p className="font-semibold transition-colors truncate" style={{ color: colors.text }}>
                               {project.name}
                             </p>
-                            <p className="text-sm truncate" style={{ color: '#4A4A4A' }}>{project.client}</p>
+                            <p className="text-sm truncate" style={{ color: colors.textMuted }}>{project.client}</p>
                           </div>
                         </Link>
                       </td>
@@ -1161,19 +1008,19 @@ export default function ProjectsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                             <div
                               className={`h-2 rounded-full ${getStatusColor(project.status)}`}
                               style={{ width: `${project.progress}%` }}
                             ></div>
                           </div>
-                          <span className="text-sm font-medium text-gray-900 min-w-[3rem]">{project.progress}%</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100 min-w-12">{project.progress}%</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm">
-                          <p className="text-gray-900 font-medium">{new Date(project.startDate).toLocaleDateString()}</p>
-                          <p className="text-gray-600">{new Date(project.endDate).toLocaleDateString()}</p>
+                          <p className="text-gray-900 dark:text-gray-100 font-medium">{new Date(project.startDate).toLocaleDateString()}</p>
+                          <p className="text-gray-600 dark:text-gray-400">{new Date(project.endDate).toLocaleDateString()}</p>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -1188,7 +1035,7 @@ export default function ProjectsPage() {
                             </div>
                           ))}
                           {project.teamMembers.length > 3 && (
-                            <div className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-gray-600 text-xs font-semibold">
+                            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-white dark:border-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400 text-xs font-semibold">
                               +{project.teamMembers.length - 3}
                             </div>
                           )}
@@ -1196,13 +1043,13 @@ export default function ProjectsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm">
-                          <p className="text-gray-900 font-medium">{formatCurrency(project.budget)}</p>
-                          <p className="text-gray-600">{formatCurrency(project.spent)} spent</p>
+                          <p className="text-gray-900 dark:text-gray-100 font-medium">{formatCurrency(project.budget)}</p>
+                          <p className="text-gray-600 dark:text-gray-400">{formatCurrency(project.spent)} spent</p>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                          <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                           </svg>
                         </button>
