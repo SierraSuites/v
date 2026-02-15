@@ -102,6 +102,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // Authenticate user
@@ -112,9 +113,6 @@ export async function GET(
         { status: 401 }
       )
     }
-
-    // Await params in Next.js 15
-    const { id } = await params
 
     // Get the custom role
     const role = await customRolesService.getCustomRole(id)
@@ -141,7 +139,7 @@ export async function GET(
     }
 
     // Get member count
-    const memberCount = await customRolesService.getRoleMemberCount(role.id)
+    const memberCount = await customRolesService.getRoleMemberCount(id)
 
     return NextResponse.json({
       ...role,
@@ -166,6 +164,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // Authenticate user
@@ -182,9 +181,6 @@ export async function PUT(
     if (!permissionCheck.hasPermission) {
       return permissionCheck.error
     }
-
-    // Await params in Next.js 15
-    const { id } = await params
 
     // Verify role exists and belongs to user's company
     const role = await customRolesService.getCustomRole(id)
@@ -267,6 +263,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // Authenticate user
@@ -283,9 +280,6 @@ export async function DELETE(
     if (!permissionCheck.hasPermission) {
       return permissionCheck.error
     }
-
-    // Await params in Next.js 15
-    const { id } = await params
 
     // Verify role exists and belongs to user's company
     const role = await customRolesService.getCustomRole(id)
