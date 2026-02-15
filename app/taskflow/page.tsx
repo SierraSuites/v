@@ -1066,9 +1066,9 @@ export default function TaskFlowPage() {
                         <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Progress</th>
                       </tr>
                     </thead>
-                    <tbody style={{ borderTop: '1px solid #E0E0E0' }}>
+                    <tbody style={{ borderTop: `1px solid var(--border)` }}>
                       {filteredTasks.map((task) => (
-                        <tr key={task.id} className="transition-colors hover:bg-gray-50" style={{ borderBottom: colors.borderBottom }}>
+                        <tr key={task.id} className="transition-colors" style={{ borderBottom: colors.borderBottom }}>
                           <td className="px-6 py-4">
                             <div className="flex items-start gap-3">
                               <div className="flex-1">
