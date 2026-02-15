@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic'
 
 
 import { useState, useEffect, useMemo } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getPhotos, subscribeToPhotos, getStorageStats, type Photo } from '@/lib/supabase/photos'
@@ -54,9 +53,6 @@ export default function FieldSnapPage() {
   const [showBatchUpload, setShowBatchUpload] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
-  // Sidebar and mobile
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [showMobileMenu, setShowMobileMenu] = useState(false)
 
   useEffect(() => {
     loadUser()
@@ -232,7 +228,6 @@ export default function FieldSnapPage() {
   }
 
   // Storage percentage
-  const storagePercentage = (stats.storageUsed / stats.storageTotal) * 100
 
   if (loading) {
     return (
@@ -246,130 +241,12 @@ export default function FieldSnapPage() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: '#F8F9FA' }}>
-      {/* Sidebar */}
-      <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ${showMobileMenu ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} ${sidebarCollapsed ? 'lg:w-20' : 'lg:w-64'}`}
-        style={{ backgroundColor: '#1A1A1A' }}
-      >
-        <div className="h-full flex flex-col">
-          {/* Sidebar Header */}
-          <div className="p-6 flex items-center justify-between" style={{ borderBottom: '1px solid #2A2A2A' }}>
-            {!sidebarCollapsed && (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FF6B6B' }}>
-                  <span className="text-xl">📸</span>
-                </div>
-                <span className="font-bold text-lg text-white">FieldSnap</span>
-              </div>
-            )}
-            <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="hidden lg:block p-2 rounded-lg hover:bg-white/10 transition-colors text-white"
-            >
-              <svg className={`w-5 h-5 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-            <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              {!sidebarCollapsed && <span>Dashboard</span>}
-            </Link>
-
-            <Link href="/projects" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              {!sidebarCollapsed && <span>Projects</span>}
-            </Link>
-
-            <Link href="/taskflow" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              {!sidebarCollapsed && <span>TaskFlow</span>}
-            </Link>
-
-            <Link href="/fieldsnap" className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-white" style={{ backgroundColor: '#FF6B6B' }}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              {!sidebarCollapsed && <span>FieldSnap</span>}
-            </Link>
-
-            {!sidebarCollapsed && (
-              <div className="pt-4">
-                <p className="px-4 text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Views</p>
-                <Link href="/fieldsnap/capture" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white">
-                  <span className="text-lg">📷</span>
-                  <span className="text-sm">Smart Capture</span>
-                </Link>
-                <Link href="/fieldsnap/analytics" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white">
-                  <span className="text-lg">📊</span>
-                  <span className="text-sm">Analytics</span>
-                </Link>
-                <Link href="/fieldsnap/reports" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white">
-                  <span className="text-lg">📄</span>
-                  <span className="text-sm">Reports</span>
-                </Link>
-              </div>
-            )}
-          </nav>
-
-          {/* Storage Indicator */}
-          {!sidebarCollapsed && (
-            <div className="p-4 m-4 rounded-lg" style={{ backgroundColor: '#2A2A2A' }}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-white/70">Storage</span>
-                <span className="text-xs text-white/50">{Math.round(storagePercentage)}%</span>
-              </div>
-              <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#1A1A1A' }}>
-                <div
-                  className="h-full transition-all"
-                  style={{
-                    width: `${Math.min(100, storagePercentage)}%`,
-                    backgroundColor: storagePercentage > 90 ? '#DC2626' : storagePercentage > 70 ? '#FFD93D' : '#6BCB77'
-                  }}
-                />
-              </div>
-              <div className="flex justify-between mt-2 text-xs text-white/50">
-                <span>{formatBytes(stats.storageUsed)}</span>
-                <span>{formatBytes(stats.storageTotal)}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </aside>
-
-      {/* Mobile overlay */}
-      {showMobileMenu && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setShowMobileMenu(false)}
-        />
-      )}
-
+    <div className="flex flex-col min-h-0" style={{ backgroundColor: '#F8F9FA' }}>
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
         <header className="sticky top-0 z-30 flex items-center justify-between gap-4 p-4 lg:p-6" style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E0E0E0' }}>
           <div className="flex items-center gap-4 flex-1 min-w-0">
-            <button
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-
             <div className="flex-1 max-w-2xl">
               <div className="relative">
                 <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: '#4A4A4A' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
