@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 interface Project {
   id: string
@@ -30,13 +29,11 @@ export default function RecentProjects({ projects }: RecentProjectsProps) {
         return 'bg-gray-100 text-gray-800'
     }
   }
-  const { colors, darkMode } = useThemeColors()
-
 
   return (
-    <div className=" rounded-lg shadow p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold" style={{ color: colors.text }}>Recent Projects</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Recent Projects</h2>
         <Link
           href="/projects"
           className="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -47,7 +44,7 @@ export default function RecentProjects({ projects }: RecentProjectsProps) {
 
       <div className="space-y-4">
         {projects.length === 0 ? (
-          <div className="text-center py-8" style={{ color: colors.textMuted }}>
+          <div className="text-center py-8 text-gray-500">
             <p className="mb-2">No projects yet</p>
             <Link
               href="/projects"

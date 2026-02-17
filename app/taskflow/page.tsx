@@ -8,7 +8,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import TaskCreationModal from "@/components/dashboard/TaskCreationModal"
-import { getTasks, createTask, updateTask, subscribeToTasks, type Task as SupabaseTask } from "@/lib/supabase/tasks"
+import { getTasks, createTask, updateTask, deleteTask, subscribeToTasks, type Task as SupabaseTask } from "@/lib/supabase/tasks"
 import {
   DndContext,
   DragEndEvent,
@@ -19,6 +19,8 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useDroppable } from '@dnd-kit/core'
 import DraggableTaskCard from "@/components/dashboard/DraggableTaskCard"
 import TeamAllocationHeatmap from "@/components/dashboard/TeamAllocationHeatmap"
@@ -26,8 +28,7 @@ import ProgressMetricsWidget from "@/components/dashboard/ProgressMetricsWidget"
 import CalendarView from "@/components/dashboard/CalendarView"
 import GanttChartView from "@/components/dashboard/GanttChartView"
 import WeatherWidget from "@/components/dashboard/WeatherWidget"
-import { ConstructionErrorBoundary } from "@/components/ErrorBoundary"
-import { useThemeColors } from "@/lib/hooks/useThemeColors"
+import { ErrorBoundary, ConstructionErrorBoundary } from "@/components/ErrorBoundary"
 
 // Task type definition
 type Task = {
@@ -94,17 +95,16 @@ function DroppableColumn({
   children: React.ReactNode
 }) {
   const { setNodeRef } = useDroppable({ id })
-  const { colors } = useThemeColors()
 
   return (
-    <div ref={setNodeRef} className="w-80 shrink-0">
+    <div ref={setNodeRef} className="w-80 flex-shrink-0">
       <div className="rounded-xl p-4 mb-4" style={{ backgroundColor: style.bg, border: `1px solid ${style.color}` }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-lg">{style.icon}</span>
             <h3 className="font-bold text-sm" style={{ color: style.color }}>{style.label}</h3>
           </div>
-          <span className="text-sm font-semibold px-2 py-1 rounded" style={{ backgroundColor: colors.bg, color: style.color }}>
+          <span className="text-sm font-semibold px-2 py-1 rounded" style={{ backgroundColor: '#FFFFFF', color: style.color }}>
             {count}
           </span>
         </div>
@@ -116,11 +116,12 @@ function DroppableColumn({
 
 export default function TaskFlowPage() {
   const router = useRouter()
-  const { colors } = useThemeColors()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"dashboard" | "calendar" | "gantt" | "kanban" | "list">("dashboard")
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [selectedProject, setSelectedProject] = useState<string>("all")
   const [selectedTrade, setSelectedTrade] = useState<string>("all")
   const [selectedPriority, setSelectedPriority] = useState<string>("all")
@@ -717,29 +718,188 @@ export default function TaskFlowPage() {
     loadUser()
   }, [])
 
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push("/login")
+  }
 
+  const navigationItems = [
+    { name: "Dashboard", href: "/dashboard", icon: "📊" },
+    { name: "Projects", href: "/projects", icon: "🏗️" },
+    { name: "TaskFlow", href: "/taskflow", icon: "✅" },
+    { name: "FieldSnap", href: "/fieldsnap", icon: "📸" },
+    { name: "QuoteHub", href: "/quotehub", icon: "💰" },
+    { name: "ReportCenter", href: "/reportcenter", icon: "📊" },
+  ]
 
+  // Quality Guide line 883: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.bgAlt }}>
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#FF6B6B', borderTopColor: 'transparent' }}></div>
-          <p style={{ color: colors.textMuted }}>Loading TaskFlow...</p>
+      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header skeleton */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <div className="h-8 bg-gray-200 rounded w-36 mb-2 animate-pulse" />
+              <div className="h-4 bg-gray-200 rounded w-52 animate-pulse" />
+            </div>
+            <div className="h-10 bg-gray-200 rounded-lg w-32 animate-pulse" />
+          </div>
+          {/* View mode tabs skeleton */}
+          <div className="flex gap-2 mb-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-10 bg-gray-200 rounded-lg w-24 animate-pulse" />
+            ))}
+          </div>
+          {/* Kanban columns skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {['To Do', 'In Progress', 'In Review', 'Done'].map((col) => (
+              <div key={col} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-5 bg-gray-200 rounded w-20" />
+                  <div className="h-5 bg-gray-200 rounded-full w-6" />
+                </div>
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="border border-gray-100 rounded-lg p-3 mb-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2 mb-2" />
+                    <div className="flex gap-2">
+                      <div className="h-5 bg-gray-200 rounded-full w-14" />
+                      <div className="h-5 bg-gray-200 rounded-full w-10" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#F8F9FA' }}>
+      {/* Sidebar */}
+      <aside className={`fixed lg:static inset-y-0 left-0 z-50 transition-all duration-300 flex flex-col ${sidebarCollapsed ? 'w-20' : 'w-72'}`} style={{ backgroundColor: '#FFFFFF', borderRight: '1px solid #E0E0E0', boxShadow: '2px 0 4px rgba(0,0,0,0.02), 1px 0 2px rgba(0,0,0,0.05)' }}>
+        {/* Logo */}
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            {!sidebarCollapsed && (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8787 100%)', boxShadow: '0 2px 4px rgba(255,107,107,0.2), 0 1px 2px rgba(255,107,107,0.3)' }}>
+                  <span className="text-white font-bold text-sm">SS</span>
+                </div>
+                <h1 className="text-lg font-bold tracking-tight" style={{ color: '#1A1A1A' }}>
+                  The Sierra Suites
+                </h1>
+              </div>
+            )}
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
+            >
+              <svg className={`w-5 h-5 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} style={{ color: '#4A4A4A' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* User Profile */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="relative">
+            <button
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 transition-all duration-200 ${sidebarCollapsed ? 'justify-center' : ''}`}
+            >
+              <div className="relative">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm" style={{ background: 'linear-gradient(135deg, #4ECDC4 0%, #5FD9CF 100%)', boxShadow: '0 2px 4px rgba(78,205,196,0.2), 0 1px 2px rgba(78,205,196,0.3)' }}>
+                  {userData.full_name?.charAt(0) || "U"}
+                </div>
+                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: '#6BCB77' }}></div>
+              </div>
+              {!sidebarCollapsed && (
+                <div className="flex-1 text-left">
+                  <p className="font-semibold text-sm truncate" style={{ color: '#1A1A1A' }}>{userData.full_name || "User"}</p>
+                  <p className="text-xs truncate" style={{ color: '#4A4A4A' }}>{userData.company_name || "Company"}</p>
+                </div>
+              )}
+            </button>
+
+            {showProfileDropdown && !sidebarCollapsed && (
+              <div className="absolute top-full left-0 right-0 mt-2 rounded-xl py-2 z-10" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors" style={{ color: '#1A1A1A' }}>
+                  <span>👤</span> Profile
+                </Link>
+                <Link href="/settings" className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors" style={{ color: '#1A1A1A' }}>
+                  <span>⚙️</span> Settings
+                </Link>
+                <hr style={{ borderColor: '#E0E0E0' }} className="my-2" />
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 text-left px-4 py-2.5 text-sm transition-colors"
+                  style={{ color: '#DC2626' }}
+                >
+                  <span>🚪</span> Logout
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto p-4 scrollbar-thin">
+          <ul className="space-y-1.5">
+            {navigationItems.map((item) => (
+              <li key={item.name}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
+                    item.href === "/taskflow" ? "text-white shadow-lg" : "hover:bg-gray-100"
+                  } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                  style={item.href === "/taskflow" ? { background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8787 100%)', boxShadow: '0 2px 4px rgba(255,107,107,0.15), 0 1px 2px rgba(255,107,107,0.25)' } : { color: '#4A4A4A' }}
+                >
+                  <span className="text-xl transition-transform group-hover:scale-110">{item.icon}</span>
+                  {!sidebarCollapsed && (
+                    <span className="font-medium text-sm flex-1">{item.name}</span>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* Upgrade Card */}
+        <div className="p-4 border-t border-gray-200">
+          {userPlan !== "enterprise" && !sidebarCollapsed && (
+            <div className="p-4 rounded-xl text-white relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #4ECDC4 0%, #5FD9CF 100%)', boxShadow: '0 4px 6px rgba(78,205,196,0.15), 0 2px 4px rgba(78,205,196,0.25)' }}>
+              <div className="absolute inset-0 bg-linear-to-br from-white/10 to-transparent"></div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">✨</span>
+                  <h4 className="font-bold text-sm">Upgrade to {userPlan === "starter" ? "Pro" : "Enterprise"}</h4>
+                </div>
+                <p className="text-xs opacity-95 mb-3 leading-relaxed">Unlock Gantt charts and AI scheduling</p>
+                <Link href="/pricing" className="block text-center px-4 py-2 bg-white/95 backdrop-blur-sm rounded-lg text-xs font-bold hover:bg-white transition-all duration-200 hover:scale-105" style={{ color: '#4ECDC4', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                  Upgrade Now
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="sticky top-0 z-40" style={{ backgroundColor: colors.bg, borderBottom: colors.borderBottom, boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05)' }}>
+        <header className="sticky top-0 z-40" style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05)' }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h1 className="text-2xl font-bold" style={{ color: colors.text }}>✅ TaskFlow</h1>
-                <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
-                  {stats.total} tasks · {stats.dueToday} due today · {stats.overdue} overdue
+                <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{getGreeting()}</h1>
+                <p className="text-sm mt-1" style={{ color: '#4A4A4A' }}>
+                  You have {stats.dueToday} tasks due today and {stats.overdue} overdue
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -757,34 +917,34 @@ export default function TaskFlowPage() {
             </div>
 
             {/* View Toggle & Filters */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* View Toggle — horizontally scrollable on mobile */}
-              <div className="flex items-center gap-2 rounded-lg p-1 overflow-x-auto w-fit" style={{ backgroundColor: colors.bgAlt }}>
+            <div className="flex items-center justify-between gap-4">
+              {/* View Toggle */}
+              <div className="flex items-center gap-2 rounded-lg p-1" style={{ backgroundColor: '#F8F9FA' }}>
                 <button
                   onClick={() => setViewMode("dashboard")}
-                  className={`px-3 py-2.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 shrink-0 ${viewMode === "dashboard" ? "shadow-sm" : ""}`}
-                  style={viewMode === "dashboard" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "dashboard" ? "shadow-sm" : ""}`}
+                  style={viewMode === "dashboard" ? { backgroundColor: '#FFFFFF', color: '#1A1A1A' } : { color: '#4A4A4A' }}
                 >
                   📋 Dashboard
                 </button>
                 <button
                   onClick={() => setViewMode("kanban")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "kanban" ? "shadow-sm" : ""}`}
-                  style={viewMode === "kanban" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
+                  style={viewMode === "kanban" ? { backgroundColor: '#FFFFFF', color: '#1A1A1A' } : { color: '#4A4A4A' }}
                 >
                   🎯 Kanban
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "list" ? "shadow-sm" : ""}`}
-                  style={viewMode === "list" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
+                  style={viewMode === "list" ? { backgroundColor: '#FFFFFF', color: '#1A1A1A' } : { color: '#4A4A4A' }}
                 >
                   📱 List
                 </button>
                 <button
                   onClick={() => setViewMode("calendar")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "calendar" ? "shadow-sm" : ""}`}
-                  style={viewMode === "calendar" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
+                  style={viewMode === "calendar" ? { backgroundColor: '#FFFFFF', color: '#1A1A1A' } : { color: '#4A4A4A' }}
                   disabled={userPlan === "starter"}
                 >
                   🗓️ Calendar {userPlan === "starter" && <span className="text-xs">🔒</span>}
@@ -792,7 +952,7 @@ export default function TaskFlowPage() {
                 <button
                   onClick={() => setViewMode("gantt")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "gantt" ? "shadow-sm" : ""}`}
-                  style={viewMode === "gantt" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
+                  style={viewMode === "gantt" ? { backgroundColor: '#FFFFFF', color: '#1A1A1A' } : { color: '#4A4A4A' }}
                   disabled={userPlan === "starter"}
                 >
                   📊 Gantt {userPlan === "starter" && <span className="text-xs">🔒</span>}
@@ -805,7 +965,7 @@ export default function TaskFlowPage() {
                   value={selectedProject}
                   onChange={(e) => setSelectedProject(e.target.value)}
                   className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                  style={{ border: colors.border, color: colors.text, backgroundColor: colors.bg }}
+                  style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
                 >
                   <option value="all">All Projects</option>
                   <option value="proj-1">Downtown Office</option>
@@ -818,7 +978,7 @@ export default function TaskFlowPage() {
                   value={selectedTrade}
                   onChange={(e) => setSelectedTrade(e.target.value)}
                   className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                  style={{ border: colors.border, color: colors.text, backgroundColor: colors.bg }}
+                  style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
                 >
                   <option value="all">All Trades</option>
                   <option value="electrical">⚡ Electrical</option>
@@ -833,7 +993,7 @@ export default function TaskFlowPage() {
                   value={selectedPriority}
                   onChange={(e) => setSelectedPriority(e.target.value)}
                   className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                  style={{ border: colors.border, color: colors.text, backgroundColor: colors.bg }}
+                  style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
                 >
                   <option value="all">All Priorities</option>
                   <option value="critical">🔥 Critical</option>
@@ -847,56 +1007,57 @@ export default function TaskFlowPage() {
         </header>
 
         {/* Main Content Area */}
+        <main className="flex-1 overflow-y-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Dashboard View */}
             {viewMode === "dashboard" && (
               <div className="space-y-6">
                 {/* Stats Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+                  <div className="rounded-xl p-4" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">✅</span>
-                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Total</p>
+                      <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Total</p>
                     </div>
-                    <p className="text-3xl font-bold" style={{ color: colors.text }}>{stats.total}</p>
+                    <p className="text-3xl font-bold" style={{ color: '#1A1A1A' }}>{stats.total}</p>
                   </div>
 
-                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">🚧</span>
-                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>In Progress</p>
+                      <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>In Progress</p>
                     </div>
                     <p className="text-3xl font-bold" style={{ color: '#6A9BFD' }}>{stats.inProgress}</p>
                   </div>
 
-                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">✅</span>
-                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Completed</p>
+                      <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Completed</p>
                     </div>
                     <p className="text-3xl font-bold" style={{ color: '#6BCB77' }}>{stats.completed}</p>
                   </div>
 
-                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">🚨</span>
-                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Blocked</p>
+                      <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Blocked</p>
                     </div>
                     <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>{stats.blocked}</p>
                   </div>
 
-                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">📅</span>
-                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Due Today</p>
+                      <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Due Today</p>
                     </div>
                     <p className="text-3xl font-bold" style={{ color: '#FFD93D' }}>{stats.dueToday}</p>
                   </div>
 
-                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">⏰</span>
-                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Overdue</p>
+                      <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Overdue</p>
                     </div>
                     <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>{stats.overdue}</p>
                   </div>
@@ -909,7 +1070,7 @@ export default function TaskFlowPage() {
                       <span className="text-2xl">🚨</span>
                       <div className="flex-1">
                         <h3 className="font-semibold mb-1" style={{ color: '#DC2626' }}>Critical Alerts</h3>
-                        <p className="text-sm mb-2" style={{ color: colors.textMuted }}>
+                        <p className="text-sm mb-2" style={{ color: '#4A4A4A' }}>
                           You have {stats.overdue} overdue task{stats.overdue !== 1 ? 's' : ''} that need immediate attention
                         </p>
                         <button className="text-sm font-semibold" style={{ color: '#DC2626' }}>
@@ -922,17 +1083,17 @@ export default function TaskFlowPage() {
 
                 {/* Weather Widget */}
                 <ConstructionErrorBoundary>
-                    <WeatherWidget tasks={filteredTasks} countryCode="US" />
+                  <WeatherWidget tasks={filteredTasks} countryCode="US" />
                 </ConstructionErrorBoundary>
 
                 {/* My Tasks Today */}
-                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold" style={{ color: colors.text }}>Your Tasks Today</h3>
+                    <h3 className="text-lg font-bold" style={{ color: '#1A1A1A' }}>Your Tasks Today</h3>
                     <div className="flex items-center gap-2">
                       <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: `conic-gradient(#6BCB77 ${(myTasks.filter(t => t.status === 'completed').length / myTasks.length) * 100}%, #E0E0E0 0)` }}>
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.bg }}>
-                          <span className="text-sm font-bold" style={{ color: colors.text }}>
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FFFFFF' }}>
+                          <span className="text-sm font-bold" style={{ color: '#1A1A1A' }}>
                             {myTasks.filter(t => t.status === 'completed').length}/{myTasks.length}
                           </span>
                         </div>
@@ -955,12 +1116,12 @@ export default function TaskFlowPage() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-lg">{priorityStyles[task.priority].icon}</span>
-                              <h4 className="font-semibold text-sm" style={{ color: colors.text }}>{task.title}</h4>
+                              <h4 className="font-semibold text-sm" style={{ color: '#1A1A1A' }}>{task.title}</h4>
                               {task.weatherDependent && <span className="text-sm">🌤️</span>}
                               {task.inspectionRequired && <span className="text-sm">🔍</span>}
                             </div>
-                            <p className="text-xs mb-2" style={{ color: colors.textMuted }}>{task.project} • {task.location}</p>
-                            <div className="flex items-center gap-3 text-xs" style={{ color: colors.textMuted }}>
+                            <p className="text-xs mb-2" style={{ color: '#4A4A4A' }}>{task.project} • {task.location}</p>
+                            <div className="flex items-center gap-3 text-xs" style={{ color: '#4A4A4A' }}>
                               <span>📅 Due: {new Date(task.dueDate).toLocaleDateString()}</span>
                               <span>⏱️ {task.estimatedHours}h est</span>
                               {task.attachments > 0 && <span>📎 {task.attachments}</span>}
@@ -979,11 +1140,11 @@ export default function TaskFlowPage() {
 
                         {/* Progress Bar */}
                         <div className="mt-3">
-                          <div className="flex items-center justify-between text-xs mb-1" style={{ color: colors.textMuted }}>
+                          <div className="flex items-center justify-between text-xs mb-1" style={{ color: '#4A4A4A' }}>
                             <span>Progress</span>
                             <span className="font-semibold">{task.progress}%</span>
                           </div>
-                          <div className="w-full rounded-full h-2" style={{ backgroundColor: colors.bgMuted }}>
+                          <div className="w-full rounded-full h-2" style={{ backgroundColor: '#E0E0E0' }}>
                             <div
                               className="h-2 rounded-full transition-all"
                               style={{
@@ -1038,8 +1199,8 @@ export default function TaskFlowPage() {
                 </div>
                 <DragOverlay>
                   {activeId ? (
-                    <div className="rounded-lg p-3 cursor-grabbing" style={{ backgroundColor: colors.bg, boxShadow: '0 8px 16px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1)', opacity: 0.9 }}>
-                      <p className="font-semibold text-sm" style={{ color: colors.text }}>
+                    <div className="rounded-lg p-3 cursor-grabbing" style={{ backgroundColor: '#FFFFFF', boxShadow: '0 8px 16px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1)', opacity: 0.9 }}>
+                      <p className="font-semibold text-sm" style={{ color: '#1A1A1A' }}>
                         {tasks.find(t => t.id === activeId)?.title || "Task"}
                       </p>
                     </div>
@@ -1050,28 +1211,28 @@ export default function TaskFlowPage() {
 
             {/* List View */}
             {viewMode === "list" && (
-              <div className="rounded-xl overflow-hidden" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+              <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead style={{ backgroundColor: colors.bgAlt, borderBottom: colors.borderBottom }}>
+                    <thead style={{ backgroundColor: '#F8F9FA', borderBottom: '1px solid #E0E0E0' }}>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Task</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Priority</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Trade</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Assignee</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Due Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Progress</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Task</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Priority</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Trade</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Assignee</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Due Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Progress</th>
                       </tr>
                     </thead>
-                    <tbody style={{ borderTop: `1px solid var(--border)` }}>
+                    <tbody style={{ borderTop: '1px solid #E0E0E0' }}>
                       {filteredTasks.map((task) => (
-                        <tr key={task.id} className="transition-colors" style={{ borderBottom: colors.borderBottom }}>
+                        <tr key={task.id} className="transition-colors hover:bg-gray-50" style={{ borderBottom: '1px solid #E0E0E0' }}>
                           <td className="px-6 py-4">
                             <div className="flex items-start gap-3">
                               <div className="flex-1">
-                                <p className="font-semibold text-sm mb-1" style={{ color: colors.text }}>{task.title}</p>
-                                <p className="text-xs" style={{ color: colors.textMuted }}>{task.project}</p>
+                                <p className="font-semibold text-sm mb-1" style={{ color: '#1A1A1A' }}>{task.title}</p>
+                                <p className="text-xs" style={{ color: '#4A4A4A' }}>{task.project}</p>
                               </div>
                             </div>
                           </td>
@@ -1095,18 +1256,18 @@ export default function TaskFlowPage() {
                               <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold" style={{ background: 'linear-gradient(135deg, #4ECDC4 0%, #5FD9CF 100%)' }}>
                                 {task.assigneeAvatar}
                               </div>
-                              <span className="text-sm" style={{ color: colors.text }}>{task.assignee}</span>
+                              <span className="text-sm" style={{ color: '#1A1A1A' }}>{task.assignee}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <span className="text-sm" style={{ color: colors.text }}>{new Date(task.dueDate).toLocaleDateString()}</span>
+                            <span className="text-sm" style={{ color: '#1A1A1A' }}>{new Date(task.dueDate).toLocaleDateString()}</span>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
-                              <div className="w-24 rounded-full h-2" style={{ backgroundColor: colors.bgMuted }}>
+                              <div className="w-24 rounded-full h-2" style={{ backgroundColor: '#E0E0E0' }}>
                                 <div className="h-2 rounded-full" style={{ width: `${task.progress}%`, backgroundColor: tradeColors[task.trade].border }}></div>
                               </div>
-                              <span className="text-sm font-medium min-w-12" style={{ color: colors.text }}>{task.progress}%</span>
+                              <span className="text-sm font-medium min-w-[3rem]" style={{ color: '#1A1A1A' }}>{task.progress}%</span>
                             </div>
                           </td>
                         </tr>
@@ -1119,12 +1280,12 @@ export default function TaskFlowPage() {
 
             {/* Calendar & Gantt Views (Pro+) */}
             {(viewMode === "calendar" || viewMode === "gantt") && userPlan === "starter" && (
-              <div className="rounded-xl p-12 text-center" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+              <div className="rounded-xl p-12 text-center" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                 <span className="text-6xl mb-4 block">🔒</span>
-                <h3 className="text-xl font-bold mb-2" style={{ color: colors.text }}>
+                <h3 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>
                   {viewMode === "calendar" ? "Calendar View" : "Gantt Chart"} - Pro Feature
                 </h3>
-                <p className="mb-6" style={{ color: colors.textMuted }}>
+                <p className="mb-6" style={{ color: '#4A4A4A' }}>
                   Upgrade to Pro or Enterprise to unlock advanced scheduling and timeline views
                 </p>
                 <Link
@@ -1144,7 +1305,7 @@ export default function TaskFlowPage() {
                   setEditingTask(task as any)
                   setShowCreateModal(true)
                 }}
-                onDateClick={() => {
+                onDateClick={(date) => {
                   setShowCreateModal(true)
                 }}
               />
@@ -1160,6 +1321,8 @@ export default function TaskFlowPage() {
               />
             )}
           </div>
+        </main>
+      </div>
 
       {/* Task Creation Modal */}
       <TaskCreationModal
@@ -1264,6 +1427,6 @@ export default function TaskFlowPage() {
         teamMembers={teamMembers}
         existingTasks={tasks}
       />
-    </>
+    </div>
   )
 }

@@ -6,7 +6,6 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import {
   quoteService,
   type Quote,
@@ -18,7 +17,6 @@ import {
 
 export default function QuotesPage() {
   const router = useRouter()
-  const { colors, darkMode } = useThemeColors()
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
@@ -141,27 +139,81 @@ export default function QuotesPage() {
       return sortOrder === 'asc' ? comparison : -comparison
     })
 
+  // Quality Guide lines 39-47: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 mx-auto" style={{ borderColor: '#FF6B6B' }} />
-          <p className="mt-4 text-lg" style={{ color: colors.textMuted }}>Loading quotes...</p>
+      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+        <div className="max-w-7xl mx-auto p-6 space-y-6">
+          {/* Header skeleton */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="h-8 bg-gray-200 rounded w-40 mb-2 animate-pulse" />
+              <div className="h-4 bg-gray-200 rounded w-64 animate-pulse" />
+            </div>
+            <div className="flex gap-3">
+              <div className="h-10 bg-gray-200 rounded-lg w-36 animate-pulse" />
+              <div className="h-10 bg-gray-200 rounded-lg w-28 animate-pulse" />
+            </div>
+          </div>
+          {/* Stats skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="h-4 bg-gray-200 rounded w-24" />
+                  <div className="w-8 h-8 bg-gray-200 rounded" />
+                </div>
+                <div className="h-8 bg-gray-200 rounded w-20" />
+              </div>
+            ))}
+          </div>
+          {/* Filter skeleton */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-span-2 h-10 bg-gray-200 rounded-lg" />
+              <div className="h-10 bg-gray-200 rounded-lg" />
+              <div className="h-10 bg-gray-200 rounded-lg" />
+            </div>
+          </div>
+          {/* Quote cards skeleton */}
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-6 bg-gray-200 rounded w-48" />
+                      <div className="h-5 bg-gray-200 rounded-full w-20" />
+                    </div>
+                    <div className="h-4 bg-gray-200 rounded w-72" />
+                  </div>
+                  <div className="text-right">
+                    <div className="h-8 bg-gray-200 rounded w-24 mb-2" />
+                    <div className="flex gap-2">
+                      <div className="h-6 bg-gray-200 rounded w-12" />
+                      <div className="h-6 bg-gray-200 rounded w-16" />
+                      <div className="h-6 bg-gray-200 rounded w-10" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
+    <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold" style={{ color: colors.text }}>
+            <h1 className="text-3xl font-bold" style={{ color: '#1A1A1A' }}>
               💼 QuoteHub
             </h1>
-            <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
+            <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
               Manage your construction quotes and proposals
             </p>
           </div>
@@ -169,7 +221,7 @@ export default function QuotesPage() {
             <button
               onClick={() => router.push('/quotes/templates')}
               className="px-4 py-2 rounded-lg border font-semibold transition-colors hover:bg-white"
-              style={{ borderColor: '#E5E7EB', color: colors.textMuted }}
+              style={{ borderColor: '#E5E7EB', color: '#374151' }}
             >
               📚 Browse Templates
             </button>
@@ -188,19 +240,19 @@ export default function QuotesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold" style={{ color: colors.textMuted }}>
+                <span className="text-sm font-semibold" style={{ color: '#6B7280' }}>
                   Total Quotes
                 </span>
                 <span className="text-2xl">📝</span>
               </div>
-              <p className="text-3xl font-bold" style={{ color: colors.text }}>
+              <p className="text-3xl font-bold" style={{ color: '#1A1A1A' }}>
                 {stats.total_quotes || 0}
               </p>
             </div>
 
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold" style={{ color: colors.textMuted }}>
+                <span className="text-sm font-semibold" style={{ color: '#6B7280' }}>
                   Total Value
                 </span>
                 <span className="text-2xl">💰</span>
@@ -212,7 +264,7 @@ export default function QuotesPage() {
 
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold" style={{ color: colors.textMuted }}>
+                <span className="text-sm font-semibold" style={{ color: '#6B7280' }}>
                   Accepted
                 </span>
                 <span className="text-2xl">✅</span>
@@ -220,14 +272,14 @@ export default function QuotesPage() {
               <p className="text-3xl font-bold" style={{ color: '#10B981' }}>
                 {stats.accepted_count || 0}
               </p>
-              <p className="text-xs mt-1" style={{ color: colors.textMuted }}>
+              <p className="text-xs mt-1" style={{ color: '#6B7280' }}>
                 {formatCurrency(stats.accepted_value || 0)}
               </p>
             </div>
 
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold" style={{ color: colors.textMuted }}>
+                <span className="text-sm font-semibold" style={{ color: '#6B7280' }}>
                   Conversion Rate
                 </span>
                 <span className="text-2xl">📊</span>
@@ -244,7 +296,7 @@ export default function QuotesPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Search */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold mb-2" style={{ color: colors.textMuted }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: '#374151' }}>
                 Search
               </label>
               <input
@@ -259,7 +311,7 @@ export default function QuotesPage() {
 
             {/* Status Filter */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: colors.textMuted }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: '#374151' }}>
                 Status
               </label>
               <select
@@ -281,7 +333,7 @@ export default function QuotesPage() {
 
             {/* Sort */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: colors.textMuted }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: '#374151' }}>
                 Sort By
               </label>
               <div className="flex gap-2">
@@ -298,7 +350,7 @@ export default function QuotesPage() {
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                   className="px-3 py-2 rounded-lg border font-semibold"
-                  style={{ borderColor: '#E5E7EB', color: colors.textMuted }}
+                  style={{ borderColor: '#E5E7EB', color: '#374151' }}
                   title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
                 >
                   {sortOrder === 'asc' ? '↑' : '↓'}
@@ -312,10 +364,10 @@ export default function QuotesPage() {
         {filteredQuotes.length === 0 ? (
           <div className="bg-white rounded-xl shadow-lg p-12 text-center">
             <p className="text-2xl mb-2">📭</p>
-            <p className="text-lg font-semibold mb-2" style={{ color: colors.textMuted }}>
+            <p className="text-lg font-semibold mb-2" style={{ color: '#374151' }}>
               {searchQuery || selectedStatus !== 'all' ? 'No quotes match your filters' : 'No quotes yet'}
             </p>
-            <p className="text-sm mb-6" style={{ color: colors.textMuted }}>
+            <p className="text-sm mb-6" style={{ color: '#6B7280' }}>
               {searchQuery || selectedStatus !== 'all'
                 ? 'Try adjusting your search or filters'
                 : 'Create your first quote to get started'}
@@ -345,7 +397,7 @@ export default function QuotesPage() {
                     {/* Left side - Quote info */}
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-bold" style={{ color: colors.text }}>
+                        <h3 className="text-xl font-bold" style={{ color: '#1A1A1A' }}>
                           {quote.title}
                         </h3>
                         <span
@@ -367,7 +419,7 @@ export default function QuotesPage() {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-4 text-sm" style={{ color: colors.textMuted }}>
+                      <div className="flex items-center gap-4 text-sm" style={{ color: '#6B7280' }}>
                         <span>#{quote.quote_number}</span>
                         <span>•</span>
                         <span>
@@ -377,16 +429,28 @@ export default function QuotesPage() {
                         </span>
                         <span>•</span>
                         <span>{new Date(quote.created_at).toLocaleDateString()}</span>
-                        {quote.valid_until && (
-                          <>
-                            <span>•</span>
-                            <span>Valid until {new Date(quote.valid_until).toLocaleDateString()}</span>
-                          </>
-                        )}
+                        {/* Spec line 99-100: Expiration urgency indicator */}
+                        {quote.valid_until && (() => {
+                          const daysLeft = Math.ceil((new Date(quote.valid_until).getTime() - new Date().getTime()) / 86400000)
+                          const urgencyColor = daysLeft < 0 ? '#DC2626' : daysLeft <= 7 ? '#F59E0B' : '#6B7280'
+                          return (
+                            <>
+                              <span>•</span>
+                              <span style={{ color: urgencyColor, fontWeight: daysLeft <= 7 ? 600 : 400 }}>
+                                {daysLeft < 0
+                                  ? `Expired ${Math.abs(daysLeft)}d ago`
+                                  : daysLeft === 0
+                                  ? 'Expires today'
+                                  : `Expires in ${daysLeft}d`
+                                }
+                              </span>
+                            </>
+                          )
+                        })()}
                       </div>
 
                       {quote.description && (
-                        <p className="text-sm mt-2 line-clamp-1" style={{ color: colors.textMuted }}>
+                        <p className="text-sm mt-2 line-clamp-1" style={{ color: '#6B7280' }}>
                           {quote.description}
                         </p>
                       )}
@@ -404,7 +468,7 @@ export default function QuotesPage() {
                             router.push(`/quotes/${quote.id}/edit`)
                           }}
                           className="px-3 py-1 rounded text-xs font-semibold transition-colors hover:bg-gray-100"
-                          style={{ color: colors.textMuted }}
+                          style={{ color: '#6B7280' }}
                         >
                           Edit
                         </button>
@@ -414,7 +478,7 @@ export default function QuotesPage() {
                             handleDuplicateQuote(quote.id)
                           }}
                           className="px-3 py-1 rounded text-xs font-semibold transition-colors hover:bg-gray-100"
-                          style={{ color: colors.textMuted }}
+                          style={{ color: '#6B7280' }}
                         >
                           Duplicate
                         </button>

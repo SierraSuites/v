@@ -12,7 +12,6 @@ import BatchPhotoUpload from '@/components/fieldsnap/BatchPhotoUpload'
 import { useToast } from '@/components/ToastNotification'
 import MapView from '@/components/fieldsnap/MapView'
 import TimelineView from '@/components/fieldsnap/TimelineView'
-import { useThemeColors } from "@/lib/hooks/useThemeColors"
 
 // Types - using Photo type from lib/supabase/photos
 
@@ -28,7 +27,6 @@ interface DashboardStats {
 export default function FieldSnapPage() {
   const router = useRouter()
   const toast = useToast()
-  const { colors, darkMode } = useThemeColors()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [photos, setPhotos] = useState<Photo[]>([])
@@ -231,12 +229,42 @@ export default function FieldSnapPage() {
 
   // Storage percentage
 
+  // Quality Guide lines 1262-1270: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.bgAlt }}>
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-t-transparent rounded-full mx-auto" style={{ borderColor: '#FF6B6B', borderTopColor: 'transparent' }}></div>
-          <p className="mt-4 text-sm" style={{ color: colors.textMuted }}>Loading FieldSnap...</p>
+      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+        {/* Header skeleton */}
+        <div className="sticky top-0 z-30 p-4 lg:p-6 bg-white border-b border-gray-200 animate-pulse">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 max-w-2xl h-10 bg-gray-200 rounded-lg" />
+            <div className="flex gap-2">
+              <div className="h-10 w-24 bg-gray-200 rounded-lg" />
+              <div className="h-10 w-24 bg-gray-200 rounded-lg" />
+            </div>
+          </div>
+        </div>
+        <div className="p-4 lg:p-6 space-y-6">
+          {/* Stats skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-20 mb-2" />
+                <div className="h-7 bg-gray-200 rounded w-16" />
+              </div>
+            ))}
+          </div>
+          {/* Photo grid skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
+                <div className="aspect-square bg-gray-200" />
+                <div className="p-3">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
@@ -247,11 +275,11 @@ export default function FieldSnapPage() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 p-4 lg:p-6" style={{ backgroundColor: colors.bg, borderBottom: colors.borderBottom }}>
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 p-4 lg:p-6" style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E0E0E0' }}>
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <div className="flex-1 max-w-2xl">
               <div className="relative">
-                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: colors.textMuted }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: '#4A4A4A' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
@@ -260,7 +288,7 @@ export default function FieldSnapPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 rounded-lg text-sm"
-                  style={{ backgroundColor: colors.bgAlt, border: colors.border }}
+                  style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
                 />
               </div>
             </div>
@@ -304,22 +332,22 @@ export default function FieldSnapPage() {
         {/* Dashboard Stats */}
         <div className="p-4 lg:p-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="p-4 rounded-xl" style={{ backgroundColor: colors.bg, border: colors.border }}>
+            <div className="p-4 rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold" style={{ color: colors.textMuted }}>Total Photos</span>
+                <span className="text-xs font-semibold" style={{ color: '#4A4A4A' }}>Total Photos</span>
                 <span className="text-2xl">📸</span>
               </div>
-              <p className="text-2xl font-bold" style={{ color: colors.text }}>{stats.totalPhotos.toLocaleString()}</p>
+              <p className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{stats.totalPhotos.toLocaleString()}</p>
               <p className="text-xs mt-1" style={{ color: '#6BCB77' }}>+{stats.todayUploads} today</p>
             </div>
 
-            <div className="p-4 rounded-xl" style={{ backgroundColor: colors.bg, border: colors.border }}>
+            <div className="p-4 rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold" style={{ color: colors.textMuted }}>Active Projects</span>
+                <span className="text-xs font-semibold" style={{ color: '#4A4A4A' }}>Active Projects</span>
                 <span className="text-2xl">🏗️</span>
               </div>
-              <p className="text-2xl font-bold" style={{ color: colors.text }}>{stats.activeProjects}</p>
-              <p className="text-xs mt-1" style={{ color: colors.textMuted }}>With media</p>
+              <p className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{stats.activeProjects}</p>
+              <p className="text-xs mt-1" style={{ color: '#4A4A4A' }}>With media</p>
             </div>
 
           </div>
@@ -362,7 +390,7 @@ export default function FieldSnapPage() {
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="px-4 py-2 rounded-lg text-sm flex-1 sm:flex-none"
-                style={{ backgroundColor: colors.bgAlt, border: colors.border }}
+                style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
@@ -373,7 +401,7 @@ export default function FieldSnapPage() {
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-                style={{ backgroundColor: colors.bgAlt, border: colors.border }}
+                style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
               >
                 Filters
               </button>
@@ -382,14 +410,14 @@ export default function FieldSnapPage() {
 
           {/* Filters Panel */}
           {showFilters && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 mb-6 rounded-xl" style={{ backgroundColor: colors.bg, border: colors.border }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 mb-6 rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
               <div>
-                <label className="block text-xs font-semibold mb-2" style={{ color: colors.textMuted }}>Date Range</label>
+                <label className="block text-xs font-semibold mb-2" style={{ color: '#4A4A4A' }}>Date Range</label>
                 <select
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ backgroundColor: colors.bgAlt, border: colors.border }}
+                  style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
                 >
                   <option value="all">All Time</option>
                   <option value="today">Today</option>
@@ -399,24 +427,24 @@ export default function FieldSnapPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold mb-2" style={{ color: colors.textMuted }}>Project</label>
+                <label className="block text-xs font-semibold mb-2" style={{ color: '#4A4A4A' }}>Project</label>
                 <select
                   value={selectedProject}
                   onChange={(e) => setSelectedProject(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ backgroundColor: colors.bgAlt, border: colors.border }}
+                  style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
                 >
                   <option value="all">All Projects</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold mb-2" style={{ color: colors.textMuted }}>Tags</label>
+                <label className="block text-xs font-semibold mb-2" style={{ color: '#4A4A4A' }}>Tags</label>
                 <select
                   value={tagFilter}
                   onChange={(e) => setTagFilter(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ backgroundColor: colors.bgAlt, border: colors.border }}
+                  style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
                 >
                   <option value="all">All Tags</option>
                   <option value="progress">Progress</option>
@@ -427,12 +455,12 @@ export default function FieldSnapPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold mb-2" style={{ color: colors.textMuted }}>Status</label>
+                <label className="block text-xs font-semibold mb-2" style={{ color: '#4A4A4A' }}>Status</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ backgroundColor: colors.bgAlt, border: colors.border }}
+                  style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
                 >
                   <option value="all">All Status</option>
                   <option value="approved">Approved</option>
@@ -445,10 +473,10 @@ export default function FieldSnapPage() {
 
           {/* Photos Grid/List/Map/Timeline */}
           {filteredPhotos.length === 0 ? (
-            <div className="text-center py-20 rounded-xl" style={{ backgroundColor: colors.bg, border: colors.border }}>
+            <div className="text-center py-20 rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
               <span className="text-6xl mb-4 block">📸</span>
-              <h3 className="text-xl font-bold mb-2" style={{ color: colors.text }}>No Photos Yet</h3>
-              <p className="text-sm mb-6" style={{ color: colors.textMuted }}>
+              <h3 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>No Photos Yet</h3>
+              <p className="text-sm mb-6" style={{ color: '#4A4A4A' }}>
                 Start capturing your construction site with FieldSnap
               </p>
               <button
@@ -470,7 +498,7 @@ export default function FieldSnapPage() {
                 <div
                   key={photo.id}
                   className="group relative rounded-xl overflow-hidden cursor-pointer transform transition-transform hover:scale-105"
-                  style={{ backgroundColor: colors.bg, border: colors.border, aspectRatio: '1/1' }}
+                  style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', aspectRatio: '1/1' }}
                 >
                   <img
                     src={photo.thumbnail_url || photo.url}
@@ -492,7 +520,7 @@ export default function FieldSnapPage() {
                 <div
                   key={photo.id}
                   className="flex items-center gap-4 p-4 rounded-xl cursor-pointer hover:shadow-md transition-shadow"
-                  style={{ backgroundColor: colors.bg, border: colors.border }}
+                  style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}
                 >
                   <img
                     src={photo.thumbnail_url || photo.url}
@@ -500,19 +528,19 @@ export default function FieldSnapPage() {
                     className="w-16 h-16 rounded-lg object-cover"
                   />
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-sm truncate" style={{ color: colors.text }}>{photo.filename}</h4>
-                    <p className="text-xs truncate" style={{ color: colors.textMuted }}>{photo.project_name || 'No project'}</p>
+                    <h4 className="font-semibold text-sm truncate" style={{ color: '#1A1A1A' }}>{photo.filename}</h4>
+                    <p className="text-xs truncate" style={{ color: '#4A4A4A' }}>{photo.project_name || 'No project'}</p>
                     <div className="flex items-center gap-2 mt-1">
                       {photo.tags.slice(0, 3).map(tag => (
-                        <span key={tag} className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: colors.bgAlt, color: colors.textMuted }}>
+                        <span key={tag} className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: '#F8F9FA', color: '#4A4A4A' }}>
                           {tag}
                         </span>
                       ))}
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs" style={{ color: colors.textMuted }}>{formatBytes(photo.file_size)}</p>
-                    <p className="text-xs" style={{ color: colors.textMuted }}>
+                    <p className="text-xs" style={{ color: '#4A4A4A' }}>{formatBytes(photo.file_size)}</p>
+                    <p className="text-xs" style={{ color: '#4A4A4A' }}>
                       {new Date(photo.captured_at).toLocaleDateString()}
                     </p>
                   </div>
