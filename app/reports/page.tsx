@@ -265,9 +265,19 @@ export default function ReportsPage() {
           </div>
 
           {loading ? (
-            <div className="bg-white rounded-lg shadow p-12 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="text-gray-600 mt-4">Loading reports...</p>
+            <div className="space-y-4 animate-pulse">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-white rounded-xl border border-gray-200 p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gray-200 rounded-lg" />
+                    <div className="flex-1">
+                      <div className="h-5 bg-gray-200 rounded w-1/3 mb-2" />
+                      <div className="h-3 bg-gray-200 rounded w-1/2" />
+                    </div>
+                    <div className="h-6 bg-gray-200 rounded-full w-20" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : reports.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-12 text-center">

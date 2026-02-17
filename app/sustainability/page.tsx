@@ -149,8 +149,21 @@ export default function SustainabilityDashboard() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            <div className="space-y-6 animate-pulse">
+              <div className="h-7 bg-gray-200 rounded w-56 mb-6" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="bg-white rounded-xl border border-gray-200 p-6">
+                    <div className="w-32 h-32 bg-gray-200 rounded-full mx-auto mb-4" />
+                    <div className="h-4 bg-gray-200 rounded w-24 mx-auto mb-2" />
+                    <div className="h-3 bg-gray-200 rounded w-16 mx-auto" />
+                  </div>
+                ))}
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="h-5 bg-gray-200 rounded w-40 mb-4" />
+                <div className="h-48 bg-gray-200 rounded" />
+              </div>
             </div>
           ) : (
             <>

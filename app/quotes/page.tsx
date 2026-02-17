@@ -139,12 +139,66 @@ export default function QuotesPage() {
       return sortOrder === 'asc' ? comparison : -comparison
     })
 
+  // Quality Guide lines 39-47: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 mx-auto" style={{ borderColor: '#FF6B6B' }} />
-          <p className="mt-4 text-lg" style={{ color: '#6B7280' }}>Loading quotes...</p>
+      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+        <div className="max-w-7xl mx-auto p-6 space-y-6">
+          {/* Header skeleton */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="h-8 bg-gray-200 rounded w-40 mb-2 animate-pulse" />
+              <div className="h-4 bg-gray-200 rounded w-64 animate-pulse" />
+            </div>
+            <div className="flex gap-3">
+              <div className="h-10 bg-gray-200 rounded-lg w-36 animate-pulse" />
+              <div className="h-10 bg-gray-200 rounded-lg w-28 animate-pulse" />
+            </div>
+          </div>
+          {/* Stats skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="h-4 bg-gray-200 rounded w-24" />
+                  <div className="w-8 h-8 bg-gray-200 rounded" />
+                </div>
+                <div className="h-8 bg-gray-200 rounded w-20" />
+              </div>
+            ))}
+          </div>
+          {/* Filter skeleton */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-span-2 h-10 bg-gray-200 rounded-lg" />
+              <div className="h-10 bg-gray-200 rounded-lg" />
+              <div className="h-10 bg-gray-200 rounded-lg" />
+            </div>
+          </div>
+          {/* Quote cards skeleton */}
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-6 bg-gray-200 rounded w-48" />
+                      <div className="h-5 bg-gray-200 rounded-full w-20" />
+                    </div>
+                    <div className="h-4 bg-gray-200 rounded w-72" />
+                  </div>
+                  <div className="text-right">
+                    <div className="h-8 bg-gray-200 rounded w-24 mb-2" />
+                    <div className="flex gap-2">
+                      <div className="h-6 bg-gray-200 rounded w-12" />
+                      <div className="h-6 bg-gray-200 rounded w-16" />
+                      <div className="h-6 bg-gray-200 rounded w-10" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
@@ -375,12 +429,24 @@ export default function QuotesPage() {
                         </span>
                         <span>•</span>
                         <span>{new Date(quote.created_at).toLocaleDateString()}</span>
-                        {quote.valid_until && (
-                          <>
-                            <span>•</span>
-                            <span>Valid until {new Date(quote.valid_until).toLocaleDateString()}</span>
-                          </>
-                        )}
+                        {/* Spec line 99-100: Expiration urgency indicator */}
+                        {quote.valid_until && (() => {
+                          const daysLeft = Math.ceil((new Date(quote.valid_until).getTime() - new Date().getTime()) / 86400000)
+                          const urgencyColor = daysLeft < 0 ? '#DC2626' : daysLeft <= 7 ? '#F59E0B' : '#6B7280'
+                          return (
+                            <>
+                              <span>•</span>
+                              <span style={{ color: urgencyColor, fontWeight: daysLeft <= 7 ? 600 : 400 }}>
+                                {daysLeft < 0
+                                  ? `Expired ${Math.abs(daysLeft)}d ago`
+                                  : daysLeft === 0
+                                  ? 'Expires today'
+                                  : `Expires in ${daysLeft}d`
+                                }
+                              </span>
+                            </>
+                          )
+                        })()}
                       </div>
 
                       {quote.description && (

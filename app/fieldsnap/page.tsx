@@ -229,12 +229,42 @@ export default function FieldSnapPage() {
 
   // Storage percentage
 
+  // Quality Guide lines 1262-1270: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F9FA' }}>
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-t-transparent rounded-full mx-auto" style={{ borderColor: '#FF6B6B', borderTopColor: 'transparent' }}></div>
-          <p className="mt-4 text-sm" style={{ color: '#4A4A4A' }}>Loading FieldSnap...</p>
+      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+        {/* Header skeleton */}
+        <div className="sticky top-0 z-30 p-4 lg:p-6 bg-white border-b border-gray-200 animate-pulse">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 max-w-2xl h-10 bg-gray-200 rounded-lg" />
+            <div className="flex gap-2">
+              <div className="h-10 w-24 bg-gray-200 rounded-lg" />
+              <div className="h-10 w-24 bg-gray-200 rounded-lg" />
+            </div>
+          </div>
+        </div>
+        <div className="p-4 lg:p-6 space-y-6">
+          {/* Stats skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-20 mb-2" />
+                <div className="h-7 bg-gray-200 rounded w-16" />
+              </div>
+            ))}
+          </div>
+          {/* Photo grid skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
+                <div className="aspect-square bg-gray-200" />
+                <div className="p-3">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )

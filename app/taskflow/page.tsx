@@ -733,12 +733,46 @@ export default function TaskFlowPage() {
     { name: "ReportCenter", href: "/reportcenter", icon: "📊" },
   ]
 
+  // Quality Guide line 883: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F9FA' }}>
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#FF6B6B', borderTopColor: 'transparent' }}></div>
-          <p style={{ color: '#4A4A4A' }}>Loading TaskFlow...</p>
+      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header skeleton */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <div className="h-8 bg-gray-200 rounded w-36 mb-2 animate-pulse" />
+              <div className="h-4 bg-gray-200 rounded w-52 animate-pulse" />
+            </div>
+            <div className="h-10 bg-gray-200 rounded-lg w-32 animate-pulse" />
+          </div>
+          {/* View mode tabs skeleton */}
+          <div className="flex gap-2 mb-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-10 bg-gray-200 rounded-lg w-24 animate-pulse" />
+            ))}
+          </div>
+          {/* Kanban columns skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {['To Do', 'In Progress', 'In Review', 'Done'].map((col) => (
+              <div key={col} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-5 bg-gray-200 rounded w-20" />
+                  <div className="h-5 bg-gray-200 rounded-full w-6" />
+                </div>
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="border border-gray-100 rounded-lg p-3 mb-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2 mb-2" />
+                    <div className="flex gap-2">
+                      <div className="h-5 bg-gray-200 rounded-full w-14" />
+                      <div className="h-5 bg-gray-200 rounded-full w-10" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
