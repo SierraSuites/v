@@ -96,7 +96,7 @@ export default function ReportsPage() {
       type: 'daily',
       name: 'Daily Progress',
       icon: '📋',
-      color: '#3B82F6',
+      color: 'bg-blue-500',
       description: 'End-of-day project updates',
       time: '3 min'
     },
@@ -104,7 +104,7 @@ export default function ReportsPage() {
       type: 'weekly_timesheet',
       name: 'Weekly Timesheet',
       icon: '⏱️',
-      color: '#22C55E',
+      color: 'bg-green-500',
       description: 'Crew hours & payroll',
       time: '5 min'
     },
@@ -112,7 +112,7 @@ export default function ReportsPage() {
       type: 'budget',
       name: 'Budget Report',
       icon: '💰',
-      color: '#A855F7',
+      color: 'bg-purple-500',
       description: 'Cost analysis & forecasting',
       time: '2 min'
     },
@@ -120,7 +120,7 @@ export default function ReportsPage() {
       type: 'safety',
       name: 'Safety Report',
       icon: '⚠️',
-      color: '#F97316',
+      color: 'bg-orange-500',
       description: 'Safety incidents & inspections',
       time: '4 min'
     },
@@ -128,7 +128,7 @@ export default function ReportsPage() {
       type: 'progress',
       name: 'Progress Report',
       icon: '📊',
-      color: '#14B8A6',
+      color: 'bg-teal-500',
       description: 'Project milestones & timeline',
       time: '6 min'
     },
@@ -136,7 +136,7 @@ export default function ReportsPage() {
       type: 'custom',
       name: 'Custom Report',
       icon: '✨',
-      color: '#6B7280',
+      color: 'bg-gray-500',
       description: 'Build your own template',
       time: '10 min'
     }
@@ -177,43 +177,23 @@ export default function ReportsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Quality Guide lines 546-608: Stats Grid with gradient icons */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Total Reports</div>
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6A9BFD 0%, #8BB5FE 100%)' }}>
-                <span className="text-white text-sm">📋</span>
-              </div>
-            </div>
-            <div className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{stats.total}</div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
+            <div className="text-sm text-gray-600">Total Reports</div>
           </div>
-          <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>This Week</div>
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #38BDF8 0%, #7DD3FC 100%)' }}>
-                <span className="text-white text-sm">📊</span>
-              </div>
-            </div>
-            <div className="text-2xl font-bold" style={{ color: '#3B82F6' }}>{stats.this_week}</div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="text-3xl font-bold text-blue-600">{stats.this_week}</div>
+            <div className="text-sm text-gray-600">This Week</div>
           </div>
-          <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Sent to Clients</div>
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6BCB77 0%, #85D68D 100%)' }}>
-                <span className="text-white text-sm">✓</span>
-              </div>
-            </div>
-            <div className="text-2xl font-bold" style={{ color: '#22C55E' }}>{stats.sent_to_clients}</div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="text-3xl font-bold text-green-600">{stats.sent_to_clients}</div>
+            <div className="text-sm text-gray-600">Sent to Clients</div>
           </div>
-          <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Pending Review</div>
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)' }}>
-                <span className="text-white text-sm">⏳</span>
-              </div>
-            </div>
-            <div className="text-2xl font-bold" style={{ color: '#F59E0B' }}>{stats.pending_review}</div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="text-3xl font-bold text-orange-600">{stats.pending_review}</div>
+            <div className="text-sm text-gray-600">Pending Review</div>
           </div>
         </div>
 
@@ -225,23 +205,22 @@ export default function ReportsPage() {
               <Link
                 key={reportType.type}
                 href={`/reports/${reportType.type}/new`}
-                className="rounded-xl hover:shadow-md transition-all p-6 group hover:-translate-y-0.5"
-                style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderLeft: `4px solid ${reportType.color}` }}
+                className="bg-white rounded-lg shadow hover:shadow-lg transition-all p-6 border-2 border-transparent hover:border-blue-300 group"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="text-4xl">{reportType.icon}</div>
-                  <div className="flex items-center gap-1 text-xs" style={{ color: '#9CA3AF' }}>
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     {reportType.time}
                   </div>
                 </div>
-                <h3 className="text-lg font-semibold mb-2 transition-colors" style={{ color: '#1A1A1A' }}>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
                   {reportType.name}
                 </h3>
-                <p className="text-sm" style={{ color: '#4A4A4A' }}>{reportType.description}</p>
-                <div className="mt-4 flex items-center text-sm font-medium" style={{ color: reportType.color }}>
+                <p className="text-sm text-gray-600">{reportType.description}</p>
+                <div className="mt-4 flex items-center text-blue-600 text-sm font-medium">
                   Generate Now
                   <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -254,11 +233,11 @@ export default function ReportsPage() {
 
         {/* Recent Reports */}
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <h2 className="text-xl font-bold text-gray-900">Recent Reports</h2>
 
             {/* Filter Tabs */}
-            <div className="flex gap-2 overflow-x-auto">
+            <div className="flex gap-2 overflow-x-auto pb-1">
               <button
                 onClick={() => setFilter('all')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
@@ -286,36 +265,25 @@ export default function ReportsPage() {
           </div>
 
           {loading ? (
-            <div className="space-y-4 animate-pulse">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-200 rounded-lg" />
-                    <div className="flex-1">
-                      <div className="h-5 bg-gray-200 rounded w-1/3 mb-2" />
-                      <div className="h-3 bg-gray-200 rounded w-1/2" />
-                    </div>
-                    <div className="h-6 bg-gray-200 rounded-full w-20" />
-                  </div>
-                </div>
-              ))}
+            <div className="bg-white rounded-lg shadow p-12 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-600 mt-4">Loading reports...</p>
             </div>
           ) : reports.length === 0 ? (
-            <div className="rounded-xl p-12 text-center" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+            <div className="bg-white rounded-lg shadow p-12 text-center">
               <div className="text-6xl mb-4">📋</div>
-              <h3 className="text-xl font-semibold mb-2" style={{ color: '#1A1A1A' }}>No reports yet</h3>
-              <p className="mb-6" style={{ color: '#4A4A4A' }}>Generate your first report using the quick generate buttons above</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No reports yet</h3>
+              <p className="text-gray-600 mb-6">Generate your first report using the quick generate buttons above</p>
             </div>
           ) : (
-            <div className="rounded-xl divide-y divide-gray-100" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+            <div className="bg-white rounded-lg shadow divide-y">
               {reports.map((report) => {
                 const typeInfo = getReportTypeInfo(report.report_type)
                 return (
                   <Link
                     key={report.id}
                     href={`/reports/${report.id}`}
-                    className="p-6 hover:bg-gray-50 transition-colors block"
-                    style={{ borderLeft: `4px solid ${typeInfo.color}` }}
+                    className="p-4 sm:p-6 hover:bg-gray-50 transition-colors block"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4 flex-1">

@@ -8,7 +8,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import TaskCreationModal from "@/components/dashboard/TaskCreationModal"
-import { getTasks, createTask, updateTask, deleteTask, subscribeToTasks, type Task as SupabaseTask } from "@/lib/supabase/tasks"
+import { getTasks, createTask, updateTask, subscribeToTasks, type Task as SupabaseTask } from "@/lib/supabase/tasks"
 import {
   DndContext,
   DragEndEvent,
@@ -19,8 +19,6 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import { useDroppable } from '@dnd-kit/core'
 import DraggableTaskCard from "@/components/dashboard/DraggableTaskCard"
 import TeamAllocationHeatmap from "@/components/dashboard/TeamAllocationHeatmap"
@@ -28,7 +26,7 @@ import ProgressMetricsWidget from "@/components/dashboard/ProgressMetricsWidget"
 import CalendarView from "@/components/dashboard/CalendarView"
 import GanttChartView from "@/components/dashboard/GanttChartView"
 import WeatherWidget from "@/components/dashboard/WeatherWidget"
-import { ErrorBoundary, ConstructionErrorBoundary } from "@/components/ErrorBoundary"
+import { ConstructionErrorBoundary } from "@/components/ErrorBoundary"
 import { useThemeColors } from "@/lib/hooks/useThemeColors"
 
 // Task type definition
@@ -96,10 +94,10 @@ function DroppableColumn({
   children: React.ReactNode
 }) {
   const { setNodeRef } = useDroppable({ id })
-  const { colors, darkMode } = useThemeColors()
+  const { colors } = useThemeColors()
 
   return (
-    <div ref={setNodeRef} className="w-80 flex-shrink-0">
+    <div ref={setNodeRef} className="w-80 shrink-0">
       <div className="rounded-xl p-4 mb-4" style={{ backgroundColor: style.bg, border: `1px solid ${style.color}` }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -118,7 +116,7 @@ function DroppableColumn({
 
 export default function TaskFlowPage() {
   const router = useRouter()
-  const { colors, darkMode } = useThemeColors()
+  const { colors } = useThemeColors()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"dashboard" | "calendar" | "gantt" | "kanban" | "list">("dashboard")
@@ -759,12 +757,12 @@ export default function TaskFlowPage() {
             </div>
 
             {/* View Toggle & Filters */}
-            <div className="flex items-center justify-between gap-4">
-              {/* View Toggle */}
-              <div className="flex items-center gap-2 rounded-lg p-1" style={{ backgroundColor: colors.bgAlt }}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              {/* View Toggle — horizontally scrollable on mobile */}
+              <div className="flex items-center gap-2 rounded-lg p-1 overflow-x-auto" style={{ backgroundColor: colors.bgAlt }}>
                 <button
                   onClick={() => setViewMode("dashboard")}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "dashboard" ? "shadow-sm" : ""}`}
+                  className={`px-3 py-2.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 shrink-0 ${viewMode === "dashboard" ? "shadow-sm" : ""}`}
                   style={viewMode === "dashboard" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
                 >
                   📋 Dashboard
@@ -854,7 +852,7 @@ export default function TaskFlowPage() {
             {viewMode === "dashboard" && (
               <div className="space-y-6">
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                   <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">✅</span>
@@ -1108,7 +1106,7 @@ export default function TaskFlowPage() {
                               <div className="w-24 rounded-full h-2" style={{ backgroundColor: colors.bgMuted }}>
                                 <div className="h-2 rounded-full" style={{ width: `${task.progress}%`, backgroundColor: tradeColors[task.trade].border }}></div>
                               </div>
-                              <span className="text-sm font-medium min-w-[3rem]" style={{ color: colors.text }}>{task.progress}%</span>
+                              <span className="text-sm font-medium min-w-12" style={{ color: colors.text }}>{task.progress}%</span>
                             </div>
                           </td>
                         </tr>
@@ -1146,7 +1144,7 @@ export default function TaskFlowPage() {
                   setEditingTask(task as any)
                   setShowCreateModal(true)
                 }}
-                onDateClick={(date) => {
+                onDateClick={() => {
                   setShowCreateModal(true)
                 }}
               />
