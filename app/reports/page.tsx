@@ -178,7 +178,7 @@ export default function ReportsPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
             <div className="text-sm text-gray-600">Total Reports</div>
@@ -233,11 +233,11 @@ export default function ReportsPage() {
 
         {/* Recent Reports */}
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <h2 className="text-xl font-bold text-gray-900">Recent Reports</h2>
 
             {/* Filter Tabs */}
-            <div className="flex gap-2 overflow-x-auto">
+            <div className="flex gap-2 overflow-x-auto pb-1">
               <button
                 onClick={() => setFilter('all')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
@@ -283,7 +283,7 @@ export default function ReportsPage() {
                   <Link
                     key={report.id}
                     href={`/reports/${report.id}`}
-                    className="p-6 hover:bg-gray-50 transition-colors block"
+                    className="p-4 sm:p-6 hover:bg-gray-50 transition-colors block"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4 flex-1">

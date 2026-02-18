@@ -24,6 +24,7 @@ interface AppShellProps {
 export default function AppShell({ children, user }: AppShellProps) {
   const router = useRouter()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const { theme, setTheme } = useTheme()
@@ -32,6 +33,11 @@ export default function AppShell({ children, user }: AppShellProps) {
   const darkMode = mounted ? theme === 'dark' : false
   const [notificationCount] = useState(3)
   const [expandedNav, setExpandedNav] = useState<string | null>(null)
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [router])
 
   const userData = user?.user_metadata || {}
   const userName = userData.full_name?.split(' ')[0] || 'User'
@@ -117,6 +123,36 @@ export default function AppShell({ children, user }: AppShellProps) {
       badge: 'Pro',
     },
     {
+      name: 'Compliance',
+      href: '/compliance',
+      icon: '🦺',
+      locked: userPlan === 'starter',
+      lockedFor: ['starter'],
+      badge: 'Pro',
+      subItems: [
+        { name: 'Overview', href: '/compliance' },
+        { name: 'Safety Briefings', href: '/compliance?tab=briefings' },
+        { name: 'Incidents & OSHA', href: '/compliance?tab=incidents' },
+        { name: 'Certifications', href: '/compliance?tab=certifications' },
+        { name: 'Inspections', href: '/compliance?tab=inspections' },
+      ],
+    },
+    {
+      name: 'Integrations',
+      href: '/integrations',
+      icon: '🔗',
+      locked: userPlan === 'starter',
+      lockedFor: ['starter'],
+      badge: 'Pro',
+      subItems: [
+        { name: 'Overview', href: '/integrations' },
+        { name: 'QuickBooks', href: '/integrations?tab=quickbooks' },
+        { name: 'Stripe', href: '/integrations?tab=stripe' },
+        { name: 'Email & Calendar', href: '/integrations?tab=email' },
+        { name: 'API Keys', href: '/integrations?tab=api-keys' },
+      ],
+    },
+    {
       name: 'AI Tools',
       href: '/ai',
       icon: '🤖',
@@ -164,13 +200,25 @@ export default function AppShell({ children, user }: AppShellProps) {
 
   return (
     <div className={`flex h-screen overflow-hidden ${darkMode ? 'dark bg-[#10121b]' : 'bg-gray-50'}`}>
+      {/* Mobile overlay backdrop */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
-        className={`static inset-y-0 left-0 z-50 backdrop-blur-xl bg-opacity-40 ${
-          darkMode ? 'bg-[#10121b]' : 'bg-white'
-        } border-r ${
-          darkMode ? 'border-gray-800' : 'border-gray-200'
-        } transition-all duration-300 flex flex-col shrink-0 ${sidebarCollapsed ? 'w-20' : 'w-72'}`}
+        className={`
+          fixed inset-y-0 left-0 z-50 md:static md:z-auto
+          backdrop-blur-xl bg-opacity-40
+          ${darkMode ? 'bg-[#10121b]' : 'bg-white'}
+          border-r ${darkMode ? 'border-gray-800' : 'border-gray-200'}
+          transition-all duration-300 flex flex-col shrink-0
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          ${sidebarCollapsed ? 'md:w-20' : 'md:w-72'} w-72
+        `}
       >
         {/* Logo */}
         <div className={`p-6 ${darkMode ? 'border-b border-gray-800' : 'border-b border-gray-200'}`}>
@@ -185,9 +233,10 @@ export default function AppShell({ children, user }: AppShellProps) {
                 </h1>
               </div>
             )}
+            {/* Desktop collapse toggle */}
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className={`p-2 ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} rounded-lg transition-all duration-200`}
+              className={`hidden md:block p-2 ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} rounded-lg transition-all duration-200`}
             >
               <svg
                 className={`w-5 h-5 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''} ${
@@ -198,6 +247,16 @@ export default function AppShell({ children, user }: AppShellProps) {
                 viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+            </button>
+            {/* Mobile close button */}
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className={`md:hidden p-2 ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} rounded-lg transition-all duration-200`}
+              aria-label="Close menu"
+            >
+              <svg className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
@@ -446,34 +505,47 @@ export default function AppShell({ children, user }: AppShellProps) {
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className={`flex-1 flex flex-col overflow-hidden ${darkMode ? 'bg-[#0d0f17]' : 'bg-gray-50'}`}>
+      {/* Main Content — always full width on mobile (sidebar is overlay) */}
+      <div className={`flex-1 flex flex-col overflow-hidden min-w-0 ${darkMode ? 'bg-[#0d0f17]' : 'bg-gray-50'}`}>
         {/* Top Bar */}
         <header
           className={`backdrop-blur-xl ${
             darkMode ? 'bg-[#10121b]/80 border-gray-800' : 'bg-white/80 border-gray-200'
-          } border-b px-6 py-4 sticky top-0 z-40`}
+          } border-b px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-40`}
         >
-          <div className="flex items-center justify-between gap-4">
-            {/* Left: Greeting */}
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-1">
-                <h2 className={`text-2xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                  {getGreeting()}, {userName}
-                </h2>
-                <span className="text-2xl animate-wave inline-block">👋</span>
+          <div className="flex items-center justify-between gap-3">
+            {/* Left: Hamburger (mobile) + Greeting */}
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              {/* Mobile hamburger */}
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className={`md:hidden p-2 rounded-lg ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} transition-colors shrink-0`}
+                aria-label="Open menu"
+              >
+                <svg className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h2 className={`text-lg sm:text-2xl font-bold truncate ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                    {getGreeting()}, {userName}
+                  </h2>
+                  <span className="text-xl sm:text-2xl animate-wave inline-block shrink-0">👋</span>
+                </div>
+                <p className={`text-xs sm:text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} hidden sm:block`}>{formatDate()}</p>
               </div>
-              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{formatDate()}</p>
             </div>
 
             {/* Right: Search & Quick Actions */}
-            <div className="flex items-center gap-2">
-              {/* Search */}
-              <div className="relative">
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Search — hidden on small mobile, visible md+ */}
+              <div className="relative hidden sm:block">
                 <input
                   type="search"
                   placeholder="Search projects, tasks..."
-                  className={`w-80 px-4 py-2.5 pl-11 rounded-xl border ${
+                  className={`w-48 md:w-72 lg:w-80 px-4 py-2.5 pl-11 rounded-xl border ${
                     darkMode
                       ? 'border-gray-700 bg-gray-800/50 text-gray-200 placeholder-gray-500'
                       : 'border-gray-300 bg-white text-gray-900 placeholder-gray-400'
@@ -485,12 +557,7 @@ export default function AppShell({ children, user }: AppShellProps) {
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
 
@@ -508,7 +575,7 @@ export default function AppShell({ children, user }: AppShellProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
       </div>
     </div>
   )

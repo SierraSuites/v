@@ -43,7 +43,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="force-light min-h-screen bg-background">
       {/* Header */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ${isScrollingUp ? "translate-y-0" : "-translate-y-full"}`}
