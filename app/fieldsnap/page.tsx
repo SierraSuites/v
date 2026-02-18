@@ -494,27 +494,72 @@ export default function FieldSnapPage() {
               viewMode === 'map' ? 'h-[600px] rounded-xl overflow-hidden' :
               'space-y-4'
             }>
-              {viewMode === 'grid' && filteredPhotos.map(photo => (
-                <div
-                  key={photo.id}
-                  className="group relative rounded-xl overflow-hidden cursor-pointer transform transition-transform hover:scale-105"
-                  style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', aspectRatio: '1/1' }}
-                >
-                  <img
-                    src={photo.thumbnail_url || photo.url}
-                    alt={photo.filename}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <p className="text-white text-xs font-semibold truncate">{photo.filename}</p>
-                      {photo.project_name && (
-                        <p className="text-white/70 text-xs truncate">{photo.project_name}</p>
+              {/* Spec lines 214-247: Photo cards with category badges + safety alerts */}
+              {viewMode === 'grid' && filteredPhotos.map(photo => {
+                const category = (photo as any).auto_category || (photo.tags?.includes('safety') ? 'safety' : photo.tags?.includes('issue') ? 'issue' : null)
+                const isSafety = category === 'safety' || photo.tags?.includes('safety')
+                const isIssue = category === 'issue' || photo.tags?.includes('defect') || photo.tags?.includes('issue')
+
+                return (
+                  <div
+                    key={photo.id}
+                    className={`group relative rounded-xl overflow-hidden cursor-pointer transform transition-transform hover:scale-105 ${
+                      isSafety ? 'ring-2 ring-red-400' : isIssue ? 'ring-2 ring-amber-400' : ''
+                    }`}
+                    style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', aspectRatio: '1/1' }}
+                  >
+                    <img
+                      src={photo.thumbnail_url || photo.url}
+                      alt={photo.filename}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    {/* Quality Guide lines 74-76: Category badge */}
+                    <div className="absolute top-2 left-2 flex gap-1">
+                      {isSafety && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                          Safety
+                        </span>
+                      )}
+                      {isIssue && !isSafety && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                          Issue
+                        </span>
+                      )}
+                      {(photo as any).auto_phase && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                          {(photo as any).auto_phase}
+                        </span>
                       )}
                     </div>
+                    {/* Selection checkbox */}
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <input
+                        type="checkbox"
+                        checked={selectedPhotos.has(photo.id)}
+                        onChange={(e) => {
+                          e.stopPropagation()
+                          setSelectedPhotos(prev => {
+                            const next = new Set(prev)
+                            if (next.has(photo.id)) next.delete(photo.id)
+                            else next.add(photo.id)
+                            return next
+                          })
+                        }}
+                        className="w-5 h-5 rounded border-2 border-white shadow-md accent-blue-600"
+                      />
+                    </div>
+                    <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <p className="text-white text-xs font-semibold truncate">{photo.filename}</p>
+                        {photo.project_name && (
+                          <p className="text-white/70 text-xs truncate">{photo.project_name}</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
 
               {viewMode === 'list' && filteredPhotos.map(photo => (
                 <div
