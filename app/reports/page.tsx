@@ -177,16 +177,11 @@ export default function ReportsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Quality Guide lines 546-608: Stats Grid with gradient icons */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Total Reports</div>
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6A9BFD 0%, #8BB5FE 100%)' }}>
-                <span className="text-white text-sm">📋</span>
-              </div>
-            </div>
-            <div className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{stats.total}</div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
+            <div className="text-sm text-gray-600">Total Reports</div>
           </div>
           <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
             <div className="flex items-center justify-between mb-2">
@@ -254,11 +249,11 @@ export default function ReportsPage() {
 
         {/* Recent Reports */}
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <h2 className="text-xl font-bold text-gray-900">Recent Reports</h2>
 
             {/* Filter Tabs */}
-            <div className="flex gap-2 overflow-x-auto">
+            <div className="flex gap-2 overflow-x-auto pb-1">
               <button
                 onClick={() => setFilter('all')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
@@ -315,7 +310,6 @@ export default function ReportsPage() {
                     key={report.id}
                     href={`/reports/${report.id}`}
                     className="p-6 hover:bg-gray-50 transition-colors block"
-                    style={{ borderLeft: `4px solid ${typeInfo.color}` }}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4 flex-1">
