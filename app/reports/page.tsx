@@ -250,11 +250,9 @@ export default function ReportsPage() {
         {/* Recent Reports */}
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <h2 className="text-xl font-bold text-gray-900">Recent Reports</h2>
 
             {/* Filter Tabs */}
-            <div className="flex gap-2 overflow-x-auto pb-1">
             <div className="flex gap-2 overflow-x-auto pb-1">
               <button
                 onClick={() => setFilter('all')}
