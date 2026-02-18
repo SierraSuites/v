@@ -178,9 +178,22 @@ export default function CRMDashboard() {
     contacted: 'bg-blue-100 text-blue-700',
     qualified: 'bg-purple-100 text-purple-700',
     proposal_sent: 'bg-yellow-100 text-yellow-700',
+    proposal: 'bg-yellow-100 text-yellow-700',
     negotiation: 'bg-orange-100 text-orange-700',
     won: 'bg-green-100 text-green-700',
     lost: 'bg-red-100 text-red-700',
+  }
+
+  // Quality Guide lines 602-608: Stage-specific bar colors
+  const stageBarColors: Record<string, string> = {
+    new: '#9CA3AF',
+    contacted: '#3B82F6',
+    qualified: '#06B6D4',
+    proposal_sent: '#EAB308',
+    proposal: '#EAB308',
+    negotiation: '#F97316',
+    won: '#22C55E',
+    lost: '#EF4444',
   }
 
   return (
@@ -244,52 +257,74 @@ export default function CRMDashboard() {
           </div>
         ) : (
           <>
-            {/* Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-lg shadow p-6">
+            {/* Quality Guide lines 697-718: Metrics Grid with 5 stat cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+              <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm text-gray-600">Active Leads</div>
-                  <div className="text-2xl">🎯</div>
+                  <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Total Pipeline</div>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6A9BFD 0%, #8BB5FE 100%)' }}>
+                    <span className="text-white text-sm">💰</span>
+                  </div>
                 </div>
-                <div className="text-3xl font-bold text-gray-900">{metrics?.total_leads || 0}</div>
-                <div className="text-sm text-green-600 mt-1">Pipeline value: {formatCurrency(metrics?.total_value || 0)}</div>
+                <div className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{formatCurrency(metrics?.total_value || 0)}</div>
+                <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>{metrics?.total_leads || 0} active leads</div>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm text-gray-600">Weighted Value</div>
-                  <div className="text-2xl">💰</div>
+                  <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Weighted Value</div>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6BCB77 0%, #85D68D 100%)' }}>
+                    <span className="text-white text-sm">📊</span>
+                  </div>
                 </div>
-                <div className="text-3xl font-bold text-blue-600">{formatCurrency(metrics?.weighted_value || 0)}</div>
-                <div className="text-sm text-gray-500 mt-1">Probability-adjusted</div>
+                <div className="text-2xl font-bold" style={{ color: '#22C55E' }}>{formatCurrency(metrics?.weighted_value || 0)}</div>
+                <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>Probability-adjusted</div>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm text-gray-600">Avg Deal Size</div>
-                  <div className="text-2xl">📊</div>
+                  <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Active Deals</div>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8787 100%)' }}>
+                    <span className="text-white text-sm">🎯</span>
+                  </div>
                 </div>
-                <div className="text-3xl font-bold text-purple-600">{formatCurrency(metrics?.avg_deal_size || 0)}</div>
-                <div className="text-sm text-gray-500 mt-1">Per opportunity</div>
+                <div className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{metrics?.total_leads || 0}</div>
+                <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>In pipeline</div>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm text-gray-600">Win Rate</div>
-                  <div className="text-2xl">🏆</div>
+                  <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Avg Deal Size</div>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #A78BFA 0%, #C4B5FD 100%)' }}>
+                    <span className="text-white text-sm">📈</span>
+                  </div>
                 </div>
-                <div className="text-3xl font-bold text-green-600">
+                <div className="text-2xl font-bold" style={{ color: '#7C3AED' }}>{formatCurrency(metrics?.avg_deal_size || 0)}</div>
+                <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>Per opportunity</div>
+              </div>
+
+              <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Win Rate</div>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FFD93D 0%, #FFE066 100%)' }}>
+                    <span className="text-white text-sm">🏆</span>
+                  </div>
+                </div>
+                {/* Quality Guide lines 938-943: Win rate color by threshold */}
+                <div className="text-2xl font-bold" style={{
+                  color: (metrics?.win_rate || 0) >= 0.6 ? '#22C55E' : (metrics?.win_rate || 0) >= 0.4 ? '#F59E0B' : '#DC2626'
+                }}>
                   {((metrics?.win_rate || 0) * 100).toFixed(0)}%
                 </div>
-                <div className="text-sm text-gray-500 mt-1">Closed deals</div>
+                <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>Closed deals</div>
               </div>
             </div>
 
-            {/* Pipeline Funnel */}
-            <div className="bg-white rounded-lg shadow mb-8">
-              <div className="px-6 py-4 border-b flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Sales Pipeline</h2>
-                <Link href="/crm/leads" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+            {/* Quality Guide lines 602-608, 749-760: Pipeline Funnel with stage colors */}
+            <div className="rounded-xl mb-8" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+              <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #E0E0E0' }}>
+                <h2 className="text-lg font-semibold" style={{ color: '#1A1A1A' }}>Sales Pipeline</h2>
+                <Link href="/crm/leads" className="text-sm font-medium" style={{ color: '#6A9BFD' }}>
                   View All →
                 </Link>
               </div>
@@ -298,11 +333,12 @@ export default function CRMDashboard() {
                 {pipelineData.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="text-6xl mb-4">🎯</div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No active leads yet</h3>
-                    <p className="text-gray-600 mb-6">Start by adding your first lead to track opportunities</p>
+                    <h3 className="text-xl font-semibold mb-2" style={{ color: '#1A1A1A' }}>No active leads yet</h3>
+                    <p className="mb-6" style={{ color: '#4A4A4A' }}>Start by adding your first lead to track opportunities</p>
                     <Link
                       href="/crm/leads/new"
-                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-block"
+                      className="px-6 py-3 text-white rounded-lg transition-colors inline-block"
+                      style={{ background: 'linear-gradient(to bottom, #FF6B6B 0%, #FF5252 100%)' }}
                     >
                       Create Your First Lead
                     </Link>
@@ -313,6 +349,7 @@ export default function CRMDashboard() {
                       const percentage = metrics?.total_leads
                         ? (stage.count / metrics.total_leads) * 100
                         : 0
+                      const barColor = stageBarColors[stage.stage] || '#9CA3AF'
 
                       return (
                         <div key={stage.stage}>
@@ -321,18 +358,18 @@ export default function CRMDashboard() {
                               <span className={`px-3 py-1 rounded-full text-xs font-medium ${stageColors[stage.stage] || 'bg-gray-100 text-gray-700'}`}>
                                 {stage.stage.replace('_', ' ').toUpperCase()}
                               </span>
-                              <span className="text-sm text-gray-600">
+                              <span className="text-sm" style={{ color: '#4A4A4A' }}>
                                 {stage.count} {stage.count === 1 ? 'lead' : 'leads'}
                               </span>
                             </div>
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>
                               {formatCurrency(stage.value)}
                             </div>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="w-full rounded-full h-2" style={{ backgroundColor: '#E0E0E0' }}>
                             <div
-                              className="bg-blue-600 h-2 rounded-full transition-all"
-                              style={{ width: `${percentage}%` }}
+                              className="h-2 rounded-full transition-all"
+                              style={{ width: `${Math.max(percentage, 2)}%`, backgroundColor: barColor }}
                             />
                           </div>
                         </div>
@@ -344,54 +381,67 @@ export default function CRMDashboard() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Upcoming Activities */}
-              <div className="bg-white rounded-lg shadow">
-                <div className="px-6 py-4 border-b flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">Upcoming Activities</h2>
-                  <Link href="/crm/activities" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+              {/* Quality Guide lines 1059-1087: Upcoming Activities with left border accent */}
+              <div className="rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+                <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #E0E0E0' }}>
+                  <h2 className="text-lg font-semibold" style={{ color: '#1A1A1A' }}>Upcoming Activities</h2>
+                  <Link href="/crm/activities" className="text-sm font-medium" style={{ color: '#6A9BFD' }}>
                     View All →
                   </Link>
                 </div>
 
-                <div className="divide-y">
+                <div className="divide-y divide-gray-100">
                   {upcomingActivities.length === 0 ? (
-                    <div className="p-12 text-center text-gray-500">
+                    <div className="p-12 text-center" style={{ color: '#4A4A4A' }}>
                       <div className="text-4xl mb-2">📅</div>
                       <p>No upcoming activities</p>
                     </div>
                   ) : (
-                    upcomingActivities.map((activity) => (
-                      <div key={activity.id} className="p-4 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-start gap-3">
-                          <div className="text-2xl">{getActivityIcon(activity.activity_type)}</div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900">{activity.subject}</div>
-                            <div className="text-sm text-gray-600">
-                              {activity.contact?.full_name || 'No contact'}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {formatDate(activity.scheduled_date)}
+                    upcomingActivities.map((activity) => {
+                      // Quality Guide lines 1059-1087: Activity type border colors
+                      const borderColor = activity.activity_type === 'call' ? '#3B82F6'
+                        : activity.activity_type === 'email' ? '#6A9BFD'
+                        : activity.activity_type === 'meeting' ? '#22C55E'
+                        : activity.activity_type === 'site_visit' ? '#F59E0B'
+                        : '#9CA3AF'
+                      return (
+                        <div key={activity.id} className="p-4 hover:bg-gray-50 transition-colors" style={{ borderLeft: `4px solid ${borderColor}` }}>
+                          <div className="flex items-start gap-3">
+                            <div className="text-2xl">{getActivityIcon(activity.activity_type)}</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <div className="font-medium text-sm" style={{ color: '#1A1A1A' }}>{activity.subject}</div>
+                                <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: '#F8F9FA', color: '#4A4A4A' }}>
+                                  {activity.activity_type.replace('_', ' ')}
+                                </span>
+                              </div>
+                              <div className="text-sm" style={{ color: '#4A4A4A' }}>
+                                {activity.contact?.full_name || 'No contact'}
+                              </div>
+                              <div className="text-xs mt-1" style={{ color: '#9CA3AF' }}>
+                                {formatDate(activity.scheduled_date)}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      )
+                    })
                   )}
                 </div>
               </div>
 
-              {/* Recent Contacts */}
-              <div className="bg-white rounded-lg shadow">
-                <div className="px-6 py-4 border-b flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">Recent Contacts</h2>
-                  <Link href="/crm/contacts" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+              {/* Quality Guide lines 912-949: Recent Contacts with avatar initials */}
+              <div className="rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+                <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #E0E0E0' }}>
+                  <h2 className="text-lg font-semibold" style={{ color: '#1A1A1A' }}>Recent Contacts</h2>
+                  <Link href="/crm/contacts" className="text-sm font-medium" style={{ color: '#6A9BFD' }}>
                     View All →
                   </Link>
                 </div>
 
-                <div className="divide-y">
+                <div className="divide-y divide-gray-100">
                   {recentContacts.length === 0 ? (
-                    <div className="p-12 text-center text-gray-500">
+                    <div className="p-12 text-center" style={{ color: '#4A4A4A' }}>
                       <div className="text-4xl mb-2">👥</div>
                       <p>No contacts yet</p>
                     </div>
@@ -402,13 +452,21 @@ export default function CRMDashboard() {
                         href={`/crm/contacts/${contact.id}`}
                         className="p-4 hover:bg-gray-50 transition-colors block"
                       >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium text-gray-900">{contact.full_name}</div>
+                        <div className="flex items-center gap-3">
+                          {/* Avatar with initials */}
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0" style={{
+                            background: contact.category === 'client' ? 'linear-gradient(135deg, #6BCB77 0%, #85D68D 100%)'
+                              : contact.category === 'vendor' ? 'linear-gradient(135deg, #A78BFA 0%, #C4B5FD 100%)'
+                              : 'linear-gradient(135deg, #6A9BFD 0%, #8BB5FE 100%)'
+                          }}>
+                            {contact.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || '?'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm" style={{ color: '#1A1A1A' }}>{contact.full_name}</div>
                             {contact.company && (
-                              <div className="text-sm text-gray-600">{contact.company}</div>
+                              <div className="text-xs" style={{ color: '#4A4A4A' }}>{contact.company}</div>
                             )}
-                            <div className="text-xs text-gray-500 mt-1">
+                            <div className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
                               {contact.email || contact.phone || 'No contact info'}
                             </div>
                           </div>
@@ -428,33 +486,42 @@ export default function CRMDashboard() {
               </div>
             </div>
 
-            {/* Quick Actions */}
+            {/* Quality Guide lines 996-1016: Quick Actions */}
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
               <Link
                 href="/crm/contacts"
-                className="bg-linear-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+                className="rounded-xl p-6 hover:shadow-md transition-all hover:-translate-y-0.5"
+                style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}
               >
-                <div className="text-3xl mb-3">👥</div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Manage Contacts</h3>
-                <p className="text-sm text-gray-600">View and organize all your contacts</p>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ background: 'linear-gradient(135deg, #6A9BFD 0%, #8BB5FE 100%)' }}>
+                  <span className="text-white text-xl">👥</span>
+                </div>
+                <h3 className="text-lg font-semibold mb-1" style={{ color: '#1A1A1A' }}>Manage Contacts</h3>
+                <p className="text-sm" style={{ color: '#4A4A4A' }}>View and organize all your contacts</p>
               </Link>
 
               <Link
                 href="/crm/leads"
-                className="bg-linear-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+                className="rounded-xl p-6 hover:shadow-md transition-all hover:-translate-y-0.5"
+                style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}
               >
-                <div className="text-3xl mb-3">🎯</div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Leads Pipeline</h3>
-                <p className="text-sm text-gray-600">Track opportunities through your sales funnel</p>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ background: 'linear-gradient(135deg, #6BCB77 0%, #85D68D 100%)' }}>
+                  <span className="text-white text-xl">🎯</span>
+                </div>
+                <h3 className="text-lg font-semibold mb-1" style={{ color: '#1A1A1A' }}>Leads Pipeline</h3>
+                <p className="text-sm" style={{ color: '#4A4A4A' }}>Track opportunities through your sales funnel</p>
               </Link>
 
               <Link
                 href="/crm/activities"
-                className="bg-linear-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+                className="rounded-xl p-6 hover:shadow-md transition-all hover:-translate-y-0.5"
+                style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}
               >
-                <div className="text-3xl mb-3">📅</div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Activities</h3>
-                <p className="text-sm text-gray-600">Schedule calls, meetings, and follow-ups</p>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ background: 'linear-gradient(135deg, #A78BFA 0%, #C4B5FD 100%)' }}>
+                  <span className="text-white text-xl">📅</span>
+                </div>
+                <h3 className="text-lg font-semibold mb-1" style={{ color: '#1A1A1A' }}>Activities</h3>
+                <p className="text-sm" style={{ color: '#4A4A4A' }}>Schedule calls, meetings, and follow-ups</p>
               </Link>
             </div>
           </>

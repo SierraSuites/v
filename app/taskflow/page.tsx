@@ -128,6 +128,8 @@ export default function TaskFlowPage() {
   const [userPlan, setUserPlan] = useState<"starter" | "professional" | "enterprise">("professional")
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
+  // Quality Guide lines 916-929: Quick filter state
+  const [quickFilter, setQuickFilter] = useState<"all" | "assigned_to_me" | "overdue" | "this_week">("all")
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -635,11 +637,25 @@ export default function TaskFlowPage() {
     }
   }, [user])
 
-  // Filter tasks
+  // Filter tasks (includes quick filters per Quality Guide lines 916-929)
   const filteredTasks = tasks.filter(task => {
     if (selectedProject !== "all" && task.projectId !== selectedProject) return false
     if (selectedTrade !== "all" && task.trade !== selectedTrade) return false
     if (selectedPriority !== "all" && task.priority !== selectedPriority) return false
+    // Quick filters
+    if (quickFilter === "assigned_to_me") {
+      if (task.assignee !== userData.full_name && task.assignee !== "Mike Johnson") return false
+    }
+    if (quickFilter === "overdue") {
+      if (!(new Date(task.dueDate) < new Date() && task.status !== "completed")) return false
+    }
+    if (quickFilter === "this_week") {
+      const now = new Date()
+      const weekEnd = new Date(now)
+      weekEnd.setDate(now.getDate() + (7 - now.getDay()))
+      const due = new Date(task.dueDate)
+      if (due > weekEnd) return false
+    }
     return true
   })
 
@@ -916,6 +932,37 @@ export default function TaskFlowPage() {
               </div>
             </div>
 
+            {/* Quality Guide lines 916-929: Quick Filter Buttons */}
+            <div className="flex gap-2 mb-3">
+              {([
+                { key: 'all', label: 'All Tasks' },
+                { key: 'assigned_to_me', label: 'Assigned To Me' },
+                { key: 'overdue', label: 'Overdue' },
+                { key: 'this_week', label: 'This Week' },
+              ] as const).map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setQuickFilter(f.key)}
+                  className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                    quickFilter === f.key
+                      ? 'text-white'
+                      : 'hover:bg-gray-50'
+                  }`}
+                  style={quickFilter === f.key
+                    ? { backgroundColor: '#6A9BFD', color: '#FFFFFF' }
+                    : { backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', color: '#4A4A4A' }
+                  }
+                >
+                  {f.label}
+                  {f.key === 'overdue' && stats.overdue > 0 && (
+                    <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full" style={{ backgroundColor: '#DC2626', color: '#FFFFFF' }}>
+                      {stats.overdue}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
             {/* View Toggle & Filters */}
             <div className="flex items-center justify-between gap-4">
               {/* View Toggle */}
@@ -1102,13 +1149,19 @@ export default function TaskFlowPage() {
                   </div>
 
                   <div className="space-y-3">
-                    {myTasks.slice(0, 5).map((task) => (
+                    {myTasks.slice(0, 5).map((task) => {
+                      // Quality Guide lines 958-998: Overdue detection for my tasks
+                      const taskOverdue = new Date(task.dueDate) < new Date() && task.status !== 'completed'
+                      const taskBlocked = task.status === 'blocked'
+                      return (
                       <div
                         key={task.id}
-                        className="p-4 rounded-lg transition-all cursor-pointer hover:-translate-y-0.5"
+                        className={`p-4 rounded-lg transition-all cursor-pointer hover:-translate-y-0.5 ${
+                          taskBlocked ? 'opacity-60 border-2 border-red-300' : ''
+                        } ${taskOverdue && !taskBlocked ? 'ring-2 ring-red-200' : ''}`}
                         style={{
-                          backgroundColor: tradeColors[task.trade].bg,
-                          borderLeft: `4px solid ${tradeColors[task.trade].border}`,
+                          backgroundColor: taskOverdue ? '#FEF2F2' : tradeColors[task.trade].bg,
+                          borderLeft: taskBlocked ? undefined : `4px solid ${taskOverdue ? '#DC2626' : tradeColors[task.trade].border}`,
                           boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
                         }}
                       >
@@ -1122,7 +1175,7 @@ export default function TaskFlowPage() {
                             </div>
                             <p className="text-xs mb-2" style={{ color: '#4A4A4A' }}>{task.project} • {task.location}</p>
                             <div className="flex items-center gap-3 text-xs" style={{ color: '#4A4A4A' }}>
-                              <span>📅 Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+                              <span className={taskOverdue ? 'font-semibold' : ''} style={taskOverdue ? { color: '#DC2626' } : undefined}>📅 Due: {new Date(task.dueDate).toLocaleDateString()}{taskOverdue && ' (OVERDUE)'}</span>
                               <span>⏱️ {task.estimatedHours}h est</span>
                               {task.attachments > 0 && <span>📎 {task.attachments}</span>}
                               {task.comments > 0 && <span>💬 {task.comments}</span>}
@@ -1155,7 +1208,8 @@ export default function TaskFlowPage() {
                           </div>
                         </div>
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
 
