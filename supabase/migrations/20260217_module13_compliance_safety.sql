@@ -35,8 +35,8 @@ CREATE TABLE IF NOT EXISTS public.safety_incidents (
   company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
   project_id UUID REFERENCES public.projects(id) ON DELETE SET NULL,
 
-  -- Auto-generated: INC-2026-001, INC-2026-002, ...
-  incident_number VARCHAR(50) UNIQUE,
+  -- Auto-generated: INC-2026-001, INC-2026-002, ... (scoped per company)
+  incident_number VARCHAR(50),
 
   -- When it happened vs when reported
   occurred_at TIMESTAMPTZ NOT NULL,
@@ -154,7 +154,10 @@ CREATE TABLE IF NOT EXISTS public.safety_incidents (
   -- Metadata
   reported_by UUID NOT NULL REFERENCES auth.users(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  -- Incident numbers are unique per company (not globally) to support multi-tenancy
+  UNIQUE(company_id, incident_number)
 );
 
 CREATE INDEX IF NOT EXISTS idx_safety_incidents_company_date
@@ -615,10 +618,16 @@ DECLARE
   v_year VARCHAR(4);
   v_seq  INT;
 BEGIN
+  -- Serialize concurrent calls for the same company to prevent duplicate numbers.
+  -- pg_advisory_xact_lock is released automatically at transaction end.
+  PERFORM pg_advisory_xact_lock(hashtext(p_company_id::text || '_incidents'));
+
   v_year := EXTRACT(YEAR FROM CURRENT_DATE)::VARCHAR;
 
+  -- Extract trailing digits from existing incident numbers for this company/year.
+  -- SUBSTRING with capturing group returns the matched group content.
   SELECT COALESCE(
-    MAX(CAST(SUBSTRING(incident_number FROM '\d+$') AS INT)), 0
+    MAX(CAST(SUBSTRING(incident_number FROM '(\d+)$') AS INT)), 0
   ) + 1
   INTO v_seq
   FROM public.safety_incidents

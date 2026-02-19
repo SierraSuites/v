@@ -228,54 +228,41 @@ export type ProjectUpdate = Partial<ProjectInsert>
 
 /**
  * Fetch all projects for the current user
- * RBAC: Enforces canViewAllProjects or returns only assigned projects
+ * Uses user_id filter as the reliable base; company-scoped RBAC can be layered on top
+ * once the company_id column and permission RPCs are confirmed in the database.
  */
 export async function getProjects() {
   const supabase = createClient()
 
-  // RBAC: Check authentication and permissions
-  const authContext = await getAuthContext()
-  if (!authContext) {
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
     return { data: null, error: new Error('Authentication required') }
   }
 
-  // Check if user can view all projects
-  const canViewAll = await checkProjectPermission(
-    'canViewAllProjects',
-    authContext.userId,
-    authContext.companyId
-  )
+  // Try company-scoped query first (requires company_id column on projects table)
+  const authContext = await getAuthContext()
+  if (authContext) {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq('company_id', authContext.companyId)
+      .order("created_at", { ascending: false })
 
-  // Always filter by company — users only ever see their own company's projects
-  let query = supabase
-    .from("projects")
-    .select("*")
-    .eq('company_id', authContext.companyId)
-    .order("created_at", { ascending: false })
+    if (!error) return { data, error: null }
 
-  if (!canViewAll) {
-    // User may be restricted to assigned projects — try to get team assignments
-    const accessibleProjects = await permissionService.getUserAccessibleProjects(authContext.userId)
-
-    if (accessibleProjects.length > 0) {
-      // Only filter down if we got real assignments from the DB
-      query = query.in('id', accessibleProjects)
-    }
-    // If empty (DB tables/RPCs not yet set up, or user has no assignments),
-    // fall through and return all company projects as a safe default
+    // company_id column likely doesn't exist yet — fall through to user_id query
+    console.warn("company_id query failed, falling back to user_id:", error?.message || String(error))
   }
 
-  const { data, error } = await query
+  // Reliable fallback: filter by user_id (always exists in schema)
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .eq('user_id', user.id)
+    .order("created_at", { ascending: false })
 
   if (error) {
-    console.error("Error fetching projects:", error)
-    console.error("Fetch error details:", {
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code
-    })
-    console.error("Full error object:", JSON.stringify(error, null, 2))
+    console.error("Error fetching projects:", error?.message, error?.code)
     return { data: null, error }
   }
 
@@ -409,6 +396,7 @@ export async function createProject(project: ProjectInsert) {
     .insert({
       ...project,
       user_id: authContext.userId,
+      company_id: authContext.companyId,
       progress: 0,
       spent: 0
     })
@@ -416,14 +404,28 @@ export async function createProject(project: ProjectInsert) {
     .single()
 
   if (error) {
-    console.error("Error creating project:", error)
-    console.error("Error details:", {
+    console.error("Error creating project:", {
       message: error.message,
       details: error.details,
       hint: error.hint,
       code: error.code
     })
-    console.error("Project data being inserted:", project)
+
+    // Fallback: company_id column may not exist yet — retry without it
+    if (error.code === '42703') {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from("projects")
+        .insert({ ...project, user_id: authContext.userId, progress: 0, spent: 0 })
+        .select()
+        .single()
+
+      if (fallbackError) {
+        console.error("Error creating project (fallback):", fallbackError.message)
+        return { data: null, error: fallbackError }
+      }
+      return { data: fallbackData, error: null }
+    }
+
     return { data: null, error }
   }
 

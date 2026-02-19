@@ -12,38 +12,51 @@ export const dynamic = 'force-dynamic'
 
 // ============================================================================
 // VALIDATION SCHEMAS
+// DB columns: inspection_type (enum), inspection_name, description,
+//   scheduled_date (DATE), scheduled_time (TIME), requested_by (FK auth.users),
+//   inspector_name VARCHAR, inspector_agency VARCHAR, inspector_contact VARCHAR,
+//   inspector_email VARCHAR, inspector_phone VARCHAR,
+//   status (enum), inspection_date (DATE), result (enum),
+//   inspector_notes, conditions_of_approval, deficiencies JSONB,
+//   reinspection_required, reinspection_deadline (DATE), notify_before_days
 // ============================================================================
 
 const CreateInspectionSchema = z.object({
-  project_id: z.string().uuid().optional().nullable(),
-  inspection_type: z.enum([
-    'daily_safety', 'weekly_safety', 'fire_safety', 'electrical',
-    'scaffold', 'fall_protection', 'equipment', 'environmental',
-    'quality_control', 'pre_task', 'other'
+  project_id:          z.string().uuid('Invalid project ID'),
+  inspection_type:     z.enum([
+    'building_code', 'electrical', 'plumbing', 'mechanical',
+    'structural', 'fire_safety', 'osha', 'final', 'other'
   ]),
-  inspector_name: z.string().min(1, 'Inspector name is required').max(200),
-  inspector_id: z.string().uuid().optional().nullable(),
-  scheduled_date: z.string().datetime({ offset: true }),
-  status: z.enum(['scheduled', 'in_progress', 'passed', 'failed', 'requires_action']).default('scheduled'),
-  items_checked: z.number().int().min(0).optional().nullable(),
-  items_passed: z.number().int().min(0).optional().nullable(),
-  items_failed: z.number().int().min(0).optional().nullable(),
-  findings: z.string().max(5000).optional().nullable(),
-  corrective_actions_required: z.string().max(5000).optional().nullable(),
-  follow_up_date: z.string().datetime({ offset: true }).optional().nullable(),
+  inspection_name:     z.string().min(1, 'Inspection name is required').max(255),
+  description:         z.string().max(2000).optional().nullable(),
+  scheduled_date:      z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
+  scheduled_time:      z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).optional().nullable(),
+  // External inspector info (not a user FK)
+  inspector_name:      z.string().max(255).optional().nullable(),
+  inspector_agency:    z.string().max(255).optional().nullable(),
+  inspector_contact:   z.string().max(255).optional().nullable(),
+  inspector_email:     z.string().email().max(255).optional().nullable(),
+  inspector_phone:     z.string().max(50).optional().nullable(),
+  status:              z.enum([
+    'scheduled', 'in_progress', 'passed',
+    'passed_with_conditions', 'failed', 'cancelled', 'rescheduled'
+  ]).default('scheduled'),
+  notify_before_days:  z.number().int().min(0).max(30).default(3),
 })
 
 const GetInspectionsQuerySchema = z.object({
-  project_id: z.string().uuid().optional(),
-  status: z.enum(['scheduled', 'in_progress', 'passed', 'failed', 'requires_action']).optional(),
-  inspection_type: z.enum([
-    'daily_safety', 'weekly_safety', 'fire_safety', 'electrical',
-    'scaffold', 'fall_protection', 'equipment', 'environmental',
-    'quality_control', 'pre_task', 'other'
+  project_id:      z.string().uuid().optional(),
+  status:          z.enum([
+    'scheduled', 'in_progress', 'passed',
+    'passed_with_conditions', 'failed', 'cancelled', 'rescheduled'
   ]).optional(),
-  upcoming_days: z.string().regex(/^\d+$/).optional(),
-  limit: z.string().regex(/^\d+$/).optional(),
-  offset: z.string().regex(/^\d+$/).optional(),
+  inspection_type: z.enum([
+    'building_code', 'electrical', 'plumbing', 'mechanical',
+    'structural', 'fire_safety', 'osha', 'final', 'other'
+  ]).optional(),
+  upcoming_days:   z.string().regex(/^\d+$/).optional(),
+  limit:           z.string().regex(/^\d+$/).optional(),
+  offset:          z.string().regex(/^\d+$/).optional(),
 })
 
 // ============================================================================
@@ -86,15 +99,18 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(params.limit || '50'), 100)
     const offset = parseInt(params.offset || '0')
 
-    // 4. BUILD QUERY
+    // 4. BUILD QUERY — only select columns that exist in the DB schema
     let query = supabase
       .from('inspections')
       .select(`
-        id, inspection_type, inspector_name, scheduled_date, completed_date,
-        status, overall_result, items_checked, items_passed, items_failed,
-        findings, corrective_actions_required, follow_up_date, created_at, updated_at,
-        project:project_id (id, name),
-        inspector:inspector_id (id, full_name)
+        id, inspection_type, inspection_name, description,
+        scheduled_date, scheduled_time, requested_by,
+        inspector_name, inspector_agency, inspector_phone,
+        status, inspection_date, result,
+        inspector_notes, conditions_of_approval,
+        reinspection_required, reinspection_deadline,
+        notify_before_days, created_at, updated_at,
+        project:project_id (id, name)
       `, { count: 'exact' })
       .eq('company_id', profile.company_id)
       .order('scheduled_date', { ascending: true })
@@ -106,11 +122,13 @@ export async function GET(request: NextRequest) {
 
     if (params.upcoming_days) {
       const days = parseInt(params.upcoming_days)
+      const today = new Date().toISOString().split('T')[0]
       const futureDate = new Date()
       futureDate.setDate(futureDate.getDate() + days)
+      const futureDateStr = futureDate.toISOString().split('T')[0]
       query = query
-        .gte('scheduled_date', new Date().toISOString())
-        .lte('scheduled_date', futureDate.toISOString())
+        .gte('scheduled_date', today)
+        .lte('scheduled_date', futureDateStr)
         .eq('status', 'scheduled')
     }
 
@@ -123,10 +141,10 @@ export async function GET(request: NextRequest) {
 
     // 5. SUMMARY STATS
     const allInspections = inspections || []
-    const passedCount = allInspections.filter(i => i.status === 'passed').length
-    const failedCount = allInspections.filter(i => i.status === 'failed' || i.status === 'requires_action').length
+    const passedCount    = allInspections.filter(i => i.status === 'passed' || i.status === 'passed_with_conditions').length
+    const failedCount    = allInspections.filter(i => i.status === 'failed').length
     const scheduledCount = allInspections.filter(i => i.status === 'scheduled').length
-    const passRate = passedCount + failedCount > 0
+    const passRate       = passedCount + failedCount > 0
       ? Math.round((passedCount / (passedCount + failedCount)) * 100)
       : 0
 
@@ -136,8 +154,8 @@ export async function GET(request: NextRequest) {
       pagination: { limit, offset },
       summary: {
         scheduled: scheduledCount,
-        passed: passedCount,
-        failed: failedCount,
+        passed:    passedCount,
+        failed:    failedCount,
         passRate,
       }
     })
@@ -191,24 +209,14 @@ export async function POST(request: NextRequest) {
 
     const data = validation.data
 
-    // 4. COMPUTE OVERALL RESULT IF ITEMS ARE PROVIDED
-    let overall_result: string | null = null
-    if (data.items_checked && data.items_checked > 0) {
-      const passRate = data.items_passed ? (data.items_passed / data.items_checked) * 100 : 0
-      overall_result = passRate === 100 ? 'excellent'
-        : passRate >= 90 ? 'good'
-        : passRate >= 75 ? 'satisfactory'
-        : passRate >= 50 ? 'needs_improvement'
-        : 'unsatisfactory'
-    }
-
-    // 5. INSERT INSPECTION
+    // 4. INSERT INSPECTION — column names match DB schema exactly
+    // requested_by = the user scheduling the inspection (not the external inspector)
     const { data: inspection, error } = await supabase
       .from('inspections')
       .insert({
-        company_id: profile.company_id,
+        company_id:   profile.company_id,
+        requested_by: user.id,   // DB column: requested_by (user who scheduled it)
         ...data,
-        overall_result,
       })
       .select()
       .single()

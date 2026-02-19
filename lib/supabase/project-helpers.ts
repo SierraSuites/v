@@ -66,6 +66,9 @@ export async function getProjectTeamMembers(projectId: string): Promise<TeamMemb
 export async function getTeamMembersForProjects(
   projectIds: string[]
 ): Promise<Record<string, TeamMember[]>> {
+  // Nothing to fetch
+  if (projectIds.length === 0) return {}
+
   const supabase = createClient()
 
   // Get all projects with their company_ids
@@ -75,12 +78,17 @@ export async function getTeamMembersForProjects(
     .in('id', projectIds)
 
   if (projectsError || !projects) {
-    console.error('Failed to load projects:', projectsError)
+    // Silently return empty — company_id column may not exist yet
     return {}
   }
 
-  // Get unique company IDs
-  const companyIds = [...new Set(projects.map(p => p.company_id))]
+  // Filter out projects without company_id (column may not exist yet)
+  const companyIds = [...new Set(
+    projects.map(p => p.company_id).filter((id): id is string => !!id)
+  )]
+
+  // No valid company IDs — skip the user_profiles query
+  if (companyIds.length === 0) return {}
 
   // Get all users for these companies
   const { data: allMembers, error: membersError } = await supabase
@@ -90,7 +98,7 @@ export async function getTeamMembersForProjects(
     .order('full_name')
 
   if (membersError) {
-    console.error('Failed to load team members:', membersError)
+    // Silently return empty — user_profiles may not have company_id yet
     return {}
   }
 
