@@ -785,8 +785,8 @@ export default function ProjectsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Projects</h1>
-              <p className="text-sm mt-1" style={{ color: '#4A4A4A' }}>
+              <h1 className="text-2xl font-bold" style={{ color: colors.text }}>Projects</h1>
+              <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
                 {stats.total} total project{stats.total !== 1 ? 's' : ''}
                 {userPlan === "starter" && ` (${projectLimits.starter} max on Starter plan)`}
                 {userPlan === "professional" && ` (${projectLimits.professional} max on Pro plan)`}

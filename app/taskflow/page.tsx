@@ -788,8 +788,8 @@ export default function TaskFlowPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{getGreeting()}</h1>
-                <p className="text-sm mt-1" style={{ color: '#4A4A4A' }}>
+                <h1 className="text-2xl font-bold" style={{ color: colors.text }}>{getGreeting()}</h1>
+                <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
                   You have {stats.dueToday} tasks due today and {stats.overdue} overdue
                 </p>
               </div>
@@ -839,9 +839,9 @@ export default function TaskFlowPage() {
             </div>
 
             {/* View Toggle & Filters */}
-            <div className="flex items-center justify-between gap-4">
-              {/* View Toggle */}
-              <div className="flex items-center gap-2 rounded-lg p-1" style={{ backgroundColor: colors.bgAlt }}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              {/* View Toggle — horizontally scrollable on mobile */}
+              <div className="flex items-center gap-2 rounded-lg p-1 overflow-x-auto" style={{ backgroundColor: colors.bgAlt }}>
                 <button
                   onClick={() => setViewMode("dashboard")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "dashboard" ? "shadow-sm" : ""}`}
@@ -887,7 +887,7 @@ export default function TaskFlowPage() {
                   value={selectedProject}
                   onChange={(e) => setSelectedProject(e.target.value)}
                   className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                  style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+                  style={{ border: colors.border, color: colors.text }}
                 >
                   <option value="all">All Projects</option>
                   <option value="proj-1">Downtown Office</option>
@@ -900,7 +900,7 @@ export default function TaskFlowPage() {
                   value={selectedTrade}
                   onChange={(e) => setSelectedTrade(e.target.value)}
                   className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                  style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+                  style={{ border: colors.border, color: colors.text }}
                 >
                   <option value="all">All Trades</option>
                   <option value="electrical">⚡ Electrical</option>
@@ -915,7 +915,7 @@ export default function TaskFlowPage() {
                   value={selectedPriority}
                   onChange={(e) => setSelectedPriority(e.target.value)}
                   className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                  style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+                  style={{ border: colors.border, color: colors.text }}
                 >
                   <option value="all">All Priorities</option>
                   <option value="critical">🔥 Critical</option>
