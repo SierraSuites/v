@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
+
 
 interface Task {
   id: string
@@ -31,11 +33,12 @@ export default function UpcomingTasks({ tasks }: UpcomingTasksProps) {
         return 'bg-gray-100 text-gray-800'
     }
   }
+  const { colors, darkMode } = useThemeColors()
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className=" rounded-lg shadow p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Upcoming Tasks</h2>
+        <h2 className="text-lg font-semibold" style={{ color: colors.text }}>Upcoming Tasks</h2>
         <Link
           href="/taskflow"
           className="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -46,7 +49,7 @@ export default function UpcomingTasks({ tasks }: UpcomingTasksProps) {
 
       <div className="space-y-3">
         {tasks.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8" style={{ color: colors.textMuted }}>
             <p className="mb-2">No upcoming tasks</p>
             <Link
               href="/taskflow"

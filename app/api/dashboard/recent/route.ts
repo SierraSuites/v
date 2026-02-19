@@ -2,13 +2,13 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { requirePermission } from '@/lib/api-permissions'
+import { getAuthenticatedUser } from '@/lib/api-permissions'
 
 export async function GET(request: NextRequest) {
   try {
-    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
-    const authResult = await requirePermission('canViewAnalytics')
-    if (!authResult.authorized) return authResult.error
+    // 1. AUTHENTICATION CHECK — all authenticated users can view their own dashboard
+    const authResult = await getAuthenticatedUser()
+    if (!authResult.user) return authResult.error
 
     const supabase = await createClient()
 
@@ -16,13 +16,13 @@ export async function GET(request: NextRequest) {
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('company_id, full_name')
-      .eq('id', authResult.userId!)
+      .eq('id', authResult.user.id)
       .single()
 
     const companyId = profile?.company_id
     if (!companyId) {
       return NextResponse.json({
-        user: { id: authResult.userId },
+        user: { id: authResult.user.id },
         companyId: null,
         projects: [],
         activities: [],
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     }))
 
     return NextResponse.json({
-      user: { id: authResult.userId },
+      user: { id: authResult.user.id },
       companyId,
       projects: projectsResult.data || [],
       activities,

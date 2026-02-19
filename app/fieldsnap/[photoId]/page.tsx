@@ -10,10 +10,12 @@ import { punchListService } from '@/lib/punchlist'
 import PunchListPanel from '@/components/fieldsnap/PunchListPanel'
 import Link from 'next/link'
 import { type Photo } from '@/lib/supabase/photos'
+import { useThemeColors } from "@/lib/hooks/useThemeColors"
 
 export default function PhotoDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const { colors, darkMode } = useThemeColors()
   const [photo, setPhoto] = useState<Photo | null>(null)
   const [punchItems, setPunchItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -79,10 +81,10 @@ export default function PhotoDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.bgAlt }}>
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-4 border-t-transparent rounded-full mx-auto" style={{ borderColor: '#FF6B6B' }} />
-          <p className="mt-4 text-sm" style={{ color: '#4A4A4A' }}>Loading photo...</p>
+          <p className="mt-4 text-sm" style={{ color: colors.textMuted }}>Loading photo...</p>
         </div>
       </div>
     )
@@ -90,11 +92,11 @@ export default function PhotoDetailPage() {
 
   if (!photo) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.bgAlt }}>
         <div className="text-center">
           <p className="text-2xl mb-4">📸</p>
-          <h2 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>Photo Not Found</h2>
-          <p className="text-sm mb-4" style={{ color: '#6B7280' }}>The photo you're looking for doesn't exist or you don't have access to it.</p>
+          <h2 className="text-xl font-bold mb-2" style={{ color: colors.text }}>Photo Not Found</h2>
+          <p className="text-sm mb-4" style={{ color: colors.textMuted }}>The photo you're looking for doesn't exist or you don't have access to it.</p>
           <button
             onClick={() => router.push('/fieldsnap')}
             className="px-6 py-3 rounded-lg font-semibold text-white"
@@ -108,23 +110,23 @@ export default function PhotoDetailPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+    <div className="min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
       {/* Header */}
-      <header className="bg-white border-b" style={{ borderColor: '#E0E0E0' }}>
+      <header className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto p-4 lg:p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.back()}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-lg hover:bg-muted transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               <div>
-                <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{photo.filename}</h1>
-                <div className="flex items-center gap-2 mt-1 text-sm" style={{ color: '#6B7280' }}>
+                <h1 className="text-2xl font-bold" style={{ color: colors.text }}>{photo.filename}</h1>
+                <div className="flex items-center gap-2 mt-1 text-sm" style={{ color: colors.textMuted }}>
                   {photo.project_name && (
                     <>
                       <Link href={`/projects/${photo.project_id}`} className="hover:underline">
@@ -143,8 +145,8 @@ export default function PhotoDetailPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowFullscreen(true)}
-                className="px-4 py-2 rounded-lg border font-semibold hover:bg-gray-50"
-                style={{ borderColor: '#E5E7EB', color: '#374151' }}
+                className="px-4 py-2 rounded-lg border font-semibold hover:bg-muted"
+                style={{ borderColor: 'var(--border)', color: colors.text }}
               >
                 🔍 Fullscreen
               </button>
@@ -166,7 +168,7 @@ export default function PhotoDetailPage() {
           {/* Photo View Column */}
           <div className="lg:col-span-2 space-y-6">
             {/* Photo Viewer */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-card rounded-xl shadow-lg overflow-hidden">
               <img
                 src={photo.url}
                 alt={photo.filename}
@@ -176,38 +178,38 @@ export default function PhotoDetailPage() {
             </div>
 
             {/* Photo Metadata */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-bold mb-4" style={{ color: '#1A1A1A' }}>Photo Details</h2>
+            <div className="bg-card rounded-xl shadow-lg p-6">
+              <h2 className="text-xl font-bold mb-4" style={{ color: colors.text }}>Photo Details</h2>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-semibold mb-1" style={{ color: '#6B7280' }}>Dimensions</p>
-                  <p className="font-semibold" style={{ color: '#1A1A1A' }}>{photo.width} × {photo.height}</p>
+                  <p className="text-sm font-semibold mb-1" style={{ color: colors.textMuted }}>Dimensions</p>
+                  <p className="font-semibold" style={{ color: colors.text }}>{photo.width} × {photo.height}</p>
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold mb-1" style={{ color: '#6B7280' }}>File Size</p>
-                  <p className="font-semibold" style={{ color: '#1A1A1A' }}>{formatBytes(photo.file_size)}</p>
+                  <p className="text-sm font-semibold mb-1" style={{ color: colors.textMuted }}>File Size</p>
+                  <p className="font-semibold" style={{ color: colors.text }}>{formatBytes(photo.file_size)}</p>
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold mb-1" style={{ color: '#6B7280' }}>Captured</p>
-                  <p className="font-semibold" style={{ color: '#1A1A1A' }}>
+                  <p className="text-sm font-semibold mb-1" style={{ color: colors.textMuted }}>Captured</p>
+                  <p className="font-semibold" style={{ color: colors.text }}>
                     {new Date(photo.captured_at).toLocaleString()}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold mb-1" style={{ color: '#6B7280' }}>Uploaded</p>
-                  <p className="font-semibold" style={{ color: '#1A1A1A' }}>
+                  <p className="text-sm font-semibold mb-1" style={{ color: colors.textMuted }}>Uploaded</p>
+                  <p className="font-semibold" style={{ color: colors.text }}>
                     {new Date(photo.uploaded_at).toLocaleString()}
                   </p>
                 </div>
 
                 {photo.gps_latitude && photo.gps_longitude && (
                   <div className="col-span-2">
-                    <p className="text-sm font-semibold mb-1" style={{ color: '#6B7280' }}>Location</p>
-                    <p className="font-semibold" style={{ color: '#1A1A1A' }}>
+                    <p className="text-sm font-semibold mb-1" style={{ color: colors.textMuted }}>Location</p>
+                    <p className="font-semibold" style={{ color: colors.text }}>
                       {photo.gps_latitude.toFixed(6)}, {photo.gps_longitude.toFixed(6)}
                     </p>
                   </div>
@@ -215,20 +217,20 @@ export default function PhotoDetailPage() {
 
                 {photo.description && (
                   <div className="col-span-2">
-                    <p className="text-sm font-semibold mb-1" style={{ color: '#6B7280' }}>Description</p>
-                    <p className="font-semibold" style={{ color: '#1A1A1A' }}>{photo.description}</p>
+                    <p className="text-sm font-semibold mb-1" style={{ color: colors.textMuted }}>Description</p>
+                    <p className="font-semibold" style={{ color: colors.text }}>{photo.description}</p>
                   </div>
                 )}
 
                 {photo.tags && photo.tags.length > 0 && (
                   <div className="col-span-2">
-                    <p className="text-sm font-semibold mb-2" style={{ color: '#6B7280' }}>Tags</p>
+                    <p className="text-sm font-semibold mb-2" style={{ color: colors.textMuted }}>Tags</p>
                     <div className="flex flex-wrap gap-2">
                       {photo.tags.map(tag => (
                         <span
                           key={tag}
                           className="px-3 py-1 rounded-full text-sm font-semibold"
-                          style={{ backgroundColor: '#F3F4F6', color: '#374151' }}
+                          style={{ backgroundColor: colors.bgMuted, color: colors.text }}
                         >
                           {tag}
                         </span>
@@ -262,7 +264,7 @@ export default function PhotoDetailPage() {
         >
           <button
             onClick={() => setShowFullscreen(false)}
-            className="absolute top-4 right-4 p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white"
+            className="absolute top-4 right-4 p-2 rounded-lg bg-card/10 hover:bg-card/20 text-white"
           >
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

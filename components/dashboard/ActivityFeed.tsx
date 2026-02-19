@@ -1,5 +1,7 @@
 'use client'
 
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
+
 interface Activity {
   id: string
   action: string
@@ -30,6 +32,7 @@ export default function ActivityFeed({ activities }: ActivityFeedProps) {
         return '📌'
     }
   }
+  const { colors, darkMode } = useThemeColors()
 
   const formatActivityMessage = (activity: Activity) => {
     const user = activity.user_profiles?.full_name || 'Someone'
@@ -51,18 +54,18 @@ export default function ActivityFeed({ activities }: ActivityFeedProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
+    <div className="rounded-lg shadow p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+      <h2 className="text-lg font-semibold mb-4" style={{ color: colors.text }}>Recent Activity</h2>
 
       <div className="space-y-4">
         {activities.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8" style={{ color: colors.textMuted }}>
             <p>No recent activity</p>
           </div>
         ) : (
           activities.map((activity) => (
             <div key={activity.id} className="flex items-start space-x-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-lg">
+              <div className="shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-lg">
                 {getActivityIcon(activity.action)}
               </div>
               <div className="flex-1 min-w-0">

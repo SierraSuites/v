@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { punchListService } from '@/lib/punchlist'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import PunchListPanel from '@/components/fieldsnap/PunchListPanel'
 import Link from 'next/link'
 
@@ -21,6 +22,7 @@ interface PunchListFiltersState {
 export default function ProjectPunchListPage() {
   const params = useParams()
   const router = useRouter()
+  const { colors, darkMode } = useThemeColors()
   const [project, setProject] = useState<any>(null)
   const [punchItems, setPunchItems] = useState<any[]>([])
   const [filteredItems, setFilteredItems] = useState<any[]>([])
@@ -149,17 +151,17 @@ export default function ProjectPunchListPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.bgAlt }}>
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-4 border-t-transparent rounded-full mx-auto" style={{ borderColor: '#FF6B6B' }} />
-          <p className="mt-4 text-sm" style={{ color: '#4A4A4A' }}>Loading punch list...</p>
+          <p className="mt-4 text-sm" style={{ color: colors.textMuted }}>Loading punch list...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+    <div className="min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
       {/* Header */}
       <header className="bg-white border-b" style={{ borderColor: '#E0E0E0' }}>
         <div className="max-w-7xl mx-auto p-4 lg:p-6">
@@ -174,7 +176,7 @@ export default function ProjectPunchListPage() {
                 </svg>
               </Link>
               <div>
-                <h1 className="text-3xl font-bold" style={{ color: '#1A1A1A' }}>📋 Punch List</h1>
+                <h1 className="text-3xl font-bold" style={{ color: colors.text }}>📋 Punch List</h1>
                 <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
                   {project?.name || 'Quality and safety issues requiring attention'}
                 </p>
@@ -194,42 +196,42 @@ export default function ProjectPunchListPage() {
 
           {/* Statistics */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-            <div className="p-4 rounded-xl" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}>
+            <div className="p-4 rounded-xl" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
               <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Total Items</p>
-              <p className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{stats.total}</p>
+              <p className="text-2xl font-bold" style={{ color: colors.text }}>{stats.total}</p>
             </div>
 
-            <div className="p-4 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }} onClick={() => handleFilterChange('status', 'open')}>
+            <div className="p-4 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors" style={{ backgroundColor: colors.bgAlt, border: colors.border }} onClick={() => handleFilterChange('status', 'open')}>
               <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Open</p>
               <p className="text-2xl font-bold" style={{ color: '#3B82F6' }}>{stats.open}</p>
             </div>
 
-            <div className="p-4 rounded-xl cursor-pointer hover:bg-yellow-50 transition-colors" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }} onClick={() => handleFilterChange('status', 'in_progress')}>
+            <div className="p-4 rounded-xl cursor-pointer hover:bg-yellow-50 transition-colors" style={{ backgroundColor: colors.bgAlt, border: colors.border }} onClick={() => handleFilterChange('status', 'in_progress')}>
               <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>In Progress</p>
               <p className="text-2xl font-bold" style={{ color: '#F59E0B' }}>{stats.in_progress}</p>
             </div>
 
-            <div className="p-4 rounded-xl cursor-pointer hover:bg-green-50 transition-colors" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }} onClick={() => handleFilterChange('status', 'resolved')}>
+            <div className="p-4 rounded-xl cursor-pointer hover:bg-green-50 transition-colors" style={{ backgroundColor: colors.bgAlt, border: colors.border }} onClick={() => handleFilterChange('status', 'resolved')}>
               <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Resolved</p>
               <p className="text-2xl font-bold" style={{ color: '#10B981' }}>{stats.resolved}</p>
             </div>
 
-            <div className="p-4 rounded-xl cursor-pointer hover:bg-red-50 transition-colors" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }} onClick={() => handleFilterChange('severity', 'critical')}>
+            <div className="p-4 rounded-xl cursor-pointer hover:bg-red-50 transition-colors" style={{ backgroundColor: colors.bgAlt, border: colors.border }} onClick={() => handleFilterChange('severity', 'critical')}>
               <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Critical</p>
               <p className="text-2xl font-bold" style={{ color: '#DC2626' }}>{stats.critical}</p>
             </div>
 
-            <div className="p-4 rounded-xl cursor-pointer hover:bg-orange-50 transition-colors" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }} onClick={() => handleFilterChange('severity', 'high')}>
+            <div className="p-4 rounded-xl cursor-pointer hover:bg-orange-50 transition-colors" style={{ backgroundColor: colors.bgAlt, border: colors.border }} onClick={() => handleFilterChange('severity', 'high')}>
               <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>High</p>
               <p className="text-2xl font-bold" style={{ color: '#F97316' }}>{stats.high}</p>
             </div>
 
-            <div className="p-4 rounded-xl cursor-pointer hover:bg-orange-50 transition-colors" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }} onClick={() => handleFilterChange('severity', 'medium')}>
+            <div className="p-4 rounded-xl cursor-pointer hover:bg-orange-50 transition-colors" style={{ backgroundColor: colors.bgAlt, border: colors.border }} onClick={() => handleFilterChange('severity', 'medium')}>
               <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Medium</p>
               <p className="text-2xl font-bold" style={{ color: '#F59E0B' }}>{stats.medium}</p>
             </div>
 
-            <div className="p-4 rounded-xl cursor-pointer hover:bg-yellow-50 transition-colors" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }} onClick={() => handleFilterChange('severity', 'low')}>
+            <div className="p-4 rounded-xl cursor-pointer hover:bg-yellow-50 transition-colors" style={{ backgroundColor: colors.bgAlt, border: colors.border }} onClick={() => handleFilterChange('severity', 'low')}>
               <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Low</p>
               <p className="text-2xl font-bold" style={{ color: '#FBBF24' }}>{stats.low}</p>
             </div>
