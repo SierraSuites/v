@@ -149,8 +149,21 @@ export default function SustainabilityDashboard() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            <div className="space-y-6 animate-pulse">
+              <div className="h-7 bg-gray-200 rounded w-56 mb-6" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="bg-white rounded-xl border border-gray-200 p-6">
+                    <div className="w-32 h-32 bg-gray-200 rounded-full mx-auto mb-4" />
+                    <div className="h-4 bg-gray-200 rounded w-24 mx-auto mb-2" />
+                    <div className="h-3 bg-gray-200 rounded w-16 mx-auto" />
+                  </div>
+                ))}
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="h-5 bg-gray-200 rounded w-40 mb-4" />
+                <div className="h-48 bg-gray-200 rounded" />
+              </div>
             </div>
           ) : (
             <>
@@ -162,7 +175,7 @@ export default function SustainabilityDashboard() {
                     const { percentage, offset, circumference } = getCircularProgress(cert.currentPoints, cert.targetPoints)
 
                     return (
-                      <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                      <div key={index} className="rounded-xl p-6 hover:shadow-md transition-all hover:-translate-y-0.5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
                         <div className="flex flex-col items-center">
                           {/* Circular Progress */}
                           <div className="relative w-32 h-32 mb-4">
@@ -238,33 +251,69 @@ export default function SustainabilityDashboard() {
                 </div>
               </div>
 
-              {/* Quick Stats Grid */}
+              {/* Spec lines 162-193: Waste Diversion Goal Indicator */}
+              <div className="rounded-xl p-6 mb-8" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="font-semibold" style={{ color: '#1A1A1A' }}>Waste Diversion Progress</h3>
+                    <p className="text-xs" style={{ color: '#4A4A4A' }}>Goal: 75% diversion rate</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold" style={{ color: metrics.wasteDiverted >= 75 ? '#22C55E' : '#F59E0B' }}>
+                      {metrics.wasteDiverted}%
+                    </span>
+                    {metrics.wasteDiverted >= 75 ? (
+                      <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: '#DCFCE7', color: '#166534' }}>✅ On Track</span>
+                    ) : (
+                      <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}>⚠️ Below Target</span>
+                    )}
+                  </div>
+                </div>
+                <div className="relative w-full rounded-full h-3" style={{ backgroundColor: '#E0E0E0' }}>
+                  <div className="h-3 rounded-full transition-all" style={{ width: `${metrics.wasteDiverted}%`, backgroundColor: metrics.wasteDiverted >= 75 ? '#22C55E' : '#F59E0B' }} />
+                  {/* Goal marker */}
+                  <div className="absolute top-0 h-3 w-0.5" style={{ left: '75%', backgroundColor: '#1A1A1A' }} />
+                </div>
+                <div className="flex justify-between text-xs mt-1" style={{ color: '#9CA3AF' }}>
+                  <span>0%</span>
+                  <span style={{ marginLeft: '50%' }}>75% Goal</span>
+                  <span>100%</span>
+                </div>
+              </div>
+
+              {/* Quick Stats Grid with gradient icons */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="text-sm font-medium text-gray-600">Active Projects</div>
-                    <div className="text-3xl">🏗️</div>
+                <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Active Projects</div>
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6A9BFD 0%, #8BB5FE 100%)' }}>
+                      <span className="text-white text-sm">🏗️</span>
+                    </div>
                   </div>
-                  <div className="text-3xl font-bold text-gray-900">{metrics.activeProjects}</div>
-                  <div className="text-sm text-gray-500 mt-1">With sustainability tracking</div>
+                  <div className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{metrics.activeProjects}</div>
+                  <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>With sustainability tracking</div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="text-sm font-medium text-gray-600">Tax Credits Found</div>
-                    <div className="text-3xl">💰</div>
+                <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Tax Credits Found</div>
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6BCB77 0%, #85D68D 100%)' }}>
+                      <span className="text-white text-sm">💰</span>
+                    </div>
                   </div>
-                  <div className="text-3xl font-bold text-green-600">$127K</div>
-                  <div className="text-sm text-gray-500 mt-1">Across all projects</div>
+                  <div className="text-2xl font-bold" style={{ color: '#22C55E' }}>$127K</div>
+                  <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>Across all projects</div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="text-sm font-medium text-gray-600">Cost Savings</div>
-                    <div className="text-3xl">📊</div>
+                <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Cost Savings</div>
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #38BDF8 0%, #7DD3FC 100%)' }}>
+                      <span className="text-white text-sm">📊</span>
+                    </div>
                   </div>
-                  <div className="text-3xl font-bold text-blue-600">$84K</div>
-                  <div className="text-sm text-gray-500 mt-1">From waste reduction</div>
+                  <div className="text-2xl font-bold" style={{ color: '#3B82F6' }}>$84K</div>
+                  <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>From waste reduction</div>
                 </div>
               </div>
 
@@ -376,16 +425,17 @@ export default function SustainabilityDashboard() {
               </div>
 
               {/* Recent Activity */}
-              <div className="bg-white rounded-lg shadow">
-                <div className="px-6 py-4 border-b bg-gray-50">
-                  <h2 className="text-lg font-semibold text-gray-900">Recent Sustainability Activity</h2>
+              <div className="rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+                <div className="px-6 py-4" style={{ borderBottom: '1px solid #E0E0E0' }}>
+                  <h2 className="text-lg font-semibold" style={{ color: '#1A1A1A' }}>Recent Sustainability Activity</h2>
                 </div>
-                <div className="p-12 text-center text-gray-500">
+                <div className="p-12 text-center" style={{ color: '#4A4A4A' }}>
                   <div className="text-4xl mb-2">🌱</div>
                   <p>Start logging carbon emissions, waste, and water usage to see activity here</p>
                   <Link
                     href="/sustainability/carbon"
-                    className="mt-4 inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="mt-4 inline-block px-6 py-3 text-white rounded-lg transition-colors"
+                    style={{ background: 'linear-gradient(to bottom, #22C55E 0%, #16A34A 100%)' }}
                   >
                     Log Your First Activity
                   </Link>

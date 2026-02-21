@@ -12,6 +12,9 @@ import WelcomeBanner from '@/components/dashboard/WelcomeBanner'
 import RecentProjects from '@/components/dashboard/RecentProjects'
 import ActivityFeed from '@/components/dashboard/ActivityFeed'
 import UpcomingTasks from '@/components/dashboard/UpcomingTasks'
+import WeatherWidget from '@/components/dashboard/WeatherWidget'
+import PunchListWidget from '@/components/dashboard/PunchListWidget'
+import BudgetTrackingWidget from '@/components/dashboard/BudgetTrackingWidget'
 
 // Types
 interface Project {
@@ -60,6 +63,7 @@ export default function DashboardPage() {
   const [recentProjects, setRecentProjects] = useState<Project[]>([])
   const [recentActivities, setRecentActivities] = useState<Activity[]>([])
   const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([])
+  const [allProjects, setAllProjects] = useState<any[]>([])
 
   // ============================================================================
   // LOAD ALL DATA VIA API
@@ -85,6 +89,7 @@ export default function DashboardPage() {
         setRecentProjects(data.projects)
         setRecentActivities(data.activities)
         setUpcomingTasks(data.tasks)
+        setAllProjects(data.allProjects || [])
       } catch (error) {
         console.error('Error loading dashboard:', error)
       } finally {
@@ -106,47 +111,109 @@ export default function DashboardPage() {
     return 'Good evening'
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    const today = new Date()
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-
-    if (date.toDateString() === today.toDateString()) {
-      return 'Today'
-    } else if (date.toDateString() === tomorrow.toDateString()) {
-      return 'Tomorrow'
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    }
-  }
-
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diff = now.getTime() - date.getTime()
-
-    const minutes = Math.floor(diff / 60000)
-    const hours = Math.floor(diff / 3600000)
-    const days = Math.floor(diff / 86400000)
-
-    if (minutes < 1) return 'Just now'
-    if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
-    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`
-    if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  }
-
   // ============================================================================
-  // LOADING STATE
+  // LOADING STATE - Quality Guide line 48: Skeleton loaders for all widgets
   // ============================================================================
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Welcome Banner Skeleton */}
+          <div className="bg-gray-200 rounded-lg h-40 animate-pulse mb-8" />
+
+          {/* Stats Grid Skeleton - Quality Guide lines 511-523 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="rounded-xl border bg-white p-6 animate-pulse">
+                <div className="w-12 h-12 bg-gray-200 rounded-lg mb-4" />
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2" />
+                <div className="h-8 bg-gray-200 rounded w-3/4 mb-2" />
+                <div className="h-3 bg-gray-200 rounded w-full" />
+              </div>
+            ))}
+          </div>
+
+          {/* Main Grid Skeleton */}
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              {/* Projects Skeleton */}
+              <div className="bg-white rounded-xl border p-6 animate-pulse">
+                <div className="h-5 bg-gray-200 rounded w-1/3 mb-4" />
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="flex gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gray-200 rounded-lg" />
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-2/3 mb-2" />
+                      <div className="h-3 bg-gray-200 rounded w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Activity Skeleton */}
+              <div className="bg-white rounded-xl border p-6 animate-pulse">
+                <div className="h-5 bg-gray-200 rounded w-1/3 mb-4" />
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="flex gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gray-200 rounded-full" />
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                      <div className="h-3 bg-gray-200 rounded w-1/3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Budget Tracking Skeleton */}
+              <div className="bg-white rounded-xl border p-6 animate-pulse">
+                <div className="h-5 bg-gray-200 rounded w-1/3 mb-4" />
+                <div className="grid grid-cols-4 gap-4 mb-4">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="h-16 bg-gray-200 rounded-lg" />
+                  ))}
+                </div>
+                <div className="h-6 bg-gray-200 rounded mb-4" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="h-48 bg-gray-200 rounded" />
+                  <div className="h-48 bg-gray-200 rounded" />
+                </div>
+              </div>
+            </div>
+            <div className="space-y-6">
+              {/* Tasks Skeleton */}
+              <div className="bg-white rounded-xl border p-6 animate-pulse">
+                <div className="h-5 bg-gray-200 rounded w-1/2 mb-4" />
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="border border-gray-100 rounded-lg p-3 mb-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  </div>
+                ))}
+              </div>
+              {/* Weather Skeleton */}
+              <div className="bg-white rounded-xl border p-6 animate-pulse">
+                <div className="h-5 bg-gray-200 rounded w-1/2 mb-4" />
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i}>
+                      <div className="h-3 bg-gray-200 rounded w-1/2 mb-2" />
+                      <div className="h-6 bg-gray-200 rounded w-3/4" />
+                    </div>
+                  ))}
+                </div>
+                <div className="h-16 bg-gray-200 rounded" />
+              </div>
+              {/* Punch List Skeleton */}
+              <div className="bg-white rounded-xl border p-6 animate-pulse">
+                <div className="h-5 bg-gray-200 rounded w-1/2 mb-4" />
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="border border-gray-100 rounded-lg p-3 mb-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -189,6 +256,9 @@ export default function DashboardPage() {
             <ActivityFeed
               activities={recentActivities}
             />
+
+            {/* Budget Tracking */}
+            <BudgetTrackingWidget projects={allProjects} />
           </div>
 
           {/* Right Column - 1/3 width */}
@@ -197,6 +267,12 @@ export default function DashboardPage() {
             <UpcomingTasks
               tasks={upcomingTasks}
             />
+
+            {/* Weather Conditions */}
+            <WeatherWidget tasks={[]} />
+
+            {/* Critical Punch Items */}
+            <PunchListWidget showAllProjects={true} />
           </div>
         </div>
       </div>

@@ -92,10 +92,29 @@ export default function TeamsPage() {
 
   if (loading || permissionsLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F9FA' }}>
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-t-transparent rounded-full mx-auto" style={{ borderColor: '#FF6B6B' }} />
-          <p className="mt-4 text-sm" style={{ color: '#4A4A4A' }}>Loading teams...</p>
+      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <div className="h-8 bg-gray-200 rounded w-32 mb-2 animate-pulse" />
+              <div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
+            </div>
+            <div className="h-10 bg-gray-200 rounded-lg w-36 animate-pulse" />
+          </div>
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gray-200 rounded-full" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-1/4 mb-2" />
+                    <div className="h-3 bg-gray-200 rounded w-1/3" />
+                  </div>
+                  <div className="h-6 bg-gray-200 rounded-full w-20" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )

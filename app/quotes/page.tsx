@@ -139,12 +139,66 @@ export default function QuotesPage() {
       return sortOrder === 'asc' ? comparison : -comparison
     })
 
+  // Quality Guide lines 39-47: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 mx-auto" style={{ borderColor: '#FF6B6B' }} />
-          <p className="mt-4 text-lg" style={{ color: '#6B7280' }}>Loading quotes...</p>
+      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+        <div className="max-w-7xl mx-auto p-6 space-y-6">
+          {/* Header skeleton */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="h-8 bg-gray-200 rounded w-40 mb-2 animate-pulse" />
+              <div className="h-4 bg-gray-200 rounded w-64 animate-pulse" />
+            </div>
+            <div className="flex gap-3">
+              <div className="h-10 bg-gray-200 rounded-lg w-36 animate-pulse" />
+              <div className="h-10 bg-gray-200 rounded-lg w-28 animate-pulse" />
+            </div>
+          </div>
+          {/* Stats skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="h-4 bg-gray-200 rounded w-24" />
+                  <div className="w-8 h-8 bg-gray-200 rounded" />
+                </div>
+                <div className="h-8 bg-gray-200 rounded w-20" />
+              </div>
+            ))}
+          </div>
+          {/* Filter skeleton */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-span-2 h-10 bg-gray-200 rounded-lg" />
+              <div className="h-10 bg-gray-200 rounded-lg" />
+              <div className="h-10 bg-gray-200 rounded-lg" />
+            </div>
+          </div>
+          {/* Quote cards skeleton */}
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-6 bg-gray-200 rounded w-48" />
+                      <div className="h-5 bg-gray-200 rounded-full w-20" />
+                    </div>
+                    <div className="h-4 bg-gray-200 rounded w-72" />
+                  </div>
+                  <div className="text-right">
+                    <div className="h-8 bg-gray-200 rounded w-24 mb-2" />
+                    <div className="flex gap-2">
+                      <div className="h-6 bg-gray-200 rounded w-12" />
+                      <div className="h-6 bg-gray-200 rounded w-16" />
+                      <div className="h-6 bg-gray-200 rounded w-10" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
@@ -181,60 +235,63 @@ export default function QuotesPage() {
           </div>
         </div>
 
-        {/* Statistics */}
+        {/* Spec lines 82-88: Pipeline Overview with count + value per status */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold" style={{ color: '#6B7280' }}>
-                  Total Quotes
-                </span>
-                <span className="text-2xl">📝</span>
-              </div>
-              <p className="text-3xl font-bold" style={{ color: '#1A1A1A' }}>
-                {stats.total_quotes || 0}
-              </p>
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {[
+                { label: 'Draft', count: stats.draft_count, value: stats.draft_value, icon: '📝', color: '#6B7280', bg: '#F3F4F6' },
+                { label: 'Sent', count: stats.sent_count, value: stats.sent_value, icon: '📤', color: '#3B82F6', bg: '#EFF6FF' },
+                { label: 'Viewed', count: stats.viewed_count, value: stats.viewed_value, icon: '👀', color: '#8B5CF6', bg: '#F5F3FF' },
+                { label: 'Accepted', count: stats.accepted_count, value: stats.accepted_value, icon: '✅', color: '#10B981', bg: '#ECFDF5' },
+                { label: 'Rejected', count: stats.rejected_count, value: stats.rejected_value, icon: '❌', color: '#EF4444', bg: '#FEF2F2' },
+                { label: 'Conversion', count: null, value: null, icon: '📊', color: '#3B82F6', bg: '#EFF6FF', isRate: true },
+              ].map((item) => (
+                <div key={item.label} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">{item.icon}</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B7280' }}>
+                      {item.label}
+                    </span>
+                  </div>
+                  {(item as any).isRate ? (
+                    <p className="text-2xl font-bold" style={{ color: item.color }}>
+                      {stats.conversion_rate || 0}%
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-bold" style={{ color: item.color }}>
+                        {item.count || 0}
+                      </p>
+                      <p className="text-xs mt-1" style={{ color: '#6B7280' }}>
+                        {formatCurrency(item.value || 0)}
+                      </p>
+                    </>
+                  )}
+                </div>
+              ))}
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold" style={{ color: '#6B7280' }}>
-                  Total Value
-                </span>
-                <span className="text-2xl">💰</span>
+            {/* Total value summary bar */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <div>
+                  <span className="text-xs font-semibold uppercase text-gray-500">Total Quotes</span>
+                  <p className="text-xl font-bold" style={{ color: '#1A1A1A' }}>{stats.total_quotes || 0}</p>
+                </div>
+                <div className="h-8 w-px bg-gray-200" />
+                <div>
+                  <span className="text-xs font-semibold uppercase text-gray-500">Pipeline Value</span>
+                  <p className="text-xl font-bold" style={{ color: '#10B981' }}>{formatCurrency(stats.total_value || 0)}</p>
+                </div>
+                <div className="h-8 w-px bg-gray-200" />
+                <div>
+                  <span className="text-xs font-semibold uppercase text-gray-500">Accepted Value</span>
+                  <p className="text-xl font-bold" style={{ color: '#10B981' }}>{formatCurrency(stats.accepted_value || 0)}</p>
+                </div>
               </div>
-              <p className="text-3xl font-bold" style={{ color: '#10B981' }}>
-                {formatCurrency(stats.total_value || 0)}
-              </p>
             </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold" style={{ color: '#6B7280' }}>
-                  Accepted
-                </span>
-                <span className="text-2xl">✅</span>
-              </div>
-              <p className="text-3xl font-bold" style={{ color: '#10B981' }}>
-                {stats.accepted_count || 0}
-              </p>
-              <p className="text-xs mt-1" style={{ color: '#6B7280' }}>
-                {formatCurrency(stats.accepted_value || 0)}
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold" style={{ color: '#6B7280' }}>
-                  Conversion Rate
-                </span>
-                <span className="text-2xl">📊</span>
-              </div>
-              <p className="text-3xl font-bold" style={{ color: '#3B82F6' }}>
-                {stats.conversion_rate || 0}%
-              </p>
-            </div>
-          </div>
+          </>
         )}
 
         {/* Filters and Search */}
@@ -375,12 +432,24 @@ export default function QuotesPage() {
                         </span>
                         <span>•</span>
                         <span>{new Date(quote.created_at).toLocaleDateString()}</span>
-                        {quote.valid_until && (
-                          <>
-                            <span>•</span>
-                            <span>Valid until {new Date(quote.valid_until).toLocaleDateString()}</span>
-                          </>
-                        )}
+                        {/* Spec line 99-100: Expiration urgency indicator */}
+                        {quote.valid_until && (() => {
+                          const daysLeft = Math.ceil((new Date(quote.valid_until).getTime() - new Date().getTime()) / 86400000)
+                          const urgencyColor = daysLeft < 0 ? '#DC2626' : daysLeft <= 7 ? '#F59E0B' : '#6B7280'
+                          return (
+                            <>
+                              <span>•</span>
+                              <span style={{ color: urgencyColor, fontWeight: daysLeft <= 7 ? 600 : 400 }}>
+                                {daysLeft < 0
+                                  ? `Expired ${Math.abs(daysLeft)}d ago`
+                                  : daysLeft === 0
+                                  ? 'Expires today'
+                                  : `Expires in ${daysLeft}d`
+                                }
+                              </span>
+                            </>
+                          )
+                        })()}
                       </div>
 
                       {quote.description && (
@@ -392,50 +461,52 @@ export default function QuotesPage() {
 
                     {/* Right side - Amount and actions */}
                     <div className="text-right ml-6">
-                      <p className="text-2xl font-bold mb-2" style={{ color: '#FF6B6B' }}>
+                      <p className="text-2xl font-bold mb-1" style={{ color: '#FF6B6B' }}>
                         {formatCurrency(quote.total_amount)}
                       </p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            router.push(`/quotes/${quote.id}/edit`)
-                          }}
-                          className="px-3 py-1 rounded text-xs font-semibold transition-colors hover:bg-gray-100"
-                          style={{ color: '#6B7280' }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDuplicateQuote(quote.id)
-                          }}
-                          className="px-3 py-1 rounded text-xs font-semibold transition-colors hover:bg-gray-100"
-                          style={{ color: '#6B7280' }}
-                        >
-                          Duplicate
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            router.push(`/quotes/${quote.id}/pdf`)
-                          }}
-                          className="px-3 py-1 rounded text-xs font-semibold transition-colors hover:bg-blue-50"
-                          style={{ color: '#3B82F6' }}
-                        >
-                          PDF
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteQuote(quote.id)
-                          }}
-                          className="px-3 py-1 rounded text-xs font-semibold transition-colors hover:bg-red-50"
-                          style={{ color: '#EF4444' }}
-                        >
-                          Delete
-                        </button>
+                      {/* Quality Guide lines 1086-1104: Margin color indicator */}
+                      {quote.status === 'accepted' && (quote as any).margin_percent != null && (() => {
+                        const margin = (quote as any).margin_percent
+                        const color = margin >= 25 ? '#10B981' : margin >= 15 ? '#F59E0B' : '#EF4444'
+                        return (
+                          <p className="text-xs font-semibold mb-2" style={{ color }}>
+                            Margin: {margin.toFixed(1)}%
+                          </p>
+                        )
+                      })()}
+                      {/* Spec lines 101-103: Context-aware action buttons per status */}
+                      <div className="flex gap-2 flex-wrap justify-end">
+                        {/* Draft: Edit, Duplicate, Delete */}
+                        {quote.status === 'draft' && (
+                          <>
+                            <button onClick={(e) => { e.stopPropagation(); router.push(`/quotes/${quote.id}/edit`) }} className="px-3 py-1 rounded text-xs font-semibold hover:bg-gray-100" style={{ color: '#6B7280' }}>Edit</button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDuplicateQuote(quote.id) }} className="px-3 py-1 rounded text-xs font-semibold hover:bg-gray-100" style={{ color: '#6B7280' }}>Duplicate</button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDeleteQuote(quote.id) }} className="px-3 py-1 rounded text-xs font-semibold hover:bg-red-50" style={{ color: '#EF4444' }}>Delete</button>
+                          </>
+                        )}
+                        {/* Sent/Viewed: Follow Up, Duplicate, PDF */}
+                        {(quote.status === 'sent' || quote.status === 'viewed') && (
+                          <>
+                            <button onClick={(e) => { e.stopPropagation(); router.push(`/quotes/${quote.id}/edit`) }} className="px-3 py-1 rounded text-xs font-semibold hover:bg-blue-50" style={{ color: '#3B82F6' }}>Follow Up</button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDuplicateQuote(quote.id) }} className="px-3 py-1 rounded text-xs font-semibold hover:bg-gray-100" style={{ color: '#6B7280' }}>Duplicate</button>
+                            <button onClick={(e) => { e.stopPropagation(); router.push(`/quotes/${quote.id}/pdf`) }} className="px-3 py-1 rounded text-xs font-semibold hover:bg-blue-50" style={{ color: '#3B82F6' }}>PDF</button>
+                          </>
+                        )}
+                        {/* Spec lines 113-114: Accepted: Convert to Project, View PDF */}
+                        {quote.status === 'accepted' && (
+                          <>
+                            <button onClick={(e) => { e.stopPropagation(); router.push(`/projects?from_quote=${quote.id}`) }} className="px-3 py-1 rounded text-xs font-semibold hover:bg-green-50" style={{ color: '#10B981' }}>Convert to Project</button>
+                            <button onClick={(e) => { e.stopPropagation(); router.push(`/quotes/${quote.id}/pdf`) }} className="px-3 py-1 rounded text-xs font-semibold hover:bg-blue-50" style={{ color: '#3B82F6' }}>PDF</button>
+                          </>
+                        )}
+                        {/* Rejected/Expired: Duplicate to create new version */}
+                        {(quote.status === 'rejected' || quote.status === 'expired') && (
+                          <button onClick={(e) => { e.stopPropagation(); handleDuplicateQuote(quote.id) }} className="px-3 py-1 rounded text-xs font-semibold hover:bg-gray-100" style={{ color: '#6B7280' }}>Create New Version</button>
+                        )}
+                        {/* Converted: Go to Project */}
+                        {quote.status === 'converted' && (
+                          <button onClick={(e) => { e.stopPropagation(); router.push(`/projects`) }} className="px-3 py-1 rounded text-xs font-semibold hover:bg-green-50" style={{ color: '#10B981' }}>View Project</button>
+                        )}
                       </div>
                     </div>
                   </div>

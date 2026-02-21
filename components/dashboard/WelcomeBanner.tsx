@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 interface WelcomeBannerProps {
   userName: string
   greeting: string
@@ -17,16 +19,32 @@ export default function WelcomeBanner({ userName, greeting, onDismiss }: Welcome
           <p className="text-blue-100 mb-4">
             Welcome to your Sierra Suites dashboard. Manage your construction projects with ease.
           </p>
+          {/* Quick Actions - Spec Section 7: Common actions without navigation hunting */}
           <div className="flex flex-wrap gap-3">
-            <button className="px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors">
+            <Link
+              href="/projects"
+              className="px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors"
+            >
               + New Project
-            </button>
-            <button className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-400 transition-colors">
-              📸 Upload Photos
-            </button>
-            <button className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-400 transition-colors">
-              💰 Create Quote
-            </button>
+            </Link>
+            <Link
+              href="/fieldsnap"
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-400 transition-colors"
+            >
+              Upload Photos
+            </Link>
+            <Link
+              href="/quotes"
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-400 transition-colors"
+            >
+              Create Quote
+            </Link>
+            <Link
+              href="/taskflow"
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-400 transition-colors"
+            >
+              Create Task
+            </Link>
           </div>
         </div>
         <button

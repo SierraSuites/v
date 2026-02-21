@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
     // Fetch all data in parallel
-    const [projectsResult, activitiesResult, tasksResult] = await Promise.all([
+    const [projectsResult, activitiesResult, tasksResult, allProjectsResult] = await Promise.all([
       supabase
         .from('projects')
         .select('id, name, status, progress, estimated_end_date, client_name, updated_at')
@@ -65,6 +65,11 @@ export async function GET(request: NextRequest) {
         .order('priority', { ascending: false })
         .order('due_date', { ascending: true })
         .limit(6),
+
+      supabase
+        .from('projects')
+        .select('id, name, status, type, estimated_budget, spent')
+        .eq('company_id', companyId),
     ])
 
     // Transform activities (user_profiles may be array)
@@ -79,12 +84,19 @@ export async function GET(request: NextRequest) {
       projects: Array.isArray(item.projects) ? item.projects[0] : item.projects,
     }))
 
+    // Map estimated_budget -> budget for BudgetTrackingWidget
+    const allProjects = (allProjectsResult.data || []).map((p: any) => ({
+      ...p,
+      budget: p.estimated_budget ?? 0,
+    }))
+
     return NextResponse.json({
       user: { id: authResult.userId },
       companyId,
       projects: projectsResult.data || [],
       activities,
       tasks,
+      allProjects,
     })
   } catch (error) {
     console.error('[GET /api/dashboard/recent] Error:', error)

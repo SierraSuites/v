@@ -435,12 +435,64 @@ export default function ProjectsPage() {
 
   const canCreateProject = projects.length < projectLimits[userPlan]
 
+  // Quality Guide line 1774: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading projects...</p>
+      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header skeleton */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <div className="h-8 bg-gray-200 rounded w-32 mb-2 animate-pulse" />
+              <div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
+            </div>
+            <div className="h-10 bg-gray-200 rounded-lg w-36 animate-pulse" />
+          </div>
+          {/* Stats skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="rounded-xl bg-white border border-gray-200 p-4 animate-pulse">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-gray-200 rounded-lg" />
+                  <div className="h-4 bg-gray-200 rounded w-16" />
+                </div>
+                <div className="h-8 bg-gray-200 rounded w-12" />
+              </div>
+            ))}
+          </div>
+          {/* Filter bar skeleton */}
+          <div className="rounded-xl bg-white border border-gray-200 p-4 mb-6 animate-pulse">
+            <div className="flex gap-4">
+              <div className="flex-1 h-10 bg-gray-200 rounded-lg" />
+              <div className="h-10 bg-gray-200 rounded-lg w-28" />
+              <div className="h-10 bg-gray-200 rounded-lg w-28" />
+            </div>
+          </div>
+          {/* Project cards skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="rounded-xl bg-white border border-gray-200 overflow-hidden animate-pulse">
+                <div className="h-48 bg-gray-200" />
+                <div className="p-5">
+                  <div className="h-5 bg-gray-200 rounded w-3/4 mb-2" />
+                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-4" />
+                  <div className="h-2 bg-gray-200 rounded-full w-full mb-4" />
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="h-12 bg-gray-100 rounded-lg" />
+                    <div className="h-12 bg-gray-100 rounded-lg" />
+                  </div>
+                  <div className="flex justify-between">
+                    <div className="flex -space-x-2">
+                      {[1, 2, 3].map(j => (
+                        <div key={j} className="w-8 h-8 bg-gray-200 rounded-full border-2 border-white" />
+                      ))}
+                    </div>
+                    <div className="h-4 bg-gray-200 rounded w-16" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
@@ -764,15 +816,28 @@ export default function ProjectsPage() {
                     </div>
                   </div>
 
-                  {/* Stats */}
+                  {/* Stats - Spec Section 1 lines 88-92: Budget health + schedule */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <div className="rounded-lg p-2" style={{ backgroundColor: '#F8F9FA' }}>
                       <p className="text-xs mb-0.5" style={{ color: '#4A4A4A' }}>Budget</p>
                       <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{formatCurrency(project.budget)}</p>
+                      {project.budget > 0 && (() => {
+                        const pct = (project.spent / project.budget) * 100
+                        const color = pct > 100 ? '#EF4444' : pct > 95 ? '#F59E0B' : '#22C55E'
+                        return <p className="text-xs font-medium mt-0.5" style={{ color }}>{pct.toFixed(0)}% used</p>
+                      })()}
                     </div>
                     <div className="rounded-lg p-2" style={{ backgroundColor: '#F8F9FA' }}>
-                      <p className="text-xs mb-0.5" style={{ color: '#4A4A4A' }}>Spent</p>
-                      <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{formatCurrency(project.spent)}</p>
+                      <p className="text-xs mb-0.5" style={{ color: '#4A4A4A' }}>Timeline</p>
+                      {(() => {
+                        const daysLeft = Math.ceil((new Date(project.endDate).getTime() - new Date().getTime()) / 86400000)
+                        const isOverdue = daysLeft < 0 && project.status !== 'completed'
+                        return (
+                          <p className="text-sm font-semibold" style={{ color: isOverdue ? '#EF4444' : daysLeft <= 7 ? '#F59E0B' : '#1A1A1A' }}>
+                            {project.status === 'completed' ? 'Done' : isOverdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d left`}
+                          </p>
+                        )
+                      })()}
                     </div>
                   </div>
 
