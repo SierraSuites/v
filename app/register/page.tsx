@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import Link from "next/link"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { InternationalPhoneInput } from "@/components/auth/InternationalPhoneInput"
 import { CurrencySelector } from "@/components/auth/CurrencySelector"
@@ -48,6 +49,7 @@ export default function RegisterPage() {
   // Step 3: Terms and Conditions
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [acceptPrivacy, setAcceptPrivacy] = useState(false)
+  const [activeModal, setActiveModal] = useState<string | null>(null)
   const [registrationComplete, setRegistrationComplete] = useState(false)
   const [userEmail, setUserEmail] = useState("")
 
@@ -697,9 +699,13 @@ export default function RegisterPage() {
                       />
                       <label htmlFor="acceptTerms" className="text-sm">
                         I agree to the{" "}
-                        <Link href="#" className="text-[#1E3A8A] hover:underline font-medium">
+                        <button
+                          type="button"
+                          onClick={() => setActiveModal("terms")}
+                          className="text-[#1E3A8A] hover:underline font-medium"
+                        >
                           Terms of Service
-                        </Link>{" "}
+                        </button>{" "}
                         and understand that my subscription will automatically renew monthly
                       </label>
                     </div>
@@ -717,9 +723,13 @@ export default function RegisterPage() {
                       />
                       <label htmlFor="acceptPrivacy" className="text-sm">
                         I agree to the{" "}
-                        <Link href="#" className="text-[#1E3A8A] hover:underline font-medium">
+                        <button
+                          type="button"
+                          onClick={() => setActiveModal("privacy")}
+                          className="text-[#1E3A8A] hover:underline font-medium"
+                        >
                           Privacy Policy
-                        </Link>{" "}
+                        </button>{" "}
                         and consent to the processing of my personal data
                       </label>
                     </div>
@@ -762,6 +772,113 @@ export default function RegisterPage() {
           <p>© 2025 The Sierra Suites. All rights reserved.</p>
         </div>
       </footer>
+
+      {/* Terms / Privacy Modal */}
+      {activeModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+          onClick={() => setActiveModal(null)}
+        >
+          <div
+            className="relative w-full max-w-3xl max-h-[80vh] overflow-y-auto rounded-xl border border-border bg-card p-8 md:p-12"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setActiveModal(null)}
+              className="absolute top-6 right-6 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            <div className="text-foreground">
+              {activeModal === "privacy" && (
+                <>
+                  <h2 className="text-3xl font-bold">Privacy Policy</h2>
+                  <p className="mt-6 text-sm text-muted-foreground">
+                    <strong>Last Updated: January 1, 2025</strong>
+                  </p>
+
+                  <h3 className="mt-8 text-xl font-semibold">1. Introduction</h3>
+                  <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
+                    The Sierra Suites (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) is committed to protecting your privacy. This Privacy
+                    Policy explains how your personal information is collected, used, and disclosed by The Sierra
+                    Suites.
+                  </p>
+
+                  <h3 className="mt-8 text-xl font-semibold">2. Information We Collect</h3>
+                  <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
+                    We collect information you provide directly to us, including when you create an account, update your
+                    profile, use our services, or communicate with us. This information may include:
+                  </p>
+                  <ul className="mt-3 ml-6 list-disc text-sm text-muted-foreground space-y-1">
+                    <li>Name, email address, and contact information</li>
+                    <li>Company information and business details</li>
+                    <li>Payment information and billing details</li>
+                    <li>Project data, construction documentation, and team information</li>
+                    <li>Communications with our support team</li>
+                  </ul>
+
+                  <h3 className="mt-8 text-xl font-semibold">3. How We Use Your Information</h3>
+                  <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
+                    We may use the information we collect for various purposes, including to provide, maintain, and
+                    improve our services, process transactions, send technical notices and support messages, respond to
+                    your questions, monitor usage trends, and detect fraudulent transactions.
+                  </p>
+
+                  <h3 className="mt-8 text-xl font-semibold">4. Contact Us</h3>
+                  <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
+                    If you have any questions about this Privacy Policy, please contact us at{" "}
+                    <a href="mailto:privacy@thesierrasuites.com" className="text-primary hover:underline">
+                      privacy@thesierrasuites.com
+                    </a>
+                    .
+                  </p>
+                </>
+              )}
+
+              {activeModal === "terms" && (
+                <>
+                  <h2 className="text-3xl font-bold">Terms of Service</h2>
+                  <p className="mt-6 text-sm text-muted-foreground">
+                    <strong>Last Updated: January 1, 2025</strong>
+                  </p>
+
+                  <h3 className="mt-8 text-xl font-semibold">1. Agreement to Terms</h3>
+                  <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
+                    By accessing or using The Sierra Suites (&ldquo;Service&rdquo;), you agree to be bound by these Terms of Service
+                    and all applicable laws and regulations. If you do not agree with any of these terms, you are
+                    prohibited from using or accessing our Service.
+                  </p>
+
+                  <h3 className="mt-8 text-xl font-semibold">2. Use License</h3>
+                  <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
+                    Permission is granted to temporarily use The Sierra Suites for your business operations. This is the
+                    grant of a license, not a transfer of title, and under this license you may not modify or copy the
+                    materials, use them for commercial purposes, attempt to reverse engineer any software, remove
+                    proprietary notations, or transfer the materials to another person.
+                  </p>
+
+                  <h3 className="mt-8 text-xl font-semibold">3. Account Registration</h3>
+                  <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
+                    To access certain features of our Service, you must register for an account. You agree to provide
+                    accurate, current, and complete information during the registration process and to update such
+                    information to keep it accurate, current, and complete.
+                  </p>
+
+                  <h3 className="mt-8 text-xl font-semibold">4. Contact Information</h3>
+                  <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
+                    If you have any questions about these Terms, please contact us at{" "}
+                    <a href="mailto:legal@thesierrasuites.com" className="text-primary hover:underline">
+                      legal@thesierrasuites.com
+                    </a>
+                    .
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

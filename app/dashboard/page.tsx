@@ -12,6 +12,9 @@ import WelcomeBanner from '@/components/dashboard/WelcomeBanner'
 import RecentProjects from '@/components/dashboard/RecentProjects'
 import ActivityFeed from '@/components/dashboard/ActivityFeed'
 import UpcomingTasks from '@/components/dashboard/UpcomingTasks'
+import WeatherWidget from '@/components/dashboard/WeatherWidget'
+import PunchListWidget from '@/components/dashboard/PunchListWidget'
+import BudgetTrackingWidget from '@/components/dashboard/BudgetTrackingWidget'
 
 // Types
 interface Project {
@@ -60,6 +63,7 @@ export default function DashboardPage() {
   const [recentProjects, setRecentProjects] = useState<Project[]>([])
   const [recentActivities, setRecentActivities] = useState<Activity[]>([])
   const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([])
+  const [allProjects, setAllProjects] = useState<any[]>([])
 
   // ============================================================================
   // LOAD ALL DATA VIA API
@@ -85,6 +89,7 @@ export default function DashboardPage() {
         setRecentProjects(data.projects)
         setRecentActivities(data.activities)
         setUpcomingTasks(data.tasks)
+        setAllProjects(data.allProjects || [])
       } catch (error) {
         console.error('Error loading dashboard:', error)
       } finally {
@@ -158,9 +163,46 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
+              {/* Budget Tracking Skeleton */}
+              <div className="bg-white rounded-xl border p-6 animate-pulse">
+                <div className="h-5 bg-gray-200 rounded w-1/3 mb-4" />
+                <div className="grid grid-cols-4 gap-4 mb-4">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="h-16 bg-gray-200 rounded-lg" />
+                  ))}
+                </div>
+                <div className="h-6 bg-gray-200 rounded mb-4" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="h-48 bg-gray-200 rounded" />
+                  <div className="h-48 bg-gray-200 rounded" />
+                </div>
+              </div>
             </div>
             <div className="space-y-6">
               {/* Tasks Skeleton */}
+              <div className="bg-white rounded-xl border p-6 animate-pulse">
+                <div className="h-5 bg-gray-200 rounded w-1/2 mb-4" />
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="border border-gray-100 rounded-lg p-3 mb-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  </div>
+                ))}
+              </div>
+              {/* Weather Skeleton */}
+              <div className="bg-white rounded-xl border p-6 animate-pulse">
+                <div className="h-5 bg-gray-200 rounded w-1/2 mb-4" />
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i}>
+                      <div className="h-3 bg-gray-200 rounded w-1/2 mb-2" />
+                      <div className="h-6 bg-gray-200 rounded w-3/4" />
+                    </div>
+                  ))}
+                </div>
+                <div className="h-16 bg-gray-200 rounded" />
+              </div>
+              {/* Punch List Skeleton */}
               <div className="bg-white rounded-xl border p-6 animate-pulse">
                 <div className="h-5 bg-gray-200 rounded w-1/2 mb-4" />
                 {[1, 2, 3].map(i => (
@@ -214,6 +256,9 @@ export default function DashboardPage() {
             <ActivityFeed
               activities={recentActivities}
             />
+
+            {/* Budget Tracking */}
+            <BudgetTrackingWidget projects={allProjects} />
           </div>
 
           {/* Right Column - 1/3 width */}
@@ -222,6 +267,12 @@ export default function DashboardPage() {
             <UpcomingTasks
               tasks={upcomingTasks}
             />
+
+            {/* Weather Conditions */}
+            <WeatherWidget tasks={[]} />
+
+            {/* Critical Punch Items */}
+            <PunchListWidget showAllProjects={true} />
           </div>
         </div>
       </div>
