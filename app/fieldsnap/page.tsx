@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic'
 
 
 import { useState, useEffect, useMemo } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getPhotos, subscribeToPhotos, getStorageStats, type Photo } from '@/lib/supabase/photos'
@@ -54,9 +53,6 @@ export default function FieldSnapPage() {
   const [showBatchUpload, setShowBatchUpload] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
-  // Sidebar and mobile
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [showMobileMenu, setShowMobileMenu] = useState(false)
 
   useEffect(() => {
     loadUser()
@@ -232,144 +228,55 @@ export default function FieldSnapPage() {
   }
 
   // Storage percentage
-  const storagePercentage = (stats.storageUsed / stats.storageTotal) * 100
 
+  // Quality Guide lines 1262-1270: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F9FA' }}>
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-t-transparent rounded-full mx-auto" style={{ borderColor: '#FF6B6B', borderTopColor: 'transparent' }}></div>
-          <p className="mt-4 text-sm" style={{ color: '#4A4A4A' }}>Loading FieldSnap...</p>
+      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+        {/* Header skeleton */}
+        <div className="sticky top-0 z-30 p-4 lg:p-6 bg-white border-b border-gray-200 animate-pulse">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 max-w-2xl h-10 bg-gray-200 rounded-lg" />
+            <div className="flex gap-2">
+              <div className="h-10 w-24 bg-gray-200 rounded-lg" />
+              <div className="h-10 w-24 bg-gray-200 rounded-lg" />
+            </div>
+          </div>
+        </div>
+        <div className="p-4 lg:p-6 space-y-6">
+          {/* Stats skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-20 mb-2" />
+                <div className="h-7 bg-gray-200 rounded w-16" />
+              </div>
+            ))}
+          </div>
+          {/* Photo grid skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
+                <div className="aspect-square bg-gray-200" />
+                <div className="p-3">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: '#F8F9FA' }}>
-      {/* Sidebar */}
-      <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ${showMobileMenu ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} ${sidebarCollapsed ? 'lg:w-20' : 'lg:w-64'}`}
-        style={{ backgroundColor: '#1A1A1A' }}
-      >
-        <div className="h-full flex flex-col">
-          {/* Sidebar Header */}
-          <div className="p-6 flex items-center justify-between" style={{ borderBottom: '1px solid #2A2A2A' }}>
-            {!sidebarCollapsed && (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FF6B6B' }}>
-                  <span className="text-xl">📸</span>
-                </div>
-                <span className="font-bold text-lg text-white">FieldSnap</span>
-              </div>
-            )}
-            <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="hidden lg:block p-2 rounded-lg hover:bg-white/10 transition-colors text-white"
-            >
-              <svg className={`w-5 h-5 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-            <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              {!sidebarCollapsed && <span>Dashboard</span>}
-            </Link>
-
-            <Link href="/projects" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              {!sidebarCollapsed && <span>Projects</span>}
-            </Link>
-
-            <Link href="/taskflow" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              {!sidebarCollapsed && <span>TaskFlow</span>}
-            </Link>
-
-            <Link href="/fieldsnap" className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-white" style={{ backgroundColor: '#FF6B6B' }}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              {!sidebarCollapsed && <span>FieldSnap</span>}
-            </Link>
-
-            {!sidebarCollapsed && (
-              <div className="pt-4">
-                <p className="px-4 text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Views</p>
-                <Link href="/fieldsnap/capture" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white">
-                  <span className="text-lg">📷</span>
-                  <span className="text-sm">Smart Capture</span>
-                </Link>
-                <Link href="/fieldsnap/analytics" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white">
-                  <span className="text-lg">📊</span>
-                  <span className="text-sm">Analytics</span>
-                </Link>
-                <Link href="/fieldsnap/reports" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/10 transition-colors text-white/70 hover:text-white">
-                  <span className="text-lg">📄</span>
-                  <span className="text-sm">Reports</span>
-                </Link>
-              </div>
-            )}
-          </nav>
-
-          {/* Storage Indicator */}
-          {!sidebarCollapsed && (
-            <div className="p-4 m-4 rounded-lg" style={{ backgroundColor: '#2A2A2A' }}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-white/70">Storage</span>
-                <span className="text-xs text-white/50">{Math.round(storagePercentage)}%</span>
-              </div>
-              <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#1A1A1A' }}>
-                <div
-                  className="h-full transition-all"
-                  style={{
-                    width: `${Math.min(100, storagePercentage)}%`,
-                    backgroundColor: storagePercentage > 90 ? '#DC2626' : storagePercentage > 70 ? '#FFD93D' : '#6BCB77'
-                  }}
-                />
-              </div>
-              <div className="flex justify-between mt-2 text-xs text-white/50">
-                <span>{formatBytes(stats.storageUsed)}</span>
-                <span>{formatBytes(stats.storageTotal)}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </aside>
-
-      {/* Mobile overlay */}
-      {showMobileMenu && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setShowMobileMenu(false)}
-        />
-      )}
-
+    <div className="flex flex-col min-h-0" style={{ backgroundColor: '#F8F9FA' }}>
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
         <header className="sticky top-0 z-30 flex items-center justify-between gap-4 p-4 lg:p-6" style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E0E0E0' }}>
           <div className="flex items-center gap-4 flex-1 min-w-0">
-            <button
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-
             <div className="flex-1 max-w-2xl">
               <div className="relative">
                 <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: '#4A4A4A' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -587,27 +494,72 @@ export default function FieldSnapPage() {
               viewMode === 'map' ? 'h-[600px] rounded-xl overflow-hidden' :
               'space-y-4'
             }>
-              {viewMode === 'grid' && filteredPhotos.map(photo => (
-                <div
-                  key={photo.id}
-                  className="group relative rounded-xl overflow-hidden cursor-pointer transform transition-transform hover:scale-105"
-                  style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', aspectRatio: '1/1' }}
-                >
-                  <img
-                    src={photo.thumbnail_url || photo.url}
-                    alt={photo.filename}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <p className="text-white text-xs font-semibold truncate">{photo.filename}</p>
-                      {photo.project_name && (
-                        <p className="text-white/70 text-xs truncate">{photo.project_name}</p>
+              {/* Spec lines 214-247: Photo cards with category badges + safety alerts */}
+              {viewMode === 'grid' && filteredPhotos.map(photo => {
+                const category = (photo as any).auto_category || (photo.tags?.includes('safety') ? 'safety' : photo.tags?.includes('issue') ? 'issue' : null)
+                const isSafety = category === 'safety' || photo.tags?.includes('safety')
+                const isIssue = category === 'issue' || photo.tags?.includes('defect') || photo.tags?.includes('issue')
+
+                return (
+                  <div
+                    key={photo.id}
+                    className={`group relative rounded-xl overflow-hidden cursor-pointer transform transition-transform hover:scale-105 ${
+                      isSafety ? 'ring-2 ring-red-400' : isIssue ? 'ring-2 ring-amber-400' : ''
+                    }`}
+                    style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', aspectRatio: '1/1' }}
+                  >
+                    <img
+                      src={photo.thumbnail_url || photo.url}
+                      alt={photo.filename}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    {/* Quality Guide lines 74-76: Category badge */}
+                    <div className="absolute top-2 left-2 flex gap-1">
+                      {isSafety && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                          Safety
+                        </span>
+                      )}
+                      {isIssue && !isSafety && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                          Issue
+                        </span>
+                      )}
+                      {(photo as any).auto_phase && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                          {(photo as any).auto_phase}
+                        </span>
                       )}
                     </div>
+                    {/* Selection checkbox */}
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <input
+                        type="checkbox"
+                        checked={selectedPhotos.has(photo.id)}
+                        onChange={(e) => {
+                          e.stopPropagation()
+                          setSelectedPhotos(prev => {
+                            const next = new Set(prev)
+                            if (next.has(photo.id)) next.delete(photo.id)
+                            else next.add(photo.id)
+                            return next
+                          })
+                        }}
+                        className="w-5 h-5 rounded border-2 border-white shadow-md accent-blue-600"
+                      />
+                    </div>
+                    <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <p className="text-white text-xs font-semibold truncate">{photo.filename}</p>
+                        {photo.project_name && (
+                          <p className="text-white/70 text-xs truncate">{photo.project_name}</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
 
               {viewMode === 'list' && filteredPhotos.map(photo => (
                 <div
