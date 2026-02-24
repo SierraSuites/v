@@ -1,12 +1,8 @@
 import { createClient } from "@/lib/supabase/client"
-import { permissionService } from '@/lib/permissions'
-
-// ============================================================================
-// RBAC PERMISSION GUARD HELPERS
-// ============================================================================
 
 /**
- * Get authenticated user and their company ID
+ * Get the current user's company ID from their profile.
+ * Returns null if the user has no company assigned yet.
  */
 async function getAuthContext(): Promise<{
   userId: string
@@ -16,97 +12,26 @@ async function getAuthContext(): Promise<{
     const supabase = createClient()
     const { data: { user }, error } = await supabase.auth.getUser()
 
-    if (error || !user) {
-      console.error('Authentication required')
-      return null
-    }
+    if (error || !user) return null
 
-    // Get user's company from profile
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
 
-    if (!profile?.company_id) {
-      console.error('User profile or company not found')
-      return null
-    }
+    if (!profile?.company_id) return null
 
-    return {
-      userId: user.id,
-      companyId: profile.company_id
-    }
-  } catch (error) {
-    console.error('Error getting auth context:', error)
+    return { userId: user.id, companyId: profile.company_id }
+  } catch {
     return null
-  }
-}
-
-/**
- * Check if user has required project permission
- */
-async function checkProjectPermission(
-  permission: 'canViewAllProjects' | 'canCreateProjects' | 'canEditProjects' | 'canDeleteProjects',
-  userId: string,
-  companyId: string,
-  projectId?: string
-): Promise<boolean> {
-  try {
-    const hasPermission = await permissionService.hasPermissionDB(
-      userId,
-      companyId,
-      permission
-    )
-
-    // If user has the permission globally, they're good
-    if (hasPermission) {
-      // Log permission check for audit trail
-      await permissionService.logPermissionCheck(
-        `project_${permission}`,
-        'project',
-        projectId || companyId,
-        true
-      )
-      return true
-    }
-
-    // If checking specific project and user doesn't have global permission,
-    // check if they're assigned to this specific project
-    if (projectId && permission === 'canViewAllProjects') {
-      const accessibleProjects = await permissionService.getUserAccessibleProjects(userId)
-      const hasAccess = accessibleProjects.includes(projectId)
-
-      await permissionService.logPermissionCheck(
-        `project_${permission}_specific`,
-        'project',
-        projectId,
-        hasAccess,
-        hasAccess ? undefined : 'Not assigned to project'
-      )
-
-      return hasAccess
-    }
-
-    // Log permission denial
-    await permissionService.logPermissionCheck(
-      `project_${permission}`,
-      'project',
-      projectId || companyId,
-      false,
-      'Insufficient permissions'
-    )
-
-    return false
-  } catch (error) {
-    console.error('Error checking permission:', error)
-    return false
   }
 }
 
 export type Project = {
   id: string
   user_id: string
+  company_id: string | null
 
   // Basic Information
   name: string
@@ -219,7 +144,7 @@ export type ProjectExpense = {
   created_at: string
 }
 
-export type ProjectInsert = Omit<Project, "id" | "user_id" | "created_at" | "updated_at" | "spent" | "progress">
+export type ProjectInsert = Omit<Project, "id" | "user_id" | "company_id" | "created_at" | "updated_at" | "spent" | "progress">
 export type ProjectUpdate = Partial<ProjectInsert>
 
 // ============================================
@@ -271,28 +196,12 @@ export async function getProjects() {
 
 /**
  * Fetch a single project by ID
- * RBAC: Enforces canViewAllProjects or project assignment
  */
 export async function getProjectById(projectId: string) {
   const supabase = createClient()
 
-  // RBAC: Check authentication and permissions
-  const authContext = await getAuthContext()
-  if (!authContext) {
-    return { data: null, error: new Error('Authentication required') }
-  }
-
-  // Check if user can view this specific project
-  const canView = await checkProjectPermission(
-    'canViewAllProjects',
-    authContext.userId,
-    authContext.companyId,
-    projectId
-  )
-
-  if (!canView) {
-    return { data: null, error: new Error('Permission denied: Cannot view this project') }
-  }
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { data: null, error: new Error('Authentication required') }
 
   const { data, error } = await supabase
     .from("projects")
@@ -301,7 +210,7 @@ export async function getProjectById(projectId: string) {
     .single()
 
   if (error) {
-    console.error("Error fetching project:", error)
+    console.error("Error fetching project:", error.message, error.code)
     return { data: null, error }
   }
 
@@ -309,94 +218,115 @@ export async function getProjectById(projectId: string) {
 }
 
 /**
- * Fetch projects by status
+ * Fetch projects by status (scoped to current user's company or user_id)
  */
 export async function getProjectsByStatus(status: Project["status"]) {
   const supabase = createClient()
 
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { data: null, error: new Error('Authentication required') }
+
+  const authContext = await getAuthContext()
+  if (authContext) {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("company_id", authContext.companyId)
+      .eq("status", status)
+      .order("created_at", { ascending: false })
+    if (!error) return { data, error: null }
+  }
+
   const { data, error } = await supabase
     .from("projects")
     .select("*")
+    .eq("user_id", user.id)
     .eq("status", status)
     .order("created_at", { ascending: false })
 
-  if (error) {
-    console.error("Error fetching projects by status:", error)
-    return { data: null, error }
-  }
-
+  if (error) return { data: null, error }
   return { data, error: null }
 }
 
 /**
- * Fetch projects by type
+ * Fetch projects by type (scoped to current user's company or user_id)
  */
 export async function getProjectsByType(type: Project["type"]) {
   const supabase = createClient()
 
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { data: null, error: new Error('Authentication required') }
+
+  const authContext = await getAuthContext()
+  if (authContext) {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("company_id", authContext.companyId)
+      .eq("type", type)
+      .order("created_at", { ascending: false })
+    if (!error) return { data, error: null }
+  }
+
   const { data, error } = await supabase
     .from("projects")
     .select("*")
+    .eq("user_id", user.id)
     .eq("type", type)
     .order("created_at", { ascending: false })
 
-  if (error) {
-    console.error("Error fetching projects by type:", error)
-    return { data: null, error }
-  }
-
+  if (error) return { data: null, error }
   return { data, error: null }
 }
 
 /**
- * Fetch favorite projects
+ * Fetch favorite projects (scoped to current user's company or user_id)
  */
 export async function getFavoriteProjects() {
   const supabase = createClient()
 
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { data: null, error: new Error('Authentication required') }
+
+  const authContext = await getAuthContext()
+  if (authContext) {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("company_id", authContext.companyId)
+      .eq("is_favorite", true)
+      .order("created_at", { ascending: false })
+    if (!error) return { data, error: null }
+  }
+
   const { data, error } = await supabase
     .from("projects")
     .select("*")
+    .eq("user_id", user.id)
     .eq("is_favorite", true)
     .order("created_at", { ascending: false })
 
-  if (error) {
-    console.error("Error fetching favorite projects:", error)
-    return { data: null, error }
-  }
-
+  if (error) return { data: null, error }
   return { data, error: null }
 }
 
 /**
  * Create a new project
- * RBAC: Requires canCreateProjects permission
  */
 export async function createProject(project: ProjectInsert) {
   const supabase = createClient()
 
-  // RBAC: Check authentication and permissions
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { data: null, error: new Error('Authentication required') }
+
   const authContext = await getAuthContext()
-  if (!authContext) {
-    return { data: null, error: new Error('Authentication required') }
-  }
-
-  const canCreate = await checkProjectPermission(
-    'canCreateProjects',
-    authContext.userId,
-    authContext.companyId
-  )
-
-  if (!canCreate) {
-    return { data: null, error: new Error('Permission denied: canCreateProjects required') }
-  }
 
   const { data, error } = await supabase
     .from("projects")
     .insert({
       ...project,
-      user_id: authContext.userId,
-      company_id: authContext.companyId,
+      user_id: user.id,
+      company_id: authContext?.companyId ?? null,
       progress: 0,
       spent: 0
     })
@@ -404,65 +334,21 @@ export async function createProject(project: ProjectInsert) {
     .single()
 
   if (error) {
-    console.error("Error creating project:", {
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code
-    })
-
-    // Fallback: company_id column may not exist yet — retry without it
-    if (error.code === '42703') {
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from("projects")
-        .insert({ ...project, user_id: authContext.userId, progress: 0, spent: 0 })
-        .select()
-        .single()
-
-      if (fallbackError) {
-        console.error("Error creating project (fallback):", fallbackError.message)
-        return { data: null, error: fallbackError }
-      }
-      return { data: fallbackData, error: null }
-    }
-
+    console.error("Error creating project:", error.message, error.code)
     return { data: null, error }
   }
-
-  // Log the operation
-  await permissionService.logPermissionCheck(
-    'create_project',
-    'project',
-    data.id,
-    true
-  )
 
   return { data, error: null }
 }
 
 /**
  * Update an existing project
- * RBAC: Requires canEditProjects permission
  */
 export async function updateProject(projectId: string, updates: ProjectUpdate) {
   const supabase = createClient()
 
-  // RBAC: Check authentication and permissions
-  const authContext = await getAuthContext()
-  if (!authContext) {
-    return { data: null, error: new Error('Authentication required') }
-  }
-
-  const canEdit = await checkProjectPermission(
-    'canEditProjects',
-    authContext.userId,
-    authContext.companyId,
-    projectId
-  )
-
-  if (!canEdit) {
-    return { data: null, error: new Error('Permission denied: canEditProjects required') }
-  }
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { data: null, error: new Error('Authentication required') }
 
   const { data, error } = await supabase
     .from("projects")
@@ -472,44 +358,21 @@ export async function updateProject(projectId: string, updates: ProjectUpdate) {
     .single()
 
   if (error) {
-    console.error("Error updating project:", error)
+    console.error("Error updating project:", error.message, error.code)
     return { data: null, error }
   }
-
-  // Log the operation
-  await permissionService.logPermissionCheck(
-    'update_project',
-    'project',
-    projectId,
-    true
-  )
 
   return { data, error: null }
 }
 
 /**
  * Delete a project
- * RBAC: Requires canDeleteProjects permission
  */
 export async function deleteProject(projectId: string) {
   const supabase = createClient()
 
-  // RBAC: Check authentication and permissions
-  const authContext = await getAuthContext()
-  if (!authContext) {
-    return { error: new Error('Authentication required') }
-  }
-
-  const canDelete = await checkProjectPermission(
-    'canDeleteProjects',
-    authContext.userId,
-    authContext.companyId,
-    projectId
-  )
-
-  if (!canDelete) {
-    return { error: new Error('Permission denied: canDeleteProjects required') }
-  }
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { error: new Error('Authentication required') }
 
   const { error } = await supabase
     .from("projects")
@@ -517,17 +380,9 @@ export async function deleteProject(projectId: string) {
     .eq("id", projectId)
 
   if (error) {
-    console.error("Error deleting project:", error)
+    console.error("Error deleting project:", error.message, error.code)
     return { error }
   }
-
-  // Log the operation
-  await permissionService.logPermissionCheck(
-    'delete_project',
-    'project',
-    projectId,
-    true
-  )
 
   return { error: null }
 }
