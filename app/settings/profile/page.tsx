@@ -48,6 +48,11 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
+  // Email change
+  const [showEmailChange, setShowEmailChange] = useState(false)
+  const [newEmail, setNewEmail] = useState('')
+  const [emailChangePassword, setEmailChangePassword] = useState('')
+
   // Notification preferences
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [projectUpdates, setProjectUpdates] = useState(true)
@@ -229,6 +234,50 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleEmailChange(e: React.FormEvent) {
+    e.preventDefault()
+
+    if (!newEmail || !emailChangePassword) {
+      toast.error('Please fill in all fields')
+      return
+    }
+
+    if (newEmail === email) {
+      toast.error('New email is the same as current email')
+      return
+    }
+
+    setSaving(true)
+    const loadingToast = toast.loading('Sending verification email...')
+
+    try {
+      const response = await fetch('/api/auth/change-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          newEmail,
+          password: emailChangePassword,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send verification email')
+      }
+
+      toast.success(data.message || 'Verification email sent! Please check your inbox.', { id: loadingToast })
+      setShowEmailChange(false)
+      setNewEmail('')
+      setEmailChangePassword('')
+    } catch (error: any) {
+      console.error('Error changing email:', error)
+      toast.error(error?.message || 'Error sending verification email', { id: loadingToast })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -345,6 +394,15 @@ export default function ProfilePage() {
                 >
                   <KeyIcon className="w-5 h-5" />
                   Change Password
+                </button>
+                <button
+                  onClick={() => setShowEmailChange(!showEmailChange)}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-lg"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Change Email
                 </button>
               </div>
             </div>
@@ -598,6 +656,91 @@ export default function ProfilePage() {
                       className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                     >
                       {saving ? 'Changing...' : 'Change Password'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Email Change */}
+            {showEmailChange && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Change Email Address
+                </h3>
+
+                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Important:</strong> A verification email will be sent to your new email address.
+                    You must click the verification link to complete the email change.
+                  </p>
+                </div>
+
+                <form onSubmit={handleEmailChange} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Current Email
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      disabled
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      New Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="Enter new email address"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Confirm Password
+                    </label>
+                    <input
+                      type="password"
+                      value={emailChangePassword}
+                      onChange={(e) => setEmailChangePassword(e.target.value)}
+                      placeholder="Enter your current password"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      For security, please confirm your current password
+                    </p>
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEmailChange(false)
+                        setNewEmail('')
+                        setEmailChangePassword('')
+                      }}
+                      className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {saving ? 'Sending...' : 'Send Verification Email'}
                     </button>
                   </div>
                 </form>

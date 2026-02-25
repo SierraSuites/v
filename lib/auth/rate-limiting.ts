@@ -30,6 +30,11 @@ export const RATE_LIMITS = {
     maxAttempts: 5,
     lockoutDurationMs: 30 * 60 * 1000, // 30 minutes
   },
+  email_change: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxAttempts: 3,
+    lockoutDurationMs: 60 * 60 * 1000, // 1 hour
+  },
 } as const
 
 export type RateLimitType = keyof typeof RATE_LIMITS

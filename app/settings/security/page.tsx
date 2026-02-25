@@ -341,6 +341,61 @@ export default function SecuritySettingsPage() {
           </div>
         </div>
 
+        {/* Active Sessions Section */}
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm mt-6">
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold mb-2">Active Sessions</h2>
+            <p className="text-sm text-muted-foreground">
+              Manage devices and browsers where you're currently logged in. You can revoke access from any device remotely.
+            </p>
+          </div>
+
+          {loadingSessions ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : sessions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No active sessions found
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sessions.map((session) => (
+                <div
+                  key={session.id}
+                  className="flex items-start justify-between p-4 border border-border rounded-lg"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-medium">{session.device_name || "Unknown Device"}</h3>
+                      {session.is_current && (
+                        <span className="text-xs bg-green-500/10 text-green-700 dark:text-green-400 px-2 py-0.5 rounded">
+                          Current Session
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p>IP Address: {session.ip_address || "Unknown"}</p>
+                      <p>Last Active: {formatSessionTime(session.last_active_at)}</p>
+                      {session.browser && <p>Browser: {session.browser}</p>}
+                      {session.os && <p>OS: {session.os}</p>}
+                    </div>
+                  </div>
+                  {!session.is_current && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleRevokeSession(session.id)}
+                    >
+                      Revoke
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* 2FA Setup Modal */}
         {showSetup && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
