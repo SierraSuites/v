@@ -7,17 +7,21 @@
 
 import { useState } from 'react'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
-import { Users, FileText, DollarSign, Calendar, CheckSquare, BarChart3 } from 'lucide-react'
+import { Users, FileText, DollarSign, Calendar, CheckSquare, BarChart3, GitMerge, HelpCircle } from 'lucide-react'
 import ProjectTeamTab from './ProjectTeamTab'
 import ProjectDocumentsTab from './ProjectDocumentsTab'
 import ProjectBudgetTab from './ProjectBudgetTab'
 import ProjectOverviewTab from './ProjectOverviewTab'
+import ProjectChangeOrdersTab from './ProjectChangeOrdersTab'
+import ProjectRFIsTab from './ProjectRFIsTab'
+import ProjectTimelineTab from './ProjectTimelineTab'
+import ProjectTasksTab from './ProjectTasksTab'
 
 interface Props {
   project: ProjectDetails
 }
 
-type TabId = 'overview' | 'team' | 'documents' | 'budget' | 'timeline' | 'tasks'
+type TabId = 'overview' | 'team' | 'documents' | 'budget' | 'timeline' | 'tasks' | 'change-orders' | 'rfis'
 
 export default function ProjectTabs({ project }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('overview')
@@ -51,12 +55,24 @@ export default function ProjectTabs({ project }: Props) {
       id: 'timeline' as TabId,
       label: 'Timeline',
       icon: <Calendar className="h-4 w-4" />,
-      count: project.milestones.length
+      count: project.milestones.length || null
     },
     {
       id: 'tasks' as TabId,
       label: 'Tasks',
       icon: <CheckSquare className="h-4 w-4" />,
+      count: null
+    },
+    {
+      id: 'change-orders' as TabId,
+      label: 'Change Orders',
+      icon: <GitMerge className="h-4 w-4" />,
+      count: null
+    },
+    {
+      id: 'rfis' as TabId,
+      label: 'RFIs',
+      icon: <HelpCircle className="h-4 w-4" />,
       count: null
     }
   ]
@@ -107,20 +123,10 @@ export default function ProjectTabs({ project }: Props) {
         {activeTab === 'team' && <ProjectTeamTab project={project} />}
         {activeTab === 'documents' && <ProjectDocumentsTab project={project} />}
         {activeTab === 'budget' && <ProjectBudgetTab project={project} />}
-        {activeTab === 'timeline' && (
-          <div className="bg-white rounded-lg border p-8 text-center">
-            <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Timeline Coming Soon</h3>
-            <p className="text-gray-600">Milestones and project timeline visualization will be available soon.</p>
-          </div>
-        )}
-        {activeTab === 'tasks' && (
-          <div className="bg-white rounded-lg border p-8 text-center">
-            <CheckSquare className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Tasks Coming Soon</h3>
-            <p className="text-gray-600">Project tasks will be integrated with TaskFlow module soon.</p>
-          </div>
-        )}
+        {activeTab === 'timeline' && <ProjectTimelineTab project={project} />}
+        {activeTab === 'tasks' && <ProjectTasksTab project={project} />}
+        {activeTab === 'change-orders' && <ProjectChangeOrdersTab project={project} />}
+        {activeTab === 'rfis' && <ProjectRFIsTab project={project} />}
       </div>
     </div>
   )
