@@ -29,6 +29,7 @@ import CalendarView from "@/components/dashboard/CalendarView"
 import GanttChartView from "@/components/dashboard/GanttChartView"
 import WeatherWidget from "@/components/dashboard/WeatherWidget"
 import { ErrorBoundary, ConstructionErrorBoundary } from "@/components/ErrorBoundary"
+import TaskDetailPanel from "@/components/taskflow/TaskDetailPanel"
 
 // Task type definition
 type Task = {
@@ -125,6 +126,7 @@ export default function TaskFlowPage() {
   const [selectedPriority, setSelectedPriority] = useState<string>("all")
   const [userPlan, setUserPlan] = useState<"starter" | "professional" | "enterprise">("professional")
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [detailTask, setDetailTask] = useState<Task | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
   // Quality Guide lines 916-929: Quick filter state
   const [quickFilter, setQuickFilter] = useState<"all" | "assigned_to_me" | "overdue" | "this_week">("all")
@@ -1114,7 +1116,9 @@ export default function TaskFlowPage() {
                           <SortableContext items={columnTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                             <div className="space-y-3">
                               {columnTasks.map((task) => (
-                                <DraggableTaskCard key={task.id} task={task} />
+                                <div key={task.id} onClick={() => setDetailTask(task)} className="cursor-pointer">
+                                  <DraggableTaskCard task={task} />
+                                </div>
                               ))}
                             </div>
                           </SortableContext>
@@ -1351,6 +1355,30 @@ export default function TaskFlowPage() {
         teamMembers={teamMembers}
         existingTasks={tasks}
       />
+
+      {/* Task Detail Panel — slide-over on card click */}
+      {detailTask && (
+        <TaskDetailPanel
+          task={{
+            id: detailTask.id,
+            title: detailTask.title,
+            description: detailTask.description,
+            status: detailTask.status,
+            priority: detailTask.priority,
+            trade: detailTask.trade,
+            estimatedHours: detailTask.estimatedHours,
+            actualHours: detailTask.actualHours,
+            dueDate: detailTask.dueDate,
+            assignee: detailTask.assignee,
+            progress: detailTask.progress,
+          }}
+          onClose={() => setDetailTask(null)}
+          onStatusChange={(taskId, newStatus) => {
+            setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus as Task['status'] } : t))
+            setDetailTask(prev => prev ? { ...prev, status: newStatus as Task['status'] } : null)
+          }}
+        />
+      )}
     </>
   )
 }

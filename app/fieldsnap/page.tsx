@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getPhotos, subscribeToPhotos, getStorageStats, type Photo } from '@/lib/supabase/photos'
 import PhotoUploadModal from '@/components/fieldsnap/PhotoUploadModal'
@@ -147,19 +148,93 @@ export default function FieldSnapPage() {
     })
   }
 
+  // Natural language search parser
+  // Understands queries like "framing photos from last week" or "safety issues this month"
+  function parseNLSearch(q: string) {
+    const lower = q.toLowerCase()
+
+    // Phase keywords → match ai_tags or tags
+    const phaseMap: Record<string, string[]> = {
+      demolition: ['demolition', 'demo'],
+      foundation: ['foundation', 'footing', 'concrete', 'rebar'],
+      framing: ['framing', 'frame', 'lumber', 'stud'],
+      'rough-in': ['rough-in', 'rough in', 'roughin', 'electrical', 'plumbing', 'hvac'],
+      drywall: ['drywall', 'sheetrock', 'gypsum'],
+      finish: ['finish', 'paint', 'flooring', 'tile', 'fixture'],
+      punch: ['punch', 'punch list', 'punchlist'],
+    }
+    let detectedPhase: string | null = null
+    for (const [phase, keywords] of Object.entries(phaseMap)) {
+      if (keywords.some(kw => lower.includes(kw))) {
+        detectedPhase = phase
+        break
+      }
+    }
+
+    // Category keywords
+    let detectedCategory: string | null = null
+    if (lower.includes('safety') || lower.includes('hazard')) detectedCategory = 'safety'
+    else if (lower.includes('issue') || lower.includes('defect') || lower.includes('problem')) detectedCategory = 'issue'
+    else if (lower.includes('delivery') || lower.includes('material') || lower.includes('truck')) detectedCategory = 'delivery'
+    else if (lower.includes('progress')) detectedCategory = 'progress'
+
+    // Date range keywords
+    let detectedDateRange: string | null = null
+    if (lower.includes('today')) detectedDateRange = 'today'
+    else if (lower.match(/\b(this|last|past)\s+week\b/) || lower.includes('7 days')) detectedDateRange = 'week'
+    else if (lower.match(/\b(this|last|past)\s+month\b/) || lower.includes('30 days')) detectedDateRange = 'month'
+
+    return { phase: detectedPhase, category: detectedCategory, dateRange: detectedDateRange }
+  }
+
   // Filter and search logic
   const filteredPhotos = useMemo(() => {
     let filtered = [...photos]
 
-    // Search filter
+    // Search filter — supports natural language + plain text
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(photo =>
-        photo.filename.toLowerCase().includes(query) ||
-        photo.description?.toLowerCase().includes(query) ||
-        photo.tags.some(tag => tag.toLowerCase().includes(query)) ||
-        photo.ai_tags.some(tag => tag.toLowerCase().includes(query))
-      )
+      const nlq = parseNLSearch(searchQuery)
+      const hasStructuredQuery = nlq.phase || nlq.category || nlq.dateRange
+
+      if (hasStructuredQuery) {
+        // Phase filter
+        if (nlq.phase) {
+          filtered = filtered.filter(photo =>
+            photo.ai_tags?.some((t: string) => t.toLowerCase().includes(nlq.phase!)) ||
+            photo.tags?.some((t: string) => t.toLowerCase().includes(nlq.phase!)) ||
+            (photo as any).category?.toLowerCase().includes(nlq.phase!)
+          )
+        }
+        // Category filter
+        if (nlq.category) {
+          filtered = filtered.filter(photo =>
+            (photo as any).category === nlq.category ||
+            photo.ai_tags?.some((t: string) => t === nlq.category) ||
+            photo.tags?.some((t: string) => t === nlq.category)
+          )
+        }
+        // Date range filter
+        if (nlq.dateRange) {
+          const now = new Date()
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+          filtered = filtered.filter(photo => {
+            const d = new Date(photo.captured_at)
+            if (nlq.dateRange === 'today') return d >= today
+            if (nlq.dateRange === 'week') return d >= new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
+            if (nlq.dateRange === 'month') return d >= new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
+            return true
+          })
+        }
+      } else {
+        // Plain text fallback
+        filtered = filtered.filter(photo =>
+          photo.filename.toLowerCase().includes(query) ||
+          photo.description?.toLowerCase().includes(query) ||
+          photo.tags.some((tag: string) => tag.toLowerCase().includes(query)) ||
+          photo.ai_tags.some((tag: string) => tag.toLowerCase().includes(query))
+        )
+      }
     }
 
     // Project filter
@@ -284,7 +359,7 @@ export default function FieldSnapPage() {
                 </svg>
                 <input
                   type="text"
-                  placeholder="Search photos by name, tag, or description..."
+                  placeholder='Search: "framing last week", "safety issues", "foundation today"...'
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 rounded-lg text-sm"
@@ -295,6 +370,14 @@ export default function FieldSnapPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link
+              href="/fieldsnap/comparisons"
+              className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border hover:bg-gray-50"
+              style={{ borderColor: '#E0E0E0', color: '#4A4A4A' }}
+            >
+              🖼️ <span className="hidden lg:inline">Before/After</span>
+            </Link>
+
             <button
               onClick={() => setShowUploadModal(true)}
               className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-colors text-white hover:opacity-90"
@@ -491,7 +574,7 @@ export default function FieldSnapPage() {
             <div className={
               viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4' :
               viewMode === 'list' ? 'space-y-2' :
-              viewMode === 'map' ? 'h-[600px] rounded-xl overflow-hidden' :
+              viewMode === 'map' ? 'h-150 rounded-xl overflow-hidden' :
               'space-y-4'
             }>
               {/* Spec lines 214-247: Photo cards with category badges + safety alerts */}

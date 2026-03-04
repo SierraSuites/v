@@ -26,6 +26,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
   const [quote, setQuote] = useState<QuoteWithRelations | null>(null)
   const [loading, setLoading] = useState(true)
   const [statusUpdating, setStatusUpdating] = useState(false)
+  const [converting, setConverting] = useState(false)
 
   useEffect(() => {
     loadQuote()
@@ -92,6 +93,29 @@ export default function QuoteDetailPage({ params }: PageProps) {
     } catch (error) {
       console.error('Error deleting quote:', error)
       alert('Error deleting quote')
+    }
+  }
+
+  async function handleConvertToProject() {
+    if (!confirm('Convert this approved quote to a project? A new project will be created with all quote data.')) {
+      return
+    }
+    setConverting(true)
+    try {
+      const response = await fetch(`/api/quotes/${id}/convert`, {
+        method: 'POST',
+      })
+      const data = await response.json()
+      if (response.ok && data.project_id) {
+        router.push(`/projects/${data.project_id}`)
+      } else {
+        alert(data.error || 'Failed to convert quote to project')
+      }
+    } catch (error) {
+      console.error('Error converting quote:', error)
+      alert('Error converting quote to project')
+    } finally {
+      setConverting(false)
     }
   }
 
@@ -263,6 +287,27 @@ export default function QuoteDetailPage({ params }: PageProps) {
                   🗑️ Delete
                 </button>
               </div>
+
+              {/* Convert to Project — shown only for approved quotes not yet converted */}
+              {quote.status === 'approved' && !quote.converted_to_project_id && (
+                <button
+                  onClick={handleConvertToProject}
+                  disabled={converting}
+                  className="w-full mt-3 px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-bold shadow hover:shadow-lg disabled:opacity-50 text-lg"
+                >
+                  {converting ? '⏳ Converting...' : '🚀 Convert to Project'}
+                </button>
+              )}
+
+              {/* Already converted — link to the project */}
+              {quote.converted_to_project_id && (
+                <Link
+                  href={`/projects/${quote.converted_to_project_id}`}
+                  className="w-full mt-3 px-4 py-3 bg-emerald-50 text-emerald-700 border-2 border-emerald-300 rounded-lg hover:bg-emerald-100 transition-colors font-semibold text-center block"
+                >
+                  ✅ View Converted Project →
+                </Link>
+              )}
             </div>
 
             {/* Client Information */}
@@ -470,6 +515,35 @@ export default function QuoteDetailPage({ params }: PageProps) {
                 )}
               </div>
             </div>
+
+            {/* Profitability — shown when cost data is available */}
+            {quote.total_cost > 0 && (
+              <div className="bg-green-50 rounded-xl shadow-lg p-6 border-2 border-green-200">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Profitability</h2>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Revenue</span>
+                    <span className="font-semibold text-gray-900">{formatCurrency(quote.total_amount, quote.currency)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Cost</span>
+                    <span className="font-semibold text-red-600">-{formatCurrency(quote.total_cost, quote.currency)}</span>
+                  </div>
+                  <div className="border-t border-green-200 pt-3 flex justify-between items-center">
+                    <span className="text-sm font-semibold text-gray-700">Gross Profit</span>
+                    <span className="font-bold text-green-700">{formatCurrency(quote.total_amount - quote.total_cost, quote.currency)}</span>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 text-center mt-2">
+                    <div className="text-3xl font-bold text-green-600">
+                      {quote.profit_margin != null
+                        ? quote.profit_margin.toFixed(1)
+                        : (((quote.total_amount - quote.total_cost) / quote.total_amount) * 100).toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">Profit Margin</div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Activity Timeline */}
             <div className="bg-white rounded-xl shadow-lg p-6">
