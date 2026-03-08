@@ -20,6 +20,7 @@ import {
   type Project as SupabaseProject
 } from "@/lib/supabase/projects"
 import { getTeamMembersForProjects, type TeamMember } from "@/lib/supabase/project-helpers"
+import { useThemeColors } from "@/lib/hooks/useThemeColors"
 
 // Navigation item type
 type NavItem = {
@@ -74,6 +75,7 @@ type Project = {
 export default function ProjectsPage() {
   const router = useRouter()
   const toast = useToast()
+  const { colors } = useThemeColors()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")

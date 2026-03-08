@@ -8,6 +8,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import TaskCreationModal from "@/components/dashboard/TaskCreationModal"
+import TaskDetailPanel from "@/components/taskflow/TaskDetailPanel"
 import { getTasks, createTask, updateTask, subscribeToTasks, type Task as SupabaseTask } from "@/lib/supabase/tasks"
 import {
   DndContext,

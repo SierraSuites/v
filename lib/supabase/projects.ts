@@ -164,33 +164,11 @@ export async function getProjects() {
     return { data: null, error: new Error('Authentication required') }
   }
 
-  // Check if user can view all projects
-  const canViewAll = await checkProjectPermission(
-    'canViewAllProjects',
-    authContext.userId,
-    authContext.companyId
-  )
-
-  // Always filter by company — users only ever see their own company's projects
-  let query = supabase
+  const { data, error } = await supabase
     .from("projects")
     .select("*")
-    .eq('company_id', authContext.companyId)
+    .eq('user_id', user.id)
     .order("created_at", { ascending: false })
-
-  if (!canViewAll) {
-    // User may be restricted to assigned projects — try to get team assignments
-    const accessibleProjects = await permissionService.getUserAccessibleProjects(authContext.userId)
-
-    if (accessibleProjects.length > 0) {
-      // Only filter down if we got real assignments from the DB
-      query = query.in('id', accessibleProjects)
-    }
-    // If empty (DB tables/RPCs not yet set up, or user has no assignments),
-    // fall through and return all company projects as a safe default
-  }
-
-  const { data, error } = await query
 
   if (error) {
     console.error("Error fetching projects:", error?.message, error?.code)
