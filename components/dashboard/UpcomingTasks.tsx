@@ -50,22 +50,6 @@ function getPriorityIcon(priority: string) {
   }
 }
 
-function getPriorityColor(priority: string) {
-  switch (priority) {
-    case 'critical':
-      return 'bg-red-100 text-red-800'
-    case 'high':
-      return 'bg-orange-100 text-orange-800'
-    case 'medium':
-      return 'bg-yellow-100 text-yellow-800'
-    case 'low':
-      return 'bg-green-100 text-green-800'
-    default:
-      return 'bg-gray-100 text-gray-800'
-  }
-}
-  const { colors, darkMode } = useThemeColors()
-
 // Spec line 238: Due time formatting - "Today", "Tomorrow", or date
 function formatDueDate(dateString: string) {
   const date = new Date(dateString + 'T00:00:00')
@@ -90,6 +74,22 @@ function isOverdue(dateString: string, status: string) {
 }
 
 export default function UpcomingTasks({ tasks }: UpcomingTasksProps) {
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'critical':
+        return 'bg-red-100 text-red-800'
+      case 'high':
+        return 'bg-orange-100 text-orange-800'
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'low':
+        return 'bg-green-100 text-green-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+  const { colors, darkMode } = useThemeColors()
+
   return (
     <div className=" rounded-lg shadow p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
       <div className="flex items-center justify-between mb-4">
