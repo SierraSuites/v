@@ -7,6 +7,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { useThemeColors } from "@/lib/hooks/useThemeColors"
 import ProjectCreationModal from "@/components/dashboard/ProjectCreationModal"
 import { useToast } from "@/components/ToastNotification"
 import {
@@ -21,6 +22,15 @@ import {
 } from "@/lib/supabase/projects"
 import { getTeamMembersForProjects, type TeamMember } from "@/lib/supabase/project-helpers"
 
+// Navigation item type
+type NavItem = {
+  name: string
+  href: string
+  icon: string
+  badge?: string
+  locked?: boolean
+  subItems?: { name: string; href: string }[]
+}
 
 // Project type definition
 type Project = {
@@ -65,6 +75,7 @@ type Project = {
 export default function ProjectsPage() {
   const router = useRouter()
   const toast = useToast()
+  // const { colors } = useThemeColors()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
@@ -74,14 +85,116 @@ export default function ProjectsPage() {
   const [sortBy, setSortBy] = useState("newest")
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
+  // const [darkMode, setDarkMode] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [expandedNav, setExpandedNav] = useState<string | null>(null)
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false)
+
+  // Theme
+  const { colors, darkMode } = useThemeColors()
 
   // User plan (for tier-based limits)
   const [userPlan, setUserPlan] = useState<"starter" | "professional" | "enterprise">("professional")
 
   // User data
+  const userData = {
+    full_name: user?.user_metadata?.full_name || "John Doe",
+    company_name: user?.user_metadata?.company_name || "Demo Construction Co.",
+  }
 
+  const userName = userData.full_name?.split(' ')[0] || "User"
 
+  // Plan names and colors
+  const planNames = {
+    starter: "Starter",
+    professional: "Professional",
+    enterprise: "Enterprise"
+  }
 
+  const planColors = {
+    starter: "bg-blue-500",
+    professional: "bg-purple-500",
+    enterprise: "bg-amber-500"
+  }
+
+  // Navigation items
+  const navigationItems: NavItem[] = [
+    {
+      name: "Dashboard",
+      href: "/dashboard",
+      icon: "📊"
+    },
+    {
+      name: "Projects",
+      href: "/projects",
+      icon: "🏗️"
+    },
+    {
+      name: "TaskFlow",
+      href: "/taskflow",
+      icon: "✅"
+    },
+    {
+      name: "FieldSnap",
+      href: "/fieldsnap",
+      icon: "📸"
+    },
+    {
+      name: "QuoteHub",
+      href: "/quotehub",
+      icon: "💰"
+    },
+    {
+      name: "ReportCenter",
+      href: "/reportcenter",
+      icon: "📊"
+    },
+    {
+      name: "CRM",
+      href: "/crm",
+      icon: "🤝",
+      badge: "Pro",
+      locked: userPlan === "starter"
+    },
+    {
+      name: "Proposals",
+      href: "/proposals",
+      icon: "📄",
+      badge: "Pro",
+      locked: userPlan === "starter"
+    },
+    {
+      name: "Subcontractors",
+      href: "/subcontractors",
+      icon: "🔧",
+      badge: "Enterprise",
+      locked: userPlan !== "enterprise"
+    },
+    {
+      name: "Advanced CRM",
+      href: "/advanced-crm",
+      icon: "📈",
+      badge: "Enterprise",
+      locked: userPlan !== "enterprise"
+    },
+    {
+      name: "AI Proposals",
+      href: "/ai-proposals",
+      icon: "🤖",
+      badge: "Enterprise",
+      locked: userPlan !== "enterprise"
+    },
+  ]
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push("/login")
+  }
+
+  const toggleNav = (name: string) => {
+    setExpandedNav(expandedNav === name ? null : name)
+  }
 
   // Handle project save (create/update)
   const handleSaveProject = async (projectData: any) => {
@@ -438,7 +551,7 @@ export default function ProjectsPage() {
   // Quality Guide line 1774: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0d0f17]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header skeleton */}
           <div className="flex items-center justify-between mb-8">

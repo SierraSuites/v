@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useThemeColors } from "@/lib/hooks/useThemeColors"
 
 interface SharedPhoto {
   id: string
@@ -23,6 +24,7 @@ interface SharedPhoto {
 
 export default function SharedPhotosPage() {
   const router = useRouter()
+  const { colors, darkMode } = useThemeColors()
   const [sharedPhotos, setSharedPhotos] = useState<SharedPhoto[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'direct' | 'team'>('all')
@@ -106,32 +108,32 @@ export default function SharedPhotosPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.bgAlt }}>
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-4 border-t-transparent rounded-full mx-auto" style={{ borderColor: '#FF6B6B' }} />
-          <p className="mt-4 text-sm" style={{ color: '#4A4A4A' }}>Loading shared photos...</p>
+          <p className="mt-4 text-sm" style={{ color: colors.textMuted }}>Loading shared photos...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+    <div className="min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
       {/* Header */}
-      <header className="bg-white border-b" style={{ borderColor: '#E0E0E0' }}>
+      <header className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto p-6">
           <div className="flex items-center gap-4 mb-4">
             <button
               onClick={() => router.back()}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg hover:bg-muted transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
             <div className="flex-1">
-              <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Shared With Me</h1>
-              <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
+              <h1 className="text-2xl font-bold" style={{ color: colors.text }}>Shared With Me</h1>
+              <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
                 {sharedPhotos.length} photo{sharedPhotos.length !== 1 ? 's' : ''} shared with you
               </p>
             </div>
@@ -141,29 +143,29 @@ export default function SharedPhotosPage() {
           <div className="grid grid-cols-3 gap-3">
             <div
               className="p-3 rounded-lg cursor-pointer hover:shadow-md transition-shadow"
-              style={{ backgroundColor: filter === 'all' ? '#E5F4FF' : '#F8F9FA', border: filter === 'all' ? '2px solid #3B82F6' : '1px solid #E0E0E0' }}
+              style={{ backgroundColor: filter === 'all' ? '#E5F4FF' : colors.bgAlt, border: filter === 'all' ? '2px solid #3B82F6' : colors.border }}
               onClick={() => setFilter('all')}
             >
-              <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>All Shared</p>
-              <p className="text-xl font-bold" style={{ color: '#1A1A1A' }}>{sharedPhotos.length}</p>
+              <p className="text-xs font-semibold mb-1" style={{ color: colors.textMuted }}>All Shared</p>
+              <p className="text-xl font-bold" style={{ color: colors.text }}>{sharedPhotos.length}</p>
             </div>
 
             <div
               className="p-3 rounded-lg cursor-pointer hover:shadow-md transition-shadow"
-              style={{ backgroundColor: filter === 'direct' ? '#E5F4FF' : '#F8F9FA', border: filter === 'direct' ? '2px solid #3B82F6' : '1px solid #E0E0E0' }}
+              style={{ backgroundColor: filter === 'direct' ? '#E5F4FF' : colors.bgAlt, border: filter === 'direct' ? '2px solid #3B82F6' : colors.border }}
               onClick={() => setFilter('direct')}
             >
-              <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Direct Shares</p>
-              <p className="text-xl font-bold" style={{ color: '#1A1A1A' }}>{directCount}</p>
+              <p className="text-xs font-semibold mb-1" style={{ color: colors.textMuted }}>Direct Shares</p>
+              <p className="text-xl font-bold" style={{ color: colors.text }}>{directCount}</p>
             </div>
 
             <div
               className="p-3 rounded-lg cursor-pointer hover:shadow-md transition-shadow"
-              style={{ backgroundColor: filter === 'team' ? '#E5F4FF' : '#F8F9FA', border: filter === 'team' ? '2px solid #3B82F6' : '1px solid #E0E0E0' }}
+              style={{ backgroundColor: filter === 'team' ? '#E5F4FF' : colors.bgAlt, border: filter === 'team' ? '2px solid #3B82F6' : colors.border }}
               onClick={() => setFilter('team')}
             >
-              <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Team Shares</p>
-              <p className="text-xl font-bold" style={{ color: '#1A1A1A' }}>{teamCount}</p>
+              <p className="text-xs font-semibold mb-1" style={{ color: colors.textMuted }}>Team Shares</p>
+              <p className="text-xl font-bold" style={{ color: colors.text }}>{teamCount}</p>
             </div>
           </div>
         </div>
@@ -172,14 +174,14 @@ export default function SharedPhotosPage() {
       {/* Content */}
       <main className="max-w-7xl mx-auto p-6">
         {filteredPhotos.length === 0 ? (
-          <div className="text-center py-20 rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+          <div className="text-center py-20 rounded-xl" style={{ backgroundColor: colors.bg, border: colors.border }}>
             <span className="text-6xl mb-4 block">📤</span>
-            <h3 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>
+            <h3 className="text-xl font-bold mb-2" style={{ color: colors.text }}>
               {filter === 'all' ? 'No Shared Photos' :
                filter === 'direct' ? 'No Direct Shares' :
                'No Team Shares'}
             </h3>
-            <p className="text-sm mb-6" style={{ color: '#4A4A4A' }}>
+            <p className="text-sm mb-6" style={{ color: colors.textMuted }}>
               {filter === 'all' ? 'Photos shared with you will appear here' :
                filter === 'direct' ? 'Photos shared directly with you will appear here' :
                'Photos shared with your teams will appear here'}
@@ -191,7 +193,7 @@ export default function SharedPhotosPage() {
               <div
                 key={share.id}
                 className="group relative rounded-xl overflow-hidden cursor-pointer transform transition-transform hover:scale-105"
-                style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', aspectRatio: '1/1' }}
+                style={{ backgroundColor: colors.bg, border: colors.border, aspectRatio: '1/1' }}
                 onClick={() => router.push(`/fieldsnap/${share.media_asset_id}`)}
               >
                 <img
@@ -248,9 +250,9 @@ export default function SharedPhotosPage() {
                     className="px-2 py-0.5 rounded text-xs font-semibold"
                     style={{
                       backgroundColor: share.permission_level === 'edit' ? '#FEF3C7' :
-                                     share.permission_level === 'comment' ? '#DBEAFE' : '#F3F4F6',
+                                     share.permission_level === 'comment' ? '#DBEAFE' : colors.bgMuted,
                       color: share.permission_level === 'edit' ? '#92400E' :
-                             share.permission_level === 'comment' ? '#1E40AF' : '#4B5563'
+                             share.permission_level === 'comment' ? '#1E40AF' : colors.textMuted
                     }}
                   >
                     {share.permission_level === 'edit' ? '✏️ Edit' :
