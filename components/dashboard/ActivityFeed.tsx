@@ -1,5 +1,7 @@
 'use client'
 
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
+
 interface Activity {
   id: string
   action: string
@@ -64,35 +66,24 @@ function getActivityColor(action: string) {
   return colors[action] || 'bg-gray-100 text-gray-600'
 }
 
-// Quality Guide lines 700-713: Better activity message formatting
-function formatActivityMessage(activity: Activity): string {
-  const entityName = activity.metadata?.name || activity.entity_type
-  const templates: Record<string, Record<string, string>> = {
-    project: {
-      created: `Created project "${entityName}"`,
-      updated: `Updated project "${entityName}"`,
-      completed: `Completed project "${entityName}"`,
-      deleted: `Removed project "${entityName}"`,
-    },
-    task: {
-      created: `Added task "${entityName}"`,
-      updated: `Updated task "${entityName}"`,
-      completed: `Completed task "${entityName}"`,
-      deleted: `Removed task "${entityName}"`,
-    },
-    quote: {
-      created: `Created quote "${entityName}"`,
-      updated: `Updated quote "${entityName}"`,
-      completed: `Accepted quote "${entityName}"`,
-      deleted: `Removed quote "${entityName}"`,
-    },
+export default function ActivityFeed({ activities }: ActivityFeedProps) {
+  const getActivityIcon = (action: string) => {
+    switch (action) {
+      case 'created':
+        return getActivityIcon(action)
+      case 'updated':
+        return getActivityIcon(action)
+      case 'deleted':
+        return getActivityIcon(action)
+      default:
+        return getActivityIcon(action)
+    }
+  }
+  const formatActivityMessage = (activity: Activity) => {
+    const user = activity.user_profiles?.full_name || 'Someone'
+    return `${user} ${activity.action} ${activity.entity_type}`
   }
 
-  return templates[activity.entity_type]?.[activity.action]
-    || `${activity.action} ${activity.entity_type}`
-}
-
-export default function ActivityFeed({ activities }: ActivityFeedProps) {
   const formatTime = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
@@ -106,18 +97,16 @@ export default function ActivityFeed({ activities }: ActivityFeedProps) {
     if (minutes > 0) return `${minutes}m ago`
     return 'just now'
   }
+  const { colors, darkMode } = useThemeColors()
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
+    <div className="rounded-lg shadow p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+      <h2 className="text-lg font-semibold mb-4" style={{ color: colors.text }}>Recent Activity</h2>
 
       <div className="space-y-1">
         {activities.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-sm">No recent activity</p>
+          <div className="text-center py-8" style={{ color: colors.textMuted }}>
+            <p>No recent activity</p>
           </div>
         ) : (
           activities.map((activity) => (
@@ -126,7 +115,7 @@ export default function ActivityFeed({ activities }: ActivityFeedProps) {
               className="flex gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
             >
               {/* Quality Guide line 636-641: Colored icon circle */}
-              <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${getActivityColor(activity.action)}`}>
+              <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${getActivityColor(activity.action)}`}>
                 {getActivityIcon(activity.action)}
               </div>
               <div className="flex-1 min-w-0">
