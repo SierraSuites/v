@@ -65,6 +65,8 @@ export default function DashboardPage() {
   const [recentProjects, setRecentProjects] = useState<Project[]>([])
   const [recentActivities, setRecentActivities] = useState<Activity[]>([])
   const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([])
+  const [allProjects, setAllProjects] = useState<any[]>([])
+
 
   // Theme
   const { colors, darkMode } = useThemeColors()
