@@ -4,7 +4,6 @@ import { useState, useEffect, ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { useTheme } from 'next-themes'
 import { createClient } from '@/lib/supabase/client'
 
 interface NavItem {
@@ -24,8 +23,6 @@ interface AppShellProps {
 
 export default function AppShell({ children, user }: AppShellProps) {
   const router = useRouter()
-  const { theme, setTheme } = useTheme()
-  const darkMode = theme === 'dark'
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
@@ -460,7 +457,6 @@ export default function AppShell({ children, user }: AppShellProps) {
 
           {/* Dark Mode Toggle */}
           <button
-            onClick={() => setTheme(darkMode ? 'light' : 'dark')}
             onClick={() => setTheme(darkMode ? 'light' : 'dark')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl ${
               darkMode ? 'hover:bg-gray-800/70' : 'hover:bg-gray-100'

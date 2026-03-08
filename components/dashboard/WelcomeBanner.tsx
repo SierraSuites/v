@@ -23,7 +23,7 @@ export default function WelcomeBanner({ userName, greeting, onDismiss }: Welcome
           <div className="flex flex-wrap gap-3">
             <button className="px-4 py-2 bg-white/90 dark:bg-white/10 text-blue-600 dark:text-blue-200 rounded-lg font-medium hover:bg-white dark:hover:bg-white/20 transition-colors">
               + New Project
-            </Link>
+            </button>
             <Link
               href="/fieldsnap"
               className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-400 transition-colors"

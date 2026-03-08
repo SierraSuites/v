@@ -197,7 +197,7 @@ export default function DashboardStats() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </div>
-      </button>
+      </div>
 
       {/* Tasks Completed Card */}
       <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
@@ -232,7 +232,7 @@ export default function DashboardStats() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </div>
-      </button>
+      </div>
 
       {/* Quote Value Card */}
       <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
@@ -267,7 +267,7 @@ export default function DashboardStats() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </div>
-      </button>
+      </div>
 
       {/* Critical Items Card */}
       <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
@@ -302,7 +302,7 @@ export default function DashboardStats() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </div>
-      </button>
+      </div>
     </div>
   )
 }
