@@ -234,7 +234,7 @@ export default function QuotesPage() {
                 <span className="text-2xl">📊</span>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* Filters and Search */}

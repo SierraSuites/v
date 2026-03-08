@@ -28,7 +28,6 @@ import CalendarView from "@/components/dashboard/CalendarView"
 import GanttChartView from "@/components/dashboard/GanttChartView"
 import WeatherWidget from "@/components/dashboard/WeatherWidget"
 import { ConstructionErrorBoundary } from "@/components/ErrorBoundary"
-import TaskDetailPanel from "@/components/taskflow/TaskDetailPanel"
 import { useThemeColors } from "@/lib/hooks/useThemeColors"
 
 // Task type definition
