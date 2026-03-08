@@ -70,10 +70,6 @@ export default function DashboardPage() {
   // Theme
   const { colors, darkMode } = useThemeColors()
 
-
-  // Theme
-  const { colors, darkMode } = useThemeColors()
-
   // ============================================================================
   // LOAD ALL DATA VIA API
   // ============================================================================
