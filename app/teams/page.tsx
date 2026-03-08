@@ -14,9 +14,11 @@ import CreateCustomRoleModal from '@/components/teams/CreateCustomRoleModal'
 import AuditLogViewer from '@/components/teams/AuditLogViewer'
 import { ROLE_PERMISSIONS, UserRole, getRoleDisplayName, getRoleColor, getRoleIcon } from '@/lib/permissions'
 import { Users, Shield, Mail, FileText, Plus } from 'lucide-react'
+import { useThemeColors } from "@/lib/hooks/useThemeColors"
 
 export default function TeamsPage() {
   const router = useRouter()
+  const { colors, darkMode } = useThemeColors()
   const { hasPermission, role, userId, loading: permissionsLoading } = usePermissions()
   const [user, setUser] = useState<any>(null)
   const [companyId, setCompanyId] = useState<string | null>(null)
@@ -92,7 +94,7 @@ export default function TeamsPage() {
 
   if (loading || permissionsLoading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -126,7 +128,7 @@ export default function TeamsPage() {
 
   if (!canManageTeam && !canInviteMembers) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
         <div className="max-w-7xl mx-auto p-6">
           <UnauthorizedAccess
             message="You need admin or superintendent permissions to manage teams"
@@ -140,12 +142,12 @@ export default function TeamsPage() {
 
   if (!companyId) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
         <div className="max-w-7xl mx-auto p-6">
           <div className="text-center py-20">
             <span className="text-6xl mb-4 block">🏢</span>
-            <h3 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>No Company Found</h3>
-            <p className="text-sm mb-6" style={{ color: '#4A4A4A' }}>
+            <h3 className="text-xl font-bold mb-2" style={{ color: colors.text }}>No Company Found</h3>
+            <p className="text-sm mb-6" style={{ color: colors.textMuted }}>
               You need to be part of a company to manage teams
             </p>
             <button
@@ -168,23 +170,23 @@ export default function TeamsPage() {
   ]
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+    <div className="min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
       {/* Header */}
-      <header className="bg-white border-b" style={{ borderColor: '#E0E0E0' }}>
+      <header className="border-b" style={{ backgroundColor: colors.bg, borderColor: darkMode ? '#2d3548' : '#E0E0E0' }}>
         <div className="max-w-7xl mx-auto p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               <div>
-                <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Team Management</h1>
-                <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
+                <h1 className="text-2xl font-bold" style={{ color: colors.text }}>Team Management</h1>
+                <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
                   Manage your teams, members, roles, and permissions
                 </p>
               </div>
@@ -198,7 +200,7 @@ export default function TeamsPage() {
       </header>
 
       {/* Tabs */}
-      <div className="bg-white border-b" style={{ borderColor: '#E0E0E0' }}>
+      <div className="bg-white border-b" style={{ borderColor: darkMode ? '#2d3548' : '#E0E0E0' }}>
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex gap-8">
             {tabs.map(tab => {
