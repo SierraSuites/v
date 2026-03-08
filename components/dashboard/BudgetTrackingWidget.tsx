@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 interface Project {
   id: string
@@ -17,6 +18,8 @@ interface BudgetTrackingWidgetProps {
 }
 
 export default function BudgetTrackingWidget({ projects }: BudgetTrackingWidgetProps) {
+  const { colors, darkMode } = useThemeColors()
+
   // Calculate budget metrics
   const budgetMetrics = useMemo(() => {
     const totalBudget = projects.reduce((sum, p) => sum + (p.budget || 0), 0)
@@ -104,12 +107,14 @@ export default function BudgetTrackingWidget({ projects }: BudgetTrackingWidgetP
     return `${Math.round(value)}%`
   }
 
+  const borderColor = darkMode ? '#2d3548' : '#E0E0E0'
+
   if (projects.length === 0) {
     return (
-      <div className="rounded-xl p-6 text-center" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+      <div className="rounded-xl p-6 text-center" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
         <span className="text-4xl mb-2 block">💰</span>
-        <p className="text-sm font-semibold mb-1" style={{ color: '#1A1A1A' }}>No Budget Data</p>
-        <p className="text-xs" style={{ color: '#4A4A4A' }}>
+        <p className="text-sm font-semibold mb-1" style={{ color: colors.text }}>No Budget Data</p>
+        <p className="text-xs" style={{ color: colors.textMuted }}>
           Create projects to track budgets
         </p>
       </div>
@@ -117,47 +122,47 @@ export default function BudgetTrackingWidget({ projects }: BudgetTrackingWidgetP
   }
 
   return (
-    <div className="rounded-xl p-6 space-y-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+    <div className="rounded-xl p-6 space-y-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-2xl">💰</span>
           <div>
-            <h3 className="text-lg font-bold" style={{ color: '#1A1A1A' }}>Budget Tracking</h3>
-            <p className="text-xs" style={{ color: '#4A4A4A' }}>Financial overview across all projects</p>
+            <h3 className="text-lg font-bold" style={{ color: colors.text }}>Budget Tracking</h3>
+            <p className="text-xs" style={{ color: colors.textMuted }}>Financial overview across all projects</p>
           </div>
         </div>
       </div>
 
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="p-4 rounded-lg" style={{ backgroundColor: '#E5F4FF', border: '1px solid #4ECDC4' }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: '#1A1A1A' }}>Total Budget</p>
-          <p className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{formatCurrency(budgetMetrics.totalBudget)}</p>
+        <div className="p-4 rounded-lg" style={{ backgroundColor: darkMode ? 'rgba(78, 205, 196, 0.15)' : '#E5F4FF', border: `1px solid ${darkMode ? 'rgba(78, 205, 196, 0.4)' : '#4ECDC4'}` }}>
+          <p className="text-xs font-semibold mb-1" style={{ color: colors.text }}>Total Budget</p>
+          <p className="text-2xl font-bold" style={{ color: colors.text }}>{formatCurrency(budgetMetrics.totalBudget)}</p>
         </div>
-        <div className="p-4 rounded-lg" style={{ backgroundColor: '#FEE2E2', border: '1px solid #FF6B6B' }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: '#1A1A1A' }}>Total Spent</p>
-          <p className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{formatCurrency(budgetMetrics.totalSpent)}</p>
+        <div className="p-4 rounded-lg" style={{ backgroundColor: darkMode ? 'rgba(255, 107, 107, 0.15)' : '#FEE2E2', border: `1px solid ${darkMode ? 'rgba(255, 107, 107, 0.4)' : '#FF6B6B'}` }}>
+          <p className="text-xs font-semibold mb-1" style={{ color: colors.text }}>Total Spent</p>
+          <p className="text-2xl font-bold" style={{ color: colors.text }}>{formatCurrency(budgetMetrics.totalSpent)}</p>
         </div>
-        <div className="p-4 rounded-lg" style={{ backgroundColor: '#E6F9EA', border: '1px solid #6BCB77' }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: '#1A1A1A' }}>Remaining</p>
-          <p className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{formatCurrency(budgetMetrics.totalRemaining)}</p>
+        <div className="p-4 rounded-lg" style={{ backgroundColor: darkMode ? 'rgba(107, 203, 119, 0.15)' : '#E6F9EA', border: `1px solid ${darkMode ? 'rgba(107, 203, 119, 0.4)' : '#6BCB77'}` }}>
+          <p className="text-xs font-semibold mb-1" style={{ color: colors.text }}>Remaining</p>
+          <p className="text-2xl font-bold" style={{ color: colors.text }}>{formatCurrency(budgetMetrics.totalRemaining)}</p>
         </div>
-        <div className="p-4 rounded-lg" style={{ backgroundColor: '#FFF9E6', border: '1px solid #FFD93D' }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: '#1A1A1A' }}>Utilization</p>
-          <p className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{formatPercentage(budgetMetrics.utilizationRate)}</p>
+        <div className="p-4 rounded-lg" style={{ backgroundColor: darkMode ? 'rgba(255, 217, 61, 0.15)' : '#FFF9E6', border: `1px solid ${darkMode ? 'rgba(255, 217, 61, 0.4)' : '#FFD93D'}` }}>
+          <p className="text-xs font-semibold mb-1" style={{ color: colors.text }}>Utilization</p>
+          <p className="text-2xl font-bold" style={{ color: colors.text }}>{formatPercentage(budgetMetrics.utilizationRate)}</p>
         </div>
       </div>
 
       {/* Budget Utilization Bar */}
-      <div className="p-4 rounded-lg" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}>
+      <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-bold" style={{ color: '#1A1A1A' }}>Overall Budget Utilization</p>
-          <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>
+          <p className="text-sm font-bold" style={{ color: colors.text }}>Overall Budget Utilization</p>
+          <p className="text-sm font-semibold" style={{ color: colors.text }}>
             {formatPercentage(budgetMetrics.utilizationRate)}
           </p>
         </div>
-        <div className="w-full h-6 rounded-full overflow-hidden" style={{ backgroundColor: '#E0E0E0' }}>
+        <div className="w-full h-6 rounded-full overflow-hidden" style={{ backgroundColor: colors.bgMuted }}>
           <div
             className="h-full transition-all relative"
             style={{
@@ -174,10 +179,10 @@ export default function BudgetTrackingWidget({ projects }: BudgetTrackingWidgetP
           </div>
         </div>
         <div className="flex justify-between mt-2">
-          <span className="text-xs" style={{ color: '#4A4A4A' }}>
+          <span className="text-xs" style={{ color: colors.textMuted }}>
             {formatCurrency(budgetMetrics.totalSpent)} spent
           </span>
-          <span className="text-xs" style={{ color: '#4A4A4A' }}>
+          <span className="text-xs" style={{ color: colors.textMuted }}>
             {formatCurrency(budgetMetrics.totalBudget)} allocated
           </span>
         </div>
@@ -187,7 +192,7 @@ export default function BudgetTrackingWidget({ projects }: BudgetTrackingWidgetP
       <div className="grid grid-cols-2 gap-6">
         {/* Budget Distribution Pie Chart */}
         <div>
-          <p className="text-sm font-bold mb-3" style={{ color: '#1A1A1A' }}>Budget Distribution</p>
+          <p className="text-sm font-bold mb-3" style={{ color: colors.text }}>Budget Distribution</p>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie
@@ -206,8 +211,8 @@ export default function BudgetTrackingWidget({ projects }: BudgetTrackingWidgetP
               </Pie>
               <Tooltip
                 formatter={(value: number) => formatCurrency(value)}
-                contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px' }}
-                labelStyle={{ color: '#1A1A1A', fontWeight: 'bold' }}
+                contentStyle={{ backgroundColor: colors.bg, border: colors.border, borderRadius: '8px' }}
+                labelStyle={{ color: colors.text, fontWeight: 'bold' }}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -215,7 +220,7 @@ export default function BudgetTrackingWidget({ projects }: BudgetTrackingWidgetP
             {budgetDistribution.map((entry, index) => (
               <div key={index} className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }} />
-                <span className="text-xs" style={{ color: '#4A4A4A' }}>{entry.name}</span>
+                <span className="text-xs" style={{ color: colors.textMuted }}>{entry.name}</span>
               </div>
             ))}
           </div>
@@ -223,15 +228,15 @@ export default function BudgetTrackingWidget({ projects }: BudgetTrackingWidgetP
 
         {/* Budget by Status Bar Chart */}
         <div>
-          <p className="text-sm font-bold mb-3" style={{ color: '#1A1A1A' }}>Budget by Status ($K)</p>
+          <p className="text-sm font-bold mb-3" style={{ color: colors.text }}>Budget by Status ($K)</p>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={budgetByStatus}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
-              <XAxis dataKey="name" tick={{ fill: '#4A4A4A', fontSize: 12 }} />
-              <YAxis tick={{ fill: '#4A4A4A', fontSize: 12 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={borderColor} />
+              <XAxis dataKey="name" tick={{ fill: colors.textMuted, fontSize: 12 }} />
+              <YAxis tick={{ fill: colors.textMuted, fontSize: 12 }} />
               <Tooltip
-                contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px' }}
-                labelStyle={{ color: '#1A1A1A', fontWeight: 'bold' }}
+                contentStyle={{ backgroundColor: colors.bg, border: colors.border, borderRadius: '8px' }}
+                labelStyle={{ color: colors.text, fontWeight: 'bold' }}
               />
               <Bar dataKey="budget" name="Budget" fill="#4ECDC4" radius={[8, 8, 0, 0]} />
               <Bar dataKey="spent" name="Spent" fill="#FF6B6B" radius={[8, 8, 0, 0]} />
@@ -243,17 +248,17 @@ export default function BudgetTrackingWidget({ projects }: BudgetTrackingWidgetP
       {/* Alerts and Warnings */}
       {(budgetMetrics.overBudgetCount > 0 || atRiskProjects.length > 0) && (
         <div className="space-y-3">
-          <p className="text-sm font-bold" style={{ color: '#1A1A1A' }}>Budget Alerts</p>
+          <p className="text-sm font-bold" style={{ color: colors.text }}>Budget Alerts</p>
 
           {budgetMetrics.overBudgetCount > 0 && (
             <div
               className="p-3 rounded-lg flex items-start gap-3"
-              style={{ backgroundColor: '#FEE2E2', border: '2px solid #DC2626' }}
+              style={{ backgroundColor: darkMode ? 'rgba(220, 38, 38, 0.15)' : '#FEE2E2', border: '2px solid #DC2626' }}
             >
-              <span className="text-xl flex-shrink-0">🚨</span>
+              <span className="text-xl shrink-0">🚨</span>
               <div className="flex-1">
-                <p className="text-sm font-bold" style={{ color: '#1A1A1A' }}>Over Budget Projects</p>
-                <p className="text-xs mt-1" style={{ color: '#4A4A4A' }}>
+                <p className="text-sm font-bold" style={{ color: colors.text }}>Over Budget Projects</p>
+                <p className="text-xs mt-1" style={{ color: colors.textMuted }}>
                   {budgetMetrics.overBudgetCount} project{budgetMetrics.overBudgetCount > 1 ? 's are' : ' is'} over budget by {formatCurrency(budgetMetrics.overBudgetAmount)}
                 </p>
               </div>
@@ -263,12 +268,12 @@ export default function BudgetTrackingWidget({ projects }: BudgetTrackingWidgetP
           {atRiskProjects.length > 0 && (
             <div
               className="p-3 rounded-lg flex items-start gap-3"
-              style={{ backgroundColor: '#FEF3C7', border: '2px solid #F59E0B' }}
+              style={{ backgroundColor: darkMode ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7', border: '2px solid #F59E0B' }}
             >
-              <span className="text-xl flex-shrink-0">⚠️</span>
+              <span className="text-xl shrink-0">⚠️</span>
               <div className="flex-1">
-                <p className="text-sm font-bold" style={{ color: '#1A1A1A' }}>At-Risk Projects</p>
-                <p className="text-xs mt-1" style={{ color: '#4A4A4A' }}>
+                <p className="text-sm font-bold" style={{ color: colors.text }}>At-Risk Projects</p>
+                <p className="text-xs mt-1" style={{ color: colors.textMuted }}>
                   {atRiskProjects.length} project{atRiskProjects.length > 1 ? 's have' : ' has'} used over 80% of allocated budget
                 </p>
               </div>
@@ -280,7 +285,7 @@ export default function BudgetTrackingWidget({ projects }: BudgetTrackingWidgetP
       {/* Top Spending Projects */}
       {topSpendingProjects.length > 0 && (
         <div>
-          <p className="text-sm font-bold mb-3" style={{ color: '#1A1A1A' }}>Top Spending Projects</p>
+          <p className="text-sm font-bold mb-3" style={{ color: colors.text }}>Top Spending Projects</p>
           <div className="space-y-2">
             {topSpendingProjects.map((project, index) => {
               const utilizationRate = project.budget > 0 ? (project.spent / project.budget) * 100 : 0
@@ -290,27 +295,27 @@ export default function BudgetTrackingWidget({ projects }: BudgetTrackingWidgetP
                 <div
                   key={project.id}
                   className="p-3 rounded-lg flex items-center justify-between"
-                  style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border }}
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold" style={{ color: '#4A4A4A' }}>
+                      <span className="text-sm font-semibold" style={{ color: colors.textMuted }}>
                         #{index + 1}
                       </span>
-                      <span className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>
+                      <span className="text-sm font-semibold" style={{ color: colors.text }}>
                         {project.name}
                       </span>
                       {isOverBudget && (
-                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#FEE2E2', color: '#DC2626' }}>
+                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: darkMode ? 'rgba(220, 38, 38, 0.2)' : '#FEE2E2', color: '#DC2626' }}>
                           Over Budget
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-4 mt-1">
-                      <span className="text-xs" style={{ color: '#4A4A4A' }}>
+                      <span className="text-xs" style={{ color: colors.textMuted }}>
                         Spent: {formatCurrency(project.spent)}
                       </span>
-                      <span className="text-xs" style={{ color: '#4A4A4A' }}>
+                      <span className="text-xs" style={{ color: colors.textMuted }}>
                         Budget: {formatCurrency(project.budget)}
                       </span>
                     </div>
@@ -331,18 +336,18 @@ export default function BudgetTrackingWidget({ projects }: BudgetTrackingWidgetP
       )}
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 gap-4 pt-4" style={{ borderTop: '1px solid #E0E0E0' }}>
-        <div className="text-center p-3 rounded-lg" style={{ backgroundColor: '#F8F9FA' }}>
-          <p className="text-xs mb-1" style={{ color: '#4A4A4A' }}>Active Projects Budget</p>
-          <p className="text-lg font-bold" style={{ color: '#1A1A1A' }}>{formatCurrency(budgetMetrics.activeBudget)}</p>
-          <p className="text-xs mt-1" style={{ color: '#4A4A4A' }}>
+      <div className="grid grid-cols-2 gap-4 pt-4" style={{ borderTop: colors.border }}>
+        <div className="text-center p-3 rounded-lg" style={{ backgroundColor: colors.bgAlt }}>
+          <p className="text-xs mb-1" style={{ color: colors.textMuted }}>Active Projects Budget</p>
+          <p className="text-lg font-bold" style={{ color: colors.text }}>{formatCurrency(budgetMetrics.activeBudget)}</p>
+          <p className="text-xs mt-1" style={{ color: colors.textMuted }}>
             {formatCurrency(budgetMetrics.activeSpent)} spent
           </p>
         </div>
-        <div className="text-center p-3 rounded-lg" style={{ backgroundColor: '#F8F9FA' }}>
-          <p className="text-xs mb-1" style={{ color: '#4A4A4A' }}>Savings from Under-Budget</p>
+        <div className="text-center p-3 rounded-lg" style={{ backgroundColor: colors.bgAlt }}>
+          <p className="text-xs mb-1" style={{ color: colors.textMuted }}>Savings from Under-Budget</p>
           <p className="text-lg font-bold" style={{ color: '#6BCB77' }}>{formatCurrency(budgetMetrics.underBudgetSavings)}</p>
-          <p className="text-xs mt-1" style={{ color: '#4A4A4A' }}>
+          <p className="text-xs mt-1" style={{ color: colors.textMuted }}>
             Across {projects.filter(p => p.spent <= p.budget && p.budget > 0).length} projects
           </p>
         </div>

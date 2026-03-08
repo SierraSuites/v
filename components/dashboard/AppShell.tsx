@@ -43,7 +43,12 @@ export default function AppShell({ children, user }: AppShellProps) {
   const userName = userData.full_name?.split(' ')[0] || 'User'
 
   // Fetch plan from session API (server-side auth) instead of direct DB query
-  const [userPlan, setUserPlan] = useState<string>('starter')
+  const [userPlan, setUserPlan] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('userPlan') || 'starter'
+    }
+    return 'starter'
+  })
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -53,6 +58,7 @@ export default function AppShell({ children, user }: AppShellProps) {
       const data = await res.json()
       if (data.profile?.plan) {
         setUserPlan(data.profile.plan)
+        localStorage.setItem('userPlan', data.profile.plan)
       }
     }
     fetchPlan()
@@ -107,22 +113,6 @@ export default function AppShell({ children, user }: AppShellProps) {
       icon: '📈',
     },
     {
-      name: 'CRM Suite',
-      href: '/crm',
-      icon: '🤝',
-      locked: userPlan === 'starter',
-      lockedFor: ['starter'],
-      badge: 'Pro',
-    },
-    {
-      name: 'Sustainability',
-      href: '/sustainability',
-      icon: '🌱',
-      locked: userPlan === 'starter',
-      lockedFor: ['starter'],
-      badge: 'Pro',
-    },
-    {
       name: 'Compliance',
       href: '/compliance',
       icon: '🦺',
@@ -151,6 +141,22 @@ export default function AppShell({ children, user }: AppShellProps) {
         { name: 'Email & Calendar', href: '/integrations?tab=email' },
         { name: 'API Keys', href: '/integrations?tab=api-keys' },
       ],
+    },
+    {
+      name: 'CRM Suite',
+      href: '/crm',
+      icon: '🤝',
+      locked: userPlan === 'starter',
+      lockedFor: ['starter'],
+      badge: 'Pro',
+    },
+    {
+      name: 'Sustainability',
+      href: '/sustainability',
+      icon: '🌱',
+      locked: userPlan === 'starter',
+      lockedFor: ['starter'],
+      badge: 'Pro',
     },
     {
       name: 'AI Tools',

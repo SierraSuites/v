@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { punchListService } from '@/lib/punchlist'
-import Link from 'next/link'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 interface PunchListWidgetProps {
   projectId?: string
@@ -17,6 +17,7 @@ export default function PunchListWidget({
   maxItems = 5
 }: PunchListWidgetProps) {
   const router = useRouter()
+  const { colors, darkMode } = useThemeColors()
   const [criticalItems, setCriticalItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
@@ -70,7 +71,6 @@ export default function PunchListWidget({
     if (projectId) {
       router.push(`/projects/${projectId}/punch-list`)
     } else {
-      // Navigate to a global punch list view
       router.push('/punch-list')
     }
   }
@@ -97,42 +97,44 @@ export default function PunchListWidget({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="rounded-xl shadow-lg p-6" style={{ backgroundColor: colors.bg }}>
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl" style={{ backgroundColor: '#FEE2E2' }}>
+          <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl" style={{ backgroundColor: darkMode ? 'rgba(220, 38, 38, 0.2)' : '#FEE2E2' }}>
             🚨
           </div>
           <div>
-            <h3 className="font-bold text-lg" style={{ color: '#1A1A1A' }}>Critical Punch Items</h3>
-            <p className="text-sm" style={{ color: '#6B7280' }}>Loading...</p>
+            <h3 className="font-bold text-lg" style={{ color: colors.text }}>Critical Punch Items</h3>
+            <p className="text-sm" style={{ color: colors.textMuted }}>Loading...</p>
           </div>
         </div>
         <div className="animate-pulse space-y-3">
-          <div className="h-16 rounded-lg" style={{ backgroundColor: '#F3F4F6' }} />
-          <div className="h-16 rounded-lg" style={{ backgroundColor: '#F3F4F6' }} />
-          <div className="h-16 rounded-lg" style={{ backgroundColor: '#F3F4F6' }} />
+          <div className="h-16 rounded-lg" style={{ backgroundColor: colors.bgAlt }} />
+          <div className="h-16 rounded-lg" style={{ backgroundColor: colors.bgAlt }} />
+          <div className="h-16 rounded-lg" style={{ backgroundColor: colors.bgAlt }} />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div className="rounded-xl shadow-lg overflow-hidden" style={{ backgroundColor: colors.bg }}>
       {/* Header */}
-      <div className="p-6 border-b" style={{ borderColor: '#E0E0E0' }}>
+      <div className="p-6" style={{ borderBottom: colors.border }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div
               className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
-              style={{ backgroundColor: criticalItems.length > 0 ? '#FEE2E2' : '#F0FDF4' }}
+              style={{ backgroundColor: criticalItems.length > 0
+                ? (darkMode ? 'rgba(220, 38, 38, 0.2)' : '#FEE2E2')
+                : (darkMode ? 'rgba(107, 203, 119, 0.2)' : '#F0FDF4') }}
             >
               {criticalItems.length > 0 ? '🚨' : '✅'}
             </div>
             <div>
-              <h3 className="font-bold text-lg" style={{ color: '#1A1A1A' }}>
+              <h3 className="font-bold text-lg" style={{ color: colors.text }}>
                 Critical Punch Items
               </h3>
-              <p className="text-sm" style={{ color: '#6B7280' }}>
+              <p className="text-sm" style={{ color: colors.textMuted }}>
                 {criticalItems.length > 0
                   ? `${criticalItems.length} item${criticalItems.length !== 1 ? 's' : ''} requiring immediate attention`
                   : 'No critical issues found'}
@@ -142,7 +144,7 @@ export default function PunchListWidget({
           {criticalItems.length > 0 && (
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg"
-              style={{ backgroundColor: '#FEE2E2', color: '#DC2626' }}
+              style={{ backgroundColor: darkMode ? 'rgba(220, 38, 38, 0.2)' : '#FEE2E2', color: '#DC2626' }}
             >
               {criticalItems.length}
             </div>
@@ -152,16 +154,16 @@ export default function PunchListWidget({
         {/* Quick Stats */}
         {stats.total > 0 && (
           <div className="grid grid-cols-3 gap-3">
-            <div className="p-3 rounded-lg" style={{ backgroundColor: '#F8F9FA' }}>
-              <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Total</p>
-              <p className="text-xl font-bold" style={{ color: '#1A1A1A' }}>{stats.total}</p>
+            <div className="p-3 rounded-lg" style={{ backgroundColor: colors.bgAlt }}>
+              <p className="text-xs font-semibold mb-1" style={{ color: colors.textMuted }}>Total</p>
+              <p className="text-xl font-bold" style={{ color: colors.text }}>{stats.total}</p>
             </div>
-            <div className="p-3 rounded-lg" style={{ backgroundColor: '#FEE2E2' }}>
-              <p className="text-xs font-semibold mb-1" style={{ color: '#991B1B' }}>Critical</p>
+            <div className="p-3 rounded-lg" style={{ backgroundColor: darkMode ? 'rgba(220, 38, 38, 0.15)' : '#FEE2E2' }}>
+              <p className="text-xs font-semibold mb-1" style={{ color: darkMode ? '#f87171' : '#991B1B' }}>Critical</p>
               <p className="text-xl font-bold" style={{ color: '#DC2626' }}>{stats.critical}</p>
             </div>
-            <div className="p-3 rounded-lg" style={{ backgroundColor: '#DBEAFE' }}>
-              <p className="text-xs font-semibold mb-1" style={{ color: '#1E40AF' }}>Open</p>
+            <div className="p-3 rounded-lg" style={{ backgroundColor: darkMode ? 'rgba(59, 130, 246, 0.15)' : '#DBEAFE' }}>
+              <p className="text-xs font-semibold mb-1" style={{ color: darkMode ? '#93c5fd' : '#1E40AF' }}>Open</p>
               <p className="text-xl font-bold" style={{ color: '#3B82F6' }}>{stats.open}</p>
             </div>
           </div>
@@ -173,10 +175,10 @@ export default function PunchListWidget({
         {criticalItems.length === 0 ? (
           <div className="text-center py-8">
             <span className="text-6xl mb-4 block">🎉</span>
-            <h4 className="font-bold text-lg mb-2" style={{ color: '#1A1A1A' }}>
+            <h4 className="font-bold text-lg mb-2" style={{ color: colors.text }}>
               All Clear!
             </h4>
-            <p className="text-sm" style={{ color: '#6B7280' }}>
+            <p className="text-sm" style={{ color: colors.textMuted }}>
               No critical punch items at this time
             </p>
           </div>
@@ -185,8 +187,8 @@ export default function PunchListWidget({
             {criticalItems.slice(0, maxItems).map(item => (
               <div
                 key={item.id}
-                className="p-4 rounded-lg border hover:shadow-md transition-shadow cursor-pointer"
-                style={{ borderColor: '#E0E0E0' }}
+                className="p-4 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+                style={{ border: colors.border }}
                 onClick={() => router.push(`/fieldsnap/${item.photo_id}`)}
               >
                 <div className="flex items-start justify-between mb-2">
@@ -211,11 +213,11 @@ export default function PunchListWidget({
                         {item.status.replace('_', ' ')}
                       </span>
                     </div>
-                    <h5 className="font-bold text-sm mb-1 truncate" style={{ color: '#1A1A1A' }}>
+                    <h5 className="font-bold text-sm mb-1 truncate" style={{ color: colors.text }}>
                       {item.title}
                     </h5>
                     {item.description && (
-                      <p className="text-xs line-clamp-2" style={{ color: '#6B7280' }}>
+                      <p className="text-xs line-clamp-2" style={{ color: colors.textMuted }}>
                         {item.description}
                       </p>
                     )}
@@ -229,7 +231,7 @@ export default function PunchListWidget({
                   )}
                 </div>
 
-                <div className="flex items-center justify-between text-xs" style={{ color: '#6B7280' }}>
+                <div className="flex items-center justify-between text-xs" style={{ color: colors.textMuted }}>
                   <div className="flex items-center gap-3">
                     {item.location && (
                       <span className="flex items-center gap-1">
@@ -250,8 +252,8 @@ export default function PunchListWidget({
             {criticalItems.length > maxItems && (
               <button
                 onClick={handleViewAll}
-                className="w-full py-3 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors"
-                style={{ border: '2px dashed #E5E7EB', color: '#374151' }}
+                className="w-full py-3 rounded-lg font-semibold text-sm transition-colors"
+                style={{ border: `2px dashed ${darkMode ? '#4b5563' : '#E5E7EB'}`, color: colors.textMuted }}
               >
                 View all {criticalItems.length} critical items →
               </button>
@@ -262,9 +264,9 @@ export default function PunchListWidget({
 
       {/* Footer */}
       {criticalItems.length > 0 && (
-        <div className="p-4 border-t bg-gray-50" style={{ borderColor: '#E0E0E0' }}>
+        <div className="p-4" style={{ borderTop: colors.border, backgroundColor: colors.bgAlt }}>
           <div className="flex items-center justify-between">
-            <p className="text-xs" style={{ color: '#6B7280' }}>
+            <p className="text-xs" style={{ color: colors.textMuted }}>
               Updated {new Date().toLocaleTimeString()}
             </p>
             <button

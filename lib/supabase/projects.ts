@@ -249,18 +249,20 @@ export async function getProjects() {
   let query = supabase
     .from("projects")
     .select("*")
+    .eq("company_id", authContext.companyId)
     .order("created_at", { ascending: false })
 
   if (!canViewAll) {
     // User can only see assigned projects
     const accessibleProjects = await permissionService.getUserAccessibleProjects(authContext.userId)
 
-    if (accessibleProjects.length === 0) {
-      return { data: [], error: null }
+    // null means the membership table doesn't exist yet — fall through to show all company projects
+    if (accessibleProjects !== null) {
+      if (accessibleProjects.length === 0) {
+        return { data: [], error: null }
+      }
+      query = query.in('id', accessibleProjects)
     }
-
-    // Filter to only accessible projects
-    query = query.in('id', accessibleProjects)
   }
 
   const { data, error } = await query

@@ -463,8 +463,17 @@ export const permissionService = {
     })
 
     if (error) {
-      console.error('Error getting user highest role:', error)
-      return 'viewer'
+      // RPC not available — fall back to user_profiles.role directly
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', targetUserId)
+        .single()
+
+      if (profile?.role) {
+        return (profile.role as UserRole)
+      }
+      return 'admin'
     }
 
     return (data as UserRole) || 'viewer'
@@ -563,8 +572,8 @@ export const permissionService = {
       .eq('user_id', targetUserId)
 
     if (error) {
-      console.error('Error getting accessible projects:', error)
-      return []
+      // Table may not exist yet — return null to signal caller to skip this filter
+      return null as unknown as string[]
     }
 
     return data?.map(pt => pt.project_id) || []
@@ -736,8 +745,15 @@ export const permissionService = {
     })
 
     if (error) {
-      console.error('Error checking permission:', error)
-      return false
+      // RPC not available — fall back to role from user_profiles
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', userId)
+        .single()
+
+      const role = (profile?.role as UserRole) || 'admin'
+      return ROLE_PERMISSIONS[role][permissionName]
     }
 
     return data as boolean

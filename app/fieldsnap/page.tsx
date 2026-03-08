@@ -127,7 +127,12 @@ export default function TaskFlowPage() {
   const [selectedProject, setSelectedProject] = useState<string>("all")
   const [selectedTrade, setSelectedTrade] = useState<string>("all")
   const [selectedPriority, setSelectedPriority] = useState<string>("all")
-  const [userPlan, setUserPlan] = useState<"starter" | "professional" | "enterprise">("professional")
+  const [userPlan, setUserPlan] = useState<"starter" | "professional" | "enterprise">(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('userPlan') as "starter" | "professional" | "enterprise") || 'professional'
+    }
+    return 'professional'
+  })
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [detailTask, setDetailTask] = useState<Task | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -146,16 +151,6 @@ export default function TaskFlowPage() {
   const userData = {
     full_name: user?.user_metadata?.full_name || "John Doe",
     company_name: user?.user_metadata?.company_name || "Demo Construction Co.",
-  }
-
-  const userName = userData.full_name?.split(' ')[0] || "User"
-
-  // Get time-based greeting
-  const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return `Good Morning, ${userName}!`
-    if (hour < 18) return `Good Afternoon, ${userName}!`
-    return `Good Evening, ${userName}!`
   }
 
   // Trade colors
@@ -475,6 +470,7 @@ export default function TaskFlowPage() {
 
       if (profile?.plan) {
         setUserPlan(profile.plan as "starter" | "professional" | "enterprise")
+        localStorage.setItem('userPlan', profile.plan)
       }
 
       setLoading(false)
@@ -791,9 +787,11 @@ export default function TaskFlowPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h1 className="text-2xl font-bold" style={{ color: colors.text }}>{getGreeting()}</h1>
+                <h1 className="text-2xl font-bold" style={{ color: colors.text }}>FieldSnap</h1>
                 <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
-                  You have {stats.dueToday} tasks due today and {stats.overdue} overdue
+                  {stats.dueToday > 0 || stats.overdue > 0
+                    ? `You have ${stats.dueToday} task${stats.dueToday !== 1 ? 's' : ''} due today and ${stats.overdue} overdue`
+                    : "All caught up — no tasks due today"}
                 </p>
               </div>
               <div className="flex items-center gap-3">

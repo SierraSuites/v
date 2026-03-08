@@ -224,7 +224,7 @@ export default function ReportsPage() {
                 key={reportType.type}
                 href={`/reports/${reportType.type}/new`}
                 className="rounded-xl hover:shadow-md transition-all p-6 group hover:-translate-y-0.5"
-                style={{ backgroundColor: colors.bg, border: colors.border, borderLeft: `4px solid ${reportType.color}` }}
+                style={{ backgroundColor: colors.bg, borderTop: colors.border, borderRight: colors.border, borderBottom: colors.border, borderLeft: `4px solid ${reportType.color}` }}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="text-4xl">{reportType.icon}</div>

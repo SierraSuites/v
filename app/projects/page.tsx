@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { useThemeColors } from "@/lib/hooks/useThemeColors"
 import ProjectCreationModal from "@/components/dashboard/ProjectCreationModal"
@@ -74,6 +74,7 @@ type Project = {
 
 export default function ProjectsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const toast = useToast()
   // const { colors } = useThemeColors()
   const [user, setUser] = useState<any>(null)
@@ -94,7 +95,12 @@ export default function ProjectsPage() {
   const { colors, darkMode } = useThemeColors()
 
   // User plan (for tier-based limits)
-  const [userPlan, setUserPlan] = useState<"starter" | "professional" | "enterprise">("professional")
+  const [userPlan, setUserPlan] = useState<"starter" | "professional" | "enterprise">(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('userPlan') as "starter" | "professional" | "enterprise") || 'professional'
+    }
+    return 'professional'
+  })
 
   // User data
   const userData = {
@@ -481,6 +487,7 @@ export default function ProjectsPage() {
 
         if (profile?.plan) {
           setUserPlan(profile.plan as "starter" | "professional" | "enterprise")
+          localStorage.setItem('userPlan', profile.plan)
         }
       } else {
         // For demo, use placeholder
@@ -490,6 +497,13 @@ export default function ProjectsPage() {
     }
     loadUser()
   }, [])
+
+  // Auto-open create modal when ?new=true
+  useEffect(() => {
+    if (searchParams.get('new') === 'true') {
+      setShowCreateModal(true)
+    }
+  }, [searchParams])
 
   // Filter and sort projects
   const filteredProjects = projects
