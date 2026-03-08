@@ -786,14 +786,10 @@ export default function TaskFlowPage() {
                 <button
                   key={f.key}
                   onClick={() => setQuickFilter(f.key)}
-                  className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-                    quickFilter === f.key
-                      ? 'text-white'
-                      : 'hover:bg-gray-50'
-                  }`}
+                  className="px-4 py-2 rounded text-sm font-medium transition-colors"
                   style={quickFilter === f.key
                     ? { backgroundColor: '#6A9BFD', color: '#FFFFFF' }
-                    : { backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', color: '#4A4A4A' }
+                    : { backgroundColor: colors.bg, border: colors.border, color: colors.textMuted }
                   }
                 >
                   {f.label}

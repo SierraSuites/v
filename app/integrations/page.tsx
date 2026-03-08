@@ -6,6 +6,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -122,26 +123,28 @@ interface IntegrationCardProps {
 function IntegrationCard({
   name, description, icon, integration, onConnect, onDisconnect, onSync, syncing
 }: IntegrationCardProps) {
+  const { colors } = useThemeColors()
   const status = integration?.connection_status || 'disconnected'
   const isConnected = status === 'connected'
 
   return (
-    <div className={`bg-white rounded-xl border-2 p-5 transition-all ${isConnected ? 'border-green-200' : 'border-gray-100'}`}>
+    <div className={`rounded-xl border-2 p-5 transition-all ${isConnected ? 'border-green-200' : ''}`}
+      style={{ backgroundColor: colors.bg, borderColor: isConnected ? undefined : colors.border.replace('1px solid ', '') }}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-2xl">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: colors.bgAlt }}>
             {icon}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">{name}</h3>
-            <p className="text-xs text-gray-500 mt-0.5">{description}</p>
+            <h3 className="font-semibold" style={{ color: colors.text }}>{name}</h3>
+            <p className="text-xs mt-0.5" style={{ color: colors.textMuted }}>{description}</p>
           </div>
         </div>
         {getStatusBadge(status)}
       </div>
 
       {isConnected && integration && (
-        <div className="mb-3 p-3 bg-gray-50 rounded-lg space-y-1 text-xs text-gray-600">
+        <div className="mb-3 p-3 rounded-lg space-y-1 text-xs" style={{ backgroundColor: colors.bgAlt, color: colors.textMuted }}>
           <div className="flex justify-between">
             <span>Last sync</span>
             <span className="font-medium">{timeAgo(integration.last_sync_at)}</span>
@@ -202,6 +205,7 @@ interface CreateApiKeyModalProps {
 }
 
 function CreateApiKeyModal({ onClose, onSave }: CreateApiKeyModalProps) {
+  const { colors } = useThemeColors()
   const [name, setName] = useState('')
   const [env, setEnv] = useState('production')
   const [perms, setPerms] = useState({
@@ -217,31 +221,33 @@ function CreateApiKeyModal({ onClose, onSave }: CreateApiKeyModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" style={{ backgroundColor: colors.bg }}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xl font-bold text-gray-900">Create API Key</h2>
+            <h2 className="text-xl font-bold" style={{ color: colors.text }}>Create API Key</h2>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Key Name *</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: colors.textMuted }}>Key Name *</label>
               <input
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="e.g. Production Integration"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ backgroundColor: colors.bgAlt, color: colors.text }}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Environment</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: colors.textMuted }}>Environment</label>
               <select
                 value={env}
                 onChange={e => setEnv(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ backgroundColor: colors.bgAlt, color: colors.text }}
               >
                 <option value="production">Production</option>
                 <option value="sandbox">Sandbox</option>
@@ -249,20 +255,20 @@ function CreateApiKeyModal({ onClose, onSave }: CreateApiKeyModalProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Permissions</label>
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <label className="block text-sm font-medium mb-2" style={{ color: colors.textMuted }}>Permissions</label>
+              <div className="rounded-lg overflow-hidden" style={{ border: colors.border }}>
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
+                  <thead style={{ backgroundColor: colors.bgAlt }}>
                     <tr>
-                      <th className="px-3 py-2 text-left font-medium text-gray-600">Resource</th>
-                      <th className="px-3 py-2 text-center font-medium text-gray-600">Read</th>
-                      <th className="px-3 py-2 text-center font-medium text-gray-600">Write</th>
+                      <th className="px-3 py-2 text-left font-medium" style={{ color: colors.textMuted }}>Resource</th>
+                      <th className="px-3 py-2 text-center font-medium" style={{ color: colors.textMuted }}>Read</th>
+                      <th className="px-3 py-2 text-center font-medium" style={{ color: colors.textMuted }}>Write</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody>
                     {Object.entries(perms).map(([resource, p]) => (
-                      <tr key={resource}>
-                        <td className="px-3 py-2 text-gray-700 capitalize">{resource}</td>
+                      <tr key={resource} style={{ borderTop: colors.border }}>
+                        <td className="px-3 py-2 capitalize" style={{ color: colors.textMuted }}>{resource}</td>
                         <td className="px-3 py-2 text-center">
                           <input type="checkbox" checked={p.read} onChange={() => togglePerm(resource, 'read')} className="rounded" />
                         </td>
@@ -278,7 +284,7 @@ function CreateApiKeyModal({ onClose, onSave }: CreateApiKeyModalProps) {
           </div>
 
           <div className="flex gap-3 mt-6">
-            <button onClick={onClose} className="flex-1 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+            <button onClick={onClose} className="flex-1 py-2 rounded-lg text-sm transition-colors" style={{ border: colors.border, color: colors.textMuted }}>
               Cancel
             </button>
             <button
@@ -304,6 +310,7 @@ function OverviewTab({
   integrations: Integration[]
   syncLogs: SyncLog[]
 }) {
+  const { colors } = useThemeColors()
   const connected = integrations.filter(i => i.is_connected).length
   const totalSyncs = integrations.reduce((s, i) => s + i.total_syncs, 0)
   const failedSyncs = integrations.reduce((s, i) => s + i.failed_syncs, 0)
@@ -331,32 +338,32 @@ function OverviewTab({
           { label: 'Success Rate', value: `${successRate}%`, icon: '✅', color: 'text-emerald-600', bg: 'bg-emerald-50' },
           { label: 'Failed Syncs', value: failedSyncs, icon: '⚠️', color: 'text-red-600', bg: 'bg-red-50' },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-4">
+          <div key={s.label} className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
             <div className={`w-10 h-10 ${s.bg} rounded-lg flex items-center justify-center text-xl mb-3`}>{s.icon}</div>
             <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-            <div className="text-sm text-gray-500 mt-0.5">{s.label}</div>
+            <div className="text-sm mt-0.5" style={{ color: colors.textMuted }}>{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Connected integrations */}
       {connected > 0 && (
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h3 className="font-semibold text-gray-900 mb-4">Active Connections</h3>
+        <div className="rounded-xl p-5" style={{ backgroundColor: colors.bg, border: colors.border }}>
+          <h3 className="font-semibold mb-4" style={{ color: colors.text }}>Active Connections</h3>
           <div className="space-y-3">
             {integrations.filter(i => i.is_connected).map(i => {
               const meta = INTEGRATION_META[i.integration_type] || { name: i.integration_type, icon: '🔌' }
               return (
-                <div key={i.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                <div key={i.id} className="flex items-center justify-between py-2 last:border-0" style={{ borderBottom: colors.border }}>
                   <div className="flex items-center gap-3">
                     <span className="text-xl">{meta.icon}</span>
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{meta.name}</div>
-                      <div className="text-xs text-gray-500">Connected {formatDate(i.connected_at)}</div>
+                      <div className="text-sm font-medium" style={{ color: colors.text }}>{meta.name}</div>
+                      <div className="text-xs" style={{ color: colors.textMuted }}>Connected {formatDate(i.connected_at)}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 text-right">
-                    <div className="text-xs text-gray-500">Last sync: {timeAgo(i.last_sync_at)}</div>
+                    <div className="text-xs" style={{ color: colors.textMuted }}>Last sync: {timeAgo(i.last_sync_at)}</div>
                     {getSyncStatusBadge(i.last_sync_status)}
                   </div>
                 </div>
@@ -368,24 +375,24 @@ function OverviewTab({
 
       {/* Recent sync activity */}
       {syncLogs.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h3 className="font-semibold text-gray-900 mb-4">Recent Sync Activity</h3>
+        <div className="rounded-xl p-5" style={{ backgroundColor: colors.bg, border: colors.border }}>
+          <h3 className="font-semibold mb-4" style={{ color: colors.text }}>Recent Sync Activity</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="pb-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                  <th className="pb-2 text-left text-xs font-medium text-gray-500 uppercase">Entity</th>
-                  <th className="pb-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="pb-2 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
-                  <th className="pb-2 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                <tr style={{ borderBottom: colors.border }}>
+                  <th className="pb-2 text-left text-xs font-medium uppercase" style={{ color: colors.textMuted }}>Type</th>
+                  <th className="pb-2 text-left text-xs font-medium uppercase" style={{ color: colors.textMuted }}>Entity</th>
+                  <th className="pb-2 text-left text-xs font-medium uppercase" style={{ color: colors.textMuted }}>Status</th>
+                  <th className="pb-2 text-left text-xs font-medium uppercase" style={{ color: colors.textMuted }}>Duration</th>
+                  <th className="pb-2 text-left text-xs font-medium uppercase" style={{ color: colors.textMuted }}>Time</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody>
                 {syncLogs.slice(0, 10).map(log => (
-                  <tr key={log.id}>
-                    <td className="py-2 font-medium capitalize">{log.sync_type}</td>
-                    <td className="py-2 text-gray-500 capitalize">{log.entity_type || '—'}</td>
+                  <tr key={log.id} style={{ borderBottom: colors.border }}>
+                    <td className="py-2 font-medium capitalize" style={{ color: colors.text }}>{log.sync_type}</td>
+                    <td className="py-2 capitalize" style={{ color: colors.textMuted }}>{log.entity_type || '—'}</td>
                     <td className="py-2">
                       <span className={`px-2 py-0.5 rounded text-xs ${
                         log.status === 'success' ? 'bg-green-100 text-green-700' :
@@ -395,8 +402,8 @@ function OverviewTab({
                         {log.status}
                       </span>
                     </td>
-                    <td className="py-2 text-gray-500">{log.duration_ms ? `${log.duration_ms}ms` : '—'}</td>
-                    <td className="py-2 text-gray-500">{timeAgo(log.started_at)}</td>
+                    <td className="py-2" style={{ color: colors.textMuted }}>{log.duration_ms ? `${log.duration_ms}ms` : '—'}</td>
+                    <td className="py-2" style={{ color: colors.textMuted }}>{timeAgo(log.started_at)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -406,10 +413,10 @@ function OverviewTab({
       )}
 
       {connected === 0 && syncLogs.length === 0 && (
-        <div className="bg-white rounded-xl border-2 border-dashed border-gray-200 p-12 text-center">
+        <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-600 p-12 text-center" style={{ backgroundColor: colors.bg }}>
           <div className="text-4xl mb-3">🔗</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No integrations connected</h3>
-          <p className="text-gray-500 text-sm max-w-sm mx-auto">
+          <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text }}>No integrations connected</h3>
+          <p className="text-sm max-w-sm mx-auto" style={{ color: colors.textMuted }}>
             Connect QuickBooks, Stripe, and other tools to automate your workflow.
             Start with QuickBooks to sync invoices automatically.
           </p>
@@ -428,16 +435,17 @@ function QuickBooksTab({ integration, onConnect, onDisconnect, onSync, syncing }
   onSync: () => void
   syncing: boolean
 }) {
+  const { colors } = useThemeColors()
   const isConnected = integration?.connection_status === 'connected'
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-100 p-6">
+      <div className="rounded-xl p-6" style={{ backgroundColor: colors.bg, border: colors.border }}>
         <div className="flex items-center gap-4 mb-6">
           <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center text-3xl">📊</div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">QuickBooks Online</h2>
-            <p className="text-gray-500 text-sm mt-1">Sync invoices, expenses, payments, and customers automatically</p>
+            <h2 className="text-xl font-bold" style={{ color: colors.text }}>QuickBooks Online</h2>
+            <p className="text-sm mt-1" style={{ color: colors.textMuted }}>Sync invoices, expenses, payments, and customers automatically</p>
           </div>
           <div className="ml-auto">{getStatusBadge(integration?.connection_status || 'disconnected')}</div>
         </div>
@@ -449,9 +457,9 @@ function QuickBooksTab({ integration, onConnect, onDisconnect, onSync, syncing }
               { label: 'Successful', value: integration.successful_syncs },
               { label: 'Failed', value: integration.failed_syncs },
             ].map(s => (
-              <div key={s.label} className="bg-gray-50 rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold text-gray-900">{s.value}</div>
-                <div className="text-xs text-gray-500">{s.label}</div>
+              <div key={s.label} className="rounded-lg p-3 text-center" style={{ backgroundColor: colors.bgAlt }}>
+                <div className="text-2xl font-bold" style={{ color: colors.text }}>{s.value}</div>
+                <div className="text-xs" style={{ color: colors.textMuted }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -464,7 +472,7 @@ function QuickBooksTab({ integration, onConnect, onDisconnect, onSync, syncing }
               'Two-way customer/vendor sync',
               'Chart of accounts mapping',
             ].map(f => (
-              <div key={f} className="flex items-center gap-2 text-sm text-gray-700">
+              <div key={f} className="flex items-center gap-2 text-sm" style={{ color: colors.textMuted }}>
                 <span className="text-green-500">✓</span> {f}
               </div>
             ))}
@@ -490,8 +498,8 @@ function QuickBooksTab({ integration, onConnect, onDisconnect, onSync, syncing }
       </div>
 
       {isConnected && integration && (
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h3 className="font-semibold text-gray-900 mb-4">Sync Settings</h3>
+        <div className="rounded-xl p-5" style={{ backgroundColor: colors.bg, border: colors.border }}>
+          <h3 className="font-semibold mb-4" style={{ color: colors.text }}>Sync Settings</h3>
           <div className="space-y-3">
             {[
               { key: 'sync_invoices', label: 'Sync Invoices', desc: 'Push invoices to QuickBooks when created' },
@@ -499,10 +507,10 @@ function QuickBooksTab({ integration, onConnect, onDisconnect, onSync, syncing }
               { key: 'sync_payments', label: 'Sync Payments', desc: 'Real-time payment updates' },
               { key: 'sync_customers', label: 'Sync Customers', desc: 'Two-way customer sync' },
             ].map(s => (
-              <div key={s.key} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+              <div key={s.key} className="flex items-center justify-between py-2 last:border-0" style={{ borderBottom: colors.border }}>
                 <div>
-                  <div className="text-sm font-medium text-gray-900">{s.label}</div>
-                  <div className="text-xs text-gray-500">{s.desc}</div>
+                  <div className="text-sm font-medium" style={{ color: colors.text }}>{s.label}</div>
+                  <div className="text-xs" style={{ color: colors.textMuted }}>{s.desc}</div>
                 </div>
                 <div className={`px-2 py-0.5 rounded text-xs ${integration.settings?.[s.key] !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                   {integration.settings?.[s.key] !== false ? 'Enabled' : 'Disabled'}
@@ -533,16 +541,17 @@ function StripeTab({ integration, onConnect, onDisconnect }: {
   onConnect: () => void
   onDisconnect: () => void
 }) {
+  const { colors } = useThemeColors()
   const isConnected = integration?.connection_status === 'connected'
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-100 p-6">
+      <div className="rounded-xl p-6" style={{ backgroundColor: colors.bg, border: colors.border }}>
         <div className="flex items-center gap-4 mb-6">
           <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center text-3xl">💳</div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Stripe Payments</h2>
-            <p className="text-gray-500 text-sm mt-1">Accept online payments for invoices via credit card and ACH</p>
+            <h2 className="text-xl font-bold" style={{ color: colors.text }}>Stripe Payments</h2>
+            <p className="text-sm mt-1" style={{ color: colors.textMuted }}>Accept online payments for invoices via credit card and ACH</p>
           </div>
           <div className="ml-auto">{getStatusBadge(integration?.connection_status || 'disconnected')}</div>
         </div>
@@ -556,7 +565,7 @@ function StripeTab({ integration, onConnect, onDisconnect }: {
               'Real-time webhook notifications',
               'Automatic QuickBooks sync on payment',
             ].map(f => (
-              <div key={f} className="flex items-center gap-2 text-sm text-gray-700">
+              <div key={f} className="flex items-center gap-2 text-sm" style={{ color: colors.textMuted }}>
                 <span className="text-purple-500">✓</span> {f}
               </div>
             ))}
@@ -583,10 +592,10 @@ function StripeTab({ integration, onConnect, onDisconnect }: {
             { label: 'Successful', value: integration.successful_syncs, icon: '✅' },
             { label: 'Failed', value: integration.failed_syncs, icon: '❌' },
           ].map(s => (
-            <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+            <div key={s.label} className="rounded-xl p-4 text-center" style={{ backgroundColor: colors.bg, border: colors.border }}>
               <div className="text-2xl mb-1">{s.icon}</div>
-              <div className="text-2xl font-bold text-gray-900">{s.value}</div>
-              <div className="text-xs text-gray-500">{s.label}</div>
+              <div className="text-2xl font-bold" style={{ color: colors.text }}>{s.value}</div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -612,6 +621,7 @@ function EmailCalendarTab({ integrations, onConnect, onDisconnect }: {
   onConnect: (type: string) => void
   onDisconnect: (type: string) => void
 }) {
+  const { colors } = useThemeColors()
   const emailServices = [
     { type: 'gmail', name: 'Gmail', icon: '📧', color: 'bg-red-50', desc: 'Auto-log client emails to CRM, sync contacts' },
     { type: 'outlook', name: 'Outlook / Microsoft 365', icon: '📩', color: 'bg-blue-50', desc: 'Microsoft email integration with contact sync' },
@@ -623,9 +633,9 @@ function EmailCalendarTab({ integrations, onConnect, onDisconnect }: {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl border border-gray-100 p-5">
-        <h3 className="font-semibold text-gray-900 mb-1">Communication & Productivity</h3>
-        <p className="text-sm text-gray-500 mb-4">Connect your email, calendar, and communication tools</p>
+      <div className="rounded-xl p-5" style={{ backgroundColor: colors.bg, border: colors.border }}>
+        <h3 className="font-semibold mb-1" style={{ color: colors.text }}>Communication & Productivity</h3>
+        <p className="text-sm mb-4" style={{ color: colors.textMuted }}>Connect your email, calendar, and communication tools</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {emailServices.map(svc => {
             const integration = integrations.find(i => i.integration_type === svc.type)
@@ -635,8 +645,8 @@ function EmailCalendarTab({ integrations, onConnect, onDisconnect }: {
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-2xl">{svc.icon}</span>
                   <div>
-                    <div className="font-medium text-gray-900 text-sm">{svc.name}</div>
-                    <div className="text-xs text-gray-600 mt-0.5">{svc.desc}</div>
+                    <div className="font-medium text-sm" style={{ color: colors.text }}>{svc.name}</div>
+                    <div className="text-xs mt-0.5" style={{ color: colors.textMuted }}>{svc.desc}</div>
                   </div>
                   <div className="ml-auto">{getStatusBadge(integration?.connection_status || 'disconnected')}</div>
                 </div>
@@ -666,16 +676,17 @@ function ApiKeysTab({ apiKeys, onCreateKey, onRevokeKey }: {
   onCreateKey: (name: string, env: string, perms: Record<string, any>) => void
   onRevokeKey: (id: string) => void
 }) {
+  const { colors } = useThemeColors()
   const [showModal, setShowModal] = useState(false)
   const [revealedKey, setRevealedKey] = useState<string | null>(null)
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-100 p-5">
+      <div className="rounded-xl p-5" style={{ backgroundColor: colors.bg, border: colors.border }}>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="font-semibold text-gray-900">API Keys</h3>
-            <p className="text-sm text-gray-500 mt-0.5">Use these keys to access the Sierra Suites Public API</p>
+            <h3 className="font-semibold" style={{ color: colors.text }}>API Keys</h3>
+            <p className="text-sm mt-0.5" style={{ color: colors.textMuted }}>Use these keys to access the Sierra Suites Public API</p>
           </div>
           <button onClick={() => setShowModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
             + Create Key
@@ -683,7 +694,7 @@ function ApiKeysTab({ apiKeys, onCreateKey, onRevokeKey }: {
         </div>
 
         {apiKeys.length === 0 ? (
-          <div className="text-center py-10 text-gray-500">
+          <div className="text-center py-10" style={{ color: colors.textMuted }}>
             <div className="text-3xl mb-2">🔑</div>
             <p className="text-sm">No API keys yet. Create one to start building integrations.</p>
           </div>
@@ -691,22 +702,22 @@ function ApiKeysTab({ apiKeys, onCreateKey, onRevokeKey }: {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="pb-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="pb-2 text-left text-xs font-medium text-gray-500 uppercase">Key</th>
-                  <th className="pb-2 text-left text-xs font-medium text-gray-500 uppercase">Env</th>
-                  <th className="pb-2 text-left text-xs font-medium text-gray-500 uppercase">Requests</th>
-                  <th className="pb-2 text-left text-xs font-medium text-gray-500 uppercase">Last Used</th>
-                  <th className="pb-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <tr style={{ borderBottom: colors.border }}>
+                  <th className="pb-2 text-left text-xs font-medium uppercase" style={{ color: colors.textMuted }}>Name</th>
+                  <th className="pb-2 text-left text-xs font-medium uppercase" style={{ color: colors.textMuted }}>Key</th>
+                  <th className="pb-2 text-left text-xs font-medium uppercase" style={{ color: colors.textMuted }}>Env</th>
+                  <th className="pb-2 text-left text-xs font-medium uppercase" style={{ color: colors.textMuted }}>Requests</th>
+                  <th className="pb-2 text-left text-xs font-medium uppercase" style={{ color: colors.textMuted }}>Last Used</th>
+                  <th className="pb-2 text-left text-xs font-medium uppercase" style={{ color: colors.textMuted }}>Status</th>
                   <th className="pb-2" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody>
                 {apiKeys.map(key => (
-                  <tr key={key.id}>
-                    <td className="py-3 font-medium text-gray-900">{key.key_name}</td>
+                  <tr key={key.id} style={{ borderBottom: colors.border }}>
+                    <td className="py-3 font-medium" style={{ color: colors.text }}>{key.key_name}</td>
                     <td className="py-3">
-                      <code className="text-xs bg-gray-100 px-2 py-0.5 rounded font-mono">
+                      <code className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded font-mono">
                         {key.key_prefix}••••••••
                       </code>
                     </td>
@@ -715,8 +726,8 @@ function ApiKeysTab({ apiKeys, onCreateKey, onRevokeKey }: {
                         {key.environment}
                       </span>
                     </td>
-                    <td className="py-3 text-gray-600">{key.total_requests.toLocaleString()}</td>
-                    <td className="py-3 text-gray-500">{timeAgo(key.last_used_at)}</td>
+                    <td className="py-3" style={{ color: colors.textMuted }}>{key.total_requests.toLocaleString()}</td>
+                    <td className="py-3" style={{ color: colors.textMuted }}>{timeAgo(key.last_used_at)}</td>
                     <td className="py-3">
                       <span className={`px-2 py-0.5 rounded text-xs ${key.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                         {key.is_active ? 'Active' : 'Revoked'}
@@ -767,6 +778,7 @@ function ApiKeysTab({ apiKeys, onCreateKey, onRevokeKey }: {
 function IntegrationsPageContent() {
   const searchParams = useSearchParams()
   const activeTab = searchParams.get('tab') || 'overview'
+  const { colors } = useThemeColors()
 
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([])
@@ -958,22 +970,26 @@ function IntegrationsPageContent() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Integrations</h1>
-        <p className="text-gray-500 mt-1 text-sm">Connect Sierra Suites with your existing tools and workflows</p>
+        <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: colors.text }}>Integrations</h1>
+        <p className="mt-1 text-sm" style={{ color: colors.textMuted }}>Connect Sierra Suites with your existing tools and workflows</p>
       </div>
 
       {/* Tabs */}
       <div className="overflow-x-auto mb-6">
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 min-w-max">
+        <div className="flex gap-1 rounded-xl p-1 min-w-max" style={{ backgroundColor: colors.bgAlt }}>
           {TABS.map(tab => (
             <a
               key={tab.id}
               href={`/integrations${tab.id === 'overview' ? '' : `?tab=${tab.id}`}`}
               className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                 activeTab === tab.id
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'shadow-sm'
+                  : ''
               }`}
+              style={activeTab === tab.id
+                ? { backgroundColor: colors.bg, color: colors.text }
+                : { color: colors.textMuted }
+              }
             >
               <span>{tab.icon}</span>
               <span className="hidden sm:inline">{tab.label}</span>

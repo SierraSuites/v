@@ -144,7 +144,7 @@ export default function QuotesPage() {
   // Quality Guide lines 39-47: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-[#0d0f17]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 mx-auto" style={{ borderColor: '#FF6B6B' }} />
           <p className="mt-4 text-lg" style={{ color: colors.textMuted }}>Loading quotes...</p>
@@ -154,7 +154,7 @@ export default function QuotesPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0d0f17]">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -169,8 +169,8 @@ export default function QuotesPage() {
           <div className="flex gap-3">
             <button
               onClick={() => router.push('/quotes/templates')}
-              className="px-4 py-2 rounded-lg border font-semibold transition-colors hover:bg-white"
-              style={{ borderColor: '#E5E7EB', color: colors.textMuted }}
+              className="px-4 py-2 rounded-lg border font-semibold transition-colors"
+              style={{ border: colors.border, backgroundColor: colors.bg, color: colors.textMuted }}
             >
               📚 Browse Templates
             </button>
@@ -187,7 +187,7 @@ export default function QuotesPage() {
         {/* Spec lines 82-88: Pipeline Overview with count + value per status */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="rounded-xl shadow-lg p-6" style={{ backgroundColor: colors.bg }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold" style={{ color: colors.textMuted }}>
                   Total Quotes
@@ -199,7 +199,7 @@ export default function QuotesPage() {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="rounded-xl shadow-lg p-6" style={{ backgroundColor: colors.bg }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold" style={{ color: colors.textMuted }}>
                   Total Value
@@ -211,7 +211,7 @@ export default function QuotesPage() {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="rounded-xl shadow-lg p-6" style={{ backgroundColor: colors.bg }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold" style={{ color: colors.textMuted }}>
                   Accepted
@@ -226,7 +226,7 @@ export default function QuotesPage() {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="rounded-xl shadow-lg p-6" style={{ backgroundColor: colors.bg }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold" style={{ color: colors.textMuted }}>
                   Conversion Rate
@@ -238,7 +238,7 @@ export default function QuotesPage() {
         )}
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="rounded-xl shadow-lg p-6" style={{ backgroundColor: colors.bg }}>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Search */}
             <div className="md:col-span-2">
@@ -251,7 +251,7 @@ export default function QuotesPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by number, title, or client..."
                 className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2"
-                style={{ borderColor: '#E5E7EB' }}
+                style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
               />
             </div>
 
@@ -264,7 +264,7 @@ export default function QuotesPage() {
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
                 className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2"
-                style={{ borderColor: '#E5E7EB' }}
+                style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
               >
                 <option value="all">All Statuses</option>
                 <option value="draft">Draft</option>
@@ -287,7 +287,7 @@ export default function QuotesPage() {
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
                   className="flex-1 px-4 py-2 rounded-lg border focus:outline-none focus:ring-2"
-                  style={{ borderColor: '#E5E7EB' }}
+                  style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
                 >
                   <option value="created_at">Date</option>
                   <option value="quote_number">Number</option>
@@ -296,7 +296,7 @@ export default function QuotesPage() {
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                   className="px-3 py-2 rounded-lg border font-semibold"
-                  style={{ borderColor: '#E5E7EB', color: colors.textMuted }}
+                  style={{ border: colors.border, backgroundColor: colors.bg, color: colors.textMuted }}
                   title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
                 >
                   {sortOrder === 'asc' ? '↑' : '↓'}
@@ -308,7 +308,7 @@ export default function QuotesPage() {
 
         {/* Quotes List */}
         {filteredQuotes.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+          <div className="rounded-xl shadow-lg p-12 text-center" style={{ backgroundColor: colors.bg }}>
             <p className="text-2xl mb-2">📭</p>
             <p className="text-lg font-semibold mb-2" style={{ color: colors.textMuted }}>
               {searchQuery || selectedStatus !== 'all' ? 'No quotes match your filters' : 'No quotes yet'}
@@ -336,7 +336,8 @@ export default function QuotesPage() {
               return (
                 <div
                   key={quote.id}
-                  className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer"
+                  className="rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer"
+                  style={{ backgroundColor: colors.bg }}
                   onClick={() => router.push(`/quotes/${quote.id}`)}
                 >
                   <div className="flex items-start justify-between">
@@ -413,7 +414,7 @@ export default function QuotesPage() {
                             e.stopPropagation()
                             router.push(`/quotes/${quote.id}/edit`)
                           }}
-                          className="px-3 py-1 rounded text-xs font-semibold transition-colors hover:bg-gray-100"
+                          className="px-3 py-1 rounded text-xs font-semibold transition-colors"
                           style={{ color: colors.textMuted }}
                         >
                           Edit
@@ -423,7 +424,7 @@ export default function QuotesPage() {
                             e.stopPropagation()
                             handleDuplicateQuote(quote.id)
                           }}
-                          className="px-3 py-1 rounded text-xs font-semibold transition-colors hover:bg-gray-100"
+                          className="px-3 py-1 rounded text-xs font-semibold transition-colors"
                           style={{ color: colors.textMuted }}
                         >
                           Duplicate

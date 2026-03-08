@@ -6,6 +6,7 @@ import { useState, useEffect, Suspense, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -188,13 +189,14 @@ function StatCard({
 }: {
   icon: string; label: string; value: string | number; sub?: string; color: string
 }) {
+  const { colors } = useThemeColors()
   return (
-    <div className={`bg-white rounded-xl shadow-sm border-l-4 ${color} p-4 sm:p-5`}>
+    <div className={`rounded-xl shadow-sm border-l-4 ${color} p-4 sm:p-5`} style={{ backgroundColor: colors.bg }}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-xs sm:text-sm text-gray-500 font-medium truncate">{label}</p>
-          <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{value}</p>
-          {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+          <p className="text-xs sm:text-sm font-medium truncate" style={{ color: colors.textMuted }}>{label}</p>
+          <p className="text-2xl sm:text-3xl font-bold mt-1" style={{ color: colors.text }}>{value}</p>
+          {sub && <p className="text-xs mt-1" style={{ color: colors.textMuted }}>{sub}</p>}
         </div>
         <span className="text-2xl sm:text-3xl flex-shrink-0">{icon}</span>
       </div>
@@ -205,11 +207,12 @@ function StatCard({
 function EmptyState({ icon, title, desc, action, onAction }: {
   icon: string; title: string; desc: string; action?: string; onAction?: () => void
 }) {
+  const { colors } = useThemeColors()
   return (
     <div className="text-center py-12 sm:py-16 px-4">
       <div className="text-5xl sm:text-6xl mb-4">{icon}</div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-      <p className="text-gray-500 text-sm max-w-md mx-auto mb-6">{desc}</p>
+      <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text }}>{title}</h3>
+      <p className="text-sm max-w-md mx-auto mb-6" style={{ color: colors.textMuted }}>{desc}</p>
       {action && onAction && (
         <button
           onClick={onAction}
@@ -232,6 +235,7 @@ function OverviewTab({
   certifications: Certification[]
   inspections: Inspection[]
 }) {
+  const { colors } = useThemeColors()
   const recentIncidents = incidents.slice(0, 5)
   const upcomingInspections = inspections
     .filter(i => i.status === 'scheduled')
@@ -268,27 +272,27 @@ function OverviewTab({
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent incidents */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-900">Recent Incidents</h3>
-            <span className="text-xs text-gray-400">{incidents.length} total</span>
+        <div className="lg:col-span-2 rounded-xl shadow-sm" style={{ backgroundColor: colors.bg, border: colors.border }}>
+          <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: colors.border }}>
+            <h3 className="font-semibold" style={{ color: colors.text }}>Recent Incidents</h3>
+            <span className="text-xs" style={{ color: colors.textMuted }}>{incidents.length} total</span>
           </div>
           {recentIncidents.length === 0 ? (
-            <div className="py-8 text-center text-gray-400 text-sm">
+            <div className="py-8 text-center text-sm" style={{ color: colors.textMuted }}>
               <div className="text-3xl mb-2">🎉</div>
               No incidents reported — great safety record!
             </div>
           ) : (
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y" style={{ borderColor: 'transparent' }}>
               {recentIncidents.map(inc => {
                 const sev = getSeverityConfig(inc.severity)
                 const sta = getStatusConfig(inc.status)
                 return (
-                  <div key={inc.id} className="px-5 py-3 flex items-start gap-3 hover:bg-gray-50 transition-colors">
+                  <div key={inc.id} className="px-5 py-3 flex items-start gap-3 transition-colors" style={{ borderBottom: colors.border }}>
                     <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${sev.dot}`} />
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900">{inc.incident_number}</span>
+                        <span className="text-sm font-medium" style={{ color: colors.text }}>{inc.incident_number}</span>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sev.bg} ${sev.text}`}>
                           {sev.label}
                         </span>
@@ -296,7 +300,7 @@ function OverviewTab({
                           {sta.label}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5 truncate">{inc.location} · {formatDate(inc.occurred_at)}</p>
+                      <p className="text-xs mt-0.5 truncate" style={{ color: colors.textMuted }}>{inc.location} · {formatDate(inc.occurred_at)}</p>
                     </div>
                   </div>
                 )
@@ -308,20 +312,20 @@ function OverviewTab({
         {/* Sidebar: upcoming inspections + expiring certs */}
         <div className="space-y-4">
           {/* Upcoming inspections */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-            <div className="px-4 py-3 border-b border-gray-100">
-              <h3 className="font-semibold text-gray-900 text-sm">Upcoming Inspections</h3>
+          <div className="rounded-xl shadow-sm" style={{ backgroundColor: colors.bg, border: colors.border }}>
+            <div className="px-4 py-3" style={{ borderBottom: colors.border }}>
+              <h3 className="font-semibold text-sm" style={{ color: colors.text }}>Upcoming Inspections</h3>
             </div>
             {upcomingInspections.length === 0 ? (
-              <p className="py-6 text-center text-gray-400 text-xs">No inspections scheduled</p>
+              <p className="py-6 text-center text-xs" style={{ color: colors.textMuted }}>No inspections scheduled</p>
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div>
                 {upcomingInspections.map(ins => {
                   const days = daysUntil(ins.scheduled_date)
                   return (
-                    <div key={ins.id} className="px-4 py-3">
-                      <p className="text-sm font-medium text-gray-900 truncate">{ins.inspection_name}</p>
-                      <p className="text-xs text-gray-500">{formatDate(ins.scheduled_date)}</p>
+                    <div key={ins.id} className="px-4 py-3" style={{ borderBottom: colors.border }}>
+                      <p className="text-sm font-medium truncate" style={{ color: colors.text }}>{ins.inspection_name}</p>
+                      <p className="text-xs" style={{ color: colors.textMuted }}>{formatDate(ins.scheduled_date)}</p>
                       {days !== null && days <= 7 && (
                         <span className="text-xs text-red-600 font-medium">⚠️ In {days} days</span>
                       )}
@@ -333,23 +337,23 @@ function OverviewTab({
           </div>
 
           {/* Expiring certs */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-            <div className="px-4 py-3 border-b border-gray-100">
-              <h3 className="font-semibold text-gray-900 text-sm">Expiring Certifications</h3>
+          <div className="rounded-xl shadow-sm" style={{ backgroundColor: colors.bg, border: colors.border }}>
+            <div className="px-4 py-3" style={{ borderBottom: colors.border }}>
+              <h3 className="font-semibold text-sm" style={{ color: colors.text }}>Expiring Certifications</h3>
             </div>
             {expiringCerts.length === 0 ? (
-              <p className="py-6 text-center text-gray-400 text-xs">All certifications current ✅</p>
+              <p className="py-6 text-center text-xs" style={{ color: colors.textMuted }}>All certifications current ✅</p>
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div>
                 {expiringCerts.map(cert => {
                   const exp = getCertExpiryStatus(cert.expiration_date)
                   return (
-                    <div key={cert.id} className="px-4 py-3">
+                    <div key={cert.id} className="px-4 py-3" style={{ borderBottom: colors.border }}>
                       <div className="flex items-center gap-1.5">
                         <span>{exp.icon}</span>
-                        <p className="text-sm font-medium text-gray-900 truncate">{cert.name}</p>
+                        <p className="text-sm font-medium truncate" style={{ color: colors.text }}>{cert.name}</p>
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5">{cert.holder_name} · {exp.label}</p>
+                      <p className="text-xs mt-0.5" style={{ color: colors.textMuted }}>{cert.holder_name} · {exp.label}</p>
                     </div>
                   )
                 })}
@@ -371,6 +375,7 @@ function BriefingsTab({
   onNew: () => void
   loading: boolean
 }) {
+  const { colors } = useThemeColors()
   const [search, setSearch] = useState('')
   const filtered = briefings.filter(b =>
     b.work_description.toLowerCase().includes(search.toLowerCase()) ||
@@ -386,7 +391,7 @@ function BriefingsTab({
           placeholder="Search briefings..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full sm:w-72 px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+          className="w-full sm:w-72 px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
         />
         <button
           onClick={onNew}
@@ -398,7 +403,7 @@ function BriefingsTab({
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="h-40 bg-gray-100 rounded-xl animate-pulse" />)}
+          {[1,2,3,4].map(i => <div key={i} className="h-40 bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse" />)}
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState
@@ -411,12 +416,12 @@ function BriefingsTab({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(b => (
-            <div key={b.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+            <div key={b.id} className="rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border }}>
               {/* Header */}
               <div className="flex items-start justify-between gap-2 mb-3">
                 <div>
-                  <p className="font-semibold text-gray-900 text-sm">{formatDate(b.briefing_date)}</p>
-                  {b.location && <p className="text-xs text-gray-500 mt-0.5">📍 {b.location}</p>}
+                  <p className="font-semibold text-sm" style={{ color: colors.text }}>{formatDate(b.briefing_date)}</p>
+                  {b.location && <p className="text-xs mt-0.5" style={{ color: colors.textMuted }}>📍 {b.location}</p>}
                 </div>
                 <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
                   b.all_workers_signed ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
@@ -426,10 +431,10 @@ function BriefingsTab({
               </div>
 
               {/* Work description */}
-              <p className="text-sm text-gray-700 line-clamp-2 mb-3">{b.work_description}</p>
+              <p className="text-sm line-clamp-2 mb-3" style={{ color: colors.textMuted }}>{b.work_description}</p>
 
               {/* Stats row */}
-              <div className="flex flex-wrap gap-3 text-xs text-gray-500 border-t border-gray-50 pt-3">
+              <div className="flex flex-wrap gap-3 text-xs pt-3" style={{ color: colors.textMuted, borderTop: colors.border }}>
                 <span>👥 {b.total_attendees} workers</span>
                 {b.toolbox_talk_topic && <span>📣 {b.toolbox_talk_topic}</span>}
                 <span>⚠️ {b.hazards_identified.length} hazards</span>
@@ -463,6 +468,7 @@ function IncidentsTab({
   onNew: () => void
   loading: boolean
 }) {
+  const { colors } = useThemeColors()
   const [search, setSearch] = useState('')
   const [filterSeverity, setFilterSeverity] = useState<'all' | Severity>('all')
   const [filterStatus, setFilterStatus] = useState<'all' | IncidentStatus>('all')
@@ -482,7 +488,7 @@ function IncidentsTab({
   return (
     <div className="space-y-4">
       {/* Sub-tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-full sm:w-fit">
+      <div className="flex gap-1 rounded-lg p-1 w-full sm:w-fit" style={{ backgroundColor: colors.bgAlt }}>
         {([
           { key: 'incidents', label: `All Incidents (${incidents.length})` },
           { key: 'osha300',   label: `OSHA 300 Log (${osha300.length})` },
@@ -490,9 +496,8 @@ function IncidentsTab({
           <button
             key={t.key}
             onClick={() => setSubTab(t.key)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              subTab === t.key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className="px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            style={subTab === t.key ? { backgroundColor: colors.bg, color: colors.text, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' } : { color: colors.textMuted }}
           >
             {t.label}
           </button>
@@ -509,12 +514,12 @@ function IncidentsTab({
                 placeholder="Search incidents..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full sm:w-60 px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className="w-full sm:w-60 px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
               />
               <select
                 value={filterSeverity}
                 onChange={e => setFilterSeverity(e.target.value as any)}
-                className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+                className="px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
               >
                 <option value="all">All Severities</option>
                 <option value="near_miss">Near Miss</option>
@@ -527,7 +532,7 @@ function IncidentsTab({
               <select
                 value={filterStatus}
                 onChange={e => setFilterStatus(e.target.value as any)}
-                className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+                className="px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
               >
                 <option value="all">All Statuses</option>
                 <option value="open">Open</option>
@@ -546,7 +551,7 @@ function IncidentsTab({
 
           {loading ? (
             <div className="space-y-3">
-              {[1,2,3].map(i => <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse" />)}
+              {[1,2,3].map(i => <div key={i} className="h-24 bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse" />)}
             </div>
           ) : filtered.length === 0 ? (
             <EmptyState
@@ -566,12 +571,13 @@ function IncidentsTab({
                 return (
                   <div
                     key={inc.id}
-                    className={`bg-white rounded-xl shadow-sm border-l-4 ${sev.border} p-4 sm:p-5 hover:shadow-md transition-shadow`}
+                    className={`rounded-xl shadow-sm border-l-4 ${sev.border} p-4 sm:p-5 hover:shadow-md transition-shadow`}
+                    style={{ backgroundColor: colors.bg }}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <span className="text-sm font-bold text-gray-900">{inc.incident_number}</span>
+                          <span className="text-sm font-bold" style={{ color: colors.text }}>{inc.incident_number}</span>
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sev.bg} ${sev.text}`}>
                             {sev.label}
                           </span>
@@ -589,8 +595,8 @@ function IncidentsTab({
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-700 line-clamp-2">{inc.description}</p>
-                        <div className="flex flex-wrap gap-3 mt-2 text-xs text-gray-500">
+                        <p className="text-sm line-clamp-2" style={{ color: colors.textMuted }}>{inc.description}</p>
+                        <div className="flex flex-wrap gap-3 mt-2 text-xs" style={{ color: colors.textMuted }}>
                           <span>📍 {inc.location}</span>
                           <span>📅 {formatDate(inc.occurred_at)}</span>
                           {inc.employee_name && <span>👤 {inc.employee_name}</span>}
@@ -614,38 +620,38 @@ function IncidentsTab({
       )}
 
       {subTab === 'osha300' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="rounded-xl shadow-sm overflow-hidden" style={{ backgroundColor: colors.bg, border: colors.border }}>
+          <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" style={{ borderBottom: colors.border }}>
             <div>
-              <h3 className="font-semibold text-gray-900">OSHA 300 Log — {new Date().getFullYear()}</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Required by OSHA 29 CFR 1904. Must be posted Feb 1–Apr 30.</p>
+              <h3 className="font-semibold" style={{ color: colors.text }}>OSHA 300 Log — {new Date().getFullYear()}</h3>
+              <p className="text-xs mt-0.5" style={{ color: colors.textMuted }}>Required by OSHA 29 CFR 1904. Must be posted Feb 1–Apr 30.</p>
             </div>
-            <button className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap">
+            <button className="px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap" style={{ border: colors.border, color: colors.textMuted }}>
               📄 Export OSHA 300
             </button>
           </div>
           {osha300.length === 0 ? (
             <div className="py-10 text-center">
               <div className="text-4xl mb-3">📋</div>
-              <p className="text-gray-500 text-sm">No recordable incidents this year.</p>
-              <p className="text-gray-400 text-xs mt-1">Incidents marked as OSHA Recordable will appear here automatically.</p>
+              <p className="text-sm" style={{ color: colors.textMuted }}>No recordable incidents this year.</p>
+              <p className="text-xs mt-1" style={{ color: colors.textMuted }}>Incidents marked as OSHA Recordable will appear here automatically.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead style={{ backgroundColor: colors.bgAlt }}>
                   <tr>
                     {['Case #', 'Date', 'Employee', 'Job Title', 'Location', 'Injury Type', 'Days Away', 'Status'].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: colors.textMuted }}>
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody>
                   {osha300.map((inc, idx) => (
-                    <tr key={inc.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-medium whitespace-nowrap">{`${new Date().getFullYear()}-${String(idx + 1).padStart(4, '0')}`}</td>
+                    <tr key={inc.id} className="transition-colors" style={{ borderBottom: colors.border }}>
+                      <td className="px-4 py-3 font-medium whitespace-nowrap" style={{ color: colors.text }}>{`${new Date().getFullYear()}-${String(idx + 1).padStart(4, '0')}`}</td>
                       <td className="px-4 py-3 whitespace-nowrap">{formatDate(inc.occurred_at)}</td>
                       <td className="px-4 py-3">{inc.employee_name ?? 'Redacted'}</td>
                       <td className="px-4 py-3">{inc.employee_job_title ?? '—'}</td>
@@ -678,6 +684,7 @@ function CertificationsTab({
   onNew: () => void
   loading: boolean
 }) {
+  const { colors } = useThemeColors()
   const [filter, setFilter] = useState<'all' | 'expiring' | CertType>('all')
 
   const filtered = certifications.filter(c => {
@@ -733,7 +740,7 @@ function CertificationsTab({
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 filter === f.key
                   ? 'bg-orange-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : ''
               }`}
             >
               {f.label}
@@ -750,7 +757,7 @@ function CertificationsTab({
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1,2,3,4,5,6].map(i => <div key={i} className="h-36 bg-gray-100 rounded-xl animate-pulse" />)}
+          {[1,2,3,4,5,6].map(i => <div key={i} className="h-36 bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse" />)}
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState
@@ -765,12 +772,12 @@ function CertificationsTab({
           {filtered.map(cert => {
             const exp = getCertExpiryStatus(cert.expiration_date)
             return (
-              <div key={cert.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+              <div key={cert.id} className="rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border }}>
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="min-w-0">
-                    <p className="font-semibold text-gray-900 text-sm truncate">{cert.name}</p>
-                    <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs mt-1">
+                    <p className="font-semibold text-sm truncate" style={{ color: colors.text }}>{cert.name}</p>
+                    <span className="inline-block px-2 py-0.5 rounded text-xs mt-1" style={{ backgroundColor: colors.bgMuted, color: colors.textMuted }}>
                       {getCertTypeLabel(cert.certification_type)}
                     </span>
                   </div>
@@ -778,7 +785,7 @@ function CertificationsTab({
                 </div>
 
                 {/* Details */}
-                <div className="space-y-1 text-xs text-gray-500 mb-3">
+                <div className="space-y-1 text-xs mb-3" style={{ color: colors.textMuted }}>
                   {cert.holder_name && <p>👤 {cert.holder_name} <span className="text-gray-400">({cert.holder_type})</span></p>}
                   {cert.issuing_authority && <p>🏛️ {cert.issuing_authority}</p>}
                   {cert.certification_number && <p>🔢 {cert.certification_number}</p>}
@@ -813,6 +820,7 @@ function InspectionsTab({
   onNew: () => void
   loading: boolean
 }) {
+  const { colors } = useThemeColors()
   const [filter, setFilter] = useState<'all' | InspectionStatus>('all')
 
   const filtered = inspections.filter(i =>
@@ -856,7 +864,7 @@ function InspectionsTab({
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 filter === f.key
                   ? 'bg-orange-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : ''
               }`}
             >
               {f.label}
@@ -873,7 +881,7 @@ function InspectionsTab({
 
       {loading ? (
         <div className="space-y-3">
-          {[1,2,3].map(i => <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse" />)}
+          {[1,2,3].map(i => <div key={i} className="h-24 bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse" />)}
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState
@@ -894,9 +902,10 @@ function InspectionsTab({
               return (
                 <div
                   key={ins.id}
-                  className={`bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5 hover:shadow-md transition-shadow ${
+                  className={`rounded-xl shadow-sm p-4 sm:p-5 hover:shadow-md transition-shadow ${
                     isUrgent ? 'border-l-4 border-l-orange-400' : ''
                   }`}
+                  style={{ backgroundColor: colors.bg, border: isUrgent ? undefined : colors.border }}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -904,7 +913,7 @@ function InspectionsTab({
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sta.bg} ${sta.text}`}>
                           {sta.label}
                         </span>
-                        <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                        <span className="px-2 py-0.5 rounded text-xs" style={{ backgroundColor: colors.bgMuted, color: colors.textMuted }}>
                           {getInspectionTypeLabel(ins.inspection_type)}
                         </span>
                         {isUrgent && (
@@ -913,8 +922,8 @@ function InspectionsTab({
                           </span>
                         )}
                       </div>
-                      <p className="font-semibold text-gray-900 text-sm">{ins.inspection_name}</p>
-                      <div className="flex flex-wrap gap-3 mt-1 text-xs text-gray-500">
+                      <p className="font-semibold text-sm" style={{ color: colors.text }}>{ins.inspection_name}</p>
+                      <div className="flex flex-wrap gap-3 mt-1 text-xs" style={{ color: colors.textMuted }}>
                         <span>📅 {formatDate(ins.scheduled_date)}</span>
                         {ins.scheduled_time && <span>🕐 {ins.scheduled_time}</span>}
                         {ins.inspector_name && <span>👤 {ins.inspector_name}</span>}
@@ -941,6 +950,7 @@ function InspectionsTab({
 // ─── Create Modals ─────────────────────────────────────────────────────────────
 
 function CreateIncidentModal({ onClose, onSave }: { onClose: () => void; onSave: (data: any) => Promise<void> }) {
+  const { colors } = useThemeColors()
   const [form, setForm] = useState({
     occurred_at: new Date().toISOString().slice(0, 16),
     location: '',
@@ -966,30 +976,30 @@ function CreateIncidentModal({ onClose, onSave }: { onClose: () => void; onSave:
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-          <h2 className="text-lg font-bold text-gray-900">🚨 Report Safety Incident</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500">✕</button>
+      <div className="rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" style={{ backgroundColor: colors.bg }}>
+        <div className="sticky top-0 px-6 py-4 flex items-center justify-between rounded-t-2xl" style={{ backgroundColor: colors.bg, borderBottom: colors.border }}>
+          <h2 className="text-lg font-bold font-bold" style={{ color: colors.text }}>🚨 Report Safety Incident</h2>
+          <button onClick={onClose} className="p-2 rounded-lg transition-colors" style={{ color: colors.textMuted }}>✕</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Date & Time *</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Date & Time *</label>
               <input
                 type="datetime-local"
                 value={form.occurred_at}
                 onChange={e => setForm({ ...form, occurred_at: e.target.value })}
                 required
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Severity *</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Severity *</label>
               <select
                 value={form.severity}
                 onChange={e => setForm({ ...form, severity: e.target.value as Severity })}
                 required
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-white"
+                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
               >
                 <option value="near_miss">Near Miss</option>
                 <option value="first_aid">First Aid</option>
@@ -1002,60 +1012,60 @@ function CreateIncidentModal({ onClose, onSave }: { onClose: () => void; onSave:
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">Location *</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Location *</label>
             <input
               type="text"
               value={form.location}
               onChange={e => setForm({ ...form, location: e.target.value })}
               required
               placeholder="e.g. Floor 3, North Wing"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+              className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Employee Name</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Employee Name</label>
               <input
                 type="text"
                 value={form.employee_name}
                 onChange={e => setForm({ ...form, employee_name: e.target.value })}
                 placeholder="John Davis"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Job Title</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Job Title</label>
               <input
                 type="text"
                 value={form.employee_job_title}
                 onChange={e => setForm({ ...form, employee_job_title: e.target.value })}
                 placeholder="Carpenter"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">Description *</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Description *</label>
             <textarea
               value={form.description}
               onChange={e => setForm({ ...form, description: e.target.value })}
               required
               rows={3}
               placeholder="Describe what happened, what the person was doing, and how the incident occurred..."
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+              className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">Immediate Actions Taken</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Immediate Actions Taken</label>
             <textarea
               value={form.immediate_actions_taken}
               onChange={e => setForm({ ...form, immediate_actions_taken: e.target.value })}
               rows={2}
               placeholder="First aid given, area secured, crew notified..."
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+              className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
             />
           </div>
 
@@ -1071,7 +1081,7 @@ function CreateIncidentModal({ onClose, onSave }: { onClose: () => void; onSave:
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2.5 rounded-lg text-sm transition-colors" style={{ border: colors.border, color: colors.textMuted, backgroundColor: colors.bg }}
             >
               Cancel
             </button>
@@ -1094,6 +1104,7 @@ function CreateBriefingModal({ onClose, onSave, projects }: {
   onSave: (data: any) => Promise<void>
   projects: { id: string; name: string }[]
 }) {
+  const { colors } = useThemeColors()
   const PPE_OPTIONS = ['Hard hat', 'Safety glasses', 'Hi-vis vest', 'Steel-toe boots', 'Fall protection harness', 'Hearing protection', 'Gloves', 'Respirator']
   const HAZARD_OPTIONS = ['Working at heights', 'Power tools', 'Heavy machinery', 'Electrical work', 'Confined spaces', 'Overhead work', 'Excavation', 'Chemical exposure', 'Hot work', 'Material deliveries']
 
@@ -1129,31 +1140,31 @@ function CreateBriefingModal({ onClose, onSave, projects }: {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-          <h2 className="text-lg font-bold text-gray-900">🦺 Daily Safety Briefing</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500">✕</button>
+      <div className="rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" style={{ backgroundColor: colors.bg }}>
+        <div className="sticky top-0 px-6 py-4 flex items-center justify-between rounded-t-2xl" style={{ backgroundColor: colors.bg, borderBottom: colors.border }}>
+          <h2 className="text-lg font-bold" style={{ color: colors.text }}>🦺 Daily Safety Briefing</h2>
+          <button onClick={onClose} className="p-2 rounded-lg transition-colors" style={{ color: colors.textMuted }}>✕</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Date *</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Date *</label>
               <input
                 type="date"
                 value={form.briefing_date}
                 onChange={e => setForm({ ...form, briefing_date: e.target.value })}
                 required
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
               />
             </div>
             {projects.length > 0 && (
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">Project *</label>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Project *</label>
                 <select
                   value={form.project_id}
                   onChange={e => setForm({ ...form, project_id: e.target.value })}
                   required
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+                  className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
                 >
                   {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
@@ -1162,33 +1173,33 @@ function CreateBriefingModal({ onClose, onSave, projects }: {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">Location / Site Area</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Location / Site Area</label>
             <input
               type="text"
               value={form.location}
               onChange={e => setForm({ ...form, location: e.target.value })}
               placeholder="e.g. Downtown Office - Floor 3"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">Today's Work *</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Today's Work *</label>
             <textarea
               value={form.work_description}
               onChange={e => setForm({ ...form, work_description: e.target.value })}
               required
               rows={2}
               placeholder="Framing Floor 3, electrical rough-in, material deliveries..."
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+              className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-2">PPE Required</label>
+            <label className="block text-xs font-medium mb-2" style={{ color: colors.textMuted }}>PPE Required</label>
             <div className="grid grid-cols-2 gap-2">
               {PPE_OPTIONS.map(opt => (
-                <label key={opt} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <label key={opt} className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: colors.text }}>
                   <input
                     type="checkbox"
                     checked={form.ppe_required.includes(opt)}
@@ -1202,10 +1213,10 @@ function CreateBriefingModal({ onClose, onSave, projects }: {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-2">Hazards Identified</label>
+            <label className="block text-xs font-medium mb-2" style={{ color: colors.textMuted }}>Hazards Identified</label>
             <div className="grid grid-cols-2 gap-2">
               {HAZARD_OPTIONS.map(opt => (
-                <label key={opt} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <label key={opt} className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: colors.text }}>
                   <input
                     type="checkbox"
                     checked={form.hazards_identified.includes(opt)}
@@ -1220,30 +1231,30 @@ function CreateBriefingModal({ onClose, onSave, projects }: {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Toolbox Talk Topic</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Toolbox Talk Topic</label>
               <input
                 type="text"
                 value={form.toolbox_talk_topic}
                 onChange={e => setForm({ ...form, toolbox_talk_topic: e.target.value })}
                 placeholder="Fall Protection"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Assembly Point *</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Assembly Point *</label>
               <input
                 type="text"
                 value={form.emergency_assembly_point}
                 onChange={e => setForm({ ...form, emergency_assembly_point: e.target.value })}
                 required
                 placeholder="Parking lot NW corner"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
               />
             </div>
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg text-sm transition-colors" style={{ border: colors.border, color: colors.textMuted, backgroundColor: colors.bg }}>
               Cancel
             </button>
             <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors disabled:opacity-50">
@@ -1257,6 +1268,7 @@ function CreateBriefingModal({ onClose, onSave, projects }: {
 }
 
 function CreateCertModal({ onClose, onSave }: { onClose: () => void; onSave: (data: any) => Promise<void> }) {
+  const { colors } = useThemeColors()
   const [form, setForm] = useState({
     name: '',
     certification_type: 'company_license' as CertType,
@@ -1280,20 +1292,20 @@ function CreateCertModal({ onClose, onSave }: { onClose: () => void; onSave: (da
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-          <h2 className="text-lg font-bold text-gray-900">📋 Add Certification</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500">✕</button>
+      <div className="rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" style={{ backgroundColor: colors.bg }}>
+        <div className="sticky top-0 px-6 py-4 flex items-center justify-between rounded-t-2xl" style={{ backgroundColor: colors.bg, borderBottom: colors.border }}>
+          <h2 className="text-lg font-bold" style={{ color: colors.text }}>📋 Add Certification</h2>
+          <button onClick={onClose} className="p-2 rounded-lg transition-colors" style={{ color: colors.textMuted }}>✕</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">Certification Name *</label>
-            <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required placeholder="General Contractor License" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+            <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Certification Name *</label>
+            <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required placeholder="General Contractor License" className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Type *</label>
-              <select value={form.certification_type} onChange={e => setForm({...form, certification_type: e.target.value as CertType})} required className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white">
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Type *</label>
+              <select value={form.certification_type} onChange={e => setForm({...form, certification_type: e.target.value as CertType})} required className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}>
                 <option value="company_license">Company License</option>
                 <option value="insurance">Insurance</option>
                 <option value="bond">Bond</option>
@@ -1305,8 +1317,8 @@ function CreateCertModal({ onClose, onSave }: { onClose: () => void; onSave: (da
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Holder *</label>
-              <select value={form.holder_type} onChange={e => setForm({...form, holder_type: e.target.value as HolderType})} required className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white">
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Holder *</label>
+              <select value={form.holder_type} onChange={e => setForm({...form, holder_type: e.target.value as HolderType})} required className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}>
                 <option value="company">Company</option>
                 <option value="employee">Employee</option>
                 <option value="equipment">Equipment</option>
@@ -1316,34 +1328,34 @@ function CreateCertModal({ onClose, onSave }: { onClose: () => void; onSave: (da
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Holder Name</label>
-              <input type="text" value={form.holder_name} onChange={e => setForm({...form, holder_name: e.target.value})} placeholder="John Davis / The Company" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Holder Name</label>
+              <input type="text" value={form.holder_name} onChange={e => setForm({...form, holder_name: e.target.value})} placeholder="John Davis / The Company" className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Issuing Authority</label>
-              <input type="text" value={form.issuing_authority} onChange={e => setForm({...form, issuing_authority: e.target.value})} placeholder="State Board / OSHA" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Issuing Authority</label>
+              <input type="text" value={form.issuing_authority} onChange={e => setForm({...form, issuing_authority: e.target.value})} placeholder="State Board / OSHA" className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }} />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">Certification Number</label>
-            <input type="text" value={form.certification_number} onChange={e => setForm({...form, certification_number: e.target.value})} placeholder="GC-123456" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+            <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Certification Number</label>
+            <input type="text" value={form.certification_number} onChange={e => setForm({...form, certification_number: e.target.value})} placeholder="GC-123456" className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Issue Date</label>
-              <input type="date" value={form.issue_date} onChange={e => setForm({...form, issue_date: e.target.value})} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Issue Date</label>
+              <input type="date" value={form.issue_date} onChange={e => setForm({...form, issue_date: e.target.value})} className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Expiration Date</label>
-              <input type="date" value={form.expiration_date} onChange={e => setForm({...form, expiration_date: e.target.value})} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Expiration Date</label>
+              <input type="date" value={form.expiration_date} onChange={e => setForm({...form, expiration_date: e.target.value})} className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }} />
             </div>
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: colors.text }}>
             <input type="checkbox" checked={form.required_for_projects} onChange={e => setForm({...form, required_for_projects: e.target.checked})} className="rounded border-gray-300 text-orange-500" />
             Required for bidding / working on projects
           </label>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg text-sm transition-colors" style={{ border: colors.border, color: colors.textMuted, backgroundColor: colors.bg }}>Cancel</button>
             <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors disabled:opacity-50">{saving ? 'Saving...' : 'Add Certification'}</button>
           </div>
         </form>
@@ -1357,6 +1369,7 @@ function CreateInspectionModal({ onClose, onSave, projects }: {
   onSave: (data: any) => Promise<void>
   projects: { id: string; name: string }[]
 }) {
+  const { colors } = useThemeColors()
   const [form, setForm] = useState({
     project_id: projects[0]?.id ?? '',
     inspection_type: 'building_code' as InspectionType,
@@ -1379,24 +1392,24 @@ function CreateInspectionModal({ onClose, onSave, projects }: {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-          <h2 className="text-lg font-bold text-gray-900">🔍 Schedule Inspection</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500">✕</button>
+      <div className="rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" style={{ backgroundColor: colors.bg }}>
+        <div className="sticky top-0 px-6 py-4 flex items-center justify-between rounded-t-2xl" style={{ backgroundColor: colors.bg, borderBottom: colors.border }}>
+          <h2 className="text-lg font-bold" style={{ color: colors.text }}>🔍 Schedule Inspection</h2>
+          <button onClick={onClose} className="p-2 rounded-lg transition-colors" style={{ color: colors.textMuted }}>✕</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {projects.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Project *</label>
-              <select value={form.project_id} onChange={e => setForm({...form, project_id: e.target.value})} required className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white">
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Project *</label>
+              <select value={form.project_id} onChange={e => setForm({...form, project_id: e.target.value})} required className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}>
                 {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Inspection Type *</label>
-              <select value={form.inspection_type} onChange={e => setForm({...form, inspection_type: e.target.value as InspectionType})} required className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white">
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Inspection Type *</label>
+              <select value={form.inspection_type} onChange={e => setForm({...form, inspection_type: e.target.value as InspectionType})} required className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}>
                 <option value="building_code">Building Code</option>
                 <option value="electrical">Electrical</option>
                 <option value="plumbing">Plumbing</option>
@@ -1409,36 +1422,36 @@ function CreateInspectionModal({ onClose, onSave, projects }: {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Inspection Name *</label>
-              <input type="text" value={form.inspection_name} onChange={e => setForm({...form, inspection_name: e.target.value})} required placeholder="Electrical Rough-In" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Inspection Name *</label>
+              <input type="text" value={form.inspection_name} onChange={e => setForm({...form, inspection_name: e.target.value})} required placeholder="Electrical Rough-In" className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }} />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Date *</label>
-              <input type="date" value={form.scheduled_date} onChange={e => setForm({...form, scheduled_date: e.target.value})} required className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Date *</label>
+              <input type="date" value={form.scheduled_date} onChange={e => setForm({...form, scheduled_date: e.target.value})} required className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Time</label>
-              <input type="time" value={form.scheduled_time} onChange={e => setForm({...form, scheduled_time: e.target.value})} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Time</label>
+              <input type="time" value={form.scheduled_time} onChange={e => setForm({...form, scheduled_time: e.target.value})} className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }} />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Inspector Name</label>
-              <input type="text" value={form.inspector_name} onChange={e => setForm({...form, inspector_name: e.target.value})} placeholder="James Wilson" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Inspector Name</label>
+              <input type="text" value={form.inspector_name} onChange={e => setForm({...form, inspector_name: e.target.value})} placeholder="James Wilson" className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">Agency</label>
-              <input type="text" value={form.inspector_agency} onChange={e => setForm({...form, inspector_agency: e.target.value})} placeholder="Building Department" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Agency</label>
+              <input type="text" value={form.inspector_agency} onChange={e => setForm({...form, inspector_agency: e.target.value})} placeholder="Building Department" className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }} />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">Notes / Requirements</label>
-            <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={2} placeholder="Electrical plans must be on site, permit posted..." className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none" />
+            <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textMuted }}>Notes / Requirements</label>
+            <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={2} placeholder="Electrical plans must be on site, permit posted..." className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }} />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg text-sm transition-colors" style={{ border: colors.border, color: colors.textMuted, backgroundColor: colors.bg }}>Cancel</button>
             <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors disabled:opacity-50">{saving ? 'Saving...' : 'Schedule Inspection'}</button>
           </div>
         </form>
@@ -1451,6 +1464,7 @@ function CreateInspectionModal({ onClose, onSave, projects }: {
 
 function CompliancePage() {
   const searchParams = useSearchParams()
+  const { colors } = useThemeColors()
   const initialTab = (searchParams.get('tab') as any) ?? 'overview'
 
   const [activeTab, setActiveTab] = useState<'overview' | 'briefings' | 'incidents' | 'certifications' | 'inspections'>(initialTab)
@@ -1632,17 +1646,17 @@ function CompliancePage() {
   ] as const
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0d0f17]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
         {/* Page Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: colors.text }}>
                 🦺 Compliance & Safety
               </h1>
-              <p className="text-gray-500 text-sm mt-1">
+              <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
                 OSHA compliance, safety briefings, certifications, and inspections
               </p>
             </div>
@@ -1668,7 +1682,7 @@ function CompliancePage() {
 
         {/* Tab navigation — scrollable on mobile */}
         <div className="mb-6 overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-          <div className="flex gap-1 min-w-max sm:min-w-0 border-b border-gray-200">
+          <div className="flex gap-1 min-w-max sm:min-w-0" style={{ borderBottom: colors.border }}>
             {tabs.map(tab => (
               <button
                 key={tab.id}
@@ -1676,15 +1690,17 @@ function CompliancePage() {
                 className={`flex items-center gap-1.5 px-3 sm:px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                   activeTab === tab.id
                     ? 'border-orange-500 text-orange-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent'
                 }`}
+                style={activeTab !== tab.id ? { color: colors.textMuted } : {}}
               >
                 <span>{tab.icon}</span>
                 <span>{tab.label}</span>
                 {'count' in tab && tab.count > 0 && (
                   <span className={`px-1.5 py-0.5 rounded-full text-xs ${
-                    activeTab === tab.id ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500'
-                  }`}>
+                    activeTab === tab.id ? 'bg-orange-100 text-orange-700' : ''
+                  }`}
+                  style={activeTab !== tab.id ? { backgroundColor: colors.bgMuted, color: colors.textMuted } : {}}>
                     {tab.count}
                   </span>
                 )}
@@ -1768,7 +1784,7 @@ export default function CompliancePageWrapper() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0d0f17]">
           <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
         </div>
       }

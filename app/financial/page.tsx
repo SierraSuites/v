@@ -29,9 +29,11 @@ import {
 } from '@heroicons/react/24/outline'
 import { usePermissionGuard } from '@/hooks/usePermissionGuard'
 import toast, { Toaster } from 'react-hot-toast'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 export default function FinancialPage() {
   const router = useRouter()
+  const { colors } = useThemeColors()
 
   // RBAC: Require canViewFinancials permission
   const { loading: permissionLoading } = usePermissionGuard({
@@ -286,10 +288,10 @@ export default function FinancialPage() {
 
   if (loading || permissionLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading financial data...</p>
+          <p className="mt-4" style={{ color: colors.textMuted }}>Loading financial data...</p>
         </div>
       </div>
     )
@@ -298,13 +300,13 @@ export default function FinancialPage() {
   return (
     <>
       <Toaster position="top-right" />
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen p-6" style={{ backgroundColor: colors.bgAlt }}>
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Financial Management</h1>
-              <p className="mt-1 text-gray-600">
+              <h1 className="text-3xl font-bold" style={{ color: colors.text }}>Financial Management</h1>
+              <p className="mt-1" style={{ color: colors.textMuted }}>
                 Invoices, payments, and expense tracking
               </p>
             </div>
@@ -322,14 +324,14 @@ export default function FinancialPage() {
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Outstanding */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
+          <div className="rounded-lg shadow-sm p-6 border-l-4 border-blue-500" style={{ backgroundColor: colors.bg }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Outstanding</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">
+                <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Outstanding</p>
+                <p className="mt-2 text-3xl font-bold" style={{ color: colors.text }}>
                   {formatCurrency(stats.total_outstanding)}
                 </p>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm" style={{ color: colors.textMuted }}>
                   {stats.total_invoices} invoices
                 </p>
               </div>
@@ -338,14 +340,14 @@ export default function FinancialPage() {
           </div>
 
           {/* Overdue */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-500">
+          <div className="rounded-lg shadow-sm p-6 border-l-4 border-red-500" style={{ backgroundColor: colors.bg }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Overdue</p>
+                <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Overdue</p>
                 <p className="mt-2 text-3xl font-bold text-red-600">
                   {formatCurrency(stats.total_overdue)}
                 </p>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm" style={{ color: colors.textMuted }}>
                   {stats.overdue_invoices} invoices
                 </p>
               </div>
@@ -354,11 +356,11 @@ export default function FinancialPage() {
           </div>
 
           {/* This Month Revenue */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
+          <div className="rounded-lg shadow-sm p-6 border-l-4 border-green-500" style={{ backgroundColor: colors.bg }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">This Month Revenue</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">
+                <p className="text-sm font-medium" style={{ color: colors.textMuted }}>This Month Revenue</p>
+                <p className="mt-2 text-3xl font-bold" style={{ color: colors.text }}>
                   {formatCurrency(stats.month_revenue)}
                 </p>
                 <p className="mt-1 text-sm text-green-600">
@@ -370,14 +372,14 @@ export default function FinancialPage() {
           </div>
 
           {/* YTD Profit */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
+          <div className="rounded-lg shadow-sm p-6 border-l-4 border-purple-500" style={{ backgroundColor: colors.bg }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">YTD Profit</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">
+                <p className="text-sm font-medium" style={{ color: colors.textMuted }}>YTD Profit</p>
+                <p className="mt-2 text-3xl font-bold" style={{ color: colors.text }}>
                   {formatCurrency(stats.ytd_profit)}
                 </p>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm" style={{ color: colors.textMuted }}>
                   {stats.ytd_profit_margin.toFixed(1)}% margin
                 </p>
               </div>
@@ -412,16 +414,17 @@ export default function FinancialPage() {
       )}
 
       {/* Tabs */}
-      <div className="bg-white rounded-lg shadow-sm mb-6">
-        <div className="border-b border-gray-200">
+      <div className="rounded-lg shadow-sm mb-6" style={{ backgroundColor: colors.bg }}>
+        <div style={{ borderBottom: colors.border }}>
           <nav className="flex -mb-px">
             <button
               onClick={() => setActiveTab('invoices')}
               className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'invoices'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent'
               }`}
+              style={activeTab !== 'invoices' ? { color: colors.textMuted } : {}}
             >
               Invoices
             </button>
@@ -430,8 +433,9 @@ export default function FinancialPage() {
               className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'payments'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent'
               }`}
+              style={activeTab !== 'payments' ? { color: colors.textMuted } : {}}
             >
               Payments
             </button>
@@ -440,8 +444,9 @@ export default function FinancialPage() {
               className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'expenses'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent'
               }`}
+              style={activeTab !== 'expenses' ? { color: colors.textMuted } : {}}
             >
               Expenses
             </button>
@@ -451,9 +456,9 @@ export default function FinancialPage() {
 
       {/* Invoices Tab */}
       {activeTab === 'invoices' && (
-        <div className="bg-white rounded-lg shadow-sm">
+        <div className="rounded-lg shadow-sm" style={{ backgroundColor: colors.bg }}>
           {/* Filters */}
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4" style={{ borderBottom: colors.border }}>
             <div className="flex flex-col md:flex-row gap-4">
               {/* Search */}
               <div className="flex-1">
@@ -489,39 +494,39 @@ export default function FinancialPage() {
           {/* Invoice List */}
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead style={{ backgroundColor: colors.bgAlt, borderBottom: colors.border }}>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: colors.textMuted }}>
                     Invoice
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: colors.textMuted }}>
                     Client
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: colors.textMuted }}>
                     Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: colors.textMuted }}>
                     Due Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: colors.textMuted }}>
                     Amount
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: colors.textMuted }}>
                     Balance
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: colors.textMuted }}>
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: colors.textMuted }}>
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody style={{ backgroundColor: colors.bg }}>
                 {filteredInvoices.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                      <DocumentTextIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                    <td colSpan={8} className="px-6 py-12 text-center" style={{ color: colors.textMuted }}>
+                      <DocumentTextIcon className="w-12 h-12 mx-auto mb-4" style={{ color: colors.textMuted }} />
                       <p className="text-lg font-medium">No invoices found</p>
                       <p className="mt-1 text-sm">
                         Create your first invoice to get started
@@ -538,38 +543,39 @@ export default function FinancialPage() {
                   filteredInvoices.map((invoice) => (
                     <tr
                       key={invoice.id}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="cursor-pointer transition-colors"
+                      style={{ borderBottom: colors.border }}
                       onClick={() => router.push(`/financial/invoices/${invoice.id}`)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           {getStatusIcon(invoice.status)}
-                          <span className="ml-2 text-sm font-medium text-gray-900">
+                          <span className="ml-2 text-sm font-medium" style={{ color: colors.text }}>
                             {invoice.invoice_number}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium" style={{ color: colors.text }}>
                           {invoice.contact?.company_name ||
                             `${invoice.contact?.first_name} ${invoice.contact?.last_name}`}
                         </div>
                         {invoice.project?.name && (
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm" style={{ color: colors.textMuted }}>
                             {invoice.project.name}
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: colors.text }}>
                         {formatDate(invoice.invoice_date)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: colors.text }}>
                         {formatDate(invoice.due_date)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: colors.text }}>
                         {formatCurrency(invoice.total_amount)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: colors.text }}>
                         {formatCurrency(invoice.balance_due)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -617,37 +623,37 @@ export default function FinancialPage() {
 
       {/* Payments Tab */}
       {activeTab === 'payments' && (
-        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-          <BanknotesIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">Payments Module</h3>
-          <p className="mt-2 text-gray-600">Payment tracking coming soon</p>
+        <div className="rounded-lg shadow-sm p-8 text-center" style={{ backgroundColor: colors.bg }}>
+          <BanknotesIcon className="w-16 h-16 mx-auto mb-4" style={{ color: colors.textMuted }} />
+          <h3 className="text-lg font-medium" style={{ color: colors.text }}>Payments Module</h3>
+          <p className="mt-2" style={{ color: colors.textMuted }}>Payment tracking coming soon</p>
         </div>
       )}
 
       {/* Expenses Tab */}
       {activeTab === 'expenses' && (
-        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-          <CurrencyDollarIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">Expenses Module</h3>
-          <p className="mt-2 text-gray-600">Expense tracking coming soon</p>
+        <div className="rounded-lg shadow-sm p-8 text-center" style={{ backgroundColor: colors.bg }}>
+          <CurrencyDollarIcon className="w-16 h-16 mx-auto mb-4" style={{ color: colors.textMuted }} />
+          <h3 className="text-lg font-medium" style={{ color: colors.text }}>Expenses Module</h3>
+          <p className="mt-2" style={{ color: colors.textMuted }}>Expense tracking coming soon</p>
         </div>
       )}
 
       {/* Record Payment Modal */}
       {showPaymentModal && selectedInvoice && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto" style={{ backgroundColor: colors.bg }}>
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between p-6" style={{ borderBottom: colors.border }}>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Record Payment</h3>
-                <p className="mt-1 text-sm text-gray-600">
+                <h3 className="text-lg font-semibold" style={{ color: colors.text }}>Record Payment</h3>
+                <p className="mt-1 text-sm" style={{ color: colors.textMuted }}>
                   Invoice #{selectedInvoice.invoice_number}
                 </p>
               </div>
               <button
                 onClick={() => setShowPaymentModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="transition-colors" style={{ color: colors.textMuted }}
               >
                 <XMarkIcon className="w-6 h-6" />
               </button>
@@ -656,21 +662,21 @@ export default function FinancialPage() {
             {/* Modal Body */}
             <div className="p-6 space-y-4">
               {/* Invoice Info */}
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt }}>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Total Amount:</span>
-                  <span className="font-medium text-gray-900">
+                  <span style={{ color: colors.textMuted }}>Total Amount:</span>
+                  <span className="font-medium" style={{ color: colors.text }}>
                     {formatCurrency(selectedInvoice.total_amount)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm mt-2">
-                  <span className="text-gray-600">Already Paid:</span>
-                  <span className="font-medium text-gray-900">
+                  <span style={{ color: colors.textMuted }}>Already Paid:</span>
+                  <span className="font-medium" style={{ color: colors.text }}>
                     {formatCurrency(selectedInvoice.amount_paid)}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm mt-2 pt-2 border-t border-gray-200">
-                  <span className="text-gray-600 font-medium">Balance Due:</span>
+                <div className="flex justify-between text-sm mt-2 pt-2" style={{ borderTop: colors.border }}>
+                  <span className="font-medium" style={{ color: colors.textMuted }}>Balance Due:</span>
                   <span className="font-bold text-blue-600">
                     {formatCurrency(selectedInvoice.balance_due)}
                   </span>
@@ -679,11 +685,11 @@ export default function FinancialPage() {
 
               {/* Payment Amount */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textMuted }}>
                   Payment Amount *
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2" style={{ color: colors.textMuted }}>
                     $
                   </span>
                   <input
@@ -693,7 +699,7 @@ export default function FinancialPage() {
                     min="0"
                     max={selectedInvoice.balance_due}
                     step="0.01"
-                    className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-8 pr-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
                     required
                   />
                 </div>
@@ -701,27 +707,27 @@ export default function FinancialPage() {
 
               {/* Payment Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textMuted }}>
                   Payment Date *
                 </label>
                 <input
                   type="date"
                   value={paymentDate}
                   onChange={(e) => setPaymentDate(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
                   required
                 />
               </div>
 
               {/* Payment Method */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textMuted }}>
                   Payment Method *
                 </label>
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
                 >
                   <option value="check">Check</option>
                   <option value="ach">ACH Transfer</option>
@@ -735,7 +741,7 @@ export default function FinancialPage() {
 
               {/* Reference Number */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textMuted }}>
                   Reference Number
                 </label>
                 <input
@@ -743,13 +749,13 @@ export default function FinancialPage() {
                   value={referenceNumber}
                   onChange={(e) => setReferenceNumber(e.target.value)}
                   placeholder="Check number, transaction ID, etc."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
                 />
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textMuted }}>
                   Notes
                 </label>
                 <textarea
@@ -757,17 +763,17 @@ export default function FinancialPage() {
                   onChange={(e) => setPaymentNotes(e.target.value)}
                   placeholder="Optional payment notes"
                   rows={2}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" style={{ border: colors.border, backgroundColor: colors.bg, color: colors.text }}
                 />
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+            <div className="flex items-center justify-end gap-3 p-6" style={{ borderTop: colors.border }}>
               <button
                 onClick={() => setShowPaymentModal(false)}
                 disabled={savingPayment}
-                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg disabled:opacity-50" style={{ color: colors.textMuted, backgroundColor: colors.bg, border: colors.border }}
               >
                 Cancel
               </button>
