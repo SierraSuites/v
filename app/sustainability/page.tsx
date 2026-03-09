@@ -54,34 +54,56 @@ export default function SustainabilityDashboard() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Load metrics (mock data for now - replace with real queries)
-      // In production, these would be aggregated from carbon_footprint, material_waste, water_usage tables
+      // Real queries — gracefully handle missing tables (42P01)
+      const [carbonRes, wasteRes, certsRes, projectsRes] = await Promise.all([
+        supabase.from('carbon_footprint').select('scope_1_total, scope_2_total, scope_3_total').eq('user_id', user.id),
+        supabase.from('material_waste').select('quantity, waste_category').eq('user_id', user.id),
+        supabase.from('certification_requirements').select('certification_type, target_level, current_points, target_points, status').eq('user_id', user.id),
+        supabase.from('projects').select('id').eq('user_id', user.id).eq('status', 'active'),
+      ])
+
+      // Carbon: sum all emissions (kg CO2e)
+      const carbonEntries = carbonRes.data || []
+      const totalCarbon = carbonEntries.reduce((s: number, e: any) =>
+        s + (e.scope_1_total || 0) + (e.scope_2_total || 0) + (e.scope_3_total || 0), 0)
+
+      // Waste diversion rate
+      const wasteEntries = wasteRes.data || []
+      const totalWaste = wasteEntries.reduce((s: number, e: any) => s + (e.quantity || 0), 0)
+      const divertedWaste = wasteEntries
+        .filter((e: any) => ['recycled', 'reused', 'donated', 'composted'].includes(e.waste_category))
+        .reduce((s: number, e: any) => s + (e.quantity || 0), 0)
+      const diversionRate = totalWaste > 0 ? Math.round((divertedWaste / totalWaste) * 100 * 10) / 10 : 0
+
+      // Certifications
+      const certsData = certsRes.data || []
+      const totalLeedPoints = certsData
+        .filter((c: any) => c.certification_type === 'leed')
+        .reduce((s: number, c: any) => s + (c.current_points || 0), 0)
+      const certifiedCount = certsData.filter((c: any) => c.status === 'certified').length
+
       setMetrics({
-        totalCarbonSaved: 127500, // kg CO2e
-        wasteDiverted: 78.5, // percentage
-        waterSaved: 245000, // gallons
-        leedPoints: 67, // total across all projects
-        activeProjects: 3,
-        certifications: 2
+        totalCarbonSaved: Math.round(totalCarbon),
+        wasteDiverted: diversionRate,
+        waterSaved: 0, // no water_usage table yet
+        leedPoints: totalLeedPoints,
+        activeProjects: projectsRes.data?.length || 0,
+        certifications: certifiedCount,
       })
 
-      // Load certification progress
-      setCertifications([
-        {
-          name: 'LEED Gold',
-          currentPoints: 67,
-          targetPoints: 80,
-          level: 'Gold',
-          color: 'from-yellow-400 to-yellow-600'
-        },
-        {
-          name: 'WELL Silver',
-          currentPoints: 52,
-          targetPoints: 60,
-          level: 'Silver',
-          color: 'from-gray-300 to-gray-500'
-        }
-      ])
+      // Certification progress rings — show top 2 active certs
+      const activeCerts = certsData
+        .filter((c: any) => ['planning', 'in_progress', 'submitted'].includes(c.status))
+        .slice(0, 2)
+        .map((c: any) => ({
+          name: `${c.certification_type?.toUpperCase()} ${c.target_level}`,
+          currentPoints: c.current_points || 0,
+          targetPoints: c.target_points || 100,
+          level: c.target_level || '',
+          color: c.certification_type === 'leed' ? 'from-yellow-400 to-yellow-600' : 'from-gray-300 to-gray-500',
+        }))
+
+      setCertifications(activeCerts)
 
     } catch (error) {
       console.error('Error loading dashboard:', error)

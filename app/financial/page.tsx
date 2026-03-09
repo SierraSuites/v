@@ -308,13 +308,21 @@ export default function FinancialPage() {
                 Invoices, payments, and expense tracking
               </p>
             </div>
-            <button
-              onClick={() => router.push('/financial/invoices/new')}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <PlusIcon className="w-5 h-5" />
-              New Invoice
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => router.push('/financial/cashflow')}
+                className="flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+              >
+                📊 Cash Flow
+              </button>
+              <button
+                onClick={() => router.push('/financial/invoices/new')}
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <PlusIcon className="w-5 h-5" />
+                New Invoice
+              </button>
+            </div>
           </div>
         </div>
 
