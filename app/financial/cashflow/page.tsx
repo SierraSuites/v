@@ -117,7 +117,10 @@ export default function CashFlowPage() {
         .gte('date', formatDate(new Date()))
         .order('date', { ascending: true })
 
-      const invoiceList: Invoice[] = invoices || []
+      const invoiceList: Invoice[] = (invoices || []).map((inv: any) => ({
+        ...inv,
+        contact: Array.isArray(inv.contact) ? (inv.contact[0] ?? null) : inv.contact,
+      }))
       const expenseList: Expense[] = expenses || []
 
       const today = new Date()
