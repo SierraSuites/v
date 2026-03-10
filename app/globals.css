@@ -218,3 +218,54 @@
     }
   }
 }
+
+/* ─── Global dark mode overrides ─────────────────────────────────────────────
+   Pages use hardcoded Tailwind utility classes (bg-white, bg-gray-50, etc.)
+   without dark: prefixes. These rules cascade dark mode to all pages globally.
+   ─────────────────────────────────────────────────────────────────────────── */
+.dark .bg-white          { background-color: #1a1d2e !important; }
+.dark .bg-gray-50        { background-color: #0d0f1a !important; }
+.dark .bg-gray-100       { background-color: #161827 !important; }
+.dark .bg-gray-200       { background-color: #1e2035 !important; }
+
+.dark .text-gray-900     { color: #f1f5f9 !important; }
+.dark .text-gray-800     { color: #e2e8f0 !important; }
+.dark .text-gray-700     { color: #cbd5e1 !important; }
+.dark .text-gray-600     { color: #94a3b8 !important; }
+.dark .text-gray-500     { color: #64748b !important; }
+
+.dark .border-gray-200   { border-color: #2d3149 !important; }
+.dark .border-gray-300   { border-color: #374060 !important; }
+.dark .border-gray-100   { border-color: #252840 !important; }
+
+/* Inputs & form elements */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.dark textarea,
+.dark select {
+  background-color: #1e2035 !important;
+  color: #e2e8f0 !important;
+  border-color: #2d3149 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #4a5270 !important;
+}
+
+/* Tables */
+.dark table     { color: #e2e8f0; }
+.dark thead     { background-color: #161827 !important; }
+.dark th        { color: #94a3b8 !important; border-color: #2d3149 !important; }
+.dark td        { border-color: #2d3149 !important; }
+.dark tr:hover  { background-color: #1e2035 !important; }
+
+/* Shadows become subtle in dark mode */
+.dark .shadow,
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg,
+.dark .shadow-xl  { box-shadow: 0 1px 3px 0 rgba(0,0,0,0.5), 0 1px 2px -1px rgba(0,0,0,0.5) !important; }
+
+/* Rounded card panels */
+.dark .rounded-lg.border,
+.dark .rounded-xl.border,
+.dark .rounded-2xl.border { border-color: #2d3149 !important; }
