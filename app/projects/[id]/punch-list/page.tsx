@@ -138,9 +138,28 @@ export default function ProjectPunchListPage() {
     setFilters(prev => ({ ...prev, [key]: value }))
   }
 
-  const handleExportReport = async () => {
-    // TODO: Implement export functionality
-    alert('Export functionality coming soon!')
+  const handleExportReport = () => {
+    const rows = [
+      ['Title', 'Status', 'Priority', 'Category', 'Assignee', 'Due Date', 'Location', 'Description'].join(','),
+      ...filteredItems.map((item: any) => [
+        `"${(item.title || '').replace(/"/g, '""')}"`,
+        item.status || '',
+        item.priority || '',
+        item.category || '',
+        `"${(item.assignee || '').replace(/"/g, '""')}"`,
+        item.due_date ? new Date(item.due_date).toLocaleDateString() : '',
+        `"${(item.location || '').replace(/"/g, '""')}"`,
+        `"${(item.description || '').replace(/"/g, '""')}"`,
+      ].join(','))
+    ].join('\n')
+
+    const blob = new Blob([rows], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `punch-list-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const handlePunchItemUpdate = async () => {

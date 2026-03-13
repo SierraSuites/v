@@ -147,8 +147,25 @@ export default function EditQuotePage({ params }: PageProps) {
         throw new Error('Failed to update quote')
       }
 
-      // TODO: Update line items (would need delete all + re-add or update individual items)
-      // For now, we'll just update the quote header
+      // Update line items: delete existing + re-insert
+      const supabase = (await import('@/lib/supabase/client')).createClient()
+      await supabase.from('quote_items').delete().eq('quote_id', id)
+      if (lineItems.length > 0) {
+        const itemsToInsert = lineItems.map((item, idx) => ({
+          quote_id: id,
+          category: item.category,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unit_price: item.unit_price,
+          tax_rate: item.tax_rate,
+          is_optional: item.is_optional,
+          notes: item.notes,
+          sort_order: idx,
+          total_price: item.quantity * item.unit_price,
+        }))
+        await supabase.from('quote_items').insert(itemsToInsert)
+      }
 
       router.push(`/quotes/${id}`)
     } catch (error) {
