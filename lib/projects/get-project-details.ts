@@ -173,7 +173,7 @@ export async function getProjectDetails(
       .single()
 
     if (error) {
-      console.error('[getProjectDetails] Database error:', error)
+      console.error('[getProjectDetails] Database error:', JSON.stringify(error, null, 2))
       return { data: null, error: new Error('Failed to fetch project details') }
     }
 
