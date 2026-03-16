@@ -393,7 +393,7 @@ export default function ProjectTasksTab({ project }: Props) {
                     }
                   </button>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                    <p className={`text-sm font-medium ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
                       {task.title}
                     </p>
                     {task.description && (
