@@ -60,35 +60,34 @@ export default function HomePage() {
             <nav className="hidden items-center gap-4 md:flex">
               <Link
                 href="#features"
-                className="text-sm text-foreground/90 drop-shadow-sm transition-all hover:text-foreground bg-white px-4 py-2 rounded-md shadow-sm hover:shadow-md hover:scale-105 duration-200"
+                className="inline-flex items-center justify-center rounded-md px-3 h-8 text-sm font-medium drop-shadow-sm hover:scale-105 transition-transform duration-200"
+                style={{ backgroundColor: '#ffffff', color: '#0f172a', border: '1px solid #e2e8f0' }}
               >
                 Features
               </Link>
               <Link
                 href="/pricing"
-                className="text-sm text-foreground/90 drop-shadow-sm transition-all hover:text-foreground bg-white px-4 py-2 rounded-md shadow-sm hover:shadow-md hover:scale-105 duration-200"
+                className="inline-flex items-center justify-center rounded-md px-3 h-8 text-sm font-medium drop-shadow-sm hover:scale-105 transition-transform duration-200"
+                style={{ backgroundColor: '#ffffff', color: '#0f172a', border: '1px solid #e2e8f0' }}
               >
                 Pricing
               </Link>
             </nav>
 
             <div className="flex items-center gap-3">
-              <Link href="/login">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="drop-shadow-sm hover:scale-105 transition-transform duration-200"
-                >
-                  Log In
-                </Button>
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center rounded-md px-3 h-8 text-sm font-medium drop-shadow-sm hover:scale-105 transition-transform duration-200"
+                style={{ backgroundColor: '#ffffff', color: '#0f172a', border: '1px solid #e2e8f0' }}
+              >
+                Log In
               </Link>
-              <Link href="/register">
-                <Button
-                  size="sm"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 drop-shadow-md hover:scale-105 transition-transform duration-200"
-                >
-                  Get Started
-                </Button>
+              <Link
+                href="/register"
+                className="inline-flex items-center justify-center rounded-md px-3 h-8 text-sm font-medium drop-shadow-md hover:scale-105 transition-transform duration-200"
+                style={{ backgroundColor: '#2563eb', color: '#ffffff' }}
+              >
+                Get Started
               </Link>
             </div>
           </div>

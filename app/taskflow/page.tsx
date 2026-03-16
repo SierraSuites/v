@@ -120,6 +120,7 @@ export default function TaskFlowPage() {
   const { colors } = useThemeColors()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [tasksLoading, setTasksLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"dashboard" | "calendar" | "gantt" | "kanban" | "list">("dashboard")
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedProject, setSelectedProject] = useState<string>("all")
@@ -220,228 +221,6 @@ export default function TaskFlowPage() {
 
   // Sample tasks data
   const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: "1",
-      title: "Electrical rough-in inspection",
-      description: "Schedule and complete rough-in inspection before drywall",
-      project: "Downtown Office Renovation",
-      projectId: "proj-1",
-      trade: "electrical",
-      phase: "mep",
-      priority: "critical",
-      status: "in-progress",
-      assignee: "Mike Johnson",
-      assigneeId: "user-1",
-      assigneeAvatar: "https://ui-avatars.com/api/?name=Mike+Johnson&background=FF6B6B&color=fff",
-      startDate: "2024-11-07",
-      dueDate: "2024-11-10",
-      duration: 3,
-      progress: 75,
-      estimatedHours: 4,
-      actualHours: 3.5,
-      dependencies: [],
-      attachments: 3,
-      comments: 5,
-      location: "Floor 3, Units 301-305",
-      weatherDependent: false,
-      weatherBuffer: 0,
-      inspectionRequired: true,
-      inspectionType: "Electrical Inspection",
-      crewSize: 2,
-      equipment: ["Scaffolding", "Power Tools", "Measuring Tools"],
-      materials: ["Electrical Wire", "Conduit"],
-      certifications: ["Electrical License", "OSHA 30"],
-      safetyProtocols: ["PPE Required", "Lockout/Tagout", "Ladder Safety"],
-      qualityStandards: ["NEC Standards"],
-      documentation: ["Daily Reports", "Inspection Reports"],
-      notifyInspector: true,
-      clientVisibility: true
-    },
-    {
-      id: "2",
-      title: "Concrete foundation pour - South wing",
-      description: "Pour foundation for south wing expansion",
-      project: "Warehouse Build",
-      projectId: "proj-2",
-      trade: "concrete",
-      phase: "foundation",
-      priority: "high",
-      status: "blocked",
-      assignee: "David Lee",
-      assigneeId: "user-2",
-      assigneeAvatar: "https://ui-avatars.com/api/?name=David+Lee&background=4A4A4A&color=fff",
-      startDate: "2024-11-06",
-      dueDate: "2024-11-09",
-      duration: 3,
-      progress: 30,
-      estimatedHours: 16,
-      actualHours: 5,
-      dependencies: ["rebar-inspection"],
-      attachments: 2,
-      comments: 8,
-      location: "South Wing Foundation",
-      weatherDependent: true,
-      weatherBuffer: 2,
-      inspectionRequired: true,
-      inspectionType: "Foundation Inspection",
-      crewSize: 6,
-      equipment: ["Concrete Mixer", "Generator", "Power Tools"],
-      materials: ["Concrete", "Rebar"],
-      certifications: ["OSHA 30"],
-      safetyProtocols: ["PPE Required", "Excavation Safety"],
-      qualityStandards: ["ACI Standards"],
-      documentation: ["Daily Reports", "Progress Photos", "Material Receipts"],
-      notifyInspector: true,
-      clientVisibility: true
-    },
-    {
-      id: "3",
-      title: "HVAC ductwork installation - Main floor",
-      description: "Install main floor ductwork and vents",
-      project: "Retail Store Fit-Out",
-      projectId: "proj-3",
-      trade: "hvac",
-      phase: "mep",
-      priority: "medium",
-      status: "not-started",
-      assignee: "Sarah Wilson",
-      assigneeId: "user-3",
-      assigneeAvatar: "https://ui-avatars.com/api/?name=Sarah+Wilson&background=38BDF8&color=fff",
-      startDate: "2024-11-10",
-      dueDate: "2024-11-12",
-      duration: 2,
-      progress: 0,
-      estimatedHours: 12,
-      actualHours: 0,
-      dependencies: ["framing-complete"],
-      attachments: 1,
-      comments: 2,
-      location: "Main Retail Floor",
-      weatherDependent: false,
-      weatherBuffer: 0,
-      inspectionRequired: false,
-      inspectionType: "",
-      crewSize: 3,
-      equipment: ["Scaffolding", "Power Tools", "Measuring Tools"],
-      materials: [],
-      certifications: ["OSHA 10"],
-      safetyProtocols: ["PPE Required", "Ladder Safety"],
-      qualityStandards: [],
-      documentation: ["Daily Reports"],
-      notifyInspector: false,
-      clientVisibility: false
-    },
-    {
-      id: "4",
-      title: "Drywall installation - Residential units",
-      description: "Hang and tape drywall in units 201-210",
-      project: "Residential Kitchen Remodel",
-      projectId: "proj-4",
-      trade: "finishing",
-      phase: "finishing",
-      priority: "medium",
-      status: "in-progress",
-      assignee: "Tom Brown",
-      assigneeId: "user-4",
-      assigneeAvatar: "https://ui-avatars.com/api/?name=Tom+Brown&background=E0E0E0&color=000",
-      startDate: "2024-11-08",
-      dueDate: "2024-11-11",
-      duration: 3,
-      progress: 45,
-      estimatedHours: 24,
-      actualHours: 12,
-      dependencies: ["electrical-rough", "plumbing-rough"],
-      attachments: 0,
-      comments: 3,
-      location: "Building A, Floor 2",
-      weatherDependent: false,
-      weatherBuffer: 0,
-      inspectionRequired: false,
-      inspectionType: "",
-      crewSize: 4,
-      equipment: ["Scaffolding", "Power Tools"],
-      materials: ["Drywall"],
-      certifications: ["OSHA 10"],
-      safetyProtocols: ["PPE Required", "Ladder Safety"],
-      qualityStandards: [],
-      documentation: ["Daily Reports", "Progress Photos"],
-      notifyInspector: false,
-      clientVisibility: true
-    },
-    {
-      id: "5",
-      title: "Plumbing final connections",
-      description: "Connect all fixtures and test water pressure",
-      project: "Downtown Office Renovation",
-      projectId: "proj-1",
-      trade: "plumbing",
-      phase: "finishing",
-      priority: "high",
-      status: "review",
-      assignee: "Emily Chen",
-      assigneeId: "user-5",
-      assigneeAvatar: "https://ui-avatars.com/api/?name=Emily+Chen&background=6A9BFD&color=fff",
-      startDate: "2024-11-06",
-      dueDate: "2024-11-08",
-      duration: 2,
-      progress: 90,
-      estimatedHours: 8,
-      actualHours: 7.5,
-      dependencies: [],
-      attachments: 5,
-      comments: 12,
-      location: "All Floors",
-      weatherDependent: false,
-      weatherBuffer: 0,
-      inspectionRequired: true,
-      inspectionType: "Plumbing Inspection",
-      crewSize: 2,
-      equipment: ["Power Tools", "Measuring Tools"],
-      materials: ["Pipes", "Fixtures"],
-      certifications: ["Plumbing License", "OSHA 10"],
-      safetyProtocols: ["PPE Required"],
-      qualityStandards: [],
-      documentation: ["Daily Reports", "Inspection Reports"],
-      notifyInspector: true,
-      clientVisibility: true
-    },
-    {
-      id: "6",
-      title: "Framing interior walls - Unit 305",
-      description: "Frame interior walls according to updated plans",
-      project: "Residential Kitchen Remodel",
-      projectId: "proj-4",
-      trade: "framing",
-      phase: "framing",
-      priority: "critical",
-      status: "not-started",
-      assignee: "Robert Taylor",
-      assigneeId: "user-6",
-      assigneeAvatar: "https://ui-avatars.com/api/?name=Robert+Taylor&background=D97706&color=fff",
-      startDate: "2024-11-09",
-      dueDate: "2024-11-09",
-      duration: 1,
-      progress: 0,
-      estimatedHours: 16,
-      actualHours: 0,
-      dependencies: [],
-      attachments: 2,
-      comments: 1,
-      location: "Unit 305",
-      weatherDependent: false,
-      weatherBuffer: 0,
-      inspectionRequired: false,
-      inspectionType: "",
-      crewSize: 4,
-      equipment: ["Nail Gun", "Saw", "Measuring Tools"],
-      materials: ["Lumber"],
-      certifications: ["OSHA 10"],
-      safetyProtocols: ["PPE Required", "Ladder Safety"],
-      qualityStandards: [],
-      documentation: ["Daily Reports"],
-      notifyInspector: false,
-      clientVisibility: false
-    },
   ])
 
   // Authentication and data loading
@@ -482,10 +261,12 @@ export default function TaskFlowPage() {
     if (!user) return
 
     const loadTasks = async () => {
+      setTasksLoading(true)
       const { data, error } = await getTasks()
 
       if (error) {
         console.error("Error loading tasks:", error)
+        setTasksLoading(false)
         return
       }
 
@@ -530,6 +311,7 @@ export default function TaskFlowPage() {
         }))
 
         setTasks(convertedTasks)
+        setTasksLoading(false)
       }
     }
 
@@ -902,7 +684,7 @@ export default function TaskFlowPage() {
                       <span className="text-2xl">✅</span>
                       <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Total</p>
                     </div>
-                    <p className="text-3xl font-bold" style={{ color: colors.text }}>{stats.total}</p>
+                    {tasksLoading ? <div className="h-9 w-12 rounded animate-pulse" style={{ backgroundColor: colors.bgMuted }} /> : <p className="text-3xl font-bold" style={{ color: colors.text }}>{stats.total}</p>}
                   </div>
 
                   <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
@@ -910,7 +692,7 @@ export default function TaskFlowPage() {
                       <span className="text-2xl">🚧</span>
                       <p className="text-sm font-medium" style={{ color: colors.textMuted }}>In Progress</p>
                     </div>
-                    <p className="text-3xl font-bold" style={{ color: '#6A9BFD' }}>{stats.inProgress}</p>
+                    {tasksLoading ? <div className="h-9 w-12 rounded animate-pulse" style={{ backgroundColor: colors.bgMuted }} /> : <p className="text-3xl font-bold" style={{ color: '#6A9BFD' }}>{stats.inProgress}</p>}
                   </div>
 
                   <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
@@ -918,7 +700,7 @@ export default function TaskFlowPage() {
                       <span className="text-2xl">✅</span>
                       <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Completed</p>
                     </div>
-                    <p className="text-3xl font-bold" style={{ color: '#6BCB77' }}>{stats.completed}</p>
+                    {tasksLoading ? <div className="h-9 w-12 rounded animate-pulse" style={{ backgroundColor: colors.bgMuted }} /> : <p className="text-3xl font-bold" style={{ color: '#6BCB77' }}>{stats.completed}</p>}
                   </div>
 
                   <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
@@ -926,7 +708,7 @@ export default function TaskFlowPage() {
                       <span className="text-2xl">🚨</span>
                       <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Blocked</p>
                     </div>
-                    <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>{stats.blocked}</p>
+                    {tasksLoading ? <div className="h-9 w-12 rounded animate-pulse" style={{ backgroundColor: colors.bgMuted }} /> : <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>{stats.blocked}</p>}
                   </div>
 
                   <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
@@ -934,7 +716,7 @@ export default function TaskFlowPage() {
                       <span className="text-2xl">📅</span>
                       <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Due Today</p>
                     </div>
-                    <p className="text-3xl font-bold" style={{ color: '#FFD93D' }}>{stats.dueToday}</p>
+                    {tasksLoading ? <div className="h-9 w-12 rounded animate-pulse" style={{ backgroundColor: colors.bgMuted }} /> : <p className="text-3xl font-bold" style={{ color: '#FFD93D' }}>{stats.dueToday}</p>}
                   </div>
 
                   <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
@@ -942,7 +724,7 @@ export default function TaskFlowPage() {
                       <span className="text-2xl">⏰</span>
                       <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Overdue</p>
                     </div>
-                    <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>{stats.overdue}</p>
+                    {tasksLoading ? <div className="h-9 w-12 rounded animate-pulse" style={{ backgroundColor: colors.bgMuted }} /> : <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>{stats.overdue}</p>}
                   </div>
                 </div>
 
@@ -1115,6 +897,7 @@ export default function TaskFlowPage() {
                         <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Assignee</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Due Date</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Progress</th>
+                        <th className="px-6 py-3"></th>
                       </tr>
                     </thead>
                     <tbody style={{ borderTop: `1px solid var(--border)` }}>
@@ -1161,6 +944,17 @@ export default function TaskFlowPage() {
                               </div>
                               <span className="text-sm font-medium min-w-12" style={{ color: colors.text }}>{task.progress}%</span>
                             </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <button
+                              onClick={() => {
+                                setEditingTask(task)
+                                setShowCreateModal(true)
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors whitespace-nowrap"
+                            >
+                              ✏️ Edit
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -1335,6 +1129,11 @@ export default function TaskFlowPage() {
             progress: detailTask.progress,
           }}
           onClose={() => setDetailTask(null)}
+          onEdit={() => {
+            setEditingTask(detailTask)
+            setDetailTask(null)
+            setShowCreateModal(true)
+          }}
           onStatusChange={(taskId, newStatus) => {
             setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus as Task['status'] } : t))
             setDetailTask(prev => prev ? { ...prev, status: newStatus as Task['status'] } : null)

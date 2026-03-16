@@ -292,12 +292,20 @@ export default function TaskCreationModal({
     console.log('formData keys:', Object.keys(formData))
     console.log('Validation result:', validateForm())
 
+    const newErrors: Record<string, string> = {}
+    if (!formData.title?.trim()) newErrors.title = "Task title is required"
+    if (!formData.projectId) newErrors.projectId = "Project is required"
+    if (!formData.dueDate) newErrors.dueDate = "Due date is required"
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      console.error('Validation failed, errors:', JSON.stringify(newErrors))
+      return
+    }
+
     if (validateForm()) {
-      console.log('Validation passed, calling onSave with:', formData)
       onSave(formData)
       onClose()
-    } else {
-      console.error('Validation failed, errors:', errors)
     }
   }
 

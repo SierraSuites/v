@@ -5,7 +5,7 @@
  * and abuse. Uses database-backed storage for production environments.
  */
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient as createClient } from '@/lib/supabase/service'
 
 // Rate limit configurations
 export const RATE_LIMITS = {
@@ -65,7 +65,7 @@ export async function checkRateLimit(
   identifier: string,
   type: RateLimitType
 ): Promise<RateLimitResult> {
-  const supabase = await createClient()
+  const supabase = createClient()
   const config = RATE_LIMITS[type]
   const now = new Date()
 
@@ -187,7 +187,7 @@ export async function resetRateLimit(
   identifier: string,
   type: RateLimitType
 ): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createClient()
   const key = `${type}:${identifier}`
 
   try {
@@ -208,7 +208,7 @@ export async function getRateLimitStatus(
   identifier: string,
   type: RateLimitType
 ): Promise<RateLimitResult> {
-  const supabase = await createClient()
+  const supabase = createClient()
   const config = RATE_LIMITS[type]
   const now = new Date()
   const key = `${type}:${identifier}`

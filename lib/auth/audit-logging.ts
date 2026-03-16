@@ -10,7 +10,7 @@
  * - Account security events
  */
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient as createClient } from '@/lib/supabase/service'
 
 // All supported auth event types (must match database CHECK constraint)
 export type AuthEventType =
@@ -51,7 +51,7 @@ export interface AuthAuditLogEntry {
  * @param entry - Audit log entry details
  */
 export async function logAuthEvent(entry: AuthAuditLogEntry): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   try {
     const { error } = await supabase.from('auth_audit_logs').insert({
@@ -87,7 +87,7 @@ export async function getUserAuditLogs(
   userId: string,
   limit: number = 50
 ): Promise<any[]> {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   try {
     const { data, error } = await supabase
@@ -121,7 +121,7 @@ export async function getRecentFailedLogins(
   email: string,
   hoursBack: number = 24
 ): Promise<any[]> {
-  const supabase = await createClient()
+  const supabase = createClient()
   const cutoffTime = new Date()
   cutoffTime.setHours(cutoffTime.getHours() - hoursBack)
 
@@ -159,7 +159,7 @@ export async function detectSuspiciousActivity(
   isSuspicious: boolean
   reasons: string[]
 }> {
-  const supabase = await createClient()
+  const supabase = createClient()
   const reasons: string[] = []
 
   try {
@@ -232,7 +232,7 @@ export async function getAuditLogStats(timeRangeHours: number = 24): Promise<{
   passwordResets: number
   accountLockouts: number
 }> {
-  const supabase = await createClient()
+  const supabase = createClient()
   const cutoffTime = new Date()
   cutoffTime.setHours(cutoffTime.getHours() - timeRangeHours)
 

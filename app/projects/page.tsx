@@ -108,21 +108,6 @@ export default function ProjectsPage() {
     company_name: user?.user_metadata?.company_name || "Demo Construction Co.",
   }
 
-  const userName = userData.full_name?.split(' ')[0] || "User"
-
-  // Plan names and colors
-  const planNames = {
-    starter: "Starter",
-    professional: "Professional",
-    enterprise: "Enterprise"
-  }
-
-  const planColors = {
-    starter: "bg-blue-500",
-    professional: "bg-purple-500",
-    enterprise: "bg-amber-500"
-  }
-
   // Navigation items
   const navigationItems: NavItem[] = [
     {
@@ -498,11 +483,13 @@ export default function ProjectsPage() {
     loadUser()
   }, [])
 
-  // Auto-open create modal when ?new=true
+  // Sync URL params to filter state
   useEffect(() => {
     if (searchParams.get('new') === 'true') {
       setShowCreateModal(true)
     }
+    const status = searchParams.get('status')
+    setStatusFilter(status || "all")
   }, [searchParams])
 
   // Filter and sort projects
@@ -805,7 +792,7 @@ export default function ProjectsPage() {
                 <option value="active">Active</option>
                 <option value="on-hold">On Hold</option>
                 <option value="completed">Completed</option>
-                <option value="archived">Archived</option>
+                <option value="cancelled">Cancelled</option>
               </select>
 
               <select

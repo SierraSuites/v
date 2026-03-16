@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
 
     if (signInError || !data.user) {
       // LOGIN FAILED
-      await recordFailedLoginAttempt(email, ipAddress, userAgent)
+      const attemptsRemaining = await recordFailedLoginAttempt(email, ipAddress, userAgent)
 
       // Return user-friendly error
       let errorMessage = 'Invalid email or password'
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: errorMessage,
-          attemptsRemaining: bruteForceResult.attemptsRemaining - 1,
+          attemptsRemaining,
         },
         { status: 401 }
       )

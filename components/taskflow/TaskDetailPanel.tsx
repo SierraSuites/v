@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { XMarkIcon, ClockIcon, ChatBubbleLeftIcon, ListBulletIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon, ClockIcon, ChatBubbleLeftIcon, ListBulletIcon, PencilSquareIcon } from '@heroicons/react/24/outline'
 
 interface ChecklistItem {
   id: string
@@ -48,6 +48,7 @@ interface Task {
 interface TaskDetailPanelProps {
   task: Task
   onClose: () => void
+  onEdit?: () => void
   onStatusChange?: (taskId: string, newStatus: string) => void
 }
 
@@ -68,7 +69,7 @@ const STATUS_OPTIONS = [
   { value: 'blocked', label: 'Blocked' },
 ]
 
-export default function TaskDetailPanel({ task, onClose, onStatusChange }: TaskDetailPanelProps) {
+export default function TaskDetailPanel({ task, onClose, onEdit, onStatusChange }: TaskDetailPanelProps) {
   const supabase = createClient()
   const [activeTab, setActiveTab] = useState<Tab>('checklist')
 
@@ -291,9 +292,20 @@ export default function TaskDetailPanel({ task, onClose, onStatusChange }: TaskD
               <p className="text-sm text-gray-500 mt-0.5">👷 {task.assignee}</p>
             )}
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg flex-shrink-0">
-            <XMarkIcon className="h-5 w-5 text-gray-500" />
-          </button>
+          <div className="flex items-center gap-1">
+            {onEdit && (
+              <button
+                onClick={onEdit}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+              >
+                <PencilSquareIcon className="h-4 w-4" />
+                Edit
+              </button>
+            )}
+            <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
+              <XMarkIcon className="h-5 w-5 text-gray-500" />
+            </button>
+          </div>
         </div>
 
         {/* Status + key stats */}

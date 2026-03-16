@@ -223,6 +223,11 @@
     }
   }
 
+  @keyframes shrink {
+    from { width: 100%; }
+    to { width: 0%; }
+  }
+
   @keyframes wave {
     0%, 100% {
       transform: rotate(0deg);
@@ -244,6 +249,35 @@
     }
   }
 }
+
+/* ─── force-light overrides: undo all dark mode !important rules ─────────────
+   Anything inside .force-light must stay light mode regardless of .dark on <html>
+   ─────────────────────────────────────────────────────────────────────────── */
+.dark .force-light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.dark .force-light textarea,
+.dark .force-light select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+.dark .force-light input::placeholder,
+.dark .force-light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+.dark .force-light a,
+.dark .force-light button:not([data-slot="button"]) {
+  background-color: revert !important;
+  color: revert !important;
+  border-color: revert !important;
+}
+.dark .force-light .bg-white          { background-color: #ffffff !important; }
+.dark .force-light .bg-gray-50        { background-color: #f9fafb !important; }
+.dark .force-light .bg-gray-100       { background-color: #f3f4f6 !important; }
+.dark .force-light .text-gray-900     { color: #111827 !important; }
+.dark .force-light .text-gray-800     { color: #1f2937 !important; }
+.dark .force-light .text-gray-700     { color: #374151 !important; }
+.dark .force-light .text-gray-600     { color: #4b5563 !important; }
+.dark .force-light .border-gray-200   { border-color: #e5e7eb !important; }
 
 /* ─── Global dark mode overrides ─────────────────────────────────────────────
    Pages use hardcoded Tailwind utility classes (bg-white, bg-gray-50, etc.)
