@@ -106,6 +106,12 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
       const remaining = estimatedBudget - totalExpenses
       const percentageUsed = estimatedBudget > 0 ? (totalExpenses / estimatedBudget) * 100 : 0
 
+      // Keep projects.spent in sync with actual expense totals
+      await supabase
+        .from('projects')
+        .update({ spent: totalExpenses, updated_at: new Date().toISOString() })
+        .eq('id', projectId)
+
       setBudgetData({
         estimated_budget: estimatedBudget,
         total_expenses: totalExpenses,

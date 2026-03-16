@@ -223,6 +223,11 @@
     }
   }
 
+  @keyframes shrink {
+    from { width: 100%; }
+    to { width: 0%; }
+  }
+
   @keyframes wave {
     0%, 100% {
       transform: rotate(0deg);
