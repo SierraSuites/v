@@ -10,9 +10,10 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // Auth
@@ -40,7 +41,7 @@ export async function GET(
         project:projects(id, name, status, start_date, end_date),
         budget_items(*)
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('company_id', profile.company_id)
       .single()
 
@@ -126,9 +127,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // Auth
@@ -162,7 +164,7 @@ export async function PUT(
         categories: categories || {},
         updated_at: new Date().toISOString(),
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('company_id', profile.company_id)
       .select()
       .single()
@@ -178,12 +180,12 @@ export async function PUT(
       await supabase
         .from('budget_items')
         .delete()
-        .eq('budget_id', params.id)
+        .eq('budget_id', id)
 
       // Insert new items
       if (items.length > 0) {
         const budgetItems = items.map((item: any) => ({
-          budget_id: params.id,
+          budget_id: id,
           company_id: profile.company_id,
           category: item.category,
           subcategory: item.subcategory,
@@ -215,9 +217,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // Auth
@@ -241,7 +244,7 @@ export async function DELETE(
     const { error } = await supabase
       .from('budgets')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('company_id', profile.company_id)
 
     if (error) {

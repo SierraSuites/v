@@ -10,9 +10,10 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // Auth
@@ -53,7 +54,7 @@ export async function GET(
           uploaded_by
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('company_id', profile.company_id)
       .single()
 
@@ -68,7 +69,7 @@ export async function GET(
 
     // Log view activity
     await supabase.rpc('log_document_activity', {
-      p_document_id: params.id,
+      p_document_id: id,
       p_action: 'viewed',
       p_performed_by: user.id,
     })
@@ -85,9 +86,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // Auth
@@ -134,7 +136,7 @@ export async function PUT(
         metadata,
         status,
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('company_id', profile.company_id)
       .select()
       .single()
@@ -146,7 +148,7 @@ export async function PUT(
 
     // Log edit activity
     await supabase.rpc('log_document_activity', {
-      p_document_id: params.id,
+      p_document_id: id,
       p_action: 'edited',
       p_performed_by: user.id,
     })
@@ -163,9 +165,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // Auth
@@ -192,7 +195,7 @@ export async function DELETE(
         status: 'deleted',
         deleted_at: new Date().toISOString(),
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('company_id', profile.company_id)
 
     if (error) {
@@ -202,7 +205,7 @@ export async function DELETE(
 
     // Log delete activity
     await supabase.rpc('log_document_activity', {
-      p_document_id: params.id,
+      p_document_id: id,
       p_action: 'deleted',
       p_performed_by: user.id,
     })

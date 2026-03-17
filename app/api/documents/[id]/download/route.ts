@@ -8,9 +8,10 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // Auth
@@ -34,7 +35,7 @@ export async function GET(
     const { data: document, error: documentError } = await supabase
       .from('documents')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('company_id', profile.company_id)
       .single()
 
@@ -57,7 +58,7 @@ export async function GET(
 
     // Log download activity
     await supabase.rpc('log_document_activity', {
-      p_document_id: params.id,
+      p_document_id: id,
       p_action: 'downloaded',
       p_performed_by: user.id,
     })
