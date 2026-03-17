@@ -26,6 +26,7 @@ export default function QuotesPage() {
   const [sortBy, setSortBy] = useState<'created_at' | 'quote_number' | 'total_amount'>('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [stats, setStats] = useState<any>(null)
+  const [downloadingPDF, setDownloadingPDF] = useState<string | null>(null)
 
   useEffect(() => {
     loadQuotes()
@@ -113,6 +114,37 @@ export default function QuotesPage() {
     } catch (err) {
       console.error('Error duplicating quote:', err)
       alert('Failed to duplicate quote')
+    }
+  }
+
+  const handleDownloadPDF = async (quoteId: string, quoteNumber: string) => {
+    setDownloadingPDF(quoteId)
+    try {
+      const response = await fetch(`/api/quotes/${quoteId}/generate-pdf`)
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF')
+      }
+
+      // Get the PDF blob
+      const blob = await response.blob()
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Quote-${quoteNumber}.pdf`
+      document.body.appendChild(link)
+      link.click()
+
+      // Cleanup
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error downloading PDF:', error)
+      alert('Failed to generate PDF. Please try again.')
+    } finally {
+      setDownloadingPDF(null)
     }
   }
 
@@ -364,6 +396,14 @@ export default function QuotesPage() {
                             ⚠️ EXPIRED
                           </span>
                         )}
+                        {(quote as any).converted_to_project_id && (
+                          <span
+                            className="px-3 py-1 rounded-full text-xs font-bold"
+                            style={{ backgroundColor: '#D1FAE5', color: '#059669' }}
+                          >
+                            ✅ CONVERTED TO PROJECT
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-4 text-sm" style={{ color: colors.textMuted }}>
@@ -409,35 +449,51 @@ export default function QuotesPage() {
                         {formatCurrency(quote.total_amount)}
                       </p>
                       <div className="flex gap-2">
+                        {(quote as any).converted_to_project_id ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/projects/${(quote as any).converted_to_project_id}`)
+                            }}
+                            className="px-3 py-1 rounded text-xs font-semibold transition-colors hover:bg-green-50"
+                            style={{ color: '#059669' }}
+                          >
+                            View Project →
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                router.push(`/quotes/${quote.id}/edit`)
+                              }}
+                              className="px-3 py-1 rounded text-xs font-semibold transition-colors"
+                              style={{ color: colors.textMuted }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDuplicateQuote(quote.id)
+                              }}
+                              className="px-3 py-1 rounded text-xs font-semibold transition-colors"
+                              style={{ color: colors.textMuted }}
+                            >
+                              Duplicate
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            router.push(`/quotes/${quote.id}/edit`)
+                            handleDownloadPDF(quote.id, quote.quote_number)
                           }}
-                          className="px-3 py-1 rounded text-xs font-semibold transition-colors"
-                          style={{ color: colors.textMuted }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDuplicateQuote(quote.id)
-                          }}
-                          className="px-3 py-1 rounded text-xs font-semibold transition-colors"
-                          style={{ color: colors.textMuted }}
-                        >
-                          Duplicate
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            router.push(`/quotes/${quote.id}/pdf`)
-                          }}
-                          className="px-3 py-1 rounded text-xs font-semibold transition-colors hover:bg-blue-50"
+                          disabled={downloadingPDF === quote.id}
+                          className="px-3 py-1 rounded text-xs font-semibold transition-colors hover:bg-blue-50 disabled:opacity-50"
                           style={{ color: '#3B82F6' }}
                         >
-                          PDF
+                          {downloadingPDF === quote.id ? '⏳' : 'PDF'}
                         </button>
                         <button
                           onClick={(e) => {

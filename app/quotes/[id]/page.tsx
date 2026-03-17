@@ -27,6 +27,8 @@ export default function QuoteDetailPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true)
   const [statusUpdating, setStatusUpdating] = useState(false)
   const [converting, setConverting] = useState(false)
+  const [downloadingPDF, setDownloadingPDF] = useState(false)
+  const [sendingEmail, setSendingEmail] = useState(false)
 
   useEffect(() => {
     loadQuote()
@@ -136,6 +138,71 @@ export default function QuoteDetailPage({ params }: PageProps) {
     } catch (error) {
       console.error('Error duplicating quote:', error)
       alert('Error duplicating quote')
+    }
+  }
+
+  async function handleDownloadPDF() {
+    setDownloadingPDF(true)
+    try {
+      const response = await fetch(`/api/quotes/${id}/generate-pdf`)
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF')
+      }
+
+      // Get the PDF blob
+      const blob = await response.blob()
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Quote-${quote?.quote_number || id}.pdf`
+      document.body.appendChild(link)
+      link.click()
+
+      // Cleanup
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error downloading PDF:', error)
+      alert('Failed to generate PDF. Please try again.')
+    } finally {
+      setDownloadingPDF(false)
+    }
+  }
+
+  async function handleSendEmail() {
+    const clientEmail = (quote as any)?.client_email || quote?.client?.email
+
+    if (!clientEmail) {
+      alert('This quote has no client email address. Please add one before sending.')
+      return
+    }
+
+    if (!confirm(`Send quote to ${clientEmail}?\n\nAn email will be sent with the quote PDF attached.`)) {
+      return
+    }
+
+    setSendingEmail(true)
+    try {
+      const response = await fetch(`/api/quotes/${id}/send`, {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        alert(`Quote successfully sent to ${clientEmail}!`)
+        await loadQuote() // Reload to get updated send count
+      } else {
+        alert(data.error || 'Failed to send email')
+      }
+    } catch (error) {
+      console.error('Error sending email:', error)
+      alert('Failed to send email. Please try again.')
+    } finally {
+      setSendingEmail(false)
     }
   }
 
@@ -269,22 +336,34 @@ export default function QuoteDetailPage({ params }: PageProps) {
                   ✏️ Edit
                 </Link>
                 <button
+                  onClick={handleSendEmail}
+                  disabled={sendingEmail || (!(quote as any)?.client_email && !quote?.client?.email)}
+                  className="px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold shadow hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={(!(quote as any)?.client_email && !quote?.client?.email) ? 'No client email' : 'Send quote via email'}
+                >
+                  {sendingEmail ? '⏳ Sending...' : '📧 Email Quote'}
+                </button>
+                <button
+                  onClick={handleDownloadPDF}
+                  disabled={downloadingPDF}
+                  className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold shadow hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {downloadingPDF ? '⏳ PDF...' : '📄 Download PDF'}
+                </button>
+                <button
                   onClick={handleDuplicate}
                   className="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold shadow hover:shadow-lg"
                 >
                   📋 Duplicate
                 </button>
-                <Link
-                  href={`/quotes/${id}/pdf`}
-                  className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-center font-semibold shadow hover:shadow-lg"
-                >
-                  📄 PDF
-                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 mt-3">
                 <button
                   onClick={handleDelete}
                   className="px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold shadow hover:shadow-lg"
                 >
-                  🗑️ Delete
+                  🗑️ Delete Quote
                 </button>
               </div>
 
