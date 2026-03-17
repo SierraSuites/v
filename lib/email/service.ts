@@ -9,7 +9,17 @@
 
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let resendInstance: Resend | null = null
+
+function getResend() {
+  if (!resendInstance) {
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY environment variable is not set')
+    }
+    resendInstance = new Resend(process.env.RESEND_API_KEY)
+  }
+  return resendInstance
+}
 
 export interface EmailOptions {
   to: string | string[]
@@ -52,6 +62,7 @@ export interface InvoiceEmailData {
  */
 export async function sendEmail(options: EmailOptions) {
   try {
+    const resend = getResend()
     const result = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'The Sierra Suites <noreply@sierrasuites.com>',
       to: options.to,
