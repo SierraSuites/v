@@ -834,8 +834,15 @@ function IntegrationsPageContent() {
   async function handleConnect(type: string) {
     try {
       const { user, companyId } = await getUserAndCompany()
-      // In production, this would redirect to OAuth flow.
-      // For now, create a placeholder "connected" record so the UI works.
+
+      // Special handling for QuickBooks - redirect to OAuth flow
+      if (type === 'quickbooks_online') {
+        // Redirect to QuickBooks OAuth endpoint
+        window.location.href = '/api/integrations/quickbooks/oauth'
+        return
+      }
+
+      // For other integrations, create a placeholder "connected" record
       const { error } = await supabase.from('integrations').upsert({
         company_id: companyId,
         integration_type: type,
@@ -844,14 +851,7 @@ function IntegrationsPageContent() {
         connection_status: 'connected',
         connected_by: user.id,
         connected_at: new Date().toISOString(),
-        settings: type === 'quickbooks_online' ? {
-          auto_sync: true,
-          sync_frequency: 'realtime',
-          sync_invoices: true,
-          sync_expenses: true,
-          sync_payments: true,
-          sync_customers: true,
-        } : {},
+        settings: {},
       }, { onConflict: 'company_id,integration_type' })
       if (error) throw error
       toast.success(`${type.replace('_', ' ')} connected!`)
