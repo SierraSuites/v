@@ -13,6 +13,18 @@ export const metadata: Metadata = {
   title: "The Sierra Suites - Construction Management Platform",
   description: "The complete construction management platform built for contractors who want to grow their business.",
   generator: "v0.app",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Sierra Suites",
+  },
+  themeColor: "#1E40AF",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  },
 }
 
 export default function RootLayout({
