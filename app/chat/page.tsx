@@ -241,15 +241,15 @@ export default function ChatPage() {
               messages.map((message) => (
                 <div key={message.id} className="flex space-x-3">
                   <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-                    {message.user?.profiles?.[0]?.avatar_url ? (
+                    {message.user?.[0]?.profiles?.[0]?.avatar_url ? (
                       <img
-                        src={message.user.profiles[0].avatar_url}
-                        alt={message.user.profiles[0]?.full_name || 'User'}
+                        src={message.user[0].profiles[0].avatar_url}
+                        alt={message.user[0].profiles[0]?.full_name || 'User'}
                         className="w-full h-full rounded-full"
                       />
                     ) : (
                       <span className="text-sm font-semibold text-gray-600">
-                        {message.user?.profiles?.[0]?.full_name
+                        {message.user?.[0]?.profiles?.[0]?.full_name
                           ?.charAt(0)
                           .toUpperCase() || 'U'}
                       </span>
@@ -258,7 +258,7 @@ export default function ChatPage() {
                   <div className="flex-1">
                     <div className="flex items-baseline space-x-2">
                       <span className="font-semibold text-gray-900">
-                        {message.user?.profiles?.[0]?.full_name || 'Unknown User'}
+                        {message.user?.[0]?.profiles?.[0]?.full_name || 'Unknown User'}
                       </span>
                       <span className="text-xs text-gray-500">
                         {formatTime(message.created_at)}

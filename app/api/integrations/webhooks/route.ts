@@ -1,6 +1,6 @@
-// API Route: API Keys Management
-// GET /api/integrations/api-keys - List API keys
-// POST /api/integrations/api-keys - Create API key
+// API Route: Webhooks Management
+// GET /api/integrations/webhooks - List webhooks
+// POST /api/integrations/webhooks - Create webhook
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
@@ -10,19 +10,23 @@ import { z } from 'zod'
 // VALIDATION SCHEMAS
 // ============================================
 
-const createApiKeySchema = z.object({
-  keyName: z.string().min(1).max(255),
+const createWebhookSchema = z.object({
+  webhookName: z.string().min(1).max(255),
   description: z.string().optional(),
-  scopes: z.array(z.string()).min(1, 'At least one scope is required'),
-  allowedIps: z.array(z.string()).optional(),
-  rateLimitPerHour: z.number().int().min(1).max(100000).default(1000),
-  rateLimitPerDay: z.number().int().min(1).max(1000000).default(10000),
-  expiresAt: z.string().optional(), // ISO date
+  url: z.string().url(),
+  method: z.enum(['POST', 'PUT', 'PATCH']).default('POST'),
+  events: z.array(z.string()).min(1, 'At least one event is required'),
+  secret: z.string().optional(),
+  headers: z.record(z.string()).optional(),
+  payloadFormat: z.enum(['json', 'form', 'xml']).default('json'),
+  retryPolicy: z.enum(['none', 'linear', 'exponential']).default('exponential'),
+  maxRetries: z.number().int().min(0).max(10).default(3),
+  timeoutSeconds: z.number().int().min(1).max(300).default(30),
 })
 
 // ============================================
-// GET /api/integrations/api-keys
-// List API keys (without secrets)
+// GET /api/integrations/webhooks
+// List webhooks
 // ============================================
 
 export async function GET(request: NextRequest) {
@@ -51,29 +55,35 @@ export async function GET(request: NextRequest) {
     // Get query parameters
     const { searchParams } = new URL(request.url)
     const isActive = searchParams.get('isActive')
+    const event = searchParams.get('event')
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    // Build query - mask API key for security (show only first 8 chars)
+    // Build query
     let query = supabase
-      .from('api_keys')
+      .from('webhooks')
       .select(`
         id,
-        key_name,
-        api_key,
+        webhook_name,
         description,
-        scopes,
-        allowed_ips,
-        rate_limit_per_hour,
-        rate_limit_per_day,
-        last_used_at,
-        total_requests,
-        failed_requests,
+        url,
+        method,
+        events,
+        headers,
+        payload_format,
+        retry_policy,
+        max_retries,
+        timeout_seconds,
         is_active,
-        expires_at,
+        last_triggered_at,
+        last_success_at,
+        last_failure_at,
+        last_error,
+        total_deliveries,
+        failed_deliveries,
+        success_rate,
         created_at,
         updated_at,
-        revoked_at,
         creator:created_by (
           id,
           profiles (full_name)
@@ -88,29 +98,26 @@ export async function GET(request: NextRequest) {
       query = query.eq('is_active', isActive === 'true')
     }
 
-    const { data: apiKeys, error, count } = await query
+    if (event) {
+      query = query.contains('events', [event])
+    }
+
+    const { data: webhooks, error, count } = await query
 
     if (error) {
-      console.error('Error fetching API keys:', error)
+      console.error('Error fetching webhooks:', error)
       return NextResponse.json(
-        { error: 'Failed to fetch API keys' },
+        { error: 'Failed to fetch webhooks' },
         { status: 500 }
       )
     }
 
-    // Mask API keys for security (show only first 8 characters)
-    const maskedKeys = apiKeys?.map(key => ({
-      ...key,
-      api_key: key.api_key.substring(0, 11) + '...' + key.api_key.slice(-4),
-      api_secret: undefined, // Never return secret
-    }))
-
     return NextResponse.json({
-      apiKeys: maskedKeys,
+      webhooks,
       total: count,
     })
   } catch (error) {
-    console.error('Error in GET /api/integrations/api-keys:', error)
+    console.error('Error in GET /api/integrations/webhooks:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -119,8 +126,8 @@ export async function GET(request: NextRequest) {
 }
 
 // ============================================
-// POST /api/integrations/api-keys
-// Create a new API key
+// POST /api/integrations/webhooks
+// Create a new webhook
 // ============================================
 
 export async function POST(request: NextRequest) {
@@ -147,7 +154,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const validationResult = createApiKeySchema.safeParse(body)
+    const validationResult = createWebhookSchema.safeParse(body)
 
     if (!validationResult.success) {
       return NextResponse.json(
@@ -164,51 +171,44 @@ export async function POST(request: NextRequest) {
 
     const data = validationResult.data
 
-    // Generate API secret (shown only once)
-    const apiSecret = 'ss_' + Array.from(crypto.getRandomValues(new Uint8Array(32)))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('')
-
-    // Create API key (api_key will be auto-generated by trigger)
-    const { data: apiKey, error: keyError } = await supabase
-      .from('api_keys')
+    // Create webhook
+    const { data: webhook, error: webhookError } = await supabase
+      .from('webhooks')
       .insert({
         company_id: profile.company_id,
-        key_name: data.keyName,
+        webhook_name: data.webhookName,
         description: data.description || null,
-        api_secret: apiSecret,
-        scopes: data.scopes,
-        allowed_ips: data.allowedIps || null,
-        rate_limit_per_hour: data.rateLimitPerHour,
-        rate_limit_per_day: data.rateLimitPerDay,
-        expires_at: data.expiresAt || null,
+        url: data.url,
+        method: data.method,
+        events: data.events,
+        secret: data.secret || null,
+        headers: data.headers || null,
+        payload_format: data.payloadFormat,
+        retry_policy: data.retryPolicy,
+        max_retries: data.maxRetries,
+        timeout_seconds: data.timeoutSeconds,
         created_by: user.id,
       })
       .select()
       .single()
 
-    if (keyError) {
-      console.error('Error creating API key:', keyError)
+    if (webhookError) {
+      console.error('Error creating webhook:', webhookError)
       return NextResponse.json(
-        { error: 'Failed to create API key' },
+        { error: 'Failed to create webhook' },
         { status: 500 }
       )
     }
 
-    // Return full key and secret ONLY on creation
     return NextResponse.json(
       {
-        message: 'API key created successfully',
-        apiKey: {
-          ...apiKey,
-          api_secret: apiSecret, // Only shown once!
-        },
-        warning: 'Save the API key and secret now. The secret will not be shown again.',
+        message: 'Webhook created successfully',
+        webhook,
       },
       { status: 201 }
     )
   } catch (error) {
-    console.error('Error in POST /api/integrations/api-keys:', error)
+    console.error('Error in POST /api/integrations/webhooks:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

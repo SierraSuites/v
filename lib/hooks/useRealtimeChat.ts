@@ -25,7 +25,7 @@ export interface ChatMessage {
       full_name: string
       avatar_url?: string
     }[]
-  }
+  }[]
   message_reactions?: {
     id: string
     emoji: string
@@ -143,6 +143,8 @@ export function useRealtimeChat(channelId: string | null) {
             .select(
               `
               id,
+              channel_id,
+              user_id,
               content,
               message_type,
               parent_message_id,
@@ -190,6 +192,8 @@ export function useRealtimeChat(channelId: string | null) {
             .select(
               `
               id,
+              channel_id,
+              user_id,
               content,
               message_type,
               parent_message_id,
