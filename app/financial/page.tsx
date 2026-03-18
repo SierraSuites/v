@@ -626,18 +626,30 @@ export default function FinancialPage() {
       {/* Payments Tab */}
       {activeTab === 'payments' && (
         <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-          <BanknotesIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">Payments Module</h3>
-          <p className="mt-2 text-gray-600">Payment tracking coming soon</p>
+          <BanknotesIcon className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900">Payments</h3>
+          <p className="mt-2 text-gray-600">Manage and track all incoming payments.</p>
+          <button
+            onClick={() => router.push('/financial/payments')}
+            className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Go to Payments
+          </button>
         </div>
       )}
 
       {/* Expenses Tab */}
       {activeTab === 'expenses' && (
         <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-          <CurrencyDollarIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">Expenses Module</h3>
-          <p className="mt-2 text-gray-600">Expense tracking coming soon</p>
+          <CurrencyDollarIcon className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900">Expenses</h3>
+          <p className="mt-2 text-gray-600">Track and manage all project expenses.</p>
+          <button
+            onClick={() => router.push('/financial/expenses')}
+            className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Go to Expenses
+          </button>
         </div>
       )}
 
