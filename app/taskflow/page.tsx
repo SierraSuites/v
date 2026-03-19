@@ -132,6 +132,7 @@ export default function TaskFlowPage() {
     }
     return 'professional'
   })
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [detailTask, setDetailTask] = useState<Task | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -208,16 +209,38 @@ export default function TaskFlowPage() {
     loadProjects()
   }, [])
 
-  // Sample team members data
-  const teamMembers: TeamMember[] = [
-    { id: "user-1", name: "Mike Johnson", avatar: "https://ui-avatars.com/api/?name=Mike+Johnson&background=FF6B6B&color=fff", role: "Electrician", trades: ["electrical"] },
-    { id: "user-2", name: "David Lee", avatar: "https://ui-avatars.com/api/?name=David+Lee&background=4A4A4A&color=fff", role: "Concrete Specialist", trades: ["concrete"] },
-    { id: "user-3", name: "Sarah Wilson", avatar: "https://ui-avatars.com/api/?name=Sarah+Wilson&background=38BDF8&color=fff", role: "HVAC Technician", trades: ["hvac"] },
-    { id: "user-4", name: "Tom Brown", avatar: "https://ui-avatars.com/api/?name=Tom+Brown&background=E0E0E0&color=000", role: "Finishing Specialist", trades: ["finishing"] },
-    { id: "user-5", name: "Emily Chen", avatar: "https://ui-avatars.com/api/?name=Emily+Chen&background=6A9BFD&color=fff", role: "Plumber", trades: ["plumbing"] },
-    { id: "user-6", name: "Robert Taylor", avatar: "https://ui-avatars.com/api/?name=Robert+Taylor&background=D97706&color=fff", role: "Framing Contractor", trades: ["framing"] },
-    { id: "user-7", name: "Lisa Martinez", avatar: "https://ui-avatars.com/api/?name=Lisa+Martinez&background=4ECDC4&color=fff", role: "Project Superintendent", trades: ["general", "electrical", "plumbing", "hvac", "concrete", "framing", "finishing"] }
-  ]
+  // Load team members from database
+  useEffect(() => {
+    async function loadTeamMembers() {
+      const supabase = createClient()
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      if (!currentUser) return
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('company_id')
+        .eq('id', currentUser.id)
+        .single()
+      if (!profile?.company_id) return
+
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('id, full_name, avatar_url, role')
+        .eq('company_id', profile.company_id)
+
+      if (data) {
+        setTeamMembers(data.map(u => ({
+          id: u.id,
+          name: u.full_name || 'Unknown',
+          avatar: u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.full_name || 'U')}&background=6A9BFD&color=fff`,
+          role: u.role || 'Team Member',
+          trades: ['general']
+        })))
+      }
+    }
+
+    loadTeamMembers()
+  }, [])
 
   // Sample tasks data
   const [tasks, setTasks] = useState<Task[]>([

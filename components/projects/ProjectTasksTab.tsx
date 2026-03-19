@@ -58,6 +58,7 @@ export default function ProjectTasksTab({ project }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [filterStatus, setFilterStatus] = useState<string>('active')
   const [confirmingTaskId, setConfirmingTaskId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [undoInfo, setUndoInfo] = useState<{ task: Task; prevStatus: Task['status'] } | null>(null)
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [form, setForm] = useState({
@@ -160,6 +161,26 @@ export default function ProjectTasksTab({ project }: Props) {
         undoTimerRef.current = setTimeout(() => setUndoInfo(null), 4000)
       }
     }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+    setConfirmingTaskId(null)
+  }
+
+  async function bulkMarkComplete() {
+    const ids = Array.from(selectedIds).filter(id => tasks.find(t => t.id === id)?.status !== 'completed')
+    if (!ids.length) return
+    const updated = tasks.map(t => ids.includes(t.id) ? { ...t, status: 'completed' as Task['status'] } : t)
+    setTasks(updated)
+    setSelectedIds(new Set())
+    const supabase = createClient()
+    await supabase.from('tasks').update({ status: 'completed', updated_at: new Date().toISOString() }).in('id', ids)
+    await syncProgress(updated)
   }
 
   async function handleUndo() {
@@ -372,24 +393,40 @@ export default function ProjectTasksTab({ project }: Props) {
         </div>
       ) : (
         <div className="bg-white border rounded-lg overflow-hidden">
+          {selectedIds.size > 0 && (
+            <div className="flex items-center justify-between px-4 py-2.5 bg-blue-50 border-b">
+              <span className="text-sm text-blue-700 font-medium">{selectedIds.size} selected</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={bulkMarkComplete}
+                  className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700"
+                >
+                  Mark Complete
+                </button>
+                <button
+                  onClick={() => setSelectedIds(new Set())}
+                  className="px-3 py-1.5 border text-xs font-medium text-gray-600 rounded-lg hover:bg-gray-50"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
           <div className="divide-y">
             {filtered.map(task => {
               const overdue = isOverdue(task)
+              const isSelected = selectedIds.has(task.id)
               return (
-                <div key={task.id} className={`flex items-start gap-3 p-4 hover:bg-gray-50 ${overdue ? 'bg-red-50/30' : ''}`}>
+                <div key={task.id} className={`flex items-center gap-3 p-4 hover:bg-gray-50 ${isSelected ? 'bg-blue-50/40' : overdue ? 'bg-red-50/30' : ''}`}>
                   <button
-                    onClick={() => {
-                      if (task.status === 'completed') {
-                        toggleTaskDone(task)
-                      } else {
-                        setConfirmingTaskId(confirmingTaskId === task.id ? null : task.id)
-                      }
-                    }}
-                    className="flex-shrink-0 mt-0.5"
+                    onClick={() => toggleSelect(task.id)}
+                    className="shrink-0"
                   >
-                    {task.status === 'completed'
-                      ? <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                      : <div className={`h-5 w-5 rounded border-2 ${confirmingTaskId === task.id ? 'border-blue-600 bg-blue-600' : 'border-gray-300 hover:border-blue-500'}`} />
+                    {isSelected
+                      ? <CheckCircleIcon className="h-5 w-5 text-blue-500" />
+                      : task.status === 'completed'
+                        ? <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                        : <div className="h-5 w-5 rounded border-2 border-gray-300 hover:border-blue-500" />
                     }
                   </button>
                   <div className="flex-1 min-w-0">
@@ -410,22 +447,6 @@ export default function ProjectTasksTab({ project }: Props) {
                         </span>
                       )}
                     </div>
-                    {confirmingTaskId === task.id && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          onClick={() => { toggleTaskDone(task, true); setConfirmingTaskId(null) }}
-                          className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700"
-                        >
-                          Mark Complete
-                        </button>
-                        <button
-                          onClick={() => setConfirmingTaskId(null)}
-                          className="px-3 py-1 border text-xs font-medium text-gray-600 rounded-lg hover:bg-gray-50"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )}
                   </div>
                   <span className="text-xs text-gray-400 whitespace-nowrap">
                     {STATUS_LABELS[task.status]}
