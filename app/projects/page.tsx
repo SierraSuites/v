@@ -519,6 +519,7 @@ export default function ProjectsPage() {
     planning: projects.filter(p => p.status === "planning").length,
     onHold: projects.filter(p => p.status === "on-hold").length,
     completed: projects.filter(p => p.status === "completed").length,
+    overdue: projects.filter(p => p.status !== "completed" && p.endDate && new Date(p.endDate) < new Date()).length,
   }
 
   const getStatusColor = (status: string) => {
@@ -620,11 +621,6 @@ export default function ProjectsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold" style={{ color: colors.text }}>Projects</h1>
-              <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
-                {stats.total} total project{stats.total !== 1 ? 's' : ''}
-                {userPlan === "starter" && ` (${projectLimits.starter} max on Starter plan)`}
-                {userPlan === "professional" && ` (${projectLimits.professional} max on Pro plan)`}
-              </p>
             </div>
             <div className="flex items-center gap-3">
               <button

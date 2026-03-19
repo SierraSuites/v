@@ -90,7 +90,7 @@ export default function TaskCreationModal({
     assignee: "",
     assigneeAvatar: "",
     startDate: new Date().toISOString().split('T')[0],
-    dueDate: "",
+    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     duration: 1,
     estimatedHours: 8,
     location: "",
@@ -184,7 +184,7 @@ export default function TaskCreationModal({
         assignee: "",
         assigneeAvatar: "",
         startDate: new Date().toISOString().split('T')[0],
-        dueDate: "",
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         duration: 1,
         estimatedHours: 8,
         location: "",
@@ -521,6 +521,7 @@ export default function TaskCreationModal({
                     type="number"
                     value={formData.duration}
                     onChange={(e) => handleInputChange("duration", parseInt(e.target.value) || 1)}
+                    onFocus={(e) => e.target.select()}
                     className="w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
                     style={inputStyle()}
                     min="1"
@@ -535,6 +536,7 @@ export default function TaskCreationModal({
                     type="number"
                     value={formData.estimatedHours}
                     onChange={(e) => handleInputChange("estimatedHours", parseInt(e.target.value) || 0)}
+                    onFocus={(e) => e.target.select()}
                     className="w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
                     style={inputStyle(!!errors.estimatedHours)}
                     min="0"
@@ -598,6 +600,7 @@ export default function TaskCreationModal({
                       type="number"
                       value={formData.weatherBuffer}
                       onChange={(e) => handleInputChange("weatherBuffer", parseInt(e.target.value) || 0)}
+                      onFocus={(e) => e.target.select()}
                       className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
                       min="0"
                       max="10"

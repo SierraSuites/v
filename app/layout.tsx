@@ -1,5 +1,5 @@
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { ToastProvider } from "@/components/ToastNotification"
@@ -19,12 +19,13 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Sierra Suites",
   },
+}
+
+export const viewport: Viewport = {
   themeColor: "#1E40AF",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-  },
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 export default function RootLayout({
