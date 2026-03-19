@@ -4,6 +4,7 @@
 -- ============================================================================
 -- Created: January 21, 2026
 -- Modified: February 9, 2026 - Made safe for existing databases
+-- Modified: March 19, 2026 - Synced projects.budget→estimated_budget, updated project_expenses to match live DB
 -- Purpose: Single source of truth for all database tables
 -- ============================================================================
 
@@ -100,8 +101,8 @@ CREATE TABLE IF NOT EXISTS public.projects (
   due_date DATE,
   completion_date DATE,
   estimated_duration_days INTEGER,
-  budget DECIMAL(12,2),
-  spent DECIMAL(12,2) DEFAULT 0,
+  estimated_budget DECIMAL(15,2) DEFAULT 0,
+  spent DECIMAL(15,2) DEFAULT 0,
   currency TEXT DEFAULT 'USD',
   project_manager_id UUID REFERENCES auth.users(id),
   tags TEXT[] DEFAULT '{}',
@@ -121,20 +122,16 @@ CREATE INDEX IF NOT EXISTS idx_projects_due_date ON public.projects(due_date);
 CREATE TABLE IF NOT EXISTS public.project_expenses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
-  company_id UUID REFERENCES public.companies(id) ON DELETE CASCADE NOT NULL,
-  created_by UUID REFERENCES auth.users(id),
-  description TEXT NOT NULL,
-  category TEXT CHECK (category IN ('materials', 'labor', 'equipment', 'permits', 'subcontractor', 'overhead', 'other')),
-  amount DECIMAL(10,2) NOT NULL,
+  category TEXT NOT NULL,
+  description TEXT,
+  amount DECIMAL(15,2) NOT NULL,
   currency TEXT DEFAULT 'USD',
-  receipt_url TEXT,
   invoice_number TEXT,
   vendor TEXT,
   date DATE NOT NULL,
-  paid BOOLEAN DEFAULT false,
-  payment_method TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  payment_status TEXT CHECK (payment_status IN ('pending', 'paid', 'overdue')) DEFAULT 'pending',
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_project_expenses_project ON public.project_expenses(project_id);

@@ -12,7 +12,6 @@ interface Expense {
   amount: number
   date: string
   vendor: string | null
-  receipt_url: string | null
   created_by: {
     name: string
     avatar: string
@@ -76,11 +75,7 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
           amount,
           date,
           vendor,
-          receipt_url,
-          created_by:user_profiles!project_expenses_created_by_fkey (
-            full_name,
-            avatar_url
-          )
+          created_by
         `)
         .eq('project_id', projectId)
         .order('date', { ascending: false })
@@ -94,10 +89,9 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
         amount: exp.amount,
         date: exp.date,
         vendor: exp.vendor,
-        receipt_url: exp.receipt_url,
         created_by: {
-          name: (exp.created_by as any)?.full_name || 'Unknown',
-          avatar: getInitials((exp.created_by as any)?.full_name || 'Unknown')
+          name: 'Unknown',
+          avatar: '?'
         }
       }))
 
@@ -106,11 +100,6 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
       const remaining = estimatedBudget - totalExpenses
       const percentageUsed = estimatedBudget > 0 ? (totalExpenses / estimatedBudget) * 100 : 0
 
-      // Keep projects.spent in sync with actual expense totals
-      await supabase
-        .from('projects')
-        .update({ spent: totalExpenses, updated_at: new Date().toISOString() })
-        .eq('id', projectId)
 
       setBudgetData({
         estimated_budget: estimatedBudget,
@@ -121,8 +110,8 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
       })
 
       setExpenses(formattedExpenses)
-    } catch (error) {
-      console.error('Failed to load budget data:', error)
+    } catch (error: any) {
+      console.error('Failed to load budget data:', error?.message, error?.code, error?.details, error)
     } finally {
       setLoading(false)
     }
@@ -554,7 +543,7 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
               className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
             >
               {/* Category Icon */}
-              <div className="text-3xl flex-shrink-0">
+              <div className="text-3xl shrink-0">
                 {getCategoryIcon(expense.category)}
               </div>
 
@@ -562,7 +551,7 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-4 mb-1">
                   <h4 className="font-medium text-gray-900">{expense.description}</h4>
-                  <span className="text-lg font-bold text-gray-900 flex-shrink-0">
+                  <span className="text-lg font-bold text-gray-900 shrink-0">
                     {formatCurrency(expense.amount, budgetData.currency)}
                   </span>
                 </div>
@@ -590,7 +579,7 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
               {/* Actions */}
               <button
                 onClick={() => handleDeleteExpense(expense.id, expense.description)}
-                className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors flex-shrink-0"
+                className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors shrink-0"
                 title="Delete"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

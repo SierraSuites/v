@@ -3,14 +3,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { createClient } from '@/lib/supabase/client'
+import { updateTask } from '@/lib/supabase/tasks'
 import {
-  PlusIcon,
   ClockIcon,
-  ArrowTopRightOnSquareIcon
+  XMarkIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline'
 import { CheckIcon } from '@heroicons/react/24/outline'
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
-import Link from 'next/link'
+import TaskCreationModal from '@/components/dashboard/TaskCreationModal'
 
 interface Task {
   id: string
@@ -18,8 +19,31 @@ interface Task {
   description: string | null
   status: 'not-started' | 'in-progress' | 'completed' | 'blocked' | 'review'
   priority: 'low' | 'medium' | 'high' | 'critical'
+  trade: string | null
+  phase: string | null
+  start_date: string | null
   due_date: string | null
+  duration: number | null
+  estimated_hours: number | null
+  actual_hours: number | null
+  progress: number | null
   assignee_id: string | null
+  assignee_name: string | null
+  crew_size: number | null
+  equipment: string[] | null
+  materials: string[] | null
+  certifications: string[] | null
+  safety_protocols: string[] | null
+  quality_standards: string[] | null
+  location: string | null
+  weather_dependent: boolean | null
+  weather_buffer: number | null
+  inspection_required: boolean | null
+  inspection_type: string | null
+  dependencies: string[] | null
+  attachments: number | null
+  comments: number | null
+  client_visibility: boolean | null
   created_at: string
   updated_at: string
 }
@@ -54,19 +78,12 @@ function isOverdue(task: Task) {
 export default function ProjectTasksTab({ project }: Props) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
   const [filterStatus, setFilterStatus] = useState<string>('active')
-  const [confirmingTaskId, setConfirmingTaskId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [detailTask, setDetailTask] = useState<Task | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [undoInfo, setUndoInfo] = useState<{ task: Task; prevStatus: Task['status'] } | null>(null)
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    priority: 'medium' as Task['priority'],
-    due_date: ''
-  })
 
   useEffect(() => {
     fetchTasks()
@@ -94,49 +111,24 @@ export default function ProjectTasksTab({ project }: Props) {
     }
   }
 
+  function calcProgress(currentTasks: Task[]) {
+    if (currentTasks.length === 0) return 0
+    const totalHours = currentTasks.reduce((sum, t) => sum + (t.estimated_hours ?? 1), 0)
+    const completedHours = currentTasks
+      .filter(t => t.status === 'completed')
+      .reduce((sum, t) => sum + (t.estimated_hours ?? 1), 0)
+    return Math.round((completedHours / totalHours) * 100)
+  }
+
   async function syncProgress(currentTasks: Task[]) {
     if (currentTasks.length === 0) return
-    const completed = currentTasks.filter(t => t.status === 'completed').length
-    const progress = Math.round((completed / currentTasks.length) * 100)
+    const progress = calcProgress(currentTasks)
+    window.dispatchEvent(new CustomEvent('project-progress-update', { detail: { progress } }))
     const supabase = createClient()
     await supabase
       .from('projects')
       .update({ progress, updated_at: new Date().toISOString() })
       .eq('id', project.id)
-  }
-
-  async function handleAddTask(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.title) return
-    setSubmitting(true)
-    try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert({
-          project_id: project.id,
-          title: form.title,
-          description: form.description || null,
-          priority: form.priority,
-          due_date: form.due_date || null,
-          status: 'not-started',
-          created_by: user?.id
-        })
-        .select()
-        .single()
-
-      if (!error && data) {
-        const updated = [data as Task, ...tasks]
-        setTasks(updated)
-        setForm({ title: '', description: '', priority: 'medium', due_date: '' })
-        setShowForm(false)
-        await syncProgress(updated)
-      }
-    } finally {
-      setSubmitting(false)
-    }
   }
 
   async function toggleTaskDone(task: Task, showUndo = false) {
@@ -169,7 +161,6 @@ export default function ProjectTasksTab({ project }: Props) {
       next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
-    setConfirmingTaskId(null)
   }
 
   async function bulkMarkComplete() {
@@ -180,6 +171,17 @@ export default function ProjectTasksTab({ project }: Props) {
     setSelectedIds(new Set())
     const supabase = createClient()
     await supabase.from('tasks').update({ status: 'completed', updated_at: new Date().toISOString() }).in('id', ids)
+    await syncProgress(updated)
+  }
+
+  async function bulkMarkActive() {
+    const ids = Array.from(selectedIds).filter(id => tasks.find(t => t.id === id)?.status === 'completed')
+    if (!ids.length) return
+    const updated = tasks.map(t => ids.includes(t.id) ? { ...t, status: 'not-started' as Task['status'] } : t)
+    setTasks(updated)
+    setSelectedIds(new Set())
+    const supabase = createClient()
+    await supabase.from('tasks').update({ status: 'not-started', updated_at: new Date().toISOString() }).in('id', ids)
     await syncProgress(updated)
   }
 
@@ -201,6 +203,85 @@ export default function ProjectTasksTab({ project }: Props) {
     }
   }
 
+  function toModalTask(t: Task) {
+    return {
+      id: t.id,
+      title: t.title,
+      description: t.description ?? '',
+      project: project.name ?? '',
+      projectId: project.id,
+      trade: (t.trade ?? 'general') as "electrical" | "plumbing" | "hvac" | "concrete" | "framing" | "finishing" | "general",
+      phase: (t.phase ?? 'pre-construction') as "pre-construction" | "foundation" | "framing" | "mep" | "finishing" | "closeout",
+      priority: t.priority,
+      status: t.status,
+      assignee: t.assignee_name ?? '',
+      assigneeId: t.assignee_id ?? '',
+      assigneeAvatar: '',
+      startDate: t.start_date ?? '',
+      dueDate: t.due_date ?? '',
+      duration: t.duration ?? 0,
+      progress: t.progress ?? 0,
+      estimatedHours: t.estimated_hours ?? 0,
+      actualHours: t.actual_hours ?? 0,
+      dependencies: t.dependencies ?? [],
+      attachments: t.attachments ?? 0,
+      comments: t.comments ?? 0,
+      location: t.location ?? '',
+      weatherDependent: t.weather_dependent ?? false,
+      weatherBuffer: t.weather_buffer ?? 0,
+      inspectionRequired: t.inspection_required ?? false,
+      inspectionType: t.inspection_type ?? '',
+      crewSize: t.crew_size ?? 1,
+      equipment: t.equipment ?? [],
+      materials: t.materials ?? [],
+      certifications: t.certifications ?? [],
+      safetyProtocols: t.safety_protocols ?? [],
+      qualityStandards: t.quality_standards ?? [],
+      documentation: [],
+      notifyInspector: false,
+      clientVisibility: t.client_visibility ?? false,
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async function handleEditSave(taskData: any) {
+    if (!detailTask) return
+    const { error } = await updateTask(detailTask.id, {
+      title: taskData.title!,
+      description: taskData.description || null,
+      trade: taskData.trade as "electrical" | "plumbing" | "hvac" | "concrete" | "framing" | "finishing" | "general",
+      phase: (taskData.phase || undefined) as "pre-construction" | "foundation" | "framing" | "mep" | "finishing" | "closeout" | undefined,
+      priority: taskData.priority as Task['priority'],
+      status: taskData.status as Task['status'],
+      assignee_id: taskData.assigneeId || null,
+      assignee_name: taskData.assignee || null,
+      start_date: taskData.startDate || null,
+      due_date: taskData.dueDate || null,
+      duration: taskData.duration ?? 0,
+      progress: taskData.progress ?? 0,
+      estimated_hours: taskData.estimatedHours ?? 0,
+      actual_hours: taskData.actualHours ?? 0,
+      dependencies: taskData.dependencies ?? [],
+      location: taskData.location || null,
+      weather_dependent: taskData.weatherDependent ?? false,
+      weather_buffer: taskData.weatherBuffer ?? 0,
+      inspection_required: taskData.inspectionRequired ?? false,
+      inspection_type: taskData.inspectionType || null,
+      crew_size: taskData.crewSize ?? 1,
+      equipment: taskData.equipment ?? [],
+      materials: taskData.materials ?? [],
+      certifications: taskData.certifications ?? [],
+      safety_protocols: taskData.safetyProtocols ?? [],
+      quality_standards: taskData.qualityStandards ?? [],
+      client_visibility: taskData.clientVisibility ?? false,
+    })
+    if (!error) {
+      setShowEditModal(false)
+      setDetailTask(null)
+      await fetchTasks()
+    }
+  }
+
   const filtered = tasks.filter(t => {
     if (filterStatus === 'active') return t.status !== 'completed'
     if (filterStatus === 'done') return t.status === 'completed'
@@ -214,30 +295,6 @@ export default function ProjectTasksTab({ project }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">Project Tasks</h2>
-          <p className="text-sm text-gray-500 mt-1">Tasks linked to this project</p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            href="/taskflow"
-            className="inline-flex items-center gap-1.5 px-3 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50"
-          >
-            <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-            Open TaskFlow
-          </Link>
-          <button
-            onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-          >
-            <PlusIcon className="h-4 w-4" />
-            Add Task
-          </button>
-        </div>
-      </div>
-
       {/* Summary */}
       <div className="grid grid-cols-4 gap-3">
         <div className="bg-white rounded-lg border p-3 text-center">
@@ -257,23 +314,6 @@ export default function ProjectTasksTab({ project }: Props) {
           <div className="text-xs text-gray-500">Overdue</div>
         </div>
       </div>
-
-      {/* Progress bar */}
-      {tasks.length > 0 && (
-        <div className="bg-white border rounded-lg p-4">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-600">Completion</span>
-            <span className="font-medium text-gray-900">{Math.round((doneCount / tasks.length) * 100)}%</span>
-          </div>
-          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-green-500 rounded-full transition-all"
-              style={{ width: `${(doneCount / tasks.length) * 100}%` }}
-            />
-          </div>
-          <div className="text-xs text-gray-400 mt-1">{doneCount} of {tasks.length} tasks completed</div>
-        </div>
-      )}
 
       {/* Filter */}
       <div className="flex gap-2">
@@ -295,69 +335,6 @@ export default function ProjectTasksTab({ project }: Props) {
           </button>
         ))}
       </div>
-
-      {/* Add Task Form */}
-      {showForm && (
-        <div className="bg-white border rounded-lg p-5">
-          <h3 className="text-base font-semibold text-gray-900 mb-4">New Task</h3>
-          <form onSubmit={handleAddTask} className="space-y-3">
-            <div>
-              <input
-                type="text"
-                value={form.title}
-                onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                placeholder="Task title *"
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <div>
-              <input
-                type="text"
-                value={form.description}
-                onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                placeholder="Description (optional)"
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <select
-                value={form.priority}
-                onChange={e => setForm(p => ({ ...p, priority: e.target.value as Task['priority'] }))}
-                className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="low">Low Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="high">High Priority</option>
-                <option value="critical">Critical</option>
-              </select>
-              <input
-                type="date"
-                value={form.due_date}
-                onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))}
-                className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Due date"
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-              >
-                {submitting ? 'Adding...' : 'Add Task'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {/* Task List */}
       {loading ? (
@@ -381,37 +358,43 @@ export default function ProjectTasksTab({ project }: Props) {
           <p className="text-sm text-gray-500 mb-4">
             {filterStatus !== 'done' ? 'Add tasks to track work on this project' : 'Complete some tasks to see them here'}
           </p>
-          {filterStatus !== 'done' && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
-            >
-              <PlusIcon className="h-4 w-4" />
-              Add First Task
-            </button>
-          )}
         </div>
       ) : (
         <div className="bg-white border rounded-lg overflow-hidden">
-          {selectedIds.size > 0 && (
-            <div className="flex items-center justify-between px-4 py-2.5 bg-blue-50 border-b">
-              <span className="text-sm text-blue-700 font-medium">{selectedIds.size} selected</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={bulkMarkComplete}
-                  className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700"
-                >
-                  Mark Complete
-                </button>
-                <button
-                  onClick={() => setSelectedIds(new Set())}
-                  className="px-3 py-1.5 border text-xs font-medium text-gray-600 rounded-lg hover:bg-gray-50"
-                >
-                  Clear
-                </button>
+          {selectedIds.size > 0 && (() => {
+            const selTasks = filtered.filter(t => selectedIds.has(t.id))
+            const hasIncomplete = selTasks.some(t => t.status !== 'completed')
+            const hasComplete = selTasks.some(t => t.status === 'completed')
+            return (
+              <div className="flex items-center justify-between px-4 py-2.5 bg-blue-50 border-b">
+                <span className="text-sm text-blue-700 font-medium">{selectedIds.size} selected</span>
+                <div className="flex gap-2">
+                  {hasIncomplete && (
+                    <button
+                      onClick={bulkMarkComplete}
+                      className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700"
+                    >
+                      Mark Complete
+                    </button>
+                  )}
+                  {hasComplete && (
+                    <button
+                      onClick={bulkMarkActive}
+                      className="px-3 py-1.5 bg-gray-600 text-white text-xs font-medium rounded-lg hover:bg-gray-700"
+                    >
+                      Mark Active
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setSelectedIds(new Set())}
+                    className="px-3 py-1.5 border text-xs font-medium text-gray-600 rounded-lg hover:bg-gray-50"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
           <div className="divide-y">
             {filtered.map(task => {
               const overdue = isOverdue(task)
@@ -430,9 +413,12 @@ export default function ProjectTasksTab({ project }: Props) {
                     }
                   </button>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                    <button
+                      onClick={() => !selectedIds.size && setDetailTask(task)}
+                      className={`text-sm font-medium text-left ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-900 hover:text-blue-600'}`}
+                    >
                       {task.title}
-                    </p>
+                    </button>
                     {task.description && (
                       <p className="text-xs text-gray-500 mt-0.5">{task.description}</p>
                     )}
@@ -456,6 +442,154 @@ export default function ProjectTasksTab({ project }: Props) {
             })}
           </div>
         </div>
+      )}
+
+      {/* Task Detail Panel */}
+      {detailTask && (
+        <>
+          <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setDetailTask(null)} />
+          <div className="fixed right-0 top-0 h-full w-96 bg-white shadow-xl z-50 flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b">
+              <h3 className="text-base font-semibold text-gray-900">Task Details</h3>
+              <button onClick={() => setDetailTask(null)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5 space-y-6">
+              {/* Title & Description */}
+              <div>
+                <p className={`text-lg font-semibold ${detailTask.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                  {detailTask.title}
+                </p>
+                {detailTask.description && (
+                  <p className="text-sm text-gray-500 mt-1">{detailTask.description}</p>
+                )}
+              </div>
+
+              {/* Status & Priority */}
+              <section>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100">Overview</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><p className="text-xs text-gray-400 mb-0.5">Status</p><span className="font-medium text-gray-700">{STATUS_LABELS[detailTask.status]}</span></div>
+                  <div><p className="text-xs text-gray-400 mb-0.5">Priority</p><span className={`text-xs px-1.5 py-0.5 rounded font-medium ${PRIORITY_COLORS[detailTask.priority]}`}>{detailTask.priority}</span></div>
+                  {detailTask.trade && <div><p className="text-xs text-gray-400 mb-0.5">Trade</p><span className="font-medium text-gray-700 capitalize">{detailTask.trade}</span></div>}
+                  {detailTask.phase && <div><p className="text-xs text-gray-400 mb-0.5">Phase</p><span className="font-medium text-gray-700 capitalize">{detailTask.phase.replace('-', ' ')}</span></div>}
+                  {detailTask.location && <div className="col-span-2"><p className="text-xs text-gray-400 mb-0.5">Location</p><span className="font-medium text-gray-700">{detailTask.location}</span></div>}
+                </div>
+              </section>
+
+              {/* Scheduling */}
+              <section>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100">Scheduling</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  {detailTask.start_date && <div><p className="text-xs text-gray-400 mb-0.5">Start Date</p><span className="font-medium text-gray-700">{formatDate(detailTask.start_date)}</span></div>}
+                  <div><p className="text-xs text-gray-400 mb-0.5">Due Date</p><span className="font-medium text-gray-700">{detailTask.due_date ? formatDate(detailTask.due_date) : '—'}</span></div>
+                  {detailTask.duration != null && <div><p className="text-xs text-gray-400 mb-0.5">Duration</p><span className="font-medium text-gray-700">{detailTask.duration}d</span></div>}
+                  {detailTask.estimated_hours != null && <div><p className="text-xs text-gray-400 mb-0.5">Est. Hours</p><span className="font-medium text-gray-700">{detailTask.estimated_hours}h</span></div>}
+                  {detailTask.actual_hours != null && detailTask.actual_hours > 0 && <div><p className="text-xs text-gray-400 mb-0.5">Actual Hours</p><span className="font-medium text-gray-700">{detailTask.actual_hours}h</span></div>}
+                  {detailTask.progress != null && <div><p className="text-xs text-gray-400 mb-0.5">Progress</p><span className="font-medium text-gray-700">{detailTask.progress}%</span></div>}
+                </div>
+              </section>
+
+              {/* Resources */}
+              {(detailTask.assignee_name || detailTask.crew_size || (detailTask.equipment?.length ?? 0) > 0 || (detailTask.materials?.length ?? 0) > 0) && (
+                <section>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100">Resources</p>
+                  <div className="space-y-2 text-sm">
+                    {detailTask.assignee_name && <div><p className="text-xs text-gray-400 mb-0.5">Assignee</p><span className="font-medium text-gray-700">{detailTask.assignee_name}</span></div>}
+                    {detailTask.crew_size != null && detailTask.crew_size > 0 && <div><p className="text-xs text-gray-400 mb-0.5">Crew Size</p><span className="font-medium text-gray-700">{detailTask.crew_size}</span></div>}
+                    {(detailTask.equipment?.length ?? 0) > 0 && (
+                      <div><p className="text-xs text-gray-400 mb-0.5">Equipment</p>
+                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.equipment!.map(e => <span key={e} className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{e}</span>)}</div>
+                      </div>
+                    )}
+                    {(detailTask.materials?.length ?? 0) > 0 && (
+                      <div><p className="text-xs text-gray-400 mb-0.5">Materials</p>
+                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.materials!.map(m => <span key={m} className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{m}</span>)}</div>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {/* Quality & Safety */}
+              {(detailTask.inspection_required || detailTask.weather_dependent || (detailTask.safety_protocols?.length ?? 0) > 0 || (detailTask.certifications?.length ?? 0) > 0) && (
+                <section>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100">Quality & Safety</p>
+                  <div className="space-y-2 text-sm">
+                    {detailTask.inspection_required && (
+                      <div><p className="text-xs text-gray-400 mb-0.5">Inspection</p>
+                        <span className="font-medium text-gray-700">{detailTask.inspection_type ?? 'Required'}</span>
+                      </div>
+                    )}
+                    {detailTask.weather_dependent && (
+                      <div><p className="text-xs text-gray-400 mb-0.5">Weather Dependent</p>
+                        <span className="font-medium text-gray-700">Yes{detailTask.weather_buffer ? ` · ${detailTask.weather_buffer}d buffer` : ''}</span>
+                      </div>
+                    )}
+                    {(detailTask.certifications?.length ?? 0) > 0 && (
+                      <div><p className="text-xs text-gray-400 mb-0.5">Certifications</p>
+                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.certifications!.map(c => <span key={c} className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">{c}</span>)}</div>
+                      </div>
+                    )}
+                    {(detailTask.safety_protocols?.length ?? 0) > 0 && (
+                      <div><p className="text-xs text-gray-400 mb-0.5">Safety Protocols</p>
+                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.safety_protocols!.map(s => <span key={s} className="text-xs bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded">{s}</span>)}</div>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {/* Meta */}
+              <section>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100">Details</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><p className="text-xs text-gray-400 mb-0.5">Created</p><span className="font-medium text-gray-700">{formatDate(detailTask.created_at)}</span></div>
+                  {detailTask.dependencies != null && <div><p className="text-xs text-gray-400 mb-0.5">Dependencies</p><span className="font-medium text-gray-700">{detailTask.dependencies.length}</span></div>}
+                  {detailTask.client_visibility != null && <div><p className="text-xs text-gray-400 mb-0.5">Client Visible</p><span className="font-medium text-gray-700">{detailTask.client_visibility ? 'Yes' : 'No'}</span></div>}
+                </div>
+              </section>
+            </div>
+            <div className="px-5 py-4 border-t flex gap-2">
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="flex items-center gap-1.5 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                <PencilIcon className="h-4 w-4" />
+                Edit
+              </button>
+              {detailTask.status === 'completed' ? (
+                <button
+                  onClick={() => { toggleTaskDone(detailTask); setDetailTask(null) }}
+                  className="flex-1 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Mark as Active
+                </button>
+              ) : (
+                <button
+                  onClick={() => { toggleTaskDone(detailTask); setDetailTask(null) }}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+                >
+                  Mark as Complete
+                </button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Edit Task Modal */}
+      {showEditModal && detailTask && (
+        <TaskCreationModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSave={handleEditSave}
+          editingTask={toModalTask(detailTask)}
+          projects={[{ id: project.id, name: project.name ?? '' }]}
+          teamMembers={[]}
+          existingTasks={tasks.map(toModalTask)}
+        />
       )}
 
       {/* Undo toast */}

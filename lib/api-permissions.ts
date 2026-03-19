@@ -412,7 +412,7 @@ export async function requireProjectAccess(
     // Check if user has access to project via team membership
     const accessibleProjects = await permissionService.getUserAccessibleProjects(user.id)
 
-    if (!accessibleProjects.includes(projectId)) {
+    if (accessibleProjects && !accessibleProjects.includes(projectId)) {
       return {
         authorized: false,
         userId: user.id,
