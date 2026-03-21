@@ -242,7 +242,7 @@ export default function AppShell({ children, user }: AppShellProps) {
                 } rounded-xl shadow-2xl py-2 z-10`}
               >
                 <Link
-                  href="/profile"
+                  href="/settings/profile"
                   className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
                     darkMode ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-50 text-gray-700'
                   } transition-colors`}
@@ -506,7 +506,7 @@ export default function AppShell({ children, user }: AppShellProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className={`flex-1 overflow-y-auto p-6 ${darkMode ? 'bg-[#0f1117]' : 'bg-gray-50'}`}>{children}</main>
       </div>
     </div>
   )

@@ -438,7 +438,7 @@ export default function ProjectsPage() {
   // Quality Guide line 1774: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="min-h-screen" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header skeleton */}
           <div className="flex items-center justify-between mb-8">
@@ -501,12 +501,12 @@ export default function ProjectsPage() {
   return (
     <>
         {/* Header */}
-        <header className="sticky top-0 z-40" style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05)' }}>
+        <header className="sticky top-0 z-40" style={{ backgroundColor: 'var(--c-card-bg)', borderBottom: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Projects</h1>
-              <p className="text-sm mt-1" style={{ color: '#4A4A4A' }}>
+              <h1 className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>Projects</h1>
+              <p className="text-sm mt-1" style={{ color: 'var(--c-text-secondary)' }}>
                 {stats.total} total project{stats.total !== 1 ? 's' : ''}
                 {userPlan === "starter" && ` (${projectLimits.starter} max on Starter plan)`}
                 {userPlan === "professional" && ` (${projectLimits.professional} max on Pro plan)`}
@@ -521,7 +521,7 @@ export default function ProjectsPage() {
                     ? "text-white"
                     : "cursor-not-allowed"
                 }`}
-                style={canCreateProject ? { background: 'linear-gradient(to bottom, #FF6B6B 0%, #FF5252 100%)', boxShadow: '0 2px 4px rgba(255,107,107,0.2), 0 1px 2px rgba(255,107,107,0.3)' } : { backgroundColor: '#E0E0E0', color: '#4A4A4A' }}
+                style={canCreateProject ? { background: 'linear-gradient(to bottom, #FF6B6B 0%, #FF5252 100%)', boxShadow: '0 2px 4px rgba(255,107,107,0.2), 0 1px 2px rgba(255,107,107,0.3)' } : { backgroundColor: 'var(--c-border)', color: 'var(--c-text-secondary)' }}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -540,10 +540,10 @@ export default function ProjectsPage() {
             <div className="flex items-start gap-3">
               <span className="text-2xl">⚠️</span>
               <div className="flex-1">
-                <h3 className="font-semibold mb-1" style={{ color: '#1A1A1A' }}>
+                <h3 className="font-semibold mb-1" style={{ color: 'var(--c-text-primary)' }}>
                   {projects.length >= projectLimits.starter ? "Project Limit Reached" : "Approaching Project Limit"}
                 </h3>
-                <p className="text-sm mb-3" style={{ color: '#4A4A4A' }}>
+                <p className="text-sm mb-3" style={{ color: 'var(--c-text-secondary)' }}>
                   {projects.length >= projectLimits.starter
                     ? `You've reached the maximum of ${projectLimits.starter} projects on the Starter plan.`
                     : `You're using ${projects.length} of ${projectLimits.starter} projects. Upgrade to Pro for up to 50 projects.`
@@ -566,54 +566,54 @@ export default function ProjectsPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E0F2FF' }}>
                 <span className="text-xl">🏗️</span>
               </div>
-              <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Total</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Total</p>
             </div>
-            <p className="text-3xl font-bold" style={{ color: '#1A1A1A' }}>{stats.total}</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{stats.total}</p>
           </div>
 
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E6F9EA' }}>
                 <span className="text-xl">🚀</span>
               </div>
-              <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Active</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Active</p>
             </div>
             <p className="text-3xl font-bold" style={{ color: '#6BCB77' }}>{stats.active}</p>
           </div>
 
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E5F4FF' }}>
                 <span className="text-xl">📋</span>
               </div>
-              <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Planning</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Planning</p>
             </div>
             <p className="text-3xl font-bold" style={{ color: '#6A9BFD' }}>{stats.planning}</p>
           </div>
 
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFF9E6' }}>
                 <span className="text-xl">⏸️</span>
               </div>
-              <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>On Hold</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>On Hold</p>
             </div>
             <p className="text-3xl font-bold" style={{ color: '#FFD93D' }}>{stats.onHold}</p>
           </div>
 
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F8F9FA' }}>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
                 <span className="text-xl">✅</span>
               </div>
-              <p className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Completed</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Completed</p>
             </div>
-            <p className="text-3xl font-bold" style={{ color: '#4A4A4A' }}>{stats.completed}</p>
+            <p className="text-3xl font-bold" style={{ color: 'var(--c-text-secondary)' }}>{stats.completed}</p>
           </div>
         </div>
 
@@ -622,7 +622,7 @@ export default function ProjectsPage() {
           <Link
             href="/projects/design-selections"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all hover:-translate-y-0.5"
-            style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', color: '#1A1A1A', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
+            style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', color: 'var(--c-text-primary)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
           >
             <span>🎨</span>
             Design Selections
@@ -630,7 +630,7 @@ export default function ProjectsPage() {
           <Link
             href="/projects/approvals"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all hover:-translate-y-0.5"
-            style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', color: '#1A1A1A', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
+            style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', color: 'var(--c-text-primary)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
           >
             <span>✅</span>
             Approvals
@@ -638,7 +638,7 @@ export default function ProjectsPage() {
           <Link
             href="/projects/turnover"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all hover:-translate-y-0.5"
-            style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', color: '#1A1A1A', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
+            style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', color: 'var(--c-text-primary)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
           >
             <span>📦</span>
             Turnover
@@ -646,7 +646,7 @@ export default function ProjectsPage() {
         </div>
 
         {/* Filters and View Toggle */}
-        <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+        <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
           <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
             {/* Search */}
             <div className="flex-1 w-full lg:w-auto">
@@ -660,7 +660,7 @@ export default function ProjectsPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 rounded-lg focus:outline-none"
-                  style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+                  style={{ border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
                 />
               </div>
             </div>
@@ -671,7 +671,7 @@ export default function ProjectsPage() {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+                style={{ border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
               >
                 <option value="all">All Status</option>
                 <option value="planning">Planning</option>
@@ -685,7 +685,7 @@ export default function ProjectsPage() {
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
                 className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+                style={{ border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
               >
                 <option value="all">All Types</option>
                 <option value="residential">Residential</option>
@@ -698,7 +698,7 @@ export default function ProjectsPage() {
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+                style={{ border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
@@ -707,13 +707,13 @@ export default function ProjectsPage() {
               </select>
 
               {/* View Toggle */}
-              <div className="flex items-center rounded-lg p-1" style={{ backgroundColor: '#F8F9FA' }}>
+              <div className="flex items-center rounded-lg p-1" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
                 <button
                   onClick={() => setViewMode("grid")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     viewMode === "grid" ? "shadow-sm" : ""
                   }`}
-                  style={viewMode === "grid" ? { backgroundColor: '#FFFFFF', color: '#1A1A1A' } : { color: '#4A4A4A' }}
+                  style={viewMode === "grid" ? { backgroundColor: 'var(--c-card-bg)', color: 'var(--c-text-primary)' } : { color: 'var(--c-text-secondary)' }}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -724,7 +724,7 @@ export default function ProjectsPage() {
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     viewMode === "list" ? "shadow-sm" : ""
                   }`}
-                  style={viewMode === "list" ? { backgroundColor: '#FFFFFF', color: '#1A1A1A' } : { color: '#4A4A4A' }}
+                  style={viewMode === "list" ? { backgroundColor: 'var(--c-card-bg)', color: 'var(--c-text-primary)' } : { color: 'var(--c-text-secondary)' }}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -737,11 +737,11 @@ export default function ProjectsPage() {
 
         {/* Projects Grid/List */}
         {filteredProjects.length === 0 ? (
-          <div className="rounded-xl p-12 text-center" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-12 text-center" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="max-w-md mx-auto">
               <span className="text-6xl mb-4 block">🏗️</span>
-              <h3 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>No projects found</h3>
-              <p className="mb-6" style={{ color: '#4A4A4A' }}>
+              <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--c-text-primary)' }}>No projects found</h3>
+              <p className="mb-6" style={{ color: 'var(--c-text-secondary)' }}>
                 {searchQuery || statusFilter !== "all" || typeFilter !== "all"
                   ? "Try adjusting your filters or search query"
                   : "Get started by creating your first construction project"
@@ -768,7 +768,7 @@ export default function ProjectsPage() {
                 key={project.id}
                 href={`/projects/${project.id}`}
                 className="group rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
-                style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
+                style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
               >
                 {/* Project Thumbnail */}
                 <div className="relative h-48 bg-gray-100 overflow-hidden">
@@ -797,18 +797,18 @@ export default function ProjectsPage() {
 
                 {/* Project Info */}
                 <div className="p-5">
-                  <h3 className="font-bold text-lg mb-1 transition-colors" style={{ color: '#1A1A1A' }}>
+                  <h3 className="font-bold text-lg mb-1 transition-colors" style={{ color: 'var(--c-text-primary)' }}>
                     {project.name}
                   </h3>
-                  <p className="text-sm mb-4" style={{ color: '#4A4A4A' }}>{project.client}</p>
+                  <p className="text-sm mb-4" style={{ color: 'var(--c-text-secondary)' }}>{project.client}</p>
 
                   {/* Progress Bar */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between text-sm mb-1">
-                      <span style={{ color: '#4A4A4A' }}>Progress</span>
-                      <span className="font-semibold" style={{ color: '#1A1A1A' }}>{project.progress}%</span>
+                      <span style={{ color: 'var(--c-text-secondary)' }}>Progress</span>
+                      <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>{project.progress}%</span>
                     </div>
-                    <div className="w-full rounded-full h-2" style={{ backgroundColor: '#E0E0E0' }}>
+                    <div className="w-full rounded-full h-2" style={{ backgroundColor: 'var(--c-border)' }}>
                       <div
                         className={`h-2 rounded-full transition-all duration-300 ${getStatusColor(project.status)}`}
                         style={{ width: `${project.progress}%` }}
@@ -818,22 +818,22 @@ export default function ProjectsPage() {
 
                   {/* Stats - Spec Section 1 lines 88-92: Budget health + schedule */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="rounded-lg p-2" style={{ backgroundColor: '#F8F9FA' }}>
-                      <p className="text-xs mb-0.5" style={{ color: '#4A4A4A' }}>Budget</p>
-                      <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{formatCurrency(project.budget)}</p>
+                    <div className="rounded-lg p-2" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
+                      <p className="text-xs mb-0.5" style={{ color: 'var(--c-text-secondary)' }}>Budget</p>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--c-text-primary)' }}>{formatCurrency(project.budget)}</p>
                       {project.budget > 0 && (() => {
                         const pct = (project.spent / project.budget) * 100
                         const color = pct > 100 ? '#EF4444' : pct > 95 ? '#F59E0B' : '#22C55E'
                         return <p className="text-xs font-medium mt-0.5" style={{ color }}>{pct.toFixed(0)}% used</p>
                       })()}
                     </div>
-                    <div className="rounded-lg p-2" style={{ backgroundColor: '#F8F9FA' }}>
-                      <p className="text-xs mb-0.5" style={{ color: '#4A4A4A' }}>Timeline</p>
+                    <div className="rounded-lg p-2" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
+                      <p className="text-xs mb-0.5" style={{ color: 'var(--c-text-secondary)' }}>Timeline</p>
                       {(() => {
                         const daysLeft = Math.ceil((new Date(project.endDate).getTime() - new Date().getTime()) / 86400000)
                         const isOverdue = daysLeft < 0 && project.status !== 'completed'
                         return (
-                          <p className="text-sm font-semibold" style={{ color: isOverdue ? '#EF4444' : daysLeft <= 7 ? '#F59E0B' : '#1A1A1A' }}>
+                          <p className="text-sm font-semibold" style={{ color: isOverdue ? '#EF4444' : daysLeft <= 7 ? '#F59E0B' : 'var(--c-text-primary)' }}>
                             {project.status === 'completed' ? 'Done' : isOverdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d left`}
                           </p>
                         )
@@ -855,35 +855,35 @@ export default function ProjectsPage() {
                         </div>
                       ))}
                       {project.teamMembers.length > 3 && (
-                        <div className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-semibold" style={{ backgroundColor: '#E0E0E0', color: '#4A4A4A' }}>
+                        <div className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-semibold" style={{ backgroundColor: 'var(--c-border)', color: 'var(--c-text-secondary)' }}>
                           +{project.teamMembers.length - 3}
                         </div>
                       )}
                     </div>
-                    <span className="text-xs" style={{ color: '#4A4A4A' }}>{project.lastActivity}</span>
+                    <span className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>{project.lastActivity}</span>
                   </div>
                 </div>
               </Link>
             ))}
           </div>
         ) : (
-          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead style={{ backgroundColor: '#F8F9FA', borderBottom: '1px solid #E0E0E0' }}>
+                <thead style={{ backgroundColor: 'var(--c-sub-bg)', borderBottom: '1px solid var(--c-border)' }}>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Project</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Progress</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Timeline</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Team</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Budget</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Project</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Progress</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Timeline</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Team</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Budget</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Actions</th>
                   </tr>
                 </thead>
-                <tbody style={{ borderTop: '1px solid #E0E0E0' }}>
+                <tbody style={{ borderTop: '1px solid var(--c-border)' }}>
                   {filteredProjects.map((project) => (
-                    <tr key={project.id} className="transition-colors" style={{ borderBottom: '1px solid #E0E0E0' }}>
+                    <tr key={project.id} className="transition-colors" style={{ borderBottom: '1px solid var(--c-border)' }}>
                       <td className="px-6 py-4">
                         <Link href={`/projects/${project.id}`} className="flex items-center gap-3 group">
                           <img
@@ -892,10 +892,10 @@ export default function ProjectsPage() {
                             className="w-12 h-12 rounded-lg object-cover"
                           />
                           <div className="min-w-0">
-                            <p className="font-semibold transition-colors truncate" style={{ color: '#1A1A1A' }}>
+                            <p className="font-semibold transition-colors truncate" style={{ color: 'var(--c-text-primary)' }}>
                               {project.name}
                             </p>
-                            <p className="text-sm truncate" style={{ color: '#4A4A4A' }}>{project.client}</p>
+                            <p className="text-sm truncate" style={{ color: 'var(--c-text-secondary)' }}>{project.client}</p>
                           </div>
                         </Link>
                       </td>

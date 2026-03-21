@@ -61,12 +61,12 @@ export default function Pagination({
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t" style={{ borderColor: '#E0E0E0' }}>
+    <div className="flex items-center justify-between px-4 py-3 border-t" style={{ borderColor: 'var(--c-border)' }}>
       {/* Items info */}
       <div className="text-sm" style={{ color: '#6B7280' }}>
-        Showing <span className="font-semibold" style={{ color: '#1A1A1A' }}>{startItem}</span> to{' '}
-        <span className="font-semibold" style={{ color: '#1A1A1A' }}>{endItem}</span> of{' '}
-        <span className="font-semibold" style={{ color: '#1A1A1A' }}>{totalItems}</span> results
+        Showing <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>{startItem}</span> to{' '}
+        <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>{endItem}</span> of{' '}
+        <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>{totalItems}</span> results
       </div>
 
       {/* Pagination controls */}
@@ -76,7 +76,7 @@ export default function Pagination({
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
           className="px-3 py-1 rounded border transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-          style={{ borderColor: '#E0E0E0', color: '#4A4A4A' }}
+          style={{ borderColor: 'var(--c-border)', color: 'var(--c-text-secondary)' }}
         >
           ← Previous
         </button>
@@ -104,8 +104,8 @@ export default function Pagination({
                 }`}
                 style={{
                   backgroundColor: isActive ? '#FF6B6B' : 'transparent',
-                  borderColor: isActive ? '#FF6B6B' : '#E0E0E0',
-                  color: isActive ? '#FFFFFF' : '#4A4A4A'
+                  borderColor: isActive ? '#FF6B6B' : 'var(--c-border)',
+                  color: isActive ? '#FFFFFF' : 'var(--c-text-secondary)'
                 }}
               >
                 {pageNum}
@@ -119,7 +119,7 @@ export default function Pagination({
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
           className="px-3 py-1 rounded border transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-          style={{ borderColor: '#E0E0E0', color: '#4A4A4A' }}
+          style={{ borderColor: 'var(--c-border)', color: 'var(--c-text-secondary)' }}
         >
           Next →
         </button>

@@ -167,7 +167,7 @@ export default function LineItemsTable({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-bold" style={{ color: '#1A1A1A' }}>
+          <h3 className="text-lg font-bold" style={{ color: 'var(--c-text-primary)' }}>
             Line Items ({lineItems.length})
           </h3>
           <p className="text-sm" style={{ color: '#6B7280' }}>
@@ -286,7 +286,7 @@ export default function LineItemsTable({
                 <td colSpan={editable ? 6 : 5} className="px-4 py-3 text-right font-semibold" style={{ color: '#374151' }}>
                   Subtotal:
                 </td>
-                <td className="px-4 py-3 text-right font-bold" style={{ color: '#1A1A1A' }}>
+                <td className="px-4 py-3 text-right font-bold" style={{ color: 'var(--c-text-primary)' }}>
                   ${subtotal.toFixed(2)}
                 </td>
                 {editable && <td></td>}
@@ -419,7 +419,7 @@ function LineItemRow({
             </div>
           ) : (
             <div>
-              <div className="font-medium" style={{ color: '#1A1A1A' }}>
+              <div className="font-medium" style={{ color: 'var(--c-text-primary)' }}>
                 {item.description}
                 {item.is_optional && (
                   <span className="ml-2 text-xs px-2 py-0.5 rounded" style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}>
@@ -518,7 +518,7 @@ function LineItemRow({
         {/* Total Price */}
         {showPricing && (
           <td className="px-4 py-3 text-right">
-            <span className="font-semibold" style={{ color: '#1A1A1A' }}>
+            <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>
               ${item.total_price.toFixed(2)}
             </span>
           </td>

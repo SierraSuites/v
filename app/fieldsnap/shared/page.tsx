@@ -106,19 +106,19 @@ export default function SharedPhotosPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-4 border-t-transparent rounded-full mx-auto" style={{ borderColor: '#FF6B6B' }} />
-          <p className="mt-4 text-sm" style={{ color: '#4A4A4A' }}>Loading shared photos...</p>
+          <p className="mt-4 text-sm" style={{ color: 'var(--c-text-secondary)' }}>Loading shared photos...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
       {/* Header */}
-      <header className="bg-white border-b" style={{ borderColor: '#E0E0E0' }}>
+      <header className="bg-white border-b" style={{ borderColor: 'var(--c-border)' }}>
         <div className="max-w-7xl mx-auto p-6">
           <div className="flex items-center gap-4 mb-4">
             <button
@@ -130,7 +130,7 @@ export default function SharedPhotosPage() {
               </svg>
             </button>
             <div className="flex-1">
-              <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Shared With Me</h1>
+              <h1 className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>Shared With Me</h1>
               <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
                 {sharedPhotos.length} photo{sharedPhotos.length !== 1 ? 's' : ''} shared with you
               </p>
@@ -141,29 +141,29 @@ export default function SharedPhotosPage() {
           <div className="grid grid-cols-3 gap-3">
             <div
               className="p-3 rounded-lg cursor-pointer hover:shadow-md transition-shadow"
-              style={{ backgroundColor: filter === 'all' ? '#E5F4FF' : '#F8F9FA', border: filter === 'all' ? '2px solid #3B82F6' : '1px solid #E0E0E0' }}
+              style={{ backgroundColor: filter === 'all' ? '#E5F4FF' : 'var(--c-sub-bg)', border: filter === 'all' ? '2px solid #3B82F6' : '1px solid var(--c-border)' }}
               onClick={() => setFilter('all')}
             >
               <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>All Shared</p>
-              <p className="text-xl font-bold" style={{ color: '#1A1A1A' }}>{sharedPhotos.length}</p>
+              <p className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{sharedPhotos.length}</p>
             </div>
 
             <div
               className="p-3 rounded-lg cursor-pointer hover:shadow-md transition-shadow"
-              style={{ backgroundColor: filter === 'direct' ? '#E5F4FF' : '#F8F9FA', border: filter === 'direct' ? '2px solid #3B82F6' : '1px solid #E0E0E0' }}
+              style={{ backgroundColor: filter === 'direct' ? '#E5F4FF' : 'var(--c-sub-bg)', border: filter === 'direct' ? '2px solid #3B82F6' : '1px solid var(--c-border)' }}
               onClick={() => setFilter('direct')}
             >
               <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Direct Shares</p>
-              <p className="text-xl font-bold" style={{ color: '#1A1A1A' }}>{directCount}</p>
+              <p className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{directCount}</p>
             </div>
 
             <div
               className="p-3 rounded-lg cursor-pointer hover:shadow-md transition-shadow"
-              style={{ backgroundColor: filter === 'team' ? '#E5F4FF' : '#F8F9FA', border: filter === 'team' ? '2px solid #3B82F6' : '1px solid #E0E0E0' }}
+              style={{ backgroundColor: filter === 'team' ? '#E5F4FF' : 'var(--c-sub-bg)', border: filter === 'team' ? '2px solid #3B82F6' : '1px solid var(--c-border)' }}
               onClick={() => setFilter('team')}
             >
               <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Team Shares</p>
-              <p className="text-xl font-bold" style={{ color: '#1A1A1A' }}>{teamCount}</p>
+              <p className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{teamCount}</p>
             </div>
           </div>
         </div>
@@ -172,14 +172,14 @@ export default function SharedPhotosPage() {
       {/* Content */}
       <main className="max-w-7xl mx-auto p-6">
         {filteredPhotos.length === 0 ? (
-          <div className="text-center py-20 rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+          <div className="text-center py-20 rounded-xl" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
             <span className="text-6xl mb-4 block">📤</span>
-            <h3 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>
+            <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--c-text-primary)' }}>
               {filter === 'all' ? 'No Shared Photos' :
                filter === 'direct' ? 'No Direct Shares' :
                'No Team Shares'}
             </h3>
-            <p className="text-sm mb-6" style={{ color: '#4A4A4A' }}>
+            <p className="text-sm mb-6" style={{ color: 'var(--c-text-secondary)' }}>
               {filter === 'all' ? 'Photos shared with you will appear here' :
                filter === 'direct' ? 'Photos shared directly with you will appear here' :
                'Photos shared with your teams will appear here'}
@@ -191,7 +191,7 @@ export default function SharedPhotosPage() {
               <div
                 key={share.id}
                 className="group relative rounded-xl overflow-hidden cursor-pointer transform transition-transform hover:scale-105"
-                style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', aspectRatio: '1/1' }}
+                style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', aspectRatio: '1/1' }}
                 onClick={() => router.push(`/fieldsnap/${share.media_asset_id}`)}
               >
                 <img

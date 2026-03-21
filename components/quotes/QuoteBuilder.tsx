@@ -347,7 +347,7 @@ export default function QuoteBuilder({
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>
+            <h2 className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
               {quoteId ? '✏️ Edit Quote' : '📝 New Quote'}
             </h2>
             <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
@@ -518,7 +518,7 @@ export default function QuoteBuilder({
       {/* Line Items */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold" style={{ color: '#1A1A1A' }}>
+          <h3 className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
             📋 Line Items
           </h3>
           <button
@@ -541,7 +541,7 @@ export default function QuoteBuilder({
               <div
                 key={item.id}
                 className="border rounded-lg p-4"
-                style={{ borderColor: '#E5E7EB', backgroundColor: item.is_optional ? '#FFF9E6' : '#FFFFFF' }}
+                style={{ borderColor: '#E5E7EB', backgroundColor: item.is_optional ? '#FFF9E6' : 'var(--c-card-bg)' }}
               >
                 <div className="grid grid-cols-12 gap-4">
                   {/* Move buttons */}
@@ -633,7 +633,7 @@ export default function QuoteBuilder({
                   </div>
 
                   {/* Total */}
-                  <div className="col-span-1 flex items-center justify-end font-semibold text-sm" style={{ color: '#1A1A1A' }}>
+                  <div className="col-span-1 flex items-center justify-end font-semibold text-sm" style={{ color: 'var(--c-text-primary)' }}>
                     ${item.total_price.toFixed(2)}
                   </div>
                 </div>
@@ -691,14 +691,14 @@ export default function QuoteBuilder({
 
       {/* Pricing Summary */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <h3 className="text-xl font-bold mb-4" style={{ color: '#1A1A1A' }}>
+        <h3 className="text-xl font-bold mb-4" style={{ color: 'var(--c-text-primary)' }}>
           💰 Pricing Summary
         </h3>
 
         <div className="space-y-3">
           <div className="flex justify-between text-lg">
             <span style={{ color: '#6B7280' }}>Subtotal:</span>
-            <span className="font-semibold" style={{ color: '#1A1A1A' }}>
+            <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>
               ${pricing.subtotal.toFixed(2)}
             </span>
           </div>
@@ -714,14 +714,14 @@ export default function QuoteBuilder({
 
           <div className="flex justify-between text-lg">
             <span style={{ color: '#6B7280' }}>Tax ({taxRate}%):</span>
-            <span className="font-semibold" style={{ color: '#1A1A1A' }}>
+            <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>
               ${pricing.tax_amount.toFixed(2)}
             </span>
           </div>
 
           <div className="border-t pt-3 mt-3" style={{ borderColor: '#E5E7EB' }}>
             <div className="flex justify-between text-2xl font-bold">
-              <span style={{ color: '#1A1A1A' }}>Total:</span>
+              <span style={{ color: 'var(--c-text-primary)' }}>Total:</span>
               <span style={{ color: '#FF6B6B' }}>
                 ${pricing.total.toFixed(2)}
               </span>
@@ -732,7 +732,7 @@ export default function QuoteBuilder({
 
       {/* Notes & Terms */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <h3 className="text-xl font-bold mb-4" style={{ color: '#1A1A1A' }}>
+        <h3 className="text-xl font-bold mb-4" style={{ color: 'var(--c-text-primary)' }}>
           📄 Notes & Terms
         </h3>
 

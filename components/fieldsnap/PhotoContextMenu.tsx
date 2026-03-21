@@ -93,14 +93,14 @@ export default function PhotoContextMenu({
             style={{
               left: `${position.x}px`,
               top: `${position.y}px`,
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #E0E0E0',
+              backgroundColor: 'var(--c-card-bg)',
+              border: '1px solid var(--c-border)',
               minWidth: '220px',
               boxShadow: '0 10px 25px rgba(0,0,0,0.15)'
             }}
           >
             {/* Quick Actions Header */}
-            <div className="px-4 py-2 border-b" style={{ borderColor: '#E0E0E0', backgroundColor: '#F8F9FA' }}>
+            <div className="px-4 py-2 border-b" style={{ borderColor: 'var(--c-border)', backgroundColor: 'var(--c-sub-bg)' }}>
               <p className="text-xs font-bold" style={{ color: '#6B7280' }}>QUICK ACTIONS</p>
             </div>
 
@@ -112,7 +112,7 @@ export default function PhotoContextMenu({
               >
                 <span className="text-xl">🚨</span>
                 <div>
-                  <p className="font-semibold text-sm" style={{ color: '#1A1A1A' }}>Create Punch Item</p>
+                  <p className="font-semibold text-sm" style={{ color: 'var(--c-text-primary)' }}>Create Punch Item</p>
                   <p className="text-xs" style={{ color: '#6B7280' }}>Flag issue from this photo</p>
                 </div>
               </button>
@@ -123,7 +123,7 @@ export default function PhotoContextMenu({
               >
                 <span className="text-xl">🔍</span>
                 <div>
-                  <p className="font-semibold text-sm" style={{ color: '#1A1A1A' }}>View Details</p>
+                  <p className="font-semibold text-sm" style={{ color: 'var(--c-text-primary)' }}>View Details</p>
                   <p className="text-xs" style={{ color: '#6B7280' }}>See full photo info</p>
                 </div>
               </button>
@@ -135,7 +135,7 @@ export default function PhotoContextMenu({
                 >
                   <span className="text-xl">📤</span>
                   <div>
-                    <p className="font-semibold text-sm" style={{ color: '#1A1A1A' }}>Share Photo</p>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--c-text-primary)' }}>Share Photo</p>
                     <p className="text-xs" style={{ color: '#6B7280' }}>Send to team</p>
                   </div>
                 </button>
@@ -143,7 +143,7 @@ export default function PhotoContextMenu({
 
               {onDelete && (
                 <>
-                  <div className="border-t my-1" style={{ borderColor: '#E0E0E0' }} />
+                  <div className="border-t my-1" style={{ borderColor: 'var(--c-border)' }} />
                   <button
                     onClick={() => handleMenuItemClick(onDelete)}
                     className="w-full px-4 py-3 text-left hover:bg-red-50 transition-colors flex items-center gap-3"
@@ -159,7 +159,7 @@ export default function PhotoContextMenu({
             </div>
 
             {/* Hint */}
-            <div className="px-4 py-2 border-t" style={{ borderColor: '#E0E0E0', backgroundColor: '#F8F9FA' }}>
+            <div className="px-4 py-2 border-t" style={{ borderColor: 'var(--c-border)', backgroundColor: 'var(--c-sub-bg)' }}>
               <p className="text-xs" style={{ color: '#9CA3AF' }}>
                 💡 Right-click or double-click photos
               </p>

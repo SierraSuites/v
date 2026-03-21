@@ -124,10 +124,10 @@ export default function ProjectAnalyticsWidget({ projects }: ProjectAnalyticsWid
 
   if (projects.length === 0) {
     return (
-      <div className="rounded-xl p-6 text-center" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+      <div className="rounded-xl p-6 text-center" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
         <span className="text-4xl mb-2 block">📊</span>
-        <p className="text-sm font-semibold mb-1" style={{ color: '#1A1A1A' }}>No Projects Yet</p>
-        <p className="text-xs" style={{ color: '#4A4A4A' }}>
+        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--c-text-primary)' }}>No Projects Yet</p>
+        <p className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>
           Create your first project to see analytics
         </p>
       </div>
@@ -135,47 +135,47 @@ export default function ProjectAnalyticsWidget({ projects }: ProjectAnalyticsWid
   }
 
   return (
-    <div className="rounded-xl p-6 space-y-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+    <div className="rounded-xl p-6 space-y-6" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold" style={{ color: '#1A1A1A' }}>Project Analytics</h3>
+        <h3 className="text-lg font-bold" style={{ color: 'var(--c-text-primary)' }}>Project Analytics</h3>
         <span className="text-2xl">📊</span>
       </div>
 
       {/* Key Stats Grid */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="p-4 rounded-lg" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: '#4A4A4A' }}>Total Projects</p>
-          <p className="text-3xl font-bold" style={{ color: '#1A1A1A' }}>{stats.total}</p>
+        <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}>
+          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c-text-secondary)' }}>Total Projects</p>
+          <p className="text-3xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{stats.total}</p>
         </div>
         <div className="p-4 rounded-lg" style={{ backgroundColor: '#E6F9EA', border: '1px solid #6BCB77' }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: '#1A1A1A' }}>Active</p>
-          <p className="text-3xl font-bold" style={{ color: '#1A1A1A' }}>{stats.active}</p>
+          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c-text-primary)' }}>Active</p>
+          <p className="text-3xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{stats.active}</p>
         </div>
         <div className="p-4 rounded-lg" style={{ backgroundColor: '#E5F4FF', border: '1px solid #4ECDC4' }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: '#1A1A1A' }}>Completed</p>
-          <p className="text-3xl font-bold" style={{ color: '#1A1A1A' }}>{stats.completed}</p>
+          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c-text-primary)' }}>Completed</p>
+          <p className="text-3xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{stats.completed}</p>
         </div>
         <div className="p-4 rounded-lg" style={{ backgroundColor: '#FFF9E6', border: '1px solid #FFD93D' }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: '#1A1A1A' }}>Avg Progress</p>
-          <p className="text-3xl font-bold" style={{ color: '#1A1A1A' }}>{stats.averageProgress}%</p>
+          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c-text-primary)' }}>Avg Progress</p>
+          <p className="text-3xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{stats.averageProgress}%</p>
         </div>
       </div>
 
       {/* Budget Overview */}
-      <div className="p-4 rounded-lg" style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}>
-        <p className="text-sm font-bold mb-3" style={{ color: '#1A1A1A' }}>Budget Overview</p>
+      <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}>
+        <p className="text-sm font-bold mb-3" style={{ color: 'var(--c-text-primary)' }}>Budget Overview</p>
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div>
-            <p className="text-xs mb-1" style={{ color: '#4A4A4A' }}>Total Budget</p>
+            <p className="text-xs mb-1" style={{ color: 'var(--c-text-secondary)' }}>Total Budget</p>
             <p className="text-lg font-bold" style={{ color: '#4ECDC4' }}>{formatCurrency(stats.totalBudget)}</p>
           </div>
           <div>
-            <p className="text-xs mb-1" style={{ color: '#4A4A4A' }}>Total Spent</p>
+            <p className="text-xs mb-1" style={{ color: 'var(--c-text-secondary)' }}>Total Spent</p>
             <p className="text-lg font-bold" style={{ color: '#FF6B6B' }}>{formatCurrency(stats.totalSpent)}</p>
           </div>
           <div>
-            <p className="text-xs mb-1" style={{ color: '#4A4A4A' }}>Remaining</p>
+            <p className="text-xs mb-1" style={{ color: 'var(--c-text-secondary)' }}>Remaining</p>
             <p className="text-lg font-bold" style={{ color: '#6BCB77' }}>
               {formatCurrency(Math.max(0, stats.totalBudget - stats.totalSpent))}
             </p>
@@ -183,7 +183,7 @@ export default function ProjectAnalyticsWidget({ projects }: ProjectAnalyticsWid
         </div>
 
         {/* Budget Progress Bar */}
-        <div className="w-full h-3 rounded-full overflow-hidden" style={{ backgroundColor: '#E0E0E0' }}>
+        <div className="w-full h-3 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--c-border)' }}>
           <div
             className="h-full transition-all"
             style={{
@@ -192,7 +192,7 @@ export default function ProjectAnalyticsWidget({ projects }: ProjectAnalyticsWid
             }}
           />
         </div>
-        <p className="text-xs mt-2 text-right" style={{ color: '#4A4A4A' }}>
+        <p className="text-xs mt-2 text-right" style={{ color: 'var(--c-text-secondary)' }}>
           {stats.totalBudget > 0 ? Math.round((stats.totalSpent / stats.totalBudget) * 100) : 0}% of budget used
         </p>
       </div>
@@ -201,7 +201,7 @@ export default function ProjectAnalyticsWidget({ projects }: ProjectAnalyticsWid
       <div className="grid grid-cols-2 gap-6">
         {/* Status Distribution Pie Chart */}
         <div>
-          <p className="text-sm font-bold mb-3" style={{ color: '#1A1A1A' }}>Status Distribution</p>
+          <p className="text-sm font-bold mb-3" style={{ color: 'var(--c-text-primary)' }}>Status Distribution</p>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie
@@ -218,8 +218,8 @@ export default function ProjectAnalyticsWidget({ projects }: ProjectAnalyticsWid
                 ))}
               </Pie>
               <Tooltip
-                contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px' }}
-                labelStyle={{ color: '#1A1A1A', fontWeight: 'bold' }}
+                contentStyle={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', borderRadius: '8px' }}
+                labelStyle={{ color: 'var(--c-text-primary)', fontWeight: 'bold' }}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -227,7 +227,7 @@ export default function ProjectAnalyticsWidget({ projects }: ProjectAnalyticsWid
             {statusData.map((entry, index) => (
               <div key={index} className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }} />
-                <span className="text-xs" style={{ color: '#4A4A4A' }}>
+                <span className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>
                   {entry.name} ({entry.value})
                 </span>
               </div>
@@ -237,15 +237,15 @@ export default function ProjectAnalyticsWidget({ projects }: ProjectAnalyticsWid
 
         {/* Projects by Type Bar Chart */}
         <div>
-          <p className="text-sm font-bold mb-3" style={{ color: '#1A1A1A' }}>Projects by Type</p>
+          <p className="text-sm font-bold mb-3" style={{ color: 'var(--c-text-primary)' }}>Projects by Type</p>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={projectsByType}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
               <XAxis dataKey="name" tick={{ fill: '#4A4A4A', fontSize: 12 }} />
               <YAxis tick={{ fill: '#4A4A4A', fontSize: 12 }} />
               <Tooltip
-                contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px' }}
-                labelStyle={{ color: '#1A1A1A', fontWeight: 'bold' }}
+                contentStyle={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', borderRadius: '8px' }}
+                labelStyle={{ color: 'var(--c-text-primary)', fontWeight: 'bold' }}
               />
               <Bar dataKey="count" fill="#FF6B6B" radius={[8, 8, 0, 0]} />
             </BarChart>
@@ -254,15 +254,15 @@ export default function ProjectAnalyticsWidget({ projects }: ProjectAnalyticsWid
 
         {/* Progress Over Time Line Chart */}
         <div>
-          <p className="text-sm font-bold mb-3" style={{ color: '#1A1A1A' }}>Progress Trend (6 Months)</p>
+          <p className="text-sm font-bold mb-3" style={{ color: 'var(--c-text-primary)' }}>Progress Trend (6 Months)</p>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={progressOverTime}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
               <XAxis dataKey="month" tick={{ fill: '#4A4A4A', fontSize: 12 }} />
               <YAxis tick={{ fill: '#4A4A4A', fontSize: 12 }} domain={[0, 100]} />
               <Tooltip
-                contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px' }}
-                labelStyle={{ color: '#1A1A1A', fontWeight: 'bold' }}
+                contentStyle={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', borderRadius: '8px' }}
+                labelStyle={{ color: 'var(--c-text-primary)', fontWeight: 'bold' }}
               />
               <Line
                 type="monotone"
@@ -277,15 +277,15 @@ export default function ProjectAnalyticsWidget({ projects }: ProjectAnalyticsWid
 
         {/* Budget by Type Bar Chart */}
         <div>
-          <p className="text-sm font-bold mb-3" style={{ color: '#1A1A1A' }}>Budget by Type ($K)</p>
+          <p className="text-sm font-bold mb-3" style={{ color: 'var(--c-text-primary)' }}>Budget by Type ($K)</p>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={budgetByType}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
               <XAxis dataKey="name" tick={{ fill: '#4A4A4A', fontSize: 12 }} />
               <YAxis tick={{ fill: '#4A4A4A', fontSize: 12 }} />
               <Tooltip
-                contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px' }}
-                labelStyle={{ color: '#1A1A1A', fontWeight: 'bold' }}
+                contentStyle={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', borderRadius: '8px' }}
+                labelStyle={{ color: 'var(--c-text-primary)', fontWeight: 'bold' }}
               />
               <Legend />
               <Bar dataKey="budget" name="Budget" fill="#4ECDC4" radius={[8, 8, 0, 0]} />

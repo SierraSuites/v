@@ -159,7 +159,7 @@ export default function TemplateGallery({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>
+        <h2 className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
           📚 Quote Templates
         </h2>
         <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
@@ -252,7 +252,7 @@ export default function TemplateGallery({
                           {template.category}
                         </span>
                       </div>
-                      <h3 className="font-bold text-lg" style={{ color: '#1A1A1A' }}>
+                      <h3 className="font-bold text-lg" style={{ color: 'var(--c-text-primary)' }}>
                         {template.name}
                       </h3>
                     </div>
@@ -280,7 +280,7 @@ export default function TemplateGallery({
                       <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>
                         Line Items
                       </p>
-                      <p className="text-lg font-bold" style={{ color: '#1A1A1A' }}>
+                      <p className="text-lg font-bold" style={{ color: 'var(--c-text-primary)' }}>
                         {lineItemCount}
                       </p>
                     </div>
@@ -343,12 +343,12 @@ export default function TemplateGallery({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="p-6 border-b" style={{ borderColor: '#E0E0E0' }}>
+            <div className="p-6 border-b" style={{ borderColor: 'var(--c-border)' }}>
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-3xl">{getCategoryIcon(previewTemplate.category)}</span>
-                    <h3 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>
+                    <h3 className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
                       {previewTemplate.name}
                     </h3>
                   </div>
@@ -368,7 +368,7 @@ export default function TemplateGallery({
 
             {/* Body - Line Items Preview */}
             <div className="p-6 max-h-[60vh] overflow-y-auto">
-              <h4 className="text-lg font-bold mb-4" style={{ color: '#1A1A1A' }}>
+              <h4 className="text-lg font-bold mb-4" style={{ color: 'var(--c-text-primary)' }}>
                 Included Line Items
               </h4>
 
@@ -395,7 +395,7 @@ export default function TemplateGallery({
                       >
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm" style={{ color: '#1A1A1A' }}>
+                            <span className="font-medium text-sm" style={{ color: 'var(--c-text-primary)' }}>
                               {item.description}
                             </span>
                             {item.is_optional && (
@@ -426,7 +426,7 @@ export default function TemplateGallery({
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t bg-gray-50" style={{ borderColor: '#E0E0E0' }}>
+            <div className="p-6 border-t bg-gray-50" style={{ borderColor: 'var(--c-border)' }}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold mb-1" style={{ color: '#6B7280' }}>

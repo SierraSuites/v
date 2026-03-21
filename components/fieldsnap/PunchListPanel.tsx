@@ -138,10 +138,10 @@ export default function PunchListPanel({
   return (
     <div className="space-y-4">
       {/* Header with Stats */}
-      <div className="bg-white rounded-xl border p-6" style={{ borderColor: '#E0E0E0' }}>
+      <div className="bg-white rounded-xl border p-6" style={{ borderColor: 'var(--c-border)' }}>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-xl font-bold" style={{ color: '#1A1A1A' }}>
+            <h3 className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
               📋 Punch List
             </h3>
             <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
@@ -161,9 +161,9 @@ export default function PunchListPanel({
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="p-3 rounded-lg" style={{ backgroundColor: '#F8F9FA' }}>
+          <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
             <p className="text-xs mb-1" style={{ color: '#6B7280' }}>Total Items</p>
-            <p className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{stats.total}</p>
+            <p className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{stats.total}</p>
           </div>
           <div className="p-3 rounded-lg" style={{ backgroundColor: '#FEE2E2' }}>
             <p className="text-xs mb-1" style={{ color: '#991B1B' }}>Critical</p>
@@ -191,8 +191,8 @@ export default function PunchListPanel({
 
       {/* Filters */}
       {showFilters && !compact && (
-        <div className="bg-white rounded-xl border p-4" style={{ borderColor: '#E0E0E0' }}>
-          <p className="text-sm font-semibold mb-3" style={{ color: '#1A1A1A' }}>Filters</p>
+        <div className="bg-white rounded-xl border p-4" style={{ borderColor: 'var(--c-border)' }}>
+          <p className="text-sm font-semibold mb-3" style={{ color: 'var(--c-text-primary)' }}>Filters</p>
 
           {/* Status Filters */}
           <div className="mb-4">
@@ -284,9 +284,9 @@ export default function PunchListPanel({
 
       {/* Items List */}
       {items.length === 0 ? (
-        <div className="bg-white rounded-xl border p-12 text-center" style={{ borderColor: '#E0E0E0' }}>
+        <div className="bg-white rounded-xl border p-12 text-center" style={{ borderColor: 'var(--c-border)' }}>
           <p className="text-4xl mb-3">🎉</p>
-          <p className="text-lg font-semibold mb-2" style={{ color: '#1A1A1A' }}>
+          <p className="text-lg font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
             No Punch List Items
           </p>
           <p className="text-sm" style={{ color: '#6B7280' }}>

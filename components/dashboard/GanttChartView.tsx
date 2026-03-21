@@ -116,28 +116,28 @@ export default function GanttChartView({ tasks, onTaskClick }: GanttChartViewPro
           return `
             <div class="gantt-popup" style="padding: 12px; min-width: 250px;">
               <div style="margin-bottom: 8px;">
-                <strong style="font-size: 14px; color: #1A1A1A;">${task.name}</strong>
+                <strong style="font-size: 14px; color: var(--c-text-primary);">${task.name}</strong>
               </div>
               <div style="margin-bottom: 6px;">
-                <span style="font-size: 12px; color: #4A4A4A;">Project: ${originalTask.project}</span>
+                <span style="font-size: 12px; color: var(--c-text-secondary);">Project: ${originalTask.project}</span>
               </div>
               <div style="margin-bottom: 6px;">
-                <span style="font-size: 12px; color: #4A4A4A;">Assigned: ${originalTask.assignee}</span>
+                <span style="font-size: 12px; color: var(--c-text-secondary);">Assigned: ${originalTask.assignee}</span>
               </div>
               <div style="margin-bottom: 6px;">
-                <span style="font-size: 12px; color: #4A4A4A;">Trade: ${originalTask.trade}</span>
+                <span style="font-size: 12px; color: var(--c-text-secondary);">Trade: ${originalTask.trade}</span>
               </div>
               <div style="margin-bottom: 6px;">
-                <span style="font-size: 12px; color: #4A4A4A;">Priority: ${originalTask.priority}</span>
+                <span style="font-size: 12px; color: var(--c-text-secondary);">Priority: ${originalTask.priority}</span>
               </div>
               <div style="margin-bottom: 6px;">
-                <span style="font-size: 12px; color: #4A4A4A;">Duration: ${task._end.diff(task._start, 'day')} days</span>
+                <span style="font-size: 12px; color: var(--c-text-secondary);">Duration: ${task._end.diff(task._start, 'day')} days</span>
               </div>
               <div style="margin-bottom: 6px;">
-                <span style="font-size: 12px; color: #4A4A4A;">Progress: ${task.progress}%</span>
+                <span style="font-size: 12px; color: var(--c-text-secondary);">Progress: ${task.progress}%</span>
               </div>
-              ${originalTask.weatherDependent ? '<div style="font-size: 12px; color: #4A4A4A;">🌤️ Weather Dependent</div>' : ''}
-              ${originalTask.inspectionRequired ? '<div style="font-size: 12px; color: #4A4A4A;">🔍 Inspection Required</div>' : ''}
+              ${originalTask.weatherDependent ? '<div style="font-size: 12px; color: var(--c-text-secondary);">🌤️ Weather Dependent</div>' : ''}
+              ${originalTask.inspectionRequired ? '<div style="font-size: 12px; color: var(--c-text-secondary);">🔍 Inspection Required</div>' : ''}
             </div>
           `
         },
@@ -165,10 +165,10 @@ export default function GanttChartView({ tasks, onTaskClick }: GanttChartViewPro
         .gantt .bar-wrapper .bar.critical-task { fill: ${priorityColors.critical}; stroke: #991B1B; stroke-width: 2; }
         .gantt .bar-wrapper .bar:hover { opacity: 0.8; }
         .gantt-popup {
-          background: #FFFFFF;
+          background: var(--c-card-bg);
           border-radius: 8px;
           box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-          border: 1px solid #E0E0E0;
+          border: 1px solid var(--c-border);
         }
       `
       document.head.appendChild(styleElement)
@@ -189,21 +189,21 @@ export default function GanttChartView({ tasks, onTaskClick }: GanttChartViewPro
           <button
             onClick={() => setViewMode('Day')}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${viewMode === 'Day' ? '' : 'hover:bg-gray-100'}`}
-            style={viewMode === 'Day' ? { backgroundColor: '#FF6B6B', color: '#FFFFFF' } : { border: '1px solid #E0E0E0', color: '#4A4A4A' }}
+            style={viewMode === 'Day' ? { backgroundColor: '#FF6B6B', color: '#FFFFFF' } : { border: '1px solid var(--c-border)', color: 'var(--c-text-secondary)' }}
           >
             Day
           </button>
           <button
             onClick={() => setViewMode('Week')}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${viewMode === 'Week' ? '' : 'hover:bg-gray-100'}`}
-            style={viewMode === 'Week' ? { backgroundColor: '#FF6B6B', color: '#FFFFFF' } : { border: '1px solid #E0E0E0', color: '#4A4A4A' }}
+            style={viewMode === 'Week' ? { backgroundColor: '#FF6B6B', color: '#FFFFFF' } : { border: '1px solid var(--c-border)', color: 'var(--c-text-secondary)' }}
           >
             Week
           </button>
           <button
             onClick={() => setViewMode('Month')}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${viewMode === 'Month' ? '' : 'hover:bg-gray-100'}`}
-            style={viewMode === 'Month' ? { backgroundColor: '#FF6B6B', color: '#FFFFFF' } : { border: '1px solid #E0E0E0', color: '#4A4A4A' }}
+            style={viewMode === 'Month' ? { backgroundColor: '#FF6B6B', color: '#FFFFFF' } : { border: '1px solid var(--c-border)', color: 'var(--c-text-secondary)' }}
           >
             Month
           </button>
@@ -218,7 +218,7 @@ export default function GanttChartView({ tasks, onTaskClick }: GanttChartViewPro
               className="w-4 h-4 rounded"
               style={{ accentColor: '#FF6B6B' }}
             />
-            <span className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>Show Critical Path</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--c-text-primary)' }}>Show Critical Path</span>
           </label>
         </div>
       </div>
@@ -227,48 +227,48 @@ export default function GanttChartView({ tasks, onTaskClick }: GanttChartViewPro
       <div className="mb-4 flex items-center gap-4 text-xs flex-wrap">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: '#FFD93D' }}></div>
-          <span style={{ color: '#4A4A4A' }}>Electrical</span>
+          <span style={{ color: 'var(--c-text-secondary)' }}>Electrical</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: '#6A9BFD' }}></div>
-          <span style={{ color: '#4A4A4A' }}>Plumbing</span>
+          <span style={{ color: 'var(--c-text-secondary)' }}>Plumbing</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: '#38BDF8' }}></div>
-          <span style={{ color: '#4A4A4A' }}>HVAC</span>
+          <span style={{ color: 'var(--c-text-secondary)' }}>HVAC</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: '#4A4A4A' }}></div>
-          <span style={{ color: '#4A4A4A' }}>Concrete</span>
+          <span style={{ color: 'var(--c-text-secondary)' }}>Concrete</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: '#D97706' }}></div>
-          <span style={{ color: '#4A4A4A' }}>Framing</span>
+          <span style={{ color: 'var(--c-text-secondary)' }}>Framing</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: '#DC2626', border: '2px solid #991B1B' }}></div>
-          <span style={{ color: '#4A4A4A' }}>Critical Path</span>
+          <span style={{ color: 'var(--c-text-secondary)' }}>Critical Path</span>
         </div>
       </div>
 
       {/* Stats */}
       <div className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="rounded-lg p-3" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: '#4A4A4A' }}>Total Tasks</p>
-          <p className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{tasks.length}</p>
+        <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
+          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c-text-secondary)' }}>Total Tasks</p>
+          <p className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{tasks.length}</p>
         </div>
-        <div className="rounded-lg p-3" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: '#4A4A4A' }}>Critical Path Tasks</p>
+        <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
+          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c-text-secondary)' }}>Critical Path Tasks</p>
           <p className="text-2xl font-bold" style={{ color: '#DC2626' }}>{criticalPath.size}</p>
         </div>
-        <div className="rounded-lg p-3" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: '#4A4A4A' }}>With Dependencies</p>
+        <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
+          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c-text-secondary)' }}>With Dependencies</p>
           <p className="text-2xl font-bold" style={{ color: '#F59E0B' }}>
             {tasks.filter(t => t.dependencies && t.dependencies.length > 0).length}
           </p>
         </div>
-        <div className="rounded-lg p-3" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: '#4A4A4A' }}>Avg Progress</p>
+        <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
+          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c-text-secondary)' }}>Avg Progress</p>
           <p className="text-2xl font-bold" style={{ color: '#6BCB77' }}>
             {tasks.length > 0 ? Math.round(tasks.reduce((sum, t) => sum + t.progress, 0) / tasks.length) : 0}%
           </p>
@@ -276,13 +276,13 @@ export default function GanttChartView({ tasks, onTaskClick }: GanttChartViewPro
       </div>
 
       {/* Gantt Chart */}
-      <div className="flex-1 rounded-xl overflow-auto p-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', minHeight: '500px' }}>
+      <div className="flex-1 rounded-xl overflow-auto p-6" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', minHeight: '500px' }}>
         {tasks.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <span className="text-6xl mb-4 block">📊</span>
-              <p className="text-lg font-semibold mb-2" style={{ color: '#1A1A1A' }}>No tasks to display</p>
-              <p className="text-sm" style={{ color: '#4A4A4A' }}>Create tasks to see them in the Gantt chart</p>
+              <p className="text-lg font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>No tasks to display</p>
+              <p className="text-sm" style={{ color: 'var(--c-text-secondary)' }}>Create tasks to see them in the Gantt chart</p>
             </div>
           </div>
         ) : (
@@ -292,15 +292,15 @@ export default function GanttChartView({ tasks, onTaskClick }: GanttChartViewPro
 
       {/* Task Dependencies List */}
       {tasks.filter(t => t.dependencies && t.dependencies.length > 0).length > 0 && (
-        <div className="mt-4 rounded-xl p-4" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
-          <h3 className="text-sm font-bold mb-3" style={{ color: '#1A1A1A' }}>Task Dependencies</h3>
+        <div className="mt-4 rounded-xl p-4" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
+          <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--c-text-primary)' }}>Task Dependencies</h3>
           <div className="space-y-2">
             {tasks
               .filter(t => t.dependencies && t.dependencies.length > 0)
               .map(task => (
                 <div key={task.id} className="flex items-start gap-2 text-xs">
-                  <span className="font-semibold" style={{ color: '#1A1A1A' }}>{task.title}</span>
-                  <span style={{ color: '#4A4A4A' }}>depends on:</span>
+                  <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>{task.title}</span>
+                  <span style={{ color: 'var(--c-text-secondary)' }}>depends on:</span>
                   <span style={{ color: '#FF6B6B' }}>
                     {task.dependencies.map(depId => {
                       const depTask = tasks.find(t => t.id === depId)

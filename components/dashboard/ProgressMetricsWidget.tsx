@@ -21,7 +21,7 @@ interface ProgressMetricsWidgetProps {
 export default function ProgressMetricsWidget({ tasks }: ProgressMetricsWidgetProps) {
   // Status distribution data
   const statusData = [
-    { name: 'Not Started', value: tasks.filter(t => t.status === 'not-started').length, color: '#4A4A4A' },
+    { name: 'Not Started', value: tasks.filter(t => t.status === 'not-started').length, color: 'var(--c-text-secondary)' },
     { name: 'In Progress', value: tasks.filter(t => t.status === 'in-progress').length, color: '#6A9BFD' },
     { name: 'Review', value: tasks.filter(t => t.status === 'review').length, color: '#F59E0B' },
     { name: 'Completed', value: tasks.filter(t => t.status === 'completed').length, color: '#6BCB77' },
@@ -33,7 +33,7 @@ export default function ProgressMetricsWidget({ tasks }: ProgressMetricsWidgetPr
     { name: 'Electrical', value: tasks.filter(t => t.trade === 'electrical').length, color: '#FFD93D' },
     { name: 'Plumbing', value: tasks.filter(t => t.trade === 'plumbing').length, color: '#6A9BFD' },
     { name: 'HVAC', value: tasks.filter(t => t.trade === 'hvac').length, color: '#38BDF8' },
-    { name: 'Concrete', value: tasks.filter(t => t.trade === 'concrete').length, color: '#4A4A4A' },
+    { name: 'Concrete', value: tasks.filter(t => t.trade === 'concrete').length, color: 'var(--c-text-secondary)' },
     { name: 'Framing', value: tasks.filter(t => t.trade === 'framing').length, color: '#D97706' },
     { name: 'Finishing', value: tasks.filter(t => t.trade === 'finishing').length, color: '#E0E0E0' },
     { name: 'General', value: tasks.filter(t => t.trade === 'general').length, color: '#4ECDC4' },
@@ -111,8 +111,8 @@ export default function ProgressMetricsWidget({ tasks }: ProgressMetricsWidgetPr
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="p-2 rounded-lg" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-          <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>
+        <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+          <p className="text-sm font-semibold" style={{ color: 'var(--c-text-primary)' }}>
             {payload[0].name}: {payload[0].value}
           </p>
         </div>
@@ -124,8 +124,8 @@ export default function ProgressMetricsWidget({ tasks }: ProgressMetricsWidgetPr
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Completion Trend Chart */}
-      <div className="rounded-xl p-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
-        <h3 className="text-lg font-bold mb-4" style={{ color: '#1A1A1A' }}>Completion Trend</h3>
+      <div className="rounded-xl p-6" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+        <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--c-text-primary)' }}>Completion Trend</h3>
         <ResponsiveContainer width="100%" height={250}>
           <LineChart data={completionTrendData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
@@ -138,8 +138,8 @@ export default function ProgressMetricsWidget({ tasks }: ProgressMetricsWidgetPr
       </div>
 
       {/* Status Distribution Chart */}
-      <div className="rounded-xl p-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
-        <h3 className="text-lg font-bold mb-4" style={{ color: '#1A1A1A' }}>Tasks by Status</h3>
+      <div className="rounded-xl p-6" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+        <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--c-text-primary)' }}>Tasks by Status</h3>
         <ResponsiveContainer width="100%" height={250}>
           <PieChart>
             <Pie
@@ -162,16 +162,16 @@ export default function ProgressMetricsWidget({ tasks }: ProgressMetricsWidgetPr
       </div>
 
       {/* Score Gauges */}
-      <div className="rounded-xl p-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
-        <h3 className="text-lg font-bold mb-6" style={{ color: '#1A1A1A' }}>Performance Metrics</h3>
+      <div className="rounded-xl p-6" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+        <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--c-text-primary)' }}>Performance Metrics</h3>
         <div className="space-y-6">
           {/* Quality Score */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold" style={{ color: '#4A4A4A' }}>Quality Score</span>
+              <span className="text-sm font-semibold" style={{ color: 'var(--c-text-secondary)' }}>Quality Score</span>
               <span className="text-lg font-bold" style={{ color: getScoreColor(qualityScore) }}>{qualityScore}%</span>
             </div>
-            <div className="w-full rounded-full h-3" style={{ backgroundColor: '#E0E0E0' }}>
+            <div className="w-full rounded-full h-3" style={{ backgroundColor: 'var(--c-border)' }}>
               <div
                 className="h-3 rounded-full transition-all duration-500"
                 style={{ width: `${qualityScore}%`, backgroundColor: getScoreColor(qualityScore) }}
@@ -182,10 +182,10 @@ export default function ProgressMetricsWidget({ tasks }: ProgressMetricsWidgetPr
           {/* Safety Compliance */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold" style={{ color: '#4A4A4A' }}>Safety Compliance</span>
+              <span className="text-sm font-semibold" style={{ color: 'var(--c-text-secondary)' }}>Safety Compliance</span>
               <span className="text-lg font-bold" style={{ color: getScoreColor(safetyScore) }}>{safetyScore}%</span>
             </div>
-            <div className="w-full rounded-full h-3" style={{ backgroundColor: '#E0E0E0' }}>
+            <div className="w-full rounded-full h-3" style={{ backgroundColor: 'var(--c-border)' }}>
               <div
                 className="h-3 rounded-full transition-all duration-500"
                 style={{ width: `${safetyScore}%`, backgroundColor: getScoreColor(safetyScore) }}
@@ -196,10 +196,10 @@ export default function ProgressMetricsWidget({ tasks }: ProgressMetricsWidgetPr
           {/* Budget Adherence */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold" style={{ color: '#4A4A4A' }}>Budget Adherence</span>
+              <span className="text-sm font-semibold" style={{ color: 'var(--c-text-secondary)' }}>Budget Adherence</span>
               <span className="text-lg font-bold" style={{ color: getScoreColor(budgetAdherence) }}>{budgetAdherence}%</span>
             </div>
-            <div className="w-full rounded-full h-3" style={{ backgroundColor: '#E0E0E0' }}>
+            <div className="w-full rounded-full h-3" style={{ backgroundColor: 'var(--c-border)' }}>
               <div
                 className="h-3 rounded-full transition-all duration-500"
                 style={{ width: `${budgetAdherence}%`, backgroundColor: getScoreColor(budgetAdherence) }}
@@ -210,8 +210,8 @@ export default function ProgressMetricsWidget({ tasks }: ProgressMetricsWidgetPr
       </div>
 
       {/* Tasks by Trade Chart */}
-      <div className="rounded-xl p-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
-        <h3 className="text-lg font-bold mb-4" style={{ color: '#1A1A1A' }}>Tasks by Trade</h3>
+      <div className="rounded-xl p-6" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+        <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--c-text-primary)' }}>Tasks by Trade</h3>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={tradeData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />

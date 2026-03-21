@@ -76,7 +76,7 @@ export default function StorageMeter({
   }
 
   return (
-    <div className="bg-white rounded-xl border p-6" style={{ borderColor: '#E0E0E0' }}>
+    <div className="bg-white rounded-xl border p-6" style={{ borderColor: 'var(--c-border)' }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -87,7 +87,7 @@ export default function StorageMeter({
             {quota.tier === 'enterprise' ? '♾️' : '💾'}
           </div>
           <div>
-            <h3 className="font-bold text-lg" style={{ color: '#1A1A1A' }}>
+            <h3 className="font-bold text-lg" style={{ color: 'var(--c-text-primary)' }}>
               Storage Usage
             </h3>
             <p className="text-sm" style={{ color: storageColor }}>
@@ -161,10 +161,10 @@ export default function StorageMeter({
 
       {/* Storage Details */}
       {showDetails && quota.tier !== 'enterprise' && (
-        <div className="grid grid-cols-2 gap-4 p-4 rounded-lg mb-4" style={{ backgroundColor: '#F8F9FA' }}>
+        <div className="grid grid-cols-2 gap-4 p-4 rounded-lg mb-4" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
           <div>
             <p className="text-xs mb-1" style={{ color: '#6B7280' }}>Used</p>
-            <p className="text-lg font-bold" style={{ color: '#1A1A1A' }}>
+            <p className="text-lg font-bold" style={{ color: 'var(--c-text-primary)' }}>
               {formatStorageGB(quota.usedStorageGB)}
             </p>
           </div>
@@ -249,12 +249,12 @@ export default function StorageMeter({
 
       {/* Breakdown Modal/Dropdown */}
       {showBreakdown && (
-        <div className="mt-4 p-4 rounded-lg border" style={{ borderColor: '#E5E7EB', backgroundColor: '#F8F9FA' }}>
-          <h4 className="font-bold mb-3" style={{ color: '#1A1A1A' }}>Storage Breakdown</h4>
+        <div className="mt-4 p-4 rounded-lg border" style={{ borderColor: '#E5E7EB', backgroundColor: 'var(--c-sub-bg)' }}>
+          <h4 className="font-bold mb-3" style={{ color: 'var(--c-text-primary)' }}>Storage Breakdown</h4>
           <div className="space-y-2">
-            <div className="flex items-center justify-between py-2 border-b" style={{ borderColor: '#E0E0E0' }}>
+            <div className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'var(--c-border)' }}>
               <span className="text-sm" style={{ color: '#6B7280' }}>Photos & Videos</span>
-              <span className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>
+              <span className="text-sm font-semibold" style={{ color: 'var(--c-text-primary)' }}>
                 {formatStorageGB(quota.usedStorageGB)}
               </span>
             </div>

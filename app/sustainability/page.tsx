@@ -197,7 +197,7 @@ export default function SustainabilityDashboard() {
                     const { percentage, offset, circumference } = getCircularProgress(cert.currentPoints, cert.targetPoints)
 
                     return (
-                      <div key={index} className="rounded-xl p-6 hover:shadow-md transition-all hover:-translate-y-0.5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+                      <div key={index} className="rounded-xl p-6 hover:shadow-md transition-all hover:-translate-y-0.5" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
                         <div className="flex flex-col items-center">
                           {/* Circular Progress */}
                           <div className="relative w-32 h-32 mb-4">
@@ -274,11 +274,11 @@ export default function SustainabilityDashboard() {
               </div>
 
               {/* Spec lines 162-193: Waste Diversion Goal Indicator */}
-              <div className="rounded-xl p-6 mb-8" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+              <div className="rounded-xl p-6 mb-8" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h3 className="font-semibold" style={{ color: '#1A1A1A' }}>Waste Diversion Progress</h3>
-                    <p className="text-xs" style={{ color: '#4A4A4A' }}>Goal: 75% diversion rate</p>
+                    <h3 className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>Waste Diversion Progress</h3>
+                    <p className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>Goal: 75% diversion rate</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-2xl font-bold" style={{ color: metrics.wasteDiverted >= 75 ? '#22C55E' : '#F59E0B' }}>
@@ -291,10 +291,10 @@ export default function SustainabilityDashboard() {
                     )}
                   </div>
                 </div>
-                <div className="relative w-full rounded-full h-3" style={{ backgroundColor: '#E0E0E0' }}>
+                <div className="relative w-full rounded-full h-3" style={{ backgroundColor: 'var(--c-border)' }}>
                   <div className="h-3 rounded-full transition-all" style={{ width: `${metrics.wasteDiverted}%`, backgroundColor: metrics.wasteDiverted >= 75 ? '#22C55E' : '#F59E0B' }} />
                   {/* Goal marker */}
-                  <div className="absolute top-0 h-3 w-0.5" style={{ left: '75%', backgroundColor: '#1A1A1A' }} />
+                  <div className="absolute top-0 h-3 w-0.5" style={{ left: '75%', backgroundColor: 'var(--c-text-primary)' }} />
                 </div>
                 <div className="flex justify-between text-xs mt-1" style={{ color: '#9CA3AF' }}>
                   <span>0%</span>
@@ -305,37 +305,37 @@ export default function SustainabilityDashboard() {
 
               {/* Quick Stats Grid with gradient icons */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+                <div className="rounded-xl p-5" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Active Projects</div>
+                    <div className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Active Projects</div>
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6A9BFD 0%, #8BB5FE 100%)' }}>
                       <span className="text-white text-sm">🏗️</span>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{metrics.activeProjects}</div>
-                  <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>With sustainability tracking</div>
+                  <div className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{metrics.activeProjects}</div>
+                  <div className="text-xs mt-1" style={{ color: 'var(--c-text-secondary)' }}>With sustainability tracking</div>
                 </div>
 
-                <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+                <div className="rounded-xl p-5" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Tax Credits Found</div>
+                    <div className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Tax Credits Found</div>
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6BCB77 0%, #85D68D 100%)' }}>
                       <span className="text-white text-sm">💰</span>
                     </div>
                   </div>
                   <div className="text-2xl font-bold" style={{ color: '#22C55E' }}>$127K</div>
-                  <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>Across all projects</div>
+                  <div className="text-xs mt-1" style={{ color: 'var(--c-text-secondary)' }}>Across all projects</div>
                 </div>
 
-                <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+                <div className="rounded-xl p-5" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Cost Savings</div>
+                    <div className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Cost Savings</div>
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #38BDF8 0%, #7DD3FC 100%)' }}>
                       <span className="text-white text-sm">📊</span>
                     </div>
                   </div>
                   <div className="text-2xl font-bold" style={{ color: '#3B82F6' }}>$84K</div>
-                  <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>From waste reduction</div>
+                  <div className="text-xs mt-1" style={{ color: 'var(--c-text-secondary)' }}>From waste reduction</div>
                 </div>
               </div>
 
@@ -447,11 +447,11 @@ export default function SustainabilityDashboard() {
               </div>
 
               {/* Recent Activity */}
-              <div className="rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
-                <div className="px-6 py-4" style={{ borderBottom: '1px solid #E0E0E0' }}>
-                  <h2 className="text-lg font-semibold" style={{ color: '#1A1A1A' }}>Recent Sustainability Activity</h2>
+              <div className="rounded-xl" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
+                <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--c-border)' }}>
+                  <h2 className="text-lg font-semibold" style={{ color: 'var(--c-text-primary)' }}>Recent Sustainability Activity</h2>
                 </div>
-                <div className="p-12 text-center" style={{ color: '#4A4A4A' }}>
+                <div className="p-12 text-center" style={{ color: 'var(--c-text-secondary)' }}>
                   <div className="text-4xl mb-2">🌱</div>
                   <p>Start logging carbon emissions, waste, and water usage to see activity here</p>
                   <Link

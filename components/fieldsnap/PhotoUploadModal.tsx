@@ -218,12 +218,12 @@ export default function PhotoUploadModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-2xl" style={{ backgroundColor: '#FFFFFF' }}>
+      <div className="max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-2xl" style={{ backgroundColor: 'var(--c-card-bg)' }}>
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between p-6" style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E0E0E0' }}>
+        <div className="sticky top-0 z-10 flex items-center justify-between p-6" style={{ backgroundColor: 'var(--c-card-bg)', borderBottom: '1px solid var(--c-border)' }}>
           <div>
-            <h2 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Upload Photos</h2>
-            <p className="text-sm mt-1" style={{ color: '#4A4A4A' }}>
+            <h2 className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>Upload Photos</h2>
+            <p className="text-sm mt-1" style={{ color: 'var(--c-text-secondary)' }}>
               {projectName ? `to ${projectName}` : 'to your gallery'}
             </p>
           </div>
@@ -232,7 +232,7 @@ export default function PhotoUploadModal({
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
             disabled={uploading}
           >
-            <svg className="w-6 h-6" style={{ color: '#4A4A4A' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" style={{ color: 'var(--c-text-secondary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -270,10 +270,10 @@ export default function PhotoUploadModal({
               </div>
 
               <div>
-                <p className="text-lg font-semibold mb-1" style={{ color: '#1A1A1A' }}>
+                <p className="text-lg font-semibold mb-1" style={{ color: 'var(--c-text-primary)' }}>
                   {dragActive ? 'Drop photos here' : 'Drop photos here or click to browse'}
                 </p>
-                <p className="text-sm" style={{ color: '#4A4A4A' }}>
+                <p className="text-sm" style={{ color: 'var(--c-text-secondary)' }}>
                   Support for JPG, PNG, WEBP up to 50MB each
                 </p>
               </div>
@@ -297,7 +297,7 @@ export default function PhotoUploadModal({
           {/* Selected Files */}
           {selectedFiles.length > 0 && (
             <div className="space-y-3">
-              <h3 className="font-semibold text-sm" style={{ color: '#1A1A1A' }}>
+              <h3 className="font-semibold text-sm" style={{ color: 'var(--c-text-primary)' }}>
                 Selected Photos ({selectedFiles.length})
               </h3>
               <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -305,9 +305,9 @@ export default function PhotoUploadModal({
                   <div
                     key={index}
                     className="flex items-center gap-3 p-3 rounded-lg"
-                    style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
+                    style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
                   >
-                    <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0" style={{ backgroundColor: '#E0E0E0' }}>
+                    <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0" style={{ backgroundColor: 'var(--c-border)' }}>
                       <img
                         src={URL.createObjectURL(file)}
                         alt={file.name}
@@ -315,10 +315,10 @@ export default function PhotoUploadModal({
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate" style={{ color: '#1A1A1A' }}>{file.name}</p>
-                      <p className="text-xs" style={{ color: '#4A4A4A' }}>{formatFileSize(file.size)}</p>
+                      <p className="font-semibold text-sm truncate" style={{ color: 'var(--c-text-primary)' }}>{file.name}</p>
+                      <p className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>{formatFileSize(file.size)}</p>
                       {uploadProgress[file.name] !== undefined && (
-                        <div className="w-full h-1 rounded-full mt-2" style={{ backgroundColor: '#E0E0E0' }}>
+                        <div className="w-full h-1 rounded-full mt-2" style={{ backgroundColor: 'var(--c-border)' }}>
                           <div
                             className="h-full rounded-full transition-all"
                             style={{
@@ -349,7 +349,7 @@ export default function PhotoUploadModal({
           {/* Metadata Form */}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: '#1A1A1A' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
                 Capture Source
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -369,9 +369,9 @@ export default function PhotoUploadModal({
                         : 'hover:bg-gray-100'
                     }`}
                     style={{
-                      backgroundColor: captureSource === source.value ? '#FF6B6B' : '#F8F9FA',
-                      border: `1px solid ${captureSource === source.value ? '#FF6B6B' : '#E0E0E0'}`,
-                      color: captureSource === source.value ? '#FFFFFF' : '#1A1A1A'
+                      backgroundColor: captureSource === source.value ? '#FF6B6B' : 'var(--c-sub-bg)',
+                      border: `1px solid ${captureSource === source.value ? '#FF6B6B' : 'var(--c-border)'}`,
+                      color: captureSource === source.value ? '#FFFFFF' : 'var(--c-text-primary)'
                     }}
                   >
                     <span className="mr-2">{source.icon}</span>
@@ -382,7 +382,7 @@ export default function PhotoUploadModal({
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: '#1A1A1A' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
                 Description (Optional)
               </label>
               <textarea
@@ -391,12 +391,12 @@ export default function PhotoUploadModal({
                 placeholder="Add a description for all photos..."
                 rows={3}
                 className="w-full px-4 py-3 rounded-lg text-sm resize-none"
-                style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
+                style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: '#1A1A1A' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
                 Tags (Optional)
               </label>
               <div className="flex gap-2 mb-2">
@@ -407,7 +407,7 @@ export default function PhotoUploadModal({
                   onKeyPress={handleTagKeyPress}
                   placeholder="Add tag and press Enter"
                   className="flex-1 px-4 py-2 rounded-lg text-sm"
-                  style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
+                  style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
                 />
                 <button
                   type="button"
@@ -424,7 +424,7 @@ export default function PhotoUploadModal({
                     <span
                       key={tag}
                       className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm"
-                      style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
+                      style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
                     >
                       {tag}
                       <button
@@ -443,8 +443,8 @@ export default function PhotoUploadModal({
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 flex items-center justify-between gap-4 p-6" style={{ backgroundColor: '#F8F9FA', borderTop: '1px solid #E0E0E0' }}>
-          <p className="text-sm" style={{ color: '#4A4A4A' }}>
+        <div className="sticky bottom-0 flex items-center justify-between gap-4 p-6" style={{ backgroundColor: 'var(--c-sub-bg)', borderTop: '1px solid var(--c-border)' }}>
+          <p className="text-sm" style={{ color: 'var(--c-text-secondary)' }}>
             {selectedFiles.length} photo{selectedFiles.length !== 1 ? 's' : ''} selected
           </p>
           <div className="flex gap-3">
@@ -452,7 +452,7 @@ export default function PhotoUploadModal({
               onClick={onClose}
               disabled={uploading}
               className="px-6 py-2.5 rounded-lg font-semibold text-sm transition-colors"
-              style={{ backgroundColor: '#E0E0E0', color: '#1A1A1A' }}
+              style={{ backgroundColor: 'var(--c-border)', color: 'var(--c-text-primary)' }}
             >
               Cancel
             </button>

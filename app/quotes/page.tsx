@@ -142,7 +142,7 @@ export default function QuotesPage() {
   // Quality Guide lines 39-47: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="min-h-screen" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
         <div className="max-w-7xl mx-auto p-6 space-y-6">
           {/* Header skeleton */}
           <div className="flex items-center justify-between">
@@ -205,12 +205,12 @@ export default function QuotesPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold" style={{ color: '#1A1A1A' }}>
+            <h1 className="text-3xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
               💼 QuoteHub
             </h1>
             <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
@@ -277,7 +277,7 @@ export default function QuotesPage() {
               <div className="flex items-center gap-6">
                 <div>
                   <span className="text-xs font-semibold uppercase text-gray-500">Total Quotes</span>
-                  <p className="text-xl font-bold" style={{ color: '#1A1A1A' }}>{stats.total_quotes || 0}</p>
+                  <p className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{stats.total_quotes || 0}</p>
                 </div>
                 <div className="h-8 w-px bg-gray-200" />
                 <div>
@@ -400,7 +400,7 @@ export default function QuotesPage() {
                     {/* Left side - Quote info */}
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-bold" style={{ color: '#1A1A1A' }}>
+                        <h3 className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
                           {quote.title}
                         </h3>
                         <span

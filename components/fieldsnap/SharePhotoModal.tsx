@@ -194,10 +194,10 @@ export default function SharePhotoModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full my-8">
         {/* Header */}
-        <div className="p-6 border-b" style={{ borderColor: '#E0E0E0' }}>
+        <div className="p-6 border-b" style={{ borderColor: 'var(--c-border)' }}>
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-bold" style={{ color: '#1A1A1A' }}>
+              <h3 className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
                 🔗 Share Photo
               </h3>
               <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
@@ -301,7 +301,7 @@ export default function SharePhotoModal({
                   onClick={() => setPermissionLevel(level)}
                   className="px-4 py-3 rounded-lg font-semibold text-sm transition-all border-2"
                   style={{
-                    backgroundColor: permissionLevel === level ? `${getPermissionLevelColor(level)}20` : '#FFFFFF',
+                    backgroundColor: permissionLevel === level ? `${getPermissionLevelColor(level)}20` : 'var(--c-card-bg)',
                     borderColor: permissionLevel === level ? getPermissionLevelColor(level) : '#E5E7EB',
                     color: permissionLevel === level ? getPermissionLevelColor(level) : '#6B7280'
                   }}
@@ -365,7 +365,7 @@ export default function SharePhotoModal({
                   <div
                     key={share.id}
                     className="flex items-center justify-between p-3 rounded-lg"
-                    style={{ backgroundColor: '#F8F9FA' }}
+                    style={{ backgroundColor: 'var(--c-sub-bg)' }}
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div
@@ -380,7 +380,7 @@ export default function SharePhotoModal({
                         {share.shared_with_team_id ? '👥' : '👤'}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate" style={{ color: '#1A1A1A' }}>
+                        <p className="font-semibold text-sm truncate" style={{ color: 'var(--c-text-primary)' }}>
                           {share.shared_with_team_id
                             ? share.team?.name
                             : `User ${share.shared_with_user_id?.substring(0, 8)}...`}
@@ -423,7 +423,7 @@ export default function SharePhotoModal({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t bg-gray-50" style={{ borderColor: '#E0E0E0' }}>
+        <div className="p-6 border-t bg-gray-50" style={{ borderColor: 'var(--c-border)' }}>
           <div className="flex gap-3">
             <button
               onClick={onClose}

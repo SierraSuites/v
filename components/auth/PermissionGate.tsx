@@ -90,7 +90,7 @@ export function UnauthorizedAccess({
         >
           <span className="text-4xl">🔒</span>
         </div>
-        <h3 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>
+        <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--c-text-primary)' }}>
           Access Restricted
         </h3>
         <p className="text-sm mb-6" style={{ color: '#6B7280' }}>

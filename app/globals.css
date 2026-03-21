@@ -5,6 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* Dark mode color tokens for inline styles — used across all pages */
+  --c-card-bg: #FFFFFF;
+  --c-sub-bg: #F8F9FA;
+  --c-border: #E0E0E0;
+  --c-text-primary: #1A1A1A;
+  --c-text-secondary: #4A4A4A;
+
   /* Updated to sophisticated B2B SaaS color scheme with light tan background */
   --background: oklch(0.985 0.005 60); /* Light tan/off-white #FAF9F7 */
   --foreground: oklch(0.25 0.02 264); /* Deep navy #2D3748 */
@@ -75,6 +82,13 @@
   --sidebar-accent-foreground: oklch(0.98 0 0);
   --sidebar-border: oklch(0.25 0.01 264);
   --sidebar-ring: oklch(0.6 0.12 280);
+
+  /* Dark mode color tokens for inline styles */
+  --c-card-bg: #1a1d2e;
+  --c-sub-bg: #0f1117;
+  --c-border: #2d3149;
+  --c-text-primary: #f1f5f9;
+  --c-text-secondary: #94a3b8;
 }
 
 @theme inline {
@@ -270,6 +284,14 @@
 .dark .bg-yellow-100  { background-color: #3a2e10 !important; }
 .dark .bg-red-50      { background-color: #3a1a1a !important; }
 .dark .bg-red-100     { background-color: #3a1a1a !important; }
+
+/* Pages with hardcoded inline styles (e.g. taskflow) */
+.dark main                   { background-color: #0f1117 !important; }
+.dark header[style]          { background-color: #161827 !important; border-bottom-color: #2d3149 !important; }
+.dark .rounded-xl[style]     { background-color: #1a1d2e !important; border-color: #2d3149 !important; }
+.dark .rounded-lg[style]     { background-color: #1a1d2e !important; border-color: #2d3149 !important; }
+.dark [style*="F8F9FA"]      { background-color: #0f1117 !important; }
+.dark [style*="background-color: rgb(255, 255, 255)"] { background-color: #1a1d2e !important; }
 
 /* Tables */
 .dark table     { color: #e2e8f0; }

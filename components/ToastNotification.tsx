@@ -107,7 +107,7 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
       case 'info':
         return { bg: '#E5F4FF', border: '#6A9BFD', icon: 'ℹ️' }
       default:
-        return { bg: '#F8F9FA', border: '#E0E0E0', icon: '📢' }
+        return { bg: 'var(--c-sub-bg)', border: 'var(--c-border)', icon: '📢' }
     }
   }
 
@@ -123,13 +123,13 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
       }}
     >
       <span className="text-xl flex-shrink-0">{styles.icon}</span>
-      <p className="flex-1 text-sm font-medium" style={{ color: '#1A1A1A' }}>
+      <p className="flex-1 text-sm font-medium" style={{ color: 'var(--c-text-primary)' }}>
         {toast.message}
       </p>
       <button
         onClick={onRemove}
         className="text-xl font-bold hover:opacity-70 transition-opacity flex-shrink-0"
-        style={{ color: '#4A4A4A' }}
+        style={{ color: 'var(--c-text-secondary)' }}
       >
         ×
       </button>

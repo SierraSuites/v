@@ -76,7 +76,7 @@ export default function TimelineView({ photos, onPhotoClick }: TimelineViewProps
     return (
       <div className="w-full py-16 text-center">
         <div className="text-6xl mb-4">📅</div>
-        <h3 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>No Photos Yet</h3>
+        <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--c-text-primary)' }}>No Photos Yet</h3>
         <p style={{ color: '#6B7280' }}>Upload photos to see your project timeline</p>
       </div>
     )
@@ -90,7 +90,7 @@ export default function TimelineView({ photos, onPhotoClick }: TimelineViewProps
           {groupIndex < groupedPhotos.length - 1 && (
             <div
               className="absolute left-6 top-24 bottom-0 w-0.5"
-              style={{ backgroundColor: '#E0E0E0' }}
+              style={{ backgroundColor: 'var(--c-border)' }}
             />
           )}
 
@@ -106,7 +106,7 @@ export default function TimelineView({ photos, onPhotoClick }: TimelineViewProps
 
             {/* Date info */}
             <div className="flex-1">
-              <h3 className="text-lg font-bold mb-1" style={{ color: '#1A1A1A' }}>
+              <h3 className="text-lg font-bold mb-1" style={{ color: 'var(--c-text-primary)' }}>
                 {group.displayDate}
               </h3>
               <div className="flex flex-wrap gap-4 text-sm" style={{ color: '#6B7280' }}>
@@ -130,7 +130,7 @@ export default function TimelineView({ photos, onPhotoClick }: TimelineViewProps
                 key={photo.id}
                 className="group relative rounded-xl overflow-hidden cursor-pointer transition-all hover:shadow-xl hover:scale-105"
                 onClick={() => onPhotoClick?.(photo)}
-                style={{ backgroundColor: '#F8F9FA' }}
+                style={{ backgroundColor: 'var(--c-sub-bg)' }}
               >
                 {/* Photo thumbnail */}
                 <div className="aspect-square relative overflow-hidden">
@@ -169,7 +169,7 @@ export default function TimelineView({ photos, onPhotoClick }: TimelineViewProps
                 <div className="p-3">
                   <p
                     className="text-sm font-semibold truncate mb-1"
-                    style={{ color: '#1A1A1A' }}
+                    style={{ color: 'var(--c-text-primary)' }}
                   >
                     {photo.filename}
                   </p>
@@ -214,8 +214,8 @@ export default function TimelineView({ photos, onPhotoClick }: TimelineViewProps
 
           {/* Progress indicator for the day (if multiple projects) */}
           {group.stats.projects.size > 1 && (
-            <div className="ml-16 mt-4 p-4 rounded-xl border" style={{ backgroundColor: '#F8F9FA', borderColor: '#E0E0E0' }}>
-              <p className="text-sm font-semibold mb-2" style={{ color: '#1A1A1A' }}>
+            <div className="ml-16 mt-4 p-4 rounded-xl border" style={{ backgroundColor: 'var(--c-sub-bg)', borderColor: 'var(--c-border)' }}>
+              <p className="text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
                 Projects Active This Day:
               </p>
               <div className="flex flex-wrap gap-2">
@@ -235,11 +235,11 @@ export default function TimelineView({ photos, onPhotoClick }: TimelineViewProps
       ))}
 
       {/* Summary footer */}
-      <div className="ml-16 p-6 rounded-xl border-2 border-dashed" style={{ borderColor: '#E0E0E0', backgroundColor: '#F8F9FA' }}>
+      <div className="ml-16 p-6 rounded-xl border-2 border-dashed" style={{ borderColor: 'var(--c-border)', backgroundColor: 'var(--c-sub-bg)' }}>
         <div className="flex items-center gap-4">
           <span className="text-4xl">🎯</span>
           <div>
-            <h4 className="font-bold mb-1" style={{ color: '#1A1A1A' }}>Timeline Summary</h4>
+            <h4 className="font-bold mb-1" style={{ color: 'var(--c-text-primary)' }}>Timeline Summary</h4>
             <p className="text-sm" style={{ color: '#6B7280' }}>
               Showing {photos.length} photos across {groupedPhotos.length} days
             </p>

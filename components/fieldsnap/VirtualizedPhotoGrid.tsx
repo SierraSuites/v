@@ -43,7 +43,7 @@ const PhotoCard = memo(({ photo, onClick, style }: {
       <div
         onClick={() => onClick?.(photo)}
         className="group relative rounded-xl overflow-hidden cursor-pointer transition-all hover:shadow-xl hover:scale-105 h-full"
-        style={{ backgroundColor: '#F8F9FA' }}
+        style={{ backgroundColor: 'var(--c-sub-bg)' }}
       >
         {/* Image */}
         <div className="aspect-square relative overflow-hidden">
@@ -126,7 +126,7 @@ const PhotoCard = memo(({ photo, onClick, style }: {
         <div className="p-3">
           <p
             className="text-sm font-semibold truncate mb-1"
-            style={{ color: '#1A1A1A' }}
+            style={{ color: 'var(--c-text-primary)' }}
             title={photo.filename}
           >
             {photo.filename}
@@ -186,7 +186,7 @@ export default function VirtualizedPhotoGrid({
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <span className="text-6xl mb-4">📷</span>
-        <h3 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>
+        <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--c-text-primary)' }}>
           No Photos Yet
         </h3>
         <p style={{ color: '#6B7280' }}>Upload your first photo to get started</p>

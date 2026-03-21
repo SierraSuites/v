@@ -55,7 +55,7 @@ export default function PunchListItemCard({
       <div
         onClick={onClick}
         className="bg-white rounded-lg border p-3 cursor-pointer transition-all hover:shadow-md"
-        style={{ borderColor: '#E0E0E0' }}
+        style={{ borderColor: 'var(--c-border)' }}
       >
         <div className="flex items-start gap-3">
           {/* Severity Indicator */}
@@ -67,7 +67,7 @@ export default function PunchListItemCard({
           <div className="flex-1 min-w-0">
             {/* Title */}
             <div className="flex items-start justify-between gap-2 mb-1">
-              <h4 className="font-semibold text-sm truncate" style={{ color: '#1A1A1A' }}>
+              <h4 className="font-semibold text-sm truncate" style={{ color: 'var(--c-text-primary)' }}>
                 {item.title}
               </h4>
               <span className="text-xs flex-shrink-0">{getSeverityIcon(item.severity)}</span>
@@ -106,7 +106,7 @@ export default function PunchListItemCard({
 
   // Full card view
   return (
-    <div className="bg-white rounded-xl border overflow-hidden transition-all hover:shadow-lg" style={{ borderColor: '#E0E0E0' }}>
+    <div className="bg-white rounded-xl border overflow-hidden transition-all hover:shadow-lg" style={{ borderColor: 'var(--c-border)' }}>
       {/* Header */}
       <div
         className="p-4 border-l-4"
@@ -122,7 +122,7 @@ export default function PunchListItemCard({
               <span className="text-2xl">{getSeverityIcon(item.severity)}</span>
               <h3
                 className="font-bold text-lg cursor-pointer hover:underline"
-                style={{ color: '#1A1A1A' }}
+                style={{ color: 'var(--c-text-primary)' }}
                 onClick={() => setIsExpanded(!isExpanded)}
               >
                 {item.title}
@@ -201,7 +201,7 @@ export default function PunchListItemCard({
 
               {/* Status Dropdown */}
               {showStatusMenu && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border shadow-lg z-10" style={{ borderColor: '#E0E0E0' }}>
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border shadow-lg z-10" style={{ borderColor: 'var(--c-border)' }}>
                   {(['open', 'in_progress', 'pending_review', 'resolved', 'closed'] as PunchListStatus[]).map(status => (
                     <button
                       key={status}
@@ -228,7 +228,7 @@ export default function PunchListItemCard({
             <p className="text-xs font-semibold mb-2" style={{ color: '#6B7280' }}>DUE DATE</p>
             {item.due_date ? (
               <div>
-                <p className="font-semibold text-sm" style={{ color: overdue ? '#DC2626' : '#1A1A1A' }}>
+                <p className="font-semibold text-sm" style={{ color: overdue ? '#DC2626' : 'var(--c-text-primary)' }}>
                   {new Date(item.due_date).toLocaleDateString()}
                 </p>
                 {daysUntilDue !== null && (
@@ -255,7 +255,7 @@ export default function PunchListItemCard({
                   {(item.assigned_user as any).email?.[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate" style={{ color: '#1A1A1A' }}>
+                  <p className="text-sm font-semibold truncate" style={{ color: 'var(--c-text-primary)' }}>
                     {(item.assigned_user as any).user_metadata?.full_name || (item.assigned_user as any).email}
                   </p>
                 </div>
@@ -294,7 +294,7 @@ export default function PunchListItemCard({
             {item.estimated_cost && (
               <div>
                 <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>ESTIMATED COST</p>
-                <p className="text-sm font-bold" style={{ color: '#1A1A1A' }}>
+                <p className="text-sm font-bold" style={{ color: 'var(--c-text-primary)' }}>
                   ${item.estimated_cost.toLocaleString()}
                 </p>
               </div>

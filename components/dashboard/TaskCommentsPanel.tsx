@@ -184,9 +184,9 @@ export default function TaskCommentsPanel({ taskId, taskTitle, onClose }: TaskCo
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
         {/* Header */}
-        <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: '#E0E0E0' }}>
+        <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: 'var(--c-border)' }}>
           <div className="flex-1">
-            <h2 className="text-xl font-bold mb-1" style={{ color: '#1A1A1A' }}>
+            <h2 className="text-xl font-bold mb-1" style={{ color: 'var(--c-text-primary)' }}>
               Comments
             </h2>
             <p className="text-sm" style={{ color: '#6B7280' }}>
@@ -197,7 +197,7 @@ export default function TaskCommentsPanel({ taskId, taskTitle, onClose }: TaskCo
             onClick={onClose}
             className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
           >
-            <span className="text-2xl" style={{ color: '#4A4A4A' }}>×</span>
+            <span className="text-2xl" style={{ color: 'var(--c-text-secondary)' }}>×</span>
           </button>
         </div>
 
@@ -211,7 +211,7 @@ export default function TaskCommentsPanel({ taskId, taskTitle, onClose }: TaskCo
           ) : comments.length === 0 ? (
             <div className="text-center py-12">
               <span className="text-6xl">💬</span>
-              <p className="mt-4 font-semibold" style={{ color: '#1A1A1A' }}>No comments yet</p>
+              <p className="mt-4 font-semibold" style={{ color: 'var(--c-text-primary)' }}>No comments yet</p>
               <p className="text-sm" style={{ color: '#6B7280' }}>Be the first to comment on this task</p>
             </div>
           ) : (
@@ -228,7 +228,7 @@ export default function TaskCommentsPanel({ taskId, taskTitle, onClose }: TaskCo
                 {/* Comment Content */}
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-sm" style={{ color: '#1A1A1A' }}>
+                    <span className="font-semibold text-sm" style={{ color: 'var(--c-text-primary)' }}>
                       {comment.user_name}
                     </span>
                     <span className="text-xs" style={{ color: '#9CA3AF' }}>
@@ -237,7 +237,7 @@ export default function TaskCommentsPanel({ taskId, taskTitle, onClose }: TaskCo
                   </div>
                   <div
                     className="text-sm p-3 rounded-lg"
-                    style={{ backgroundColor: '#F8F9FA', color: '#1A1A1A' }}
+                    style={{ backgroundColor: 'var(--c-sub-bg)', color: 'var(--c-text-primary)' }}
                   >
                     {comment.content}
                   </div>
@@ -257,7 +257,7 @@ export default function TaskCommentsPanel({ taskId, taskTitle, onClose }: TaskCo
         </div>
 
         {/* Comment Input */}
-        <form onSubmit={handleSubmit} className="p-6 border-t" style={{ borderColor: '#E0E0E0' }}>
+        <form onSubmit={handleSubmit} className="p-6 border-t" style={{ borderColor: 'var(--c-border)' }}>
           <div className="flex gap-3">
             {user && (
               <div
@@ -274,7 +274,7 @@ export default function TaskCommentsPanel({ taskId, taskTitle, onClose }: TaskCo
                 placeholder="Write a comment... (Use @username to mention someone)"
                 className="w-full p-3 rounded-lg border resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
                 style={{
-                  borderColor: '#E0E0E0'
+                  borderColor: 'var(--c-border)'
                 }}
                 rows={3}
                 disabled={submitting}

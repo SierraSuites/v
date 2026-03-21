@@ -79,10 +79,10 @@ export default function PhotoDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-4 border-t-transparent rounded-full mx-auto" style={{ borderColor: '#FF6B6B' }} />
-          <p className="mt-4 text-sm" style={{ color: '#4A4A4A' }}>Loading photo...</p>
+          <p className="mt-4 text-sm" style={{ color: 'var(--c-text-secondary)' }}>Loading photo...</p>
         </div>
       </div>
     )
@@ -90,10 +90,10 @@ export default function PhotoDetailPage() {
 
   if (!photo) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
         <div className="text-center">
           <p className="text-2xl mb-4">📸</p>
-          <h2 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>Photo Not Found</h2>
+          <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--c-text-primary)' }}>Photo Not Found</h2>
           <p className="text-sm mb-4" style={{ color: '#6B7280' }}>The photo you're looking for doesn't exist or you don't have access to it.</p>
           <button
             onClick={() => router.push('/fieldsnap')}
@@ -108,9 +108,9 @@ export default function PhotoDetailPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
       {/* Header */}
-      <header className="bg-white border-b" style={{ borderColor: '#E0E0E0' }}>
+      <header className="bg-white border-b" style={{ borderColor: 'var(--c-border)' }}>
         <div className="max-w-7xl mx-auto p-4 lg:p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -123,7 +123,7 @@ export default function PhotoDetailPage() {
                 </svg>
               </button>
               <div>
-                <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{photo.filename}</h1>
+                <h1 className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{photo.filename}</h1>
                 <div className="flex items-center gap-2 mt-1 text-sm" style={{ color: '#6B7280' }}>
                   {photo.project_name && (
                     <>
@@ -177,29 +177,29 @@ export default function PhotoDetailPage() {
 
             {/* Photo Metadata */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-bold mb-4" style={{ color: '#1A1A1A' }}>Photo Details</h2>
+              <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--c-text-primary)' }}>Photo Details</h2>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-semibold mb-1" style={{ color: '#6B7280' }}>Dimensions</p>
-                  <p className="font-semibold" style={{ color: '#1A1A1A' }}>{photo.width} × {photo.height}</p>
+                  <p className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>{photo.width} × {photo.height}</p>
                 </div>
 
                 <div>
                   <p className="text-sm font-semibold mb-1" style={{ color: '#6B7280' }}>File Size</p>
-                  <p className="font-semibold" style={{ color: '#1A1A1A' }}>{formatBytes(photo.file_size)}</p>
+                  <p className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>{formatBytes(photo.file_size)}</p>
                 </div>
 
                 <div>
                   <p className="text-sm font-semibold mb-1" style={{ color: '#6B7280' }}>Captured</p>
-                  <p className="font-semibold" style={{ color: '#1A1A1A' }}>
+                  <p className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>
                     {new Date(photo.captured_at).toLocaleString()}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-sm font-semibold mb-1" style={{ color: '#6B7280' }}>Uploaded</p>
-                  <p className="font-semibold" style={{ color: '#1A1A1A' }}>
+                  <p className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>
                     {new Date(photo.uploaded_at).toLocaleString()}
                   </p>
                 </div>
@@ -207,7 +207,7 @@ export default function PhotoDetailPage() {
                 {photo.gps_latitude && photo.gps_longitude && (
                   <div className="col-span-2">
                     <p className="text-sm font-semibold mb-1" style={{ color: '#6B7280' }}>Location</p>
-                    <p className="font-semibold" style={{ color: '#1A1A1A' }}>
+                    <p className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>
                       {photo.gps_latitude.toFixed(6)}, {photo.gps_longitude.toFixed(6)}
                     </p>
                   </div>
@@ -216,7 +216,7 @@ export default function PhotoDetailPage() {
                 {photo.description && (
                   <div className="col-span-2">
                     <p className="text-sm font-semibold mb-1" style={{ color: '#6B7280' }}>Description</p>
-                    <p className="font-semibold" style={{ color: '#1A1A1A' }}>{photo.description}</p>
+                    <p className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>{photo.description}</p>
                   </div>
                 )}
 

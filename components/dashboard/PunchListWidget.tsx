@@ -103,7 +103,7 @@ export default function PunchListWidget({
             🚨
           </div>
           <div>
-            <h3 className="font-bold text-lg" style={{ color: '#1A1A1A' }}>Critical Punch Items</h3>
+            <h3 className="font-bold text-lg" style={{ color: 'var(--c-text-primary)' }}>Critical Punch Items</h3>
             <p className="text-sm" style={{ color: '#6B7280' }}>Loading...</p>
           </div>
         </div>
@@ -119,7 +119,7 @@ export default function PunchListWidget({
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b" style={{ borderColor: '#E0E0E0' }}>
+      <div className="p-6 border-b" style={{ borderColor: 'var(--c-border)' }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div
@@ -129,7 +129,7 @@ export default function PunchListWidget({
               {criticalItems.length > 0 ? '🚨' : '✅'}
             </div>
             <div>
-              <h3 className="font-bold text-lg" style={{ color: '#1A1A1A' }}>
+              <h3 className="font-bold text-lg" style={{ color: 'var(--c-text-primary)' }}>
                 Critical Punch Items
               </h3>
               <p className="text-sm" style={{ color: '#6B7280' }}>
@@ -152,9 +152,9 @@ export default function PunchListWidget({
         {/* Quick Stats */}
         {stats.total > 0 && (
           <div className="grid grid-cols-3 gap-3">
-            <div className="p-3 rounded-lg" style={{ backgroundColor: '#F8F9FA' }}>
+            <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
               <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>Total</p>
-              <p className="text-xl font-bold" style={{ color: '#1A1A1A' }}>{stats.total}</p>
+              <p className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{stats.total}</p>
             </div>
             <div className="p-3 rounded-lg" style={{ backgroundColor: '#FEE2E2' }}>
               <p className="text-xs font-semibold mb-1" style={{ color: '#991B1B' }}>Critical</p>
@@ -173,7 +173,7 @@ export default function PunchListWidget({
         {criticalItems.length === 0 ? (
           <div className="text-center py-8">
             <span className="text-6xl mb-4 block">🎉</span>
-            <h4 className="font-bold text-lg mb-2" style={{ color: '#1A1A1A' }}>
+            <h4 className="font-bold text-lg mb-2" style={{ color: 'var(--c-text-primary)' }}>
               All Clear!
             </h4>
             <p className="text-sm" style={{ color: '#6B7280' }}>
@@ -186,7 +186,7 @@ export default function PunchListWidget({
               <div
                 key={item.id}
                 className="p-4 rounded-lg border hover:shadow-md transition-shadow cursor-pointer"
-                style={{ borderColor: '#E0E0E0' }}
+                style={{ borderColor: 'var(--c-border)' }}
                 onClick={() => router.push(`/fieldsnap/${item.photo_id}`)}
               >
                 <div className="flex items-start justify-between mb-2">
@@ -211,7 +211,7 @@ export default function PunchListWidget({
                         {item.status.replace('_', ' ')}
                       </span>
                     </div>
-                    <h5 className="font-bold text-sm mb-1 truncate" style={{ color: '#1A1A1A' }}>
+                    <h5 className="font-bold text-sm mb-1 truncate" style={{ color: 'var(--c-text-primary)' }}>
                       {item.title}
                     </h5>
                     {item.description && (
@@ -262,7 +262,7 @@ export default function PunchListWidget({
 
       {/* Footer */}
       {criticalItems.length > 0 && (
-        <div className="p-4 border-t bg-gray-50" style={{ borderColor: '#E0E0E0' }}>
+        <div className="p-4 border-t bg-gray-50" style={{ borderColor: 'var(--c-border)' }}>
           <div className="flex items-center justify-between">
             <p className="text-xs" style={{ color: '#6B7280' }}>
               Updated {new Date().toLocaleTimeString()}
