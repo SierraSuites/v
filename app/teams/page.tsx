@@ -14,9 +14,11 @@ import CreateCustomRoleModal from '@/components/teams/CreateCustomRoleModal'
 import AuditLogViewer from '@/components/teams/AuditLogViewer'
 import { ROLE_PERMISSIONS, UserRole, getRoleDisplayName, getRoleColor, getRoleIcon } from '@/lib/permissions'
 import { Users, Shield, Mail, FileText, Plus } from 'lucide-react'
+import { useThemeColors } from "@/lib/hooks/useThemeColors"
 
 export default function TeamsPage() {
   const router = useRouter()
+  const { colors, darkMode } = useThemeColors()
   const { hasPermission, role, userId, loading: permissionsLoading } = usePermissions()
   const [user, setUser] = useState<any>(null)
   const [companyId, setCompanyId] = useState<string | null>(null)
@@ -92,7 +94,7 @@ export default function TeamsPage() {
 
   if (loading || permissionsLoading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
+      <div className="min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -103,14 +105,14 @@ export default function TeamsPage() {
           </div>
           <div className="space-y-4">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+              <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 animate-pulse" style={{ backgroundColor: colors.bg }}>
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gray-200 rounded-full" />
+                  <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full" />
                   <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-1/4 mb-2" />
-                    <div className="h-3 bg-gray-200 rounded w-1/3" />
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-2" />
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
                   </div>
-                  <div className="h-6 bg-gray-200 rounded-full w-20" />
+                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-20" />
                 </div>
               </div>
             ))}
@@ -126,7 +128,7 @@ export default function TeamsPage() {
 
   if (!canManageTeam && !canInviteMembers) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
+      <div className="min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
         <div className="max-w-7xl mx-auto p-6">
           <UnauthorizedAccess
             message="You need admin or superintendent permissions to manage teams"
@@ -140,12 +142,12 @@ export default function TeamsPage() {
 
   if (!companyId) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
+      <div className="min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
         <div className="max-w-7xl mx-auto p-6">
           <div className="text-center py-20">
             <span className="text-6xl mb-4 block">🏢</span>
-            <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--c-text-primary)' }}>No Company Found</h3>
-            <p className="text-sm mb-6" style={{ color: 'var(--c-text-secondary)' }}>
+            <h3 className="text-xl font-bold mb-2" style={{ color: colors.text }}>No Company Found</h3>
+            <p className="text-sm mb-6" style={{ color: colors.textMuted }}>
               You need to be part of a company to manage teams
             </p>
             <button
@@ -168,23 +170,23 @@ export default function TeamsPage() {
   ]
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
+    <div className="min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
       {/* Header */}
-      <header className="bg-white border-b" style={{ borderColor: 'var(--c-border)' }}>
+      <header className="border-b" style={{ backgroundColor: colors.bg, borderColor: darkMode ? '#2d3548' : '#E0E0E0' }}>
         <div className="max-w-7xl mx-auto p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               <div>
-                <h1 className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>Team Management</h1>
-                <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
+                <h1 className="text-2xl font-bold" style={{ color: colors.text }}>Team Management</h1>
+                <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
                   Manage your teams, members, roles, and permissions
                 </p>
               </div>
@@ -198,7 +200,7 @@ export default function TeamsPage() {
       </header>
 
       {/* Tabs */}
-      <div className="bg-white border-b" style={{ borderColor: 'var(--c-border)' }}>
+      <div className="border-b" style={{ backgroundColor: colors.bg, borderColor: darkMode ? '#2d3548' : '#E0E0E0' }}>
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex gap-8">
             {tabs.map(tab => {
@@ -210,8 +212,9 @@ export default function TeamsPage() {
                   className={`flex items-center gap-2 px-4 py-4 border-b-2 font-medium text-sm transition-colors ${
                     activeTab === tab.id
                       ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                      : 'border-transparent'
                   }`}
+                  style={activeTab !== tab.id ? { color: colors.textMuted } : {}}
                 >
                   <Icon className="w-5 h-5" />
                   {tab.label}
@@ -257,8 +260,8 @@ export default function TeamsPage() {
             {canManageTeam && (
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Roles & Permissions</h2>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <h2 className="text-lg font-semibold" style={{ color: colors.text }}>Roles & Permissions</h2>
+                  <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
                     Manage built-in and custom roles for your organization
                   </p>
                 </div>
@@ -274,17 +277,17 @@ export default function TeamsPage() {
 
             {/* Built-in Roles */}
             <div>
-              <h3 className="text-md font-semibold text-gray-900 mb-4">Built-in Roles</h3>
+              <h3 className="text-md font-semibold mb-4" style={{ color: colors.text }}>Built-in Roles</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Object.keys(ROLE_PERMISSIONS).map(roleKey => {
                   const roleTyped = roleKey as UserRole
                   const isSelected = selectedRoleForView === roleKey
 
                   return (
-                    <div key={roleKey} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <div key={roleKey} className="rounded-lg overflow-hidden" style={{ backgroundColor: colors.bg, border: colors.border }}>
                       <button
                         onClick={() => setSelectedRoleForView(isSelected ? null : roleKey)}
-                        className="w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition-colors"
+                        className="w-full p-4 flex items-center gap-3 transition-colors"
                       >
                         <div
                           className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
@@ -293,13 +296,14 @@ export default function TeamsPage() {
                           {getRoleIcon(roleTyped)}
                         </div>
                         <div className="flex-1 text-left">
-                          <p className="font-semibold text-gray-900">{getRoleDisplayName(roleTyped)}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">
+                          <p className="font-semibold" style={{ color: colors.text }}>{getRoleDisplayName(roleTyped)}</p>
+                          <p className="text-xs mt-0.5" style={{ color: colors.textMuted }}>
                             {Object.values(ROLE_PERMISSIONS[roleTyped]).filter(Boolean).length} of 30 permissions
                           </p>
                         </div>
                         <svg
-                          className={`w-5 h-5 text-gray-400 transition-transform ${isSelected ? 'rotate-180' : ''}`}
+                          className={`w-5 h-5 transition-transform ${isSelected ? 'rotate-180' : ''}`}
+                          style={{ color: colors.textMuted }}
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -309,7 +313,7 @@ export default function TeamsPage() {
                       </button>
 
                       {isSelected && (
-                        <div className="border-t border-gray-200 p-4">
+                        <div className="p-4" style={{ borderTop: colors.border }}>
                           <PermissionMatrixEditor
                             initialPermissions={ROLE_PERMISSIONS[roleTyped]}
                             onChange={() => {}}
@@ -326,16 +330,16 @@ export default function TeamsPage() {
             {/* Custom Roles */}
             {customRoles.length > 0 && (
               <div>
-                <h3 className="text-md font-semibold text-gray-900 mb-4">Custom Roles</h3>
+                <h3 className="text-md font-semibold mb-4" style={{ color: colors.text }}>Custom Roles</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {customRoles.map(customRole => {
                     const isSelected = selectedRoleForView === customRole.id
 
                     return (
-                      <div key={customRole.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                      <div key={customRole.id} className="rounded-lg overflow-hidden" style={{ backgroundColor: colors.bg, border: colors.border }}>
                         <button
                           onClick={() => setSelectedRoleForView(isSelected ? null : customRole.id)}
-                          className="w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition-colors"
+                          className="w-full p-4 flex items-center gap-3 transition-colors"
                         >
                           <div
                             className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
@@ -344,13 +348,14 @@ export default function TeamsPage() {
                             {customRole.icon}
                           </div>
                           <div className="flex-1 text-left">
-                            <p className="font-semibold text-gray-900">{customRole.role_name}</p>
-                            <p className="text-xs text-gray-500 mt-0.5">
+                            <p className="font-semibold" style={{ color: colors.text }}>{customRole.role_name}</p>
+                            <p className="text-xs mt-0.5" style={{ color: colors.textMuted }}>
                               {customRole.member_count || 0} members · {Object.values(customRole.permissions).filter(Boolean).length} permissions
                             </p>
                           </div>
                           <svg
-                            className={`w-5 h-5 text-gray-400 transition-transform ${isSelected ? 'rotate-180' : ''}`}
+                            className={`w-5 h-5 transition-transform ${isSelected ? 'rotate-180' : ''}`}
+                            style={{ color: colors.textMuted }}
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -360,9 +365,9 @@ export default function TeamsPage() {
                         </button>
 
                         {isSelected && (
-                          <div className="border-t border-gray-200 p-4">
+                          <div className="p-4" style={{ borderTop: colors.border }}>
                             {customRole.description && (
-                              <p className="text-sm text-gray-600 mb-4">{customRole.description}</p>
+                              <p className="text-sm mb-4" style={{ color: colors.textMuted }}>{customRole.description}</p>
                             )}
                             <PermissionMatrixEditor
                               initialPermissions={customRole.permissions}

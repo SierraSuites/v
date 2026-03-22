@@ -411,14 +411,7 @@ export async function createTask(task: TaskInsert) {
     .single()
 
   if (error) {
-    console.error("Error creating task:", error)
-    console.error("Task creation error details:", {
-      message: error.message,
-      code: error.code,
-      details: error.details,
-      hint: error.hint
-    })
-    console.error("Task data being inserted:", task)
+    console.error("Error creating task:", error.message, "| code:", error.code, "| details:", error.details, "| hint:", error.hint)
     return { data: null, error }
   }
 

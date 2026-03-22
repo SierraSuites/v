@@ -5,8 +5,9 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { useThemeColors } from "@/lib/hooks/useThemeColors"
 import ProjectCreationModal from "@/components/dashboard/ProjectCreationModal"
 import { useToast } from "@/components/ToastNotification"
 import {
@@ -21,6 +22,15 @@ import {
 } from "@/lib/supabase/projects"
 import { getTeamMembersForProjects, type TeamMember } from "@/lib/supabase/project-helpers"
 
+// Navigation item type
+type NavItem = {
+  name: string
+  href: string
+  icon: string
+  badge?: string
+  locked?: boolean
+  subItems?: { name: string; href: string }[]
+}
 
 // Project type definition
 type Project = {
@@ -64,7 +74,9 @@ type Project = {
 
 export default function ProjectsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const toast = useToast()
+  // const { colors } = useThemeColors()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
@@ -74,14 +86,106 @@ export default function ProjectsPage() {
   const [sortBy, setSortBy] = useState("newest")
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
+  // const [darkMode, setDarkMode] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [expandedNav, setExpandedNav] = useState<string | null>(null)
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false)
+
+  // Theme
+  const { colors, darkMode } = useThemeColors()
 
   // User plan (for tier-based limits)
-  const [userPlan, setUserPlan] = useState<"starter" | "professional" | "enterprise">("professional")
+  const [userPlan, setUserPlan] = useState<"starter" | "professional" | "enterprise">(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('userPlan') as "starter" | "professional" | "enterprise") || 'professional'
+    }
+    return 'professional'
+  })
 
   // User data
+  const userData = {
+    full_name: user?.user_metadata?.full_name || "John Doe",
+    company_name: user?.user_metadata?.company_name || "Demo Construction Co.",
+  }
 
+  // Navigation items
+  const navigationItems: NavItem[] = [
+    {
+      name: "Dashboard",
+      href: "/dashboard",
+      icon: "📊"
+    },
+    {
+      name: "Projects",
+      href: "/projects",
+      icon: "🏗️"
+    },
+    {
+      name: "TaskFlow",
+      href: "/taskflow",
+      icon: "✅"
+    },
+    {
+      name: "FieldSnap",
+      href: "/fieldsnap",
+      icon: "📸"
+    },
+    {
+      name: "QuoteHub",
+      href: "/quotehub",
+      icon: "💰"
+    },
+    {
+      name: "ReportCenter",
+      href: "/reportcenter",
+      icon: "📊"
+    },
+    {
+      name: "CRM",
+      href: "/crm",
+      icon: "🤝",
+      badge: "Pro",
+      locked: userPlan === "starter"
+    },
+    {
+      name: "Proposals",
+      href: "/proposals",
+      icon: "📄",
+      badge: "Pro",
+      locked: userPlan === "starter"
+    },
+    {
+      name: "Subcontractors",
+      href: "/subcontractors",
+      icon: "🔧",
+      badge: "Enterprise",
+      locked: userPlan !== "enterprise"
+    },
+    {
+      name: "Advanced CRM",
+      href: "/advanced-crm",
+      icon: "📈",
+      badge: "Enterprise",
+      locked: userPlan !== "enterprise"
+    },
+    {
+      name: "AI Proposals",
+      href: "/ai-proposals",
+      icon: "🤖",
+      badge: "Enterprise",
+      locked: userPlan !== "enterprise"
+    },
+  ]
 
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push("/login")
+  }
 
+  const toggleNav = (name: string) => {
+    setExpandedNav(expandedNav === name ? null : name)
+  }
 
   // Handle project save (create/update)
   const handleSaveProject = async (projectData: any) => {
@@ -368,6 +472,7 @@ export default function ProjectsPage() {
 
         if (profile?.plan) {
           setUserPlan(profile.plan as "starter" | "professional" | "enterprise")
+          localStorage.setItem('userPlan', profile.plan)
         }
       } else {
         // For demo, use placeholder
@@ -377,6 +482,15 @@ export default function ProjectsPage() {
     }
     loadUser()
   }, [])
+
+  // Sync URL params to filter state
+  useEffect(() => {
+    if (searchParams.get('new') === 'true') {
+      setShowCreateModal(true)
+    }
+    const status = searchParams.get('status')
+    setStatusFilter(status || "all")
+  }, [searchParams])
 
   // Filter and sort projects
   const filteredProjects = projects
@@ -405,6 +519,7 @@ export default function ProjectsPage() {
     planning: projects.filter(p => p.status === "planning").length,
     onHold: projects.filter(p => p.status === "on-hold").length,
     completed: projects.filter(p => p.status === "completed").length,
+    overdue: projects.filter(p => p.status !== "completed" && p.endDate && new Date(p.endDate) < new Date()).length,
   }
 
   const getStatusColor = (status: string) => {
@@ -438,56 +553,56 @@ export default function ProjectsPage() {
   // Quality Guide line 1774: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0d0f17]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header skeleton */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <div className="h-8 bg-gray-200 rounded w-32 mb-2 animate-pulse" />
-              <div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
+              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-2 animate-pulse" />
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48 animate-pulse" />
             </div>
-            <div className="h-10 bg-gray-200 rounded-lg w-36 animate-pulse" />
+            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-36 animate-pulse" />
           </div>
           {/* Stats skeleton */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} className="rounded-xl bg-white border border-gray-200 p-4 animate-pulse">
+              <div key={i} className="rounded-xl bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-gray-700 p-4 animate-pulse">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-gray-200 rounded-lg" />
-                  <div className="h-4 bg-gray-200 rounded w-16" />
+                  <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" />
                 </div>
-                <div className="h-8 bg-gray-200 rounded w-12" />
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-12" />
               </div>
             ))}
           </div>
           {/* Filter bar skeleton */}
-          <div className="rounded-xl bg-white border border-gray-200 p-4 mb-6 animate-pulse">
+          <div className="rounded-xl bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-gray-700 p-4 mb-6 animate-pulse">
             <div className="flex gap-4">
-              <div className="flex-1 h-10 bg-gray-200 rounded-lg" />
-              <div className="h-10 bg-gray-200 rounded-lg w-28" />
-              <div className="h-10 bg-gray-200 rounded-lg w-28" />
+              <div className="flex-1 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-28" />
+              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-28" />
             </div>
           </div>
           {/* Project cards skeleton */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="rounded-xl bg-white border border-gray-200 overflow-hidden animate-pulse">
-                <div className="h-48 bg-gray-200" />
+              <div key={i} className="rounded-xl bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-gray-700 overflow-hidden animate-pulse">
+                <div className="h-48 bg-gray-200 dark:bg-gray-700" />
                 <div className="p-5">
-                  <div className="h-5 bg-gray-200 rounded w-3/4 mb-2" />
-                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-4" />
-                  <div className="h-2 bg-gray-200 rounded-full w-full mb-4" />
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2" />
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4" />
+                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full w-full mb-4" />
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="h-12 bg-gray-100 rounded-lg" />
-                    <div className="h-12 bg-gray-100 rounded-lg" />
+                    <div className="h-12 bg-gray-100 dark:bg-gray-700 rounded-lg" />
+                    <div className="h-12 bg-gray-100 dark:bg-gray-700 rounded-lg" />
                   </div>
                   <div className="flex justify-between">
                     <div className="flex -space-x-2">
                       {[1, 2, 3].map(j => (
-                        <div key={j} className="w-8 h-8 bg-gray-200 rounded-full border-2 border-white" />
+                        <div key={j} className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full border-2 border-white dark:border-gray-800" />
                       ))}
                     </div>
-                    <div className="h-4 bg-gray-200 rounded w-16" />
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" />
                   </div>
                 </div>
               </div>
@@ -501,16 +616,11 @@ export default function ProjectsPage() {
   return (
     <>
         {/* Header */}
-        <header className="sticky top-0 z-40" style={{ backgroundColor: 'var(--c-card-bg)', borderBottom: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05)' }}>
+        <header className="sticky top-0 z-40" style={{ backgroundColor: colors.bg, borderBottom: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>Projects</h1>
-              <p className="text-sm mt-1" style={{ color: 'var(--c-text-secondary)' }}>
-                {stats.total} total project{stats.total !== 1 ? 's' : ''}
-                {userPlan === "starter" && ` (${projectLimits.starter} max on Starter plan)`}
-                {userPlan === "professional" && ` (${projectLimits.professional} max on Pro plan)`}
-              </p>
+              <h1 className="text-2xl font-bold" style={{ color: colors.text }}>Projects</h1>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -521,7 +631,7 @@ export default function ProjectsPage() {
                     ? "text-white"
                     : "cursor-not-allowed"
                 }`}
-                style={canCreateProject ? { background: 'linear-gradient(to bottom, #FF6B6B 0%, #FF5252 100%)', boxShadow: '0 2px 4px rgba(255,107,107,0.2), 0 1px 2px rgba(255,107,107,0.3)' } : { backgroundColor: 'var(--c-border)', color: 'var(--c-text-secondary)' }}
+                style={canCreateProject ? { background: 'linear-gradient(to bottom, #FF6B6B 0%, #FF5252 100%)', boxShadow: '0 2px 4px rgba(255,107,107,0.2), 0 1px 2px rgba(255,107,107,0.3)' } : { backgroundColor: colors.bgMuted, color: colors.textMuted }}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -540,10 +650,10 @@ export default function ProjectsPage() {
             <div className="flex items-start gap-3">
               <span className="text-2xl">⚠️</span>
               <div className="flex-1">
-                <h3 className="font-semibold mb-1" style={{ color: 'var(--c-text-primary)' }}>
+                <h3 className="font-semibold mb-1" style={{ color: colors.text }}>
                   {projects.length >= projectLimits.starter ? "Project Limit Reached" : "Approaching Project Limit"}
                 </h3>
-                <p className="text-sm mb-3" style={{ color: 'var(--c-text-secondary)' }}>
+                <p className="text-sm mb-3" style={{ color: colors.textMuted }}>
                   {projects.length >= projectLimits.starter
                     ? `You've reached the maximum of ${projectLimits.starter} projects on the Starter plan.`
                     : `You're using ${projects.length} of ${projectLimits.starter} projects. Upgrade to Pro for up to 50 projects.`
@@ -566,54 +676,54 @@ export default function ProjectsPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E0F2FF' }}>
                 <span className="text-xl">🏗️</span>
               </div>
-              <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Total</p>
+              <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Total</p>
             </div>
-            <p className="text-3xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{stats.total}</p>
+            <p className="text-3xl font-bold" style={{ color: colors.text }}>{stats.total}</p>
           </div>
 
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E6F9EA' }}>
                 <span className="text-xl">🚀</span>
               </div>
-              <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Active</p>
+              <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Active</p>
             </div>
             <p className="text-3xl font-bold" style={{ color: '#6BCB77' }}>{stats.active}</p>
           </div>
 
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E5F4FF' }}>
                 <span className="text-xl">📋</span>
               </div>
-              <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Planning</p>
+              <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Planning</p>
             </div>
             <p className="text-3xl font-bold" style={{ color: '#6A9BFD' }}>{stats.planning}</p>
           </div>
 
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFF9E6' }}>
                 <span className="text-xl">⏸️</span>
               </div>
-              <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>On Hold</p>
+              <p className="text-sm font-medium" style={{ color: colors.textMuted }}>On Hold</p>
             </div>
             <p className="text-3xl font-bold" style={{ color: '#FFD93D' }}>{stats.onHold}</p>
           </div>
 
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.bgAlt }}>
                 <span className="text-xl">✅</span>
               </div>
-              <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Completed</p>
+              <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Completed</p>
             </div>
-            <p className="text-3xl font-bold" style={{ color: 'var(--c-text-secondary)' }}>{stats.completed}</p>
+            <p className="text-3xl font-bold" style={{ color: colors.textMuted }}>{stats.completed}</p>
           </div>
         </div>
 
@@ -622,7 +732,7 @@ export default function ProjectsPage() {
           <Link
             href="/projects/design-selections"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all hover:-translate-y-0.5"
-            style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', color: 'var(--c-text-primary)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
+            style={{ backgroundColor: colors.bg, border: colors.border, color: colors.text, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
           >
             <span>🎨</span>
             Design Selections
@@ -630,7 +740,7 @@ export default function ProjectsPage() {
           <Link
             href="/projects/approvals"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all hover:-translate-y-0.5"
-            style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', color: 'var(--c-text-primary)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
+            style={{ backgroundColor: colors.bg, border: colors.border, color: colors.text, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
           >
             <span>✅</span>
             Approvals
@@ -638,7 +748,7 @@ export default function ProjectsPage() {
           <Link
             href="/projects/turnover"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all hover:-translate-y-0.5"
-            style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', color: 'var(--c-text-primary)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
+            style={{ backgroundColor: colors.bg, border: colors.border, color: colors.text, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
           >
             <span>📦</span>
             Turnover
@@ -646,12 +756,12 @@ export default function ProjectsPage() {
         </div>
 
         {/* Filters and View Toggle */}
-        <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+        <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
           <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
             {/* Search */}
             <div className="flex-1 w-full lg:w-auto">
               <div className="relative">
-                <svg className="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-3 top-3 w-5 h-5" style={{ color: colors.textMuted }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
@@ -660,7 +770,7 @@ export default function ProjectsPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 rounded-lg focus:outline-none"
-                  style={{ border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
+                  style={{ border: colors.border, color: colors.text }}
                 />
               </div>
             </div>
@@ -671,21 +781,21 @@ export default function ProjectsPage() {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                style={{ border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
+                style={{ border: colors.border, color: colors.text }}
               >
                 <option value="all">All Status</option>
                 <option value="planning">Planning</option>
                 <option value="active">Active</option>
                 <option value="on-hold">On Hold</option>
                 <option value="completed">Completed</option>
-                <option value="archived">Archived</option>
+                <option value="cancelled">Cancelled</option>
               </select>
 
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
                 className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                style={{ border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
+                style={{ border: colors.border, color: colors.text }}
               >
                 <option value="all">All Types</option>
                 <option value="residential">Residential</option>
@@ -698,7 +808,7 @@ export default function ProjectsPage() {
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                style={{ border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
+                style={{ border: colors.border, color: colors.text }}
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
@@ -707,13 +817,13 @@ export default function ProjectsPage() {
               </select>
 
               {/* View Toggle */}
-              <div className="flex items-center rounded-lg p-1" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
+              <div className="flex items-center rounded-lg p-1" style={{ backgroundColor: colors.bgAlt }}>
                 <button
                   onClick={() => setViewMode("grid")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     viewMode === "grid" ? "shadow-sm" : ""
                   }`}
-                  style={viewMode === "grid" ? { backgroundColor: 'var(--c-card-bg)', color: 'var(--c-text-primary)' } : { color: 'var(--c-text-secondary)' }}
+                  style={viewMode === "grid" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -724,7 +834,7 @@ export default function ProjectsPage() {
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     viewMode === "list" ? "shadow-sm" : ""
                   }`}
-                  style={viewMode === "list" ? { backgroundColor: 'var(--c-card-bg)', color: 'var(--c-text-primary)' } : { color: 'var(--c-text-secondary)' }}
+                  style={viewMode === "list" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -737,11 +847,11 @@ export default function ProjectsPage() {
 
         {/* Projects Grid/List */}
         {filteredProjects.length === 0 ? (
-          <div className="rounded-xl p-12 text-center" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl p-12 text-center" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="max-w-md mx-auto">
               <span className="text-6xl mb-4 block">🏗️</span>
-              <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--c-text-primary)' }}>No projects found</h3>
-              <p className="mb-6" style={{ color: 'var(--c-text-secondary)' }}>
+              <h3 className="text-xl font-bold mb-2" style={{ color: colors.text }}>No projects found</h3>
+              <p className="mb-6" style={{ color: colors.textMuted }}>
                 {searchQuery || statusFilter !== "all" || typeFilter !== "all"
                   ? "Try adjusting your filters or search query"
                   : "Get started by creating your first construction project"
@@ -768,10 +878,10 @@ export default function ProjectsPage() {
                 key={project.id}
                 href={`/projects/${project.id}`}
                 className="group rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
-                style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
+                style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
               >
                 {/* Project Thumbnail */}
-                <div className="relative h-48 bg-gray-100 overflow-hidden">
+                <div className="relative h-48 overflow-hidden" style={{ backgroundColor: colors.bgAlt }}>
                   <img
                     src={project.thumbnail}
                     alt={project.name}
@@ -797,18 +907,18 @@ export default function ProjectsPage() {
 
                 {/* Project Info */}
                 <div className="p-5">
-                  <h3 className="font-bold text-lg mb-1 transition-colors" style={{ color: 'var(--c-text-primary)' }}>
+                  <h3 className="font-bold text-lg mb-1 transition-colors" style={{ color: colors.text }}>
                     {project.name}
                   </h3>
-                  <p className="text-sm mb-4" style={{ color: 'var(--c-text-secondary)' }}>{project.client}</p>
+                  <p className="text-sm mb-4" style={{ color: colors.textMuted }}>{project.client}</p>
 
                   {/* Progress Bar */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between text-sm mb-1">
-                      <span style={{ color: 'var(--c-text-secondary)' }}>Progress</span>
-                      <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>{project.progress}%</span>
+                      <span style={{ color: colors.textMuted }}>Progress</span>
+                      <span className="font-semibold" style={{ color: colors.text }}>{project.progress}%</span>
                     </div>
-                    <div className="w-full rounded-full h-2" style={{ backgroundColor: 'var(--c-border)' }}>
+                    <div className="w-full rounded-full h-2" style={{ backgroundColor: colors.bgMuted }}>
                       <div
                         className={`h-2 rounded-full transition-all duration-300 ${getStatusColor(project.status)}`}
                         style={{ width: `${project.progress}%` }}
@@ -818,22 +928,22 @@ export default function ProjectsPage() {
 
                   {/* Stats - Spec Section 1 lines 88-92: Budget health + schedule */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="rounded-lg p-2" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
-                      <p className="text-xs mb-0.5" style={{ color: 'var(--c-text-secondary)' }}>Budget</p>
-                      <p className="text-sm font-semibold" style={{ color: 'var(--c-text-primary)' }}>{formatCurrency(project.budget)}</p>
+                    <div className="rounded-lg p-2" style={{ backgroundColor: colors.bgAlt }}>
+                      <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Budget</p>
+                      <p className="text-sm font-semibold" style={{ color: colors.text }}>{formatCurrency(project.budget)}</p>
                       {project.budget > 0 && (() => {
                         const pct = (project.spent / project.budget) * 100
                         const color = pct > 100 ? '#EF4444' : pct > 95 ? '#F59E0B' : '#22C55E'
                         return <p className="text-xs font-medium mt-0.5" style={{ color }}>{pct.toFixed(0)}% used</p>
                       })()}
                     </div>
-                    <div className="rounded-lg p-2" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
-                      <p className="text-xs mb-0.5" style={{ color: 'var(--c-text-secondary)' }}>Timeline</p>
+                    <div className="rounded-lg p-2" style={{ backgroundColor: colors.bgAlt }}>
+                      <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Timeline</p>
                       {(() => {
                         const daysLeft = Math.ceil((new Date(project.endDate).getTime() - new Date().getTime()) / 86400000)
                         const isOverdue = daysLeft < 0 && project.status !== 'completed'
                         return (
-                          <p className="text-sm font-semibold" style={{ color: isOverdue ? '#EF4444' : daysLeft <= 7 ? '#F59E0B' : 'var(--c-text-primary)' }}>
+                          <p className="text-sm font-semibold" style={{ color: isOverdue ? '#EF4444' : daysLeft <= 7 ? '#F59E0B' : colors.text }}>
                             {project.status === 'completed' ? 'Done' : isOverdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d left`}
                           </p>
                         )
@@ -855,35 +965,35 @@ export default function ProjectsPage() {
                         </div>
                       ))}
                       {project.teamMembers.length > 3 && (
-                        <div className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-semibold" style={{ backgroundColor: 'var(--c-border)', color: 'var(--c-text-secondary)' }}>
+                        <div className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-semibold" style={{ backgroundColor: colors.bgMuted, color: colors.textMuted }}>
                           +{project.teamMembers.length - 3}
                         </div>
                       )}
                     </div>
-                    <span className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>{project.lastActivity}</span>
+                    <span className="text-xs" style={{ color: colors.textMuted }}>{project.lastActivity}</span>
                   </div>
                 </div>
               </Link>
             ))}
           </div>
         ) : (
-          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+          <div className="rounded-xl overflow-hidden" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead style={{ backgroundColor: 'var(--c-sub-bg)', borderBottom: '1px solid var(--c-border)' }}>
+                <thead style={{ backgroundColor: colors.bgAlt, borderBottom: colors.border }}>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Project</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Progress</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Timeline</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Team</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Budget</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Project</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Progress</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Timeline</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Team</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Budget</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Actions</th>
                   </tr>
                 </thead>
-                <tbody style={{ borderTop: '1px solid var(--c-border)' }}>
+                <tbody style={{ borderTop: colors.border }}>
                   {filteredProjects.map((project) => (
-                    <tr key={project.id} className="transition-colors" style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <tr key={project.id} className="transition-colors" style={{ borderBottom: colors.border }}>
                       <td className="px-6 py-4">
                         <Link href={`/projects/${project.id}`} className="flex items-center gap-3 group">
                           <img
@@ -892,10 +1002,10 @@ export default function ProjectsPage() {
                             className="w-12 h-12 rounded-lg object-cover"
                           />
                           <div className="min-w-0">
-                            <p className="font-semibold transition-colors truncate" style={{ color: 'var(--c-text-primary)' }}>
+                            <p className="font-semibold transition-colors truncate" style={{ color: colors.text }}>
                               {project.name}
                             </p>
-                            <p className="text-sm truncate" style={{ color: 'var(--c-text-secondary)' }}>{project.client}</p>
+                            <p className="text-sm truncate" style={{ color: colors.textMuted }}>{project.client}</p>
                           </div>
                         </Link>
                       </td>
@@ -906,19 +1016,19 @@ export default function ProjectsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div className="w-24 rounded-full h-2" style={{ backgroundColor: colors.bgMuted }}>
                             <div
                               className={`h-2 rounded-full ${getStatusColor(project.status)}`}
                               style={{ width: `${project.progress}%` }}
                             ></div>
                           </div>
-                          <span className="text-sm font-medium text-gray-900 min-w-12">{project.progress}%</span>
+                          <span className="text-sm font-medium min-w-12" style={{ color: colors.text }}>{project.progress}%</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm">
-                          <p className="text-gray-900 font-medium">{new Date(project.startDate).toLocaleDateString()}</p>
-                          <p className="text-gray-600">{new Date(project.endDate).toLocaleDateString()}</p>
+                          <p className="font-medium" style={{ color: colors.text }}>{new Date(project.startDate).toLocaleDateString()}</p>
+                          <p style={{ color: colors.textMuted }}>{new Date(project.endDate).toLocaleDateString()}</p>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -933,7 +1043,7 @@ export default function ProjectsPage() {
                             </div>
                           ))}
                           {project.teamMembers.length > 3 && (
-                            <div className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-gray-600 text-xs font-semibold">
+                            <div className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-semibold" style={{ backgroundColor: colors.bgMuted, color: colors.textMuted }}>
                               +{project.teamMembers.length - 3}
                             </div>
                           )}
@@ -941,13 +1051,13 @@ export default function ProjectsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm">
-                          <p className="text-gray-900 font-medium">{formatCurrency(project.budget)}</p>
-                          <p className="text-gray-600">{formatCurrency(project.spent)} spent</p>
+                          <p className="font-medium" style={{ color: colors.text }}>{formatCurrency(project.budget)}</p>
+                          <p style={{ color: colors.textMuted }}>{formatCurrency(project.spent)} spent</p>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button className="p-2 rounded-lg transition-colors" style={{ color: colors.textMuted }}>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                           </svg>
                         </button>

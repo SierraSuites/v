@@ -3,340 +3,775 @@
 export const dynamic = 'force-dynamic'
 
 
-import { useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { getPhotos, subscribeToPhotos, getStorageStats, type Photo } from '@/lib/supabase/photos'
-import PhotoUploadModal from '@/components/fieldsnap/PhotoUploadModal'
-import BatchPhotoUpload from '@/components/fieldsnap/BatchPhotoUpload'
-import { useToast } from '@/components/ToastNotification'
-import MapView from '@/components/fieldsnap/MapView'
-import TimelineView from '@/components/fieldsnap/TimelineView'
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
+import TaskCreationModal from "@/components/dashboard/TaskCreationModal"
+import { getTasks, createTask, updateTask, deleteTask, subscribeToTasks, type Task as SupabaseTask } from "@/lib/supabase/tasks"
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { useDroppable } from '@dnd-kit/core'
+import DraggableTaskCard from "@/components/dashboard/DraggableTaskCard"
+import TeamAllocationHeatmap from "@/components/dashboard/TeamAllocationHeatmap"
+import ProgressMetricsWidget from "@/components/dashboard/ProgressMetricsWidget"
+import CalendarView from "@/components/dashboard/CalendarView"
+import GanttChartView from "@/components/dashboard/GanttChartView"
+import WeatherWidget from "@/components/dashboard/WeatherWidget"
+import { ErrorBoundary, ConstructionErrorBoundary } from "@/components/ErrorBoundary"
+import TaskDetailPanel from "@/components/taskflow/TaskDetailPanel"
+import { useThemeColors } from "@/lib/hooks/useThemeColors"
 
-// Types - using Photo type from lib/supabase/photos
-
-interface DashboardStats {
-  totalPhotos: number
-  todayUploads: number
-  storageUsed: number
-  storageTotal: number
-  activeProjects: number
-  // AI stats removed - were displaying fake data
+// Task type definition
+type Task = {
+  id: string
+  title: string
+  description: string
+  project: string
+  projectId: string
+  trade: "electrical" | "plumbing" | "hvac" | "concrete" | "framing" | "finishing" | "general"
+  phase: "pre-construction" | "foundation" | "framing" | "mep" | "finishing" | "closeout"
+  priority: "critical" | "high" | "medium" | "low"
+  status: "not-started" | "in-progress" | "review" | "completed" | "blocked"
+  assignee: string
+  assigneeId: string
+  assigneeAvatar: string
+  dueDate: string
+  startDate: string
+  duration: number
+  progress: number
+  estimatedHours: number
+  actualHours: number
+  dependencies: string[]
+  attachments: number
+  comments: number
+  location: string
+  weatherDependent: boolean
+  weatherBuffer: number
+  inspectionRequired: boolean
+  inspectionType: string
+  crewSize: number
+  equipment: string[]
+  materials: string[]
+  certifications: string[]
+  safetyProtocols: string[]
+  qualityStandards: string[]
+  documentation: string[]
+  notifyInspector: boolean
+  clientVisibility: boolean
 }
 
-export default function FieldSnapPage() {
+type Project = {
+  id: string
+  name: string
+}
+
+type TeamMember = {
+  id: string
+  name: string
+  avatar: string
+  role: string
+  trades: string[]
+}
+
+// Droppable Column Component
+function DroppableColumn({
+  id,
+  style,
+  count,
+  children
+}: {
+  id: string
+  style: { icon: string; label: string; color: string; bg: string }
+  count: number
+  children: React.ReactNode
+}) {
+  const { setNodeRef } = useDroppable({ id })
+  const { colors } = useThemeColors()
+
+  return (
+    <div ref={setNodeRef} className="w-80 flex-shrink-0">
+      <div className="rounded-xl p-4 mb-4" style={{ backgroundColor: style.bg, border: `1px solid ${style.color}` }}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{style.icon}</span>
+            <h3 className="font-bold text-sm" style={{ color: style.color }}>{style.label}</h3>
+          </div>
+          <span className="text-sm font-semibold px-2 py-1 rounded" style={{ backgroundColor: colors.bg, color: style.color }}>
+            {count}
+          </span>
+        </div>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+export default function TaskFlowPage() {
   const router = useRouter()
-  const toast = useToast()
+  const { colors } = useThemeColors()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [photos, setPhotos] = useState<Photo[]>([])
-  const [stats, setStats] = useState<DashboardStats>({
-    totalPhotos: 0,
-    todayUploads: 0,
-    storageUsed: 0,
-    storageTotal: 10 * 1024 * 1024 * 1024, // 10GB default
-    activeProjects: 0
+  const [viewMode, setViewMode] = useState<"dashboard" | "calendar" | "gantt" | "kanban" | "list">("dashboard")
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [selectedProject, setSelectedProject] = useState<string>("all")
+  const [selectedTrade, setSelectedTrade] = useState<string>("all")
+  const [selectedPriority, setSelectedPriority] = useState<string>("all")
+  const [userPlan, setUserPlan] = useState<"starter" | "professional" | "enterprise">(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('userPlan') as "starter" | "professional" | "enterprise") || 'professional'
+    }
+    return 'professional'
   })
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [detailTask, setDetailTask] = useState<Task | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null)
+  // Quality Guide lines 916-929: Quick filter state
+  const [quickFilter, setQuickFilter] = useState<"all" | "assigned_to_me" | "overdue" | "this_week">("all")
 
-  // View states
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map' | 'timeline'>('grid')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedProject, setSelectedProject] = useState<string>('all')
-  const [dateFilter, setDateFilter] = useState('all')
-  const [tagFilter, setTagFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [sortBy, setSortBy] = useState('newest')
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  )
 
-  // Selection and bulk actions
-  const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set())
-  const [showUploadModal, setShowUploadModal] = useState(false)
-  const [showBatchUpload, setShowBatchUpload] = useState(false)
-  const [showFilters, setShowFilters] = useState(false)
+  const userData = {
+    full_name: user?.user_metadata?.full_name || "John Doe",
+    company_name: user?.user_metadata?.company_name || "Demo Construction Co.",
+  }
 
+  // Trade colors
+  const tradeColors = {
+    electrical: { bg: "#FFF9E6", border: "#FFD93D", text: "#1A1A1A" },
+    plumbing: { bg: "#E5F4FF", border: "#6A9BFD", text: "#1A1A1A" },
+    hvac: { bg: "#F0F9FF", border: "#38BDF8", text: "#1A1A1A" },
+    concrete: { bg: "#F8F9FA", border: "#4A4A4A", text: "#1A1A1A" },
+    framing: { bg: "#FFF5EB", border: "#D97706", text: "#1A1A1A" },
+    finishing: { bg: "#FFFFFF", border: "#E0E0E0", text: "#1A1A1A" },
+    general: { bg: "#F8F9FA", border: "#E0E0E0", text: "#1A1A1A" }
+  }
 
+  // Priority styles
+  const priorityStyles = {
+    critical: { icon: "🔥", color: "#DC2626", bg: "#FEE2E2" },
+    high: { icon: "⚠️", color: "#F59E0B", bg: "#FEF3C7" },
+    medium: { icon: "➡️", color: "#FFD93D", bg: "#FFF9E6" },
+    low: { icon: "✅", color: "#6BCB77", bg: "#E6F9EA" }
+  }
+
+  // Status styles
+  const statusStyles = {
+    "not-started": { icon: "⏳", label: "Not Started", color: "#4A4A4A", bg: "#F8F9FA" },
+    "in-progress": { icon: "🚧", label: "In Progress", color: "#6A9BFD", bg: "#E5F4FF" },
+    "review": { icon: "🔍", label: "Review", color: "#F59E0B", bg: "#FEF3C7" },
+    "completed": { icon: "✅", label: "Completed", color: "#6BCB77", bg: "#E6F9EA" },
+    "blocked": { icon: "🚨", label: "Blocked", color: "#DC2626", bg: "#FEE2E2" }
+  }
+
+  // Projects data (loaded from database)
+  const [projects, setProjects] = useState<Project[]>([])
+
+  // Load projects on component mount
   useEffect(() => {
-    loadUser()
+    async function loadProjects() {
+      const { getProjects } = await import('@/lib/supabase/projects')
+      const { data, error } = await getProjects()
+
+      if (error) {
+        console.error('Error loading projects for TaskFlow:', error)
+        return
+      }
+
+      if (data) {
+        // Map database projects to the Project type used in TaskFlow
+        const mappedProjects = data.map(p => ({
+          id: p.id,
+          name: p.name
+        }))
+        setProjects(mappedProjects)
+        console.log('Loaded projects for TaskFlow:', mappedProjects)
+      }
+    }
+
+    loadProjects()
   }, [])
 
+  // Sample team members data
+  const teamMembers: TeamMember[] = [
+    { id: "user-1", name: "Mike Johnson", avatar: "https://ui-avatars.com/api/?name=Mike+Johnson&background=FF6B6B&color=fff", role: "Electrician", trades: ["electrical"] },
+    { id: "user-2", name: "David Lee", avatar: "https://ui-avatars.com/api/?name=David+Lee&background=4A4A4A&color=fff", role: "Concrete Specialist", trades: ["concrete"] },
+    { id: "user-3", name: "Sarah Wilson", avatar: "https://ui-avatars.com/api/?name=Sarah+Wilson&background=38BDF8&color=fff", role: "HVAC Technician", trades: ["hvac"] },
+    { id: "user-4", name: "Tom Brown", avatar: "https://ui-avatars.com/api/?name=Tom+Brown&background=E0E0E0&color=000", role: "Finishing Specialist", trades: ["finishing"] },
+    { id: "user-5", name: "Emily Chen", avatar: "https://ui-avatars.com/api/?name=Emily+Chen&background=6A9BFD&color=fff", role: "Plumber", trades: ["plumbing"] },
+    { id: "user-6", name: "Robert Taylor", avatar: "https://ui-avatars.com/api/?name=Robert+Taylor&background=D97706&color=fff", role: "Framing Contractor", trades: ["framing"] },
+    { id: "user-7", name: "Lisa Martinez", avatar: "https://ui-avatars.com/api/?name=Lisa+Martinez&background=4ECDC4&color=fff", role: "Project Superintendent", trades: ["general", "electrical", "plumbing", "hvac", "concrete", "framing", "finishing"] }
+  ]
+
+  // Sample tasks data
+  const [tasks, setTasks] = useState<Task[]>([
+    {
+      id: "1",
+      title: "Electrical rough-in inspection",
+      description: "Schedule and complete rough-in inspection before drywall",
+      project: "Downtown Office Renovation",
+      projectId: "proj-1",
+      trade: "electrical",
+      phase: "mep",
+      priority: "critical",
+      status: "in-progress",
+      assignee: "Mike Johnson",
+      assigneeId: "user-1",
+      assigneeAvatar: "https://ui-avatars.com/api/?name=Mike+Johnson&background=FF6B6B&color=fff",
+      startDate: "2024-11-07",
+      dueDate: "2024-11-10",
+      duration: 3,
+      progress: 75,
+      estimatedHours: 4,
+      actualHours: 3.5,
+      dependencies: [],
+      attachments: 3,
+      comments: 5,
+      location: "Floor 3, Units 301-305",
+      weatherDependent: false,
+      weatherBuffer: 0,
+      inspectionRequired: true,
+      inspectionType: "Electrical Inspection",
+      crewSize: 2,
+      equipment: ["Scaffolding", "Power Tools", "Measuring Tools"],
+      materials: ["Electrical Wire", "Conduit"],
+      certifications: ["Electrical License", "OSHA 30"],
+      safetyProtocols: ["PPE Required", "Lockout/Tagout", "Ladder Safety"],
+      qualityStandards: ["NEC Standards"],
+      documentation: ["Daily Reports", "Inspection Reports"],
+      notifyInspector: true,
+      clientVisibility: true
+    },
+    {
+      id: "2",
+      title: "Concrete foundation pour - South wing",
+      description: "Pour foundation for south wing expansion",
+      project: "Warehouse Build",
+      projectId: "proj-2",
+      trade: "concrete",
+      phase: "foundation",
+      priority: "high",
+      status: "blocked",
+      assignee: "David Lee",
+      assigneeId: "user-2",
+      assigneeAvatar: "https://ui-avatars.com/api/?name=David+Lee&background=4A4A4A&color=fff",
+      startDate: "2024-11-06",
+      dueDate: "2024-11-09",
+      duration: 3,
+      progress: 30,
+      estimatedHours: 16,
+      actualHours: 5,
+      dependencies: ["rebar-inspection"],
+      attachments: 2,
+      comments: 8,
+      location: "South Wing Foundation",
+      weatherDependent: true,
+      weatherBuffer: 2,
+      inspectionRequired: true,
+      inspectionType: "Foundation Inspection",
+      crewSize: 6,
+      equipment: ["Concrete Mixer", "Generator", "Power Tools"],
+      materials: ["Concrete", "Rebar"],
+      certifications: ["OSHA 30"],
+      safetyProtocols: ["PPE Required", "Excavation Safety"],
+      qualityStandards: ["ACI Standards"],
+      documentation: ["Daily Reports", "Progress Photos", "Material Receipts"],
+      notifyInspector: true,
+      clientVisibility: true
+    },
+    {
+      id: "3",
+      title: "HVAC ductwork installation - Main floor",
+      description: "Install main floor ductwork and vents",
+      project: "Retail Store Fit-Out",
+      projectId: "proj-3",
+      trade: "hvac",
+      phase: "mep",
+      priority: "medium",
+      status: "not-started",
+      assignee: "Sarah Wilson",
+      assigneeId: "user-3",
+      assigneeAvatar: "https://ui-avatars.com/api/?name=Sarah+Wilson&background=38BDF8&color=fff",
+      startDate: "2024-11-10",
+      dueDate: "2024-11-12",
+      duration: 2,
+      progress: 0,
+      estimatedHours: 12,
+      actualHours: 0,
+      dependencies: ["framing-complete"],
+      attachments: 1,
+      comments: 2,
+      location: "Main Retail Floor",
+      weatherDependent: false,
+      weatherBuffer: 0,
+      inspectionRequired: false,
+      inspectionType: "",
+      crewSize: 3,
+      equipment: ["Scaffolding", "Power Tools", "Measuring Tools"],
+      materials: [],
+      certifications: ["OSHA 10"],
+      safetyProtocols: ["PPE Required", "Ladder Safety"],
+      qualityStandards: [],
+      documentation: ["Daily Reports"],
+      notifyInspector: false,
+      clientVisibility: false
+    },
+    {
+      id: "4",
+      title: "Drywall installation - Residential units",
+      description: "Hang and tape drywall in units 201-210",
+      project: "Residential Kitchen Remodel",
+      projectId: "proj-4",
+      trade: "finishing",
+      phase: "finishing",
+      priority: "medium",
+      status: "in-progress",
+      assignee: "Tom Brown",
+      assigneeId: "user-4",
+      assigneeAvatar: "https://ui-avatars.com/api/?name=Tom+Brown&background=E0E0E0&color=000",
+      startDate: "2024-11-08",
+      dueDate: "2024-11-11",
+      duration: 3,
+      progress: 45,
+      estimatedHours: 24,
+      actualHours: 12,
+      dependencies: ["electrical-rough", "plumbing-rough"],
+      attachments: 0,
+      comments: 3,
+      location: "Building A, Floor 2",
+      weatherDependent: false,
+      weatherBuffer: 0,
+      inspectionRequired: false,
+      inspectionType: "",
+      crewSize: 4,
+      equipment: ["Scaffolding", "Power Tools"],
+      materials: ["Drywall"],
+      certifications: ["OSHA 10"],
+      safetyProtocols: ["PPE Required", "Ladder Safety"],
+      qualityStandards: [],
+      documentation: ["Daily Reports", "Progress Photos"],
+      notifyInspector: false,
+      clientVisibility: true
+    },
+    {
+      id: "5",
+      title: "Plumbing final connections",
+      description: "Connect all fixtures and test water pressure",
+      project: "Downtown Office Renovation",
+      projectId: "proj-1",
+      trade: "plumbing",
+      phase: "finishing",
+      priority: "high",
+      status: "review",
+      assignee: "Emily Chen",
+      assigneeId: "user-5",
+      assigneeAvatar: "https://ui-avatars.com/api/?name=Emily+Chen&background=6A9BFD&color=fff",
+      startDate: "2024-11-06",
+      dueDate: "2024-11-08",
+      duration: 2,
+      progress: 90,
+      estimatedHours: 8,
+      actualHours: 7.5,
+      dependencies: [],
+      attachments: 5,
+      comments: 12,
+      location: "All Floors",
+      weatherDependent: false,
+      weatherBuffer: 0,
+      inspectionRequired: true,
+      inspectionType: "Plumbing Inspection",
+      crewSize: 2,
+      equipment: ["Power Tools", "Measuring Tools"],
+      materials: ["Pipes", "Fixtures"],
+      certifications: ["Plumbing License", "OSHA 10"],
+      safetyProtocols: ["PPE Required"],
+      qualityStandards: [],
+      documentation: ["Daily Reports", "Inspection Reports"],
+      notifyInspector: true,
+      clientVisibility: true
+    },
+    {
+      id: "6",
+      title: "Framing interior walls - Unit 305",
+      description: "Frame interior walls according to updated plans",
+      project: "Residential Kitchen Remodel",
+      projectId: "proj-4",
+      trade: "framing",
+      phase: "framing",
+      priority: "critical",
+      status: "not-started",
+      assignee: "Robert Taylor",
+      assigneeId: "user-6",
+      assigneeAvatar: "https://ui-avatars.com/api/?name=Robert+Taylor&background=D97706&color=fff",
+      startDate: "2024-11-09",
+      dueDate: "2024-11-09",
+      duration: 1,
+      progress: 0,
+      estimatedHours: 16,
+      actualHours: 0,
+      dependencies: [],
+      attachments: 2,
+      comments: 1,
+      location: "Unit 305",
+      weatherDependent: false,
+      weatherBuffer: 0,
+      inspectionRequired: false,
+      inspectionType: "",
+      crewSize: 4,
+      equipment: ["Nail Gun", "Saw", "Measuring Tools"],
+      materials: ["Lumber"],
+      certifications: ["OSHA 10"],
+      safetyProtocols: ["PPE Required", "Ladder Safety"],
+      qualityStandards: [],
+      documentation: ["Daily Reports"],
+      notifyInspector: false,
+      clientVisibility: false
+    },
+  ])
+
+  // Authentication and data loading
   useEffect(() => {
-    if (user) {
-      loadPhotos()
-      loadStats()
+    const supabase = createClient()
 
-      // Subscribe to real-time updates
-      const unsubscribe = subscribeToPhotos((payload) => {
-        if (payload.eventType === 'INSERT') {
-          setPhotos(prev => [payload.new as Photo, ...prev])
-          loadStats() // Refresh stats
-        } else if (payload.eventType === 'UPDATE') {
-          setPhotos(prev => prev.map(p => p.id === payload.new.id ? payload.new as Photo : p))
-        } else if (payload.eventType === 'DELETE') {
-          setPhotos(prev => prev.filter(p => p.id !== payload.old.id))
-          loadStats() // Refresh stats
-        }
-      })
+    // Check authentication
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
 
-      return () => {
-        unsubscribe()
+      if (!user) {
+        router.push("/login")
+        return
       }
+
+      setUser(user)
+
+      // Get user plan from profile
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("plan")
+        .eq("id", user.id)
+        .single()
+
+      if (profile?.plan) {
+        setUserPlan(profile.plan as "starter" | "professional" | "enterprise")
+        localStorage.setItem('userPlan', profile.plan)
+      }
+
+      setLoading(false)
+    }
+
+    checkAuth()
+  }, [router])
+
+  // Load tasks from Supabase
+  useEffect(() => {
+    if (!user) return
+
+    const loadTasks = async () => {
+      const { data, error } = await getTasks()
+
+      if (error) {
+        console.error("Error loading tasks:", error)
+        return
+      }
+
+      if (data) {
+        // Convert Supabase tasks to component Task type
+        const convertedTasks: Task[] = data.map(task => ({
+          id: task.id,
+          title: task.title,
+          description: task.description || "",
+          project: task.project_name || "",
+          projectId: task.project_id || "",
+          trade: task.trade,
+          phase: task.phase,
+          priority: task.priority,
+          status: task.status,
+          assignee: task.assignee_name || "",
+          assigneeId: task.assignee_id || "",
+          assigneeAvatar: task.assignee_avatar || "",
+          dueDate: task.due_date,
+          startDate: task.start_date || "",
+          duration: task.duration,
+          progress: task.progress,
+          estimatedHours: task.estimated_hours,
+          actualHours: task.actual_hours,
+          dependencies: task.dependencies,
+          attachments: task.attachments,
+          comments: task.comments,
+          location: task.location || "",
+          weatherDependent: task.weather_dependent,
+          weatherBuffer: task.weather_buffer,
+          inspectionRequired: task.inspection_required,
+          inspectionType: task.inspection_type || "",
+          crewSize: task.crew_size,
+          equipment: task.equipment,
+          materials: task.materials,
+          certifications: task.certifications,
+          safetyProtocols: task.safety_protocols,
+          qualityStandards: task.quality_standards,
+          documentation: task.documentation,
+          notifyInspector: task.notify_inspector,
+          clientVisibility: task.client_visibility
+        }))
+
+        setTasks(convertedTasks)
+      }
+    }
+
+    loadTasks()
+
+    // Subscribe to real-time updates
+    const unsubscribe = subscribeToTasks((payload) => {
+      console.log('Real-time event received:', payload.eventType, payload.new)
+
+      if (payload.eventType === "INSERT") {
+        console.log('Processing INSERT event for new task')
+        const newTask = payload.new as SupabaseTask
+        const convertedTask: Task = {
+          id: newTask.id,
+          title: newTask.title,
+          description: newTask.description || "",
+          project: newTask.project_name || "",
+          projectId: newTask.project_id || "",
+          trade: newTask.trade,
+          phase: newTask.phase,
+          priority: newTask.priority,
+          status: newTask.status,
+          assignee: newTask.assignee_name || "",
+          assigneeId: newTask.assignee_id || "",
+          assigneeAvatar: newTask.assignee_avatar || "",
+          dueDate: newTask.due_date,
+          startDate: newTask.start_date || "",
+          duration: newTask.duration,
+          progress: newTask.progress,
+          estimatedHours: newTask.estimated_hours,
+          actualHours: newTask.actual_hours,
+          dependencies: newTask.dependencies,
+          attachments: newTask.attachments,
+          comments: newTask.comments,
+          location: newTask.location || "",
+          weatherDependent: newTask.weather_dependent,
+          weatherBuffer: newTask.weather_buffer,
+          inspectionRequired: newTask.inspection_required,
+          inspectionType: newTask.inspection_type || "",
+          crewSize: newTask.crew_size,
+          equipment: newTask.equipment,
+          materials: newTask.materials,
+          certifications: newTask.certifications,
+          safetyProtocols: newTask.safety_protocols,
+          qualityStandards: newTask.quality_standards,
+          documentation: newTask.documentation,
+          notifyInspector: newTask.notify_inspector,
+          clientVisibility: newTask.client_visibility
+        }
+        console.log('Adding new task to state:', convertedTask)
+        setTasks(prev => {
+          const updated = [...prev, convertedTask]
+          console.log('Updated tasks array:', updated.length, 'tasks')
+          return updated
+        })
+      } else if (payload.eventType === "UPDATE") {
+        const updatedTask = payload.new as SupabaseTask
+        setTasks(prev => prev.map(t => t.id === updatedTask.id ? {
+          id: updatedTask.id,
+          title: updatedTask.title,
+          description: updatedTask.description || "",
+          project: updatedTask.project_name || "",
+          projectId: updatedTask.project_id || "",
+          trade: updatedTask.trade,
+          phase: updatedTask.phase,
+          priority: updatedTask.priority,
+          status: updatedTask.status,
+          assignee: updatedTask.assignee_name || "",
+          assigneeId: updatedTask.assignee_id || "",
+          assigneeAvatar: updatedTask.assignee_avatar || "",
+          dueDate: updatedTask.due_date,
+          startDate: updatedTask.start_date || "",
+          duration: updatedTask.duration,
+          progress: updatedTask.progress,
+          estimatedHours: updatedTask.estimated_hours,
+          actualHours: updatedTask.actual_hours,
+          dependencies: updatedTask.dependencies,
+          attachments: updatedTask.attachments,
+          comments: updatedTask.comments,
+          location: updatedTask.location || "",
+          weatherDependent: updatedTask.weather_dependent,
+          weatherBuffer: updatedTask.weather_buffer,
+          inspectionRequired: updatedTask.inspection_required,
+          inspectionType: updatedTask.inspection_type || "",
+          crewSize: updatedTask.crew_size,
+          equipment: updatedTask.equipment,
+          materials: updatedTask.materials,
+          certifications: updatedTask.certifications,
+          safetyProtocols: updatedTask.safety_protocols,
+          qualityStandards: updatedTask.quality_standards,
+          documentation: updatedTask.documentation,
+          notifyInspector: updatedTask.notify_inspector,
+          clientVisibility: updatedTask.client_visibility
+        } : t))
+      } else if (payload.eventType === "DELETE") {
+        setTasks(prev => prev.filter(t => t.id !== payload.old.id))
+      }
+    })
+
+    return () => {
+      unsubscribe()
     }
   }, [user])
 
-  const loadUser = async () => {
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-
-    if (session) {
-      setUser(session.user)
-    } else {
-      router.push('/login')
+  // Filter tasks (includes quick filters per Quality Guide lines 916-929)
+  const filteredTasks = tasks.filter(task => {
+    if (selectedProject !== "all" && task.projectId !== selectedProject) return false
+    if (selectedTrade !== "all" && task.trade !== selectedTrade) return false
+    if (selectedPriority !== "all" && task.priority !== selectedPriority) return false
+    // Quick filters
+    if (quickFilter === "assigned_to_me") {
+      if (task.assignee !== userData.full_name && task.assignee !== "Mike Johnson") return false
     }
-    setLoading(false)
+    if (quickFilter === "overdue") {
+      if (!(new Date(task.dueDate) < new Date() && task.status !== "completed")) return false
+    }
+    if (quickFilter === "this_week") {
+      const now = new Date()
+      const weekEnd = new Date(now)
+      weekEnd.setDate(now.getDate() + (7 - now.getDay()))
+      const due = new Date(task.dueDate)
+      if (due > weekEnd) return false
+    }
+    return true
+  })
+
+  // Calculate stats
+  const stats = {
+    total: filteredTasks.length,
+    completed: filteredTasks.filter(t => t.status === "completed").length,
+    inProgress: filteredTasks.filter(t => t.status === "in-progress").length,
+    blocked: filteredTasks.filter(t => t.status === "blocked").length,
+    overdue: filteredTasks.filter(t => new Date(t.dueDate) < new Date() && t.status !== "completed").length,
+    dueToday: filteredTasks.filter(t => {
+      const today = new Date().toISOString().split('T')[0]
+      return t.dueDate === today && t.status !== "completed"
+    }).length
   }
 
-  const loadPhotos = async () => {
-    const { data, error } = await getPhotos()
+  // My tasks (assigned to current user)
+  const myTasks = filteredTasks.filter(t => t.assignee === userData.full_name || t.assignee === "Mike Johnson")
 
-    if (error) {
-      console.error('Error loading photos:', error)
+  // Drag and drop handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string)
+  }
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (!over) {
+      setActiveId(null)
       return
     }
 
-    if (data) {
-      setPhotos(data as Photo[])
+    const taskId = active.id as string
+    const newStatus = over.id as Task["status"]
+
+    // Find the task
+    const task = tasks.find(t => t.id === taskId)
+    if (!task || task.status === newStatus) {
+      setActiveId(null)
+      return
     }
+
+    // Optimistic update
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
+
+    // Update in Supabase
+    const { error } = await updateTask(taskId, { status: newStatus })
+
+    if (error) {
+      console.error("Error updating task status:", error)
+      // Revert on error
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: task.status } : t))
+      alert("Failed to update task status. Please try again.")
+    }
+
+    setActiveId(null)
   }
 
-  const loadStats = async () => {
-    // Get storage stats
-    const { data: storageData } = await getStorageStats()
-
-    // Calculate stats from photos
-    const totalPhotos = photos.length
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todayUploads = photos.filter(p => new Date(p.uploaded_at) >= today).length
-
-    const uniqueProjects = new Set(photos.filter(p => p.project_id).map(p => p.project_id))
-    const activeProjects = uniqueProjects.size
-
-    // AI features removed - were displaying fake data
-    // Real AI integration planned for future release
-
-    // Get user plan to determine storage quota
-    const supabase = createClient()
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('plan')
-      .eq('id', user?.id)
-      .single()
-
-    let storageTotal = 10 * 1024 * 1024 * 1024 // 10GB default (Starter)
-    if (profile?.plan === 'professional') {
-      storageTotal = 50 * 1024 * 1024 * 1024 // 50GB
-    } else if (profile?.plan === 'enterprise') {
-      storageTotal = 500 * 1024 * 1024 * 1024 // 500GB
-    }
-
-    setStats({
-      totalPhotos,
-      todayUploads,
-      storageUsed: storageData?.totalSize || 0,
-      storageTotal,
-      activeProjects
-    })
+  const handleDragCancel = () => {
+    setActiveId(null)
   }
 
-  // Natural language search parser
-  // Understands queries like "framing photos from last week" or "safety issues this month"
-  function parseNLSearch(q: string) {
-    const lower = q.toLowerCase()
+  useEffect(() => {
+    const loadUser = async () => {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
 
-    // Phase keywords → match ai_tags or tags
-    const phaseMap: Record<string, string[]> = {
-      demolition: ['demolition', 'demo'],
-      foundation: ['foundation', 'footing', 'concrete', 'rebar'],
-      framing: ['framing', 'frame', 'lumber', 'stud'],
-      'rough-in': ['rough-in', 'rough in', 'roughin', 'electrical', 'plumbing', 'hvac'],
-      drywall: ['drywall', 'sheetrock', 'gypsum'],
-      finish: ['finish', 'paint', 'flooring', 'tile', 'fixture'],
-      punch: ['punch', 'punch list', 'punchlist'],
-    }
-    let detectedPhase: string | null = null
-    for (const [phase, keywords] of Object.entries(phaseMap)) {
-      if (keywords.some(kw => lower.includes(kw))) {
-        detectedPhase = phase
-        break
-      }
-    }
-
-    // Category keywords
-    let detectedCategory: string | null = null
-    if (lower.includes('safety') || lower.includes('hazard')) detectedCategory = 'safety'
-    else if (lower.includes('issue') || lower.includes('defect') || lower.includes('problem')) detectedCategory = 'issue'
-    else if (lower.includes('delivery') || lower.includes('material') || lower.includes('truck')) detectedCategory = 'delivery'
-    else if (lower.includes('progress')) detectedCategory = 'progress'
-
-    // Date range keywords
-    let detectedDateRange: string | null = null
-    if (lower.includes('today')) detectedDateRange = 'today'
-    else if (lower.match(/\b(this|last|past)\s+week\b/) || lower.includes('7 days')) detectedDateRange = 'week'
-    else if (lower.match(/\b(this|last|past)\s+month\b/) || lower.includes('30 days')) detectedDateRange = 'month'
-
-    return { phase: detectedPhase, category: detectedCategory, dateRange: detectedDateRange }
-  }
-
-  // Filter and search logic
-  const filteredPhotos = useMemo(() => {
-    let filtered = [...photos]
-
-    // Search filter — supports natural language + plain text
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      const nlq = parseNLSearch(searchQuery)
-      const hasStructuredQuery = nlq.phase || nlq.category || nlq.dateRange
-
-      if (hasStructuredQuery) {
-        // Phase filter
-        if (nlq.phase) {
-          filtered = filtered.filter(photo =>
-            photo.ai_tags?.some((t: string) => t.toLowerCase().includes(nlq.phase!)) ||
-            photo.tags?.some((t: string) => t.toLowerCase().includes(nlq.phase!)) ||
-            (photo as any).category?.toLowerCase().includes(nlq.phase!)
-          )
-        }
-        // Category filter
-        if (nlq.category) {
-          filtered = filtered.filter(photo =>
-            (photo as any).category === nlq.category ||
-            photo.ai_tags?.some((t: string) => t === nlq.category) ||
-            photo.tags?.some((t: string) => t === nlq.category)
-          )
-        }
-        // Date range filter
-        if (nlq.dateRange) {
-          const now = new Date()
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-          filtered = filtered.filter(photo => {
-            const d = new Date(photo.captured_at)
-            if (nlq.dateRange === 'today') return d >= today
-            if (nlq.dateRange === 'week') return d >= new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
-            if (nlq.dateRange === 'month') return d >= new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
-            return true
-          })
-        }
+      if (session) {
+        setUser(session.user)
+        // Plan is loaded from user_profiles.plan in the other useEffect (secure, RLS-protected)
       } else {
-        // Plain text fallback
-        filtered = filtered.filter(photo =>
-          photo.filename.toLowerCase().includes(query) ||
-          photo.description?.toLowerCase().includes(query) ||
-          photo.tags.some((tag: string) => tag.toLowerCase().includes(query)) ||
-          photo.ai_tags.some((tag: string) => tag.toLowerCase().includes(query))
-        )
+        setUser({ user_metadata: { full_name: "John Doe" } })
       }
+      setLoading(false)
     }
+    loadUser()
+  }, [])
 
-    // Project filter
-    if (selectedProject !== 'all') {
-      filtered = filtered.filter(p => p.project_id === selectedProject)
-    }
 
-    // Date filter
-    if (dateFilter !== 'all') {
-      const now = new Date()
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
-      filtered = filtered.filter(p => {
-        const photoDate = new Date(p.captured_at)
-        switch (dateFilter) {
-          case 'today':
-            return photoDate >= today
-          case 'week':
-            const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
-            return photoDate >= weekAgo
-          case 'month':
-            const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
-            return photoDate >= monthAgo
-          default:
-            return true
-        }
-      })
-    }
-
-    // Tag filter
-    if (tagFilter !== 'all') {
-      filtered = filtered.filter(p => p.tags.includes(tagFilter) || p.ai_tags.includes(tagFilter))
-    }
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(p => p.status === statusFilter)
-    }
-
-    // Sort
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'newest':
-          return new Date(b.captured_at).getTime() - new Date(a.captured_at).getTime()
-        case 'oldest':
-          return new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime()
-        case 'project':
-          return (a.project_name || '').localeCompare(b.project_name || '')
-        case 'size':
-          return b.file_size - a.file_size
-        default:
-          return 0
-      }
-    })
-
-    return filtered
-  }, [photos, searchQuery, selectedProject, dateFilter, tagFilter, statusFilter, sortBy])
-
-  // Format bytes to human readable
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
-  }
-
-  // Storage percentage
-
-  // Quality Guide lines 1262-1270: Skeleton loaders instead of spinner
+  // Quality Guide line 883: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
-        {/* Header skeleton */}
-        <div className="sticky top-0 z-30 p-4 lg:p-6 bg-white border-b border-gray-200 animate-pulse">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1 max-w-2xl h-10 bg-gray-200 rounded-lg" />
-            <div className="flex gap-2">
-              <div className="h-10 w-24 bg-gray-200 rounded-lg" />
-              <div className="h-10 w-24 bg-gray-200 rounded-lg" />
+      <div className="min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header skeleton */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-36 mb-2 animate-pulse" />
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-52 animate-pulse" />
             </div>
+            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-32 animate-pulse" />
           </div>
-        </div>
-        <div className="p-4 lg:p-6 space-y-6">
-          {/* Stats skeleton */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* View mode tabs skeleton */}
+          <div className="flex gap-2 mb-6">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-20 mb-2" />
-                <div className="h-7 bg-gray-200 rounded w-16" />
-              </div>
+              <div key={i} className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-24 animate-pulse" />
             ))}
           </div>
-          {/* Photo grid skeleton */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
-                <div className="aspect-square bg-gray-200" />
-                <div className="p-3">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+          {/* Kanban columns skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {['To Do', 'In Progress', 'In Review', 'Done'].map((col) => (
+              <div key={col} className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 animate-pulse bg-white dark:bg-[#1a1d2e]">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-20" />
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded-full w-6" />
                 </div>
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="border border-gray-100 dark:border-gray-700 rounded-lg p-3 mb-3">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2" />
+                    <div className="flex gap-2">
+                      <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded-full w-14" />
+                      <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded-full w-10" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
@@ -346,366 +781,601 @@ export default function FieldSnapPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-0" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar */}
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 p-4 lg:p-6" style={{ backgroundColor: 'var(--c-card-bg)', borderBottom: '1px solid var(--c-border)' }}>
-          <div className="flex items-center gap-4 flex-1 min-w-0">
-            <div className="flex-1 max-w-2xl">
-              <div className="relative">
-                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: 'var(--c-text-secondary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder='Search: "framing last week", "safety issues", "foundation today"...'
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-lg text-sm"
-                  style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link
-              href="/fieldsnap/comparisons"
-              className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border hover:bg-gray-50"
-              style={{ borderColor: 'var(--c-border)', color: 'var(--c-text-secondary)' }}
-            >
-              🖼️ <span className="hidden lg:inline">Before/After</span>
-            </Link>
-
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-colors text-white hover:opacity-90"
-              style={{ backgroundColor: '#FF6B6B' }}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              <span className="hidden md:inline">Upload</span>
-            </button>
-
-            <button
-              onClick={() => setShowBatchUpload(true)}
-              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-colors border-2 hover:bg-gray-50"
-              style={{ borderColor: '#FF6B6B', color: '#FF6B6B' }}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-              </svg>
-              <span className="hidden lg:inline">Batch Upload</span>
-            </button>
-
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="sm:hidden p-2 rounded-lg font-semibold text-white hover:opacity-90"
-              style={{ backgroundColor: '#FF6B6B' }}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </button>
-          </div>
-        </header>
-
-        {/* Dashboard Stats */}
-        <div className="p-4 lg:p-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold" style={{ color: 'var(--c-text-secondary)' }}>Total Photos</span>
-                <span className="text-2xl">📸</span>
-              </div>
-              <p className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{stats.totalPhotos.toLocaleString()}</p>
-              <p className="text-xs mt-1" style={{ color: '#6BCB77' }}>+{stats.todayUploads} today</p>
-            </div>
-
-            <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold" style={{ color: 'var(--c-text-secondary)' }}>Active Projects</span>
-                <span className="text-2xl">🏗️</span>
-              </div>
-              <p className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{stats.activeProjects}</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--c-text-secondary)' }}>With media</p>
-            </div>
-
-          </div>
-
-          {/* Toolbar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${viewMode === 'grid' ? 'text-white' : 'text-gray-700 hover:bg-gray-100'}`}
-                style={{ backgroundColor: viewMode === 'grid' ? '#FF6B6B' : 'transparent' }}
-              >
-                Grid
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${viewMode === 'list' ? 'text-white' : 'text-gray-700 hover:bg-gray-100'}`}
-                style={{ backgroundColor: viewMode === 'list' ? '#FF6B6B' : 'transparent' }}
-              >
-                List
-              </button>
-              <button
-                onClick={() => setViewMode('map')}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${viewMode === 'map' ? 'text-white' : 'text-gray-700 hover:bg-gray-100'}`}
-                style={{ backgroundColor: viewMode === 'map' ? '#FF6B6B' : 'transparent' }}
-              >
-                Map
-              </button>
-              <button
-                onClick={() => setViewMode('timeline')}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${viewMode === 'timeline' ? 'text-white' : 'text-gray-700 hover:bg-gray-100'}`}
-                style={{ backgroundColor: viewMode === 'timeline' ? '#FF6B6B' : 'transparent' }}
-              >
-                Timeline
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 rounded-lg text-sm flex-1 sm:flex-none"
-                style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="project">By Project</option>
-                <option value="size">By Size</option>
-              </select>
-
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-                style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
-              >
-                Filters
-              </button>
-            </div>
-          </div>
-
-          {/* Filters Panel */}
-          {showFilters && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 mb-6 rounded-xl" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
+    <>
+        {/* Header */}
+        <header className="sticky top-0 z-40" style={{ backgroundColor: colors.bg, borderBottom: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05)' }}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--c-text-secondary)' }}>Date Range</label>
-                <select
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
+                <h1 className="text-2xl font-bold" style={{ color: colors.text }}>FieldSnap</h1>
+                <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
+                  {stats.dueToday > 0 || stats.overdue > 0
+                    ? `You have ${stats.dueToday} task${stats.dueToday !== 1 ? 's' : ''} due today and ${stats.overdue} overdue`
+                    : "All caught up — no tasks due today"}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all"
+                  style={{ background: 'linear-gradient(to bottom, #FF6B6B 0%, #FF5252 100%)', boxShadow: '0 2px 4px rgba(255,107,107,0.2), 0 1px 2px rgba(255,107,107,0.3)' }}
                 >
-                  <option value="all">All Time</option>
-                  <option value="today">Today</option>
-                  <option value="week">This Week</option>
-                  <option value="month">This Month</option>
-                </select>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Quick Add Task
+                </button>
+              </div>
+            </div>
+
+            {/* Quality Guide lines 916-929: Quick Filter Buttons */}
+            <div className="flex gap-2 mb-3">
+              {([
+                { key: 'all', label: 'All Tasks' },
+                { key: 'assigned_to_me', label: 'Assigned To Me' },
+                { key: 'overdue', label: 'Overdue' },
+                { key: 'this_week', label: 'This Week' },
+              ] as const).map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setQuickFilter(f.key)}
+                  className="px-4 py-2 rounded text-sm font-medium transition-colors"
+                  style={quickFilter === f.key
+                    ? { backgroundColor: '#6A9BFD', color: '#FFFFFF' }
+                    : { backgroundColor: colors.bg, border: colors.border, color: colors.textMuted }
+                  }
+                >
+                  {f.label}
+                  {f.key === 'overdue' && stats.overdue > 0 && (
+                    <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full" style={{ backgroundColor: '#DC2626', color: '#FFFFFF' }}>
+                      {stats.overdue}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* View Toggle & Filters */}
+            <div className="flex items-center justify-between gap-4">
+              {/* View Toggle */}
+              <div className="flex items-center gap-2 rounded-lg p-1" style={{ backgroundColor: colors.bgAlt }}>
+                <button
+                  onClick={() => setViewMode("dashboard")}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "dashboard" ? "shadow-sm" : ""}`}
+                  style={viewMode === "dashboard" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
+                >
+                  📋 Dashboard
+                </button>
+                <button
+                  onClick={() => setViewMode("kanban")}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "kanban" ? "shadow-sm" : ""}`}
+                  style={viewMode === "kanban" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
+                >
+                  🎯 Kanban
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "list" ? "shadow-sm" : ""}`}
+                  style={viewMode === "list" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
+                >
+                  📱 List
+                </button>
+                <button
+                  onClick={() => setViewMode("calendar")}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "calendar" ? "shadow-sm" : ""}`}
+                  style={viewMode === "calendar" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
+                  disabled={userPlan === "starter"}
+                >
+                  🗓️ Calendar {userPlan === "starter" && <span className="text-xs">🔒</span>}
+                </button>
+                <button
+                  onClick={() => setViewMode("gantt")}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "gantt" ? "shadow-sm" : ""}`}
+                  style={viewMode === "gantt" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
+                  disabled={userPlan === "starter"}
+                >
+                  📊 Gantt {userPlan === "starter" && <span className="text-xs">🔒</span>}
+                </button>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--c-text-secondary)' }}>Project</label>
+              {/* Filters */}
+              <div className="flex items-center gap-2">
                 <select
                   value={selectedProject}
                   onChange={(e) => setSelectedProject(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
+                  className="px-3 py-2 rounded-lg focus:outline-none text-sm"
+                  style={{ border: colors.border, color: colors.text }}
                 >
                   <option value="all">All Projects</option>
+                  <option value="proj-1">Downtown Office</option>
+                  <option value="proj-2">Warehouse Build</option>
+                  <option value="proj-3">Retail Fit-Out</option>
+                  <option value="proj-4">Kitchen Remodel</option>
                 </select>
-              </div>
 
-              <div>
-                <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--c-text-secondary)' }}>Tags</label>
                 <select
-                  value={tagFilter}
-                  onChange={(e) => setTagFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
+                  value={selectedTrade}
+                  onChange={(e) => setSelectedTrade(e.target.value)}
+                  className="px-3 py-2 rounded-lg focus:outline-none text-sm"
+                  style={{ border: colors.border, color: colors.text }}
                 >
-                  <option value="all">All Tags</option>
-                  <option value="progress">Progress</option>
-                  <option value="safety">Safety</option>
-                  <option value="quality">Quality</option>
-                  <option value="defect">Defects</option>
+                  <option value="all">All Trades</option>
+                  <option value="electrical">⚡ Electrical</option>
+                  <option value="plumbing">🚰 Plumbing</option>
+                  <option value="hvac">❄️ HVAC</option>
+                  <option value="concrete">🏗️ Concrete</option>
+                  <option value="framing">🪚 Framing</option>
+                  <option value="finishing">🎨 Finishing</option>
                 </select>
-              </div>
 
-              <div>
-                <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--c-text-secondary)' }}>Status</label>
                 <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
+                  value={selectedPriority}
+                  onChange={(e) => setSelectedPriority(e.target.value)}
+                  className="px-3 py-2 rounded-lg focus:outline-none text-sm"
+                  style={{ border: colors.border, color: colors.text }}
                 >
-                  <option value="all">All Status</option>
-                  <option value="approved">Approved</option>
-                  <option value="pending">Pending</option>
-                  <option value="rejected">Rejected</option>
+                  <option value="all">All Priorities</option>
+                  <option value="critical">🔥 Critical</option>
+                  <option value="high">⚠️ High</option>
+                  <option value="medium">➡️ Medium</option>
+                  <option value="low">✅ Low</option>
                 </select>
               </div>
             </div>
-          )}
+          </div>
+        </header>
 
-          {/* Photos Grid/List/Map/Timeline */}
-          {filteredPhotos.length === 0 ? (
-            <div className="text-center py-20 rounded-xl" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
-              <span className="text-6xl mb-4 block">📸</span>
-              <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--c-text-primary)' }}>No Photos Yet</h3>
-              <p className="text-sm mb-6" style={{ color: 'var(--c-text-secondary)' }}>
-                Start capturing your construction site with FieldSnap
-              </p>
-              <button
-                onClick={() => setShowUploadModal(true)}
-                className="px-6 py-3 rounded-lg font-semibold text-white"
-                style={{ backgroundColor: '#FF6B6B' }}
-              >
-                Upload Your First Photo
-              </button>
-            </div>
-          ) : (
-            <div className={
-              viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4' :
-              viewMode === 'list' ? 'space-y-2' :
-              viewMode === 'map' ? 'h-150 rounded-xl overflow-hidden' :
-              'space-y-4'
-            }>
-              {/* Spec lines 214-247: Photo cards with category badges + safety alerts */}
-              {viewMode === 'grid' && filteredPhotos.map(photo => {
-                const category = (photo as any).auto_category || (photo.tags?.includes('safety') ? 'safety' : photo.tags?.includes('issue') ? 'issue' : null)
-                const isSafety = category === 'safety' || photo.tags?.includes('safety')
-                const isIssue = category === 'issue' || photo.tags?.includes('defect') || photo.tags?.includes('issue')
+        {/* Main Content Area */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Dashboard View */}
+            {viewMode === "dashboard" && (
+              <div className="space-y-6">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">✅</span>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Total</p>
+                    </div>
+                    <p className="text-3xl font-bold" style={{ color: colors.text }}>{stats.total}</p>
+                  </div>
 
-                return (
-                  <div
-                    key={photo.id}
-                    className={`group relative rounded-xl overflow-hidden cursor-pointer transform transition-transform hover:scale-105 ${
-                      isSafety ? 'ring-2 ring-red-400' : isIssue ? 'ring-2 ring-amber-400' : ''
-                    }`}
-                    style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', aspectRatio: '1/1' }}
-                  >
-                    <img
-                      src={photo.thumbnail_url || photo.url}
-                      alt={photo.filename}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                    {/* Quality Guide lines 74-76: Category badge */}
-                    <div className="absolute top-2 left-2 flex gap-1">
-                      {isSafety && (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-                          Safety
-                        </span>
-                      )}
-                      {isIssue && !isSafety && (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-                          Issue
-                        </span>
-                      )}
-                      {(photo as any).auto_phase && (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                          {(photo as any).auto_phase}
-                        </span>
-                      )}
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">🚧</span>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>In Progress</p>
                     </div>
-                    {/* Selection checkbox */}
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <input
-                        type="checkbox"
-                        checked={selectedPhotos.has(photo.id)}
-                        onChange={(e) => {
-                          e.stopPropagation()
-                          setSelectedPhotos(prev => {
-                            const next = new Set(prev)
-                            if (next.has(photo.id)) next.delete(photo.id)
-                            else next.add(photo.id)
-                            return next
-                          })
-                        }}
-                        className="w-5 h-5 rounded border-2 border-white shadow-md accent-blue-600"
-                      />
+                    <p className="text-3xl font-bold" style={{ color: '#6A9BFD' }}>{stats.inProgress}</p>
+                  </div>
+
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">✅</span>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Completed</p>
                     </div>
-                    <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="absolute bottom-0 left-0 right-0 p-3">
-                        <p className="text-white text-xs font-semibold truncate">{photo.filename}</p>
-                        {photo.project_name && (
-                          <p className="text-white/70 text-xs truncate">{photo.project_name}</p>
-                        )}
+                    <p className="text-3xl font-bold" style={{ color: '#6BCB77' }}>{stats.completed}</p>
+                  </div>
+
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">🚨</span>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Blocked</p>
+                    </div>
+                    <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>{stats.blocked}</p>
+                  </div>
+
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">📅</span>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Due Today</p>
+                    </div>
+                    <p className="text-3xl font-bold" style={{ color: '#FFD93D' }}>{stats.dueToday}</p>
+                  </div>
+
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">⏰</span>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Overdue</p>
+                    </div>
+                    <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>{stats.overdue}</p>
+                  </div>
+                </div>
+
+                {/* Critical Alerts */}
+                {stats.overdue > 0 && (
+                  <div className="rounded-xl p-4" style={{ backgroundColor: '#FEE2E2', border: '1px solid #DC2626', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">🚨</span>
+                      <div className="flex-1">
+                        <h3 className="font-semibold mb-1" style={{ color: '#DC2626' }}>Critical Alerts</h3>
+                        <p className="text-sm mb-2" style={{ color: colors.textMuted }}>
+                          You have {stats.overdue} overdue task{stats.overdue !== 1 ? 's' : ''} that need immediate attention
+                        </p>
+                        <button className="text-sm font-semibold" style={{ color: '#DC2626' }}>
+                          View Overdue Tasks →
+                        </button>
                       </div>
                     </div>
                   </div>
-                )
-              })}
+                )}
 
-              {viewMode === 'list' && filteredPhotos.map(photo => (
-                <div
-                  key={photo.id}
-                  className="flex items-center gap-4 p-4 rounded-xl cursor-pointer hover:shadow-md transition-shadow"
-                  style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}
-                >
-                  <img
-                    src={photo.thumbnail_url || photo.url}
-                    alt={photo.filename}
-                    className="w-16 h-16 rounded-lg object-cover"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-sm truncate" style={{ color: 'var(--c-text-primary)' }}>{photo.filename}</h4>
-                    <p className="text-xs truncate" style={{ color: 'var(--c-text-secondary)' }}>{photo.project_name || 'No project'}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      {photo.tags.slice(0, 3).map(tag => (
-                        <span key={tag} className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: 'var(--c-sub-bg)', color: 'var(--c-text-secondary)' }}>
-                          {tag}
-                        </span>
-                      ))}
+                {/* Weather Widget */}
+                <ConstructionErrorBoundary>
+                  <WeatherWidget tasks={filteredTasks} countryCode="US" />
+                </ConstructionErrorBoundary>
+
+                {/* My Tasks Today */}
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold" style={{ color: colors.text }}>Your Tasks Today</h3>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: `conic-gradient(#6BCB77 ${(myTasks.filter(t => t.status === 'completed').length / myTasks.length) * 100}%, #E0E0E0 0)` }}>
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.bg }}>
+                          <span className="text-sm font-bold" style={{ color: colors.text }}>
+                            {myTasks.filter(t => t.status === 'completed').length}/{myTasks.length}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>{formatBytes(photo.file_size)}</p>
-                    <p className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>
-                      {new Date(photo.captured_at).toLocaleDateString()}
-                    </p>
+
+                  <div className="space-y-3">
+                    {myTasks.slice(0, 5).map((task) => {
+                      // Quality Guide lines 958-998: Overdue detection for my tasks
+                      const taskOverdue = new Date(task.dueDate) < new Date() && task.status !== 'completed'
+                      const taskBlocked = task.status === 'blocked'
+                      return (
+                      <div
+                        key={task.id}
+                        className={`p-4 rounded-lg transition-all cursor-pointer hover:-translate-y-0.5 ${
+                          taskBlocked ? 'opacity-60 border-2 border-red-300' : ''
+                        } ${taskOverdue && !taskBlocked ? 'ring-2 ring-red-200' : ''}`}
+                        style={{
+                          backgroundColor: taskOverdue ? '#FEF2F2' : tradeColors[task.trade].bg,
+                          borderLeft: taskBlocked ? undefined : `4px solid ${taskOverdue ? '#DC2626' : tradeColors[task.trade].border}`,
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                        }}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-lg">{priorityStyles[task.priority].icon}</span>
+                              <h4 className="font-semibold text-sm" style={{ color: colors.text }}>{task.title}</h4>
+                              {task.weatherDependent && <span className="text-sm">🌤️</span>}
+                              {task.inspectionRequired && <span className="text-sm">🔍</span>}
+                            </div>
+                            <p className="text-xs mb-2" style={{ color: colors.textMuted }}>{task.project} • {task.location}</p>
+                            <div className="flex items-center gap-3 text-xs" style={{ color: colors.textMuted }}>
+                              <span className={taskOverdue ? 'font-semibold' : ''} style={taskOverdue ? { color: '#DC2626' } : undefined}>📅 Due: {new Date(task.dueDate).toLocaleDateString()}{taskOverdue && ' (OVERDUE)'}</span>
+                              <span>⏱️ {task.estimatedHours}h est</span>
+                              {task.attachments > 0 && <span>📎 {task.attachments}</span>}
+                              {task.comments > 0 && <span>💬 {task.comments}</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="px-2 py-1 rounded text-xs font-semibold"
+                              style={{ backgroundColor: statusStyles[task.status].bg, color: statusStyles[task.status].color }}
+                            >
+                              {statusStyles[task.status].icon} {statusStyles[task.status].label}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between text-xs mb-1" style={{ color: colors.textMuted }}>
+                            <span>Progress</span>
+                            <span className="font-semibold">{task.progress}%</span>
+                          </div>
+                          <div className="w-full rounded-full h-2" style={{ backgroundColor: colors.bgMuted }}>
+                            <div
+                              className="h-2 rounded-full transition-all"
+                              style={{
+                                width: `${task.progress}%`,
+                                backgroundColor: tradeColors[task.trade].border
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                      )
+                    })}
                   </div>
                 </div>
-              ))}
 
-              {viewMode === 'map' && (
-                <MapView photos={filteredPhotos} onPhotoClick={(photo) => console.log('Photo clicked:', photo)} />
-              )}
+                {/* Team Allocation Heatmap */}
+                <ConstructionErrorBoundary>
+                  <TeamAllocationHeatmap tasks={filteredTasks} teamMembers={teamMembers} />
+                </ConstructionErrorBoundary>
 
-              {viewMode === 'timeline' && (
-                <TimelineView photos={filteredPhotos} onPhotoClick={(photo) => console.log('Photo clicked:', photo)} />
-              )}
-            </div>
-          )}
-        </div>
-      </main>
+                {/* Progress & Metrics Widget */}
+                <ConstructionErrorBoundary>
+                  <ProgressMetricsWidget tasks={filteredTasks} />
+                </ConstructionErrorBoundary>
+              </div>
+            )}
 
-      {/* Upload Modal */}
-      <PhotoUploadModal
-        isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        onUploadComplete={() => {
-          loadPhotos()
-          loadStats()
+            {/* Kanban View */}
+            {viewMode === "kanban" && (
+              <DndContext
+                sensors={sensors}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragCancel={handleDragCancel}
+              >
+                <div className="overflow-x-auto pb-4">
+                  <div className="flex gap-4 min-w-max">
+                    {Object.entries(statusStyles).map(([status, style]) => {
+                      const columnTasks = filteredTasks.filter(t => t.status === status)
+                      return (
+                        <DroppableColumn key={status} id={status} style={style} count={columnTasks.length}>
+                          <SortableContext items={columnTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                            <div className="space-y-3">
+                              {columnTasks.map((task) => (
+                                <div key={task.id} onClick={() => setDetailTask(task)} className="cursor-pointer">
+                                  <DraggableTaskCard task={task} />
+                                </div>
+                              ))}
+                            </div>
+                          </SortableContext>
+                        </DroppableColumn>
+                      )
+                    })}
+                  </div>
+                </div>
+                <DragOverlay>
+                  {activeId ? (
+                    <div className="rounded-lg p-3 cursor-grabbing" style={{ backgroundColor: colors.bg, boxShadow: '0 8px 16px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1)', opacity: 0.9 }}>
+                      <p className="font-semibold text-sm" style={{ color: colors.text }}>
+                        {tasks.find(t => t.id === activeId)?.title || "Task"}
+                      </p>
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+            )}
+
+            {/* List View */}
+            {viewMode === "list" && (
+              <div className="rounded-xl overflow-hidden" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead style={{ backgroundColor: colors.bgAlt, borderBottom: colors.border }}>
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Task</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Priority</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Trade</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Assignee</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Due Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Progress</th>
+                      </tr>
+                    </thead>
+                    <tbody style={{ borderTop: '1px solid #E0E0E0' }}>
+                      {filteredTasks.map((task) => (
+                        <tr key={task.id} className="transition-colors" style={{ borderBottom: colors.border }}>
+                          <td className="px-6 py-4">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-1">
+                                <p className="font-semibold text-sm mb-1" style={{ color: colors.text }}>{task.title}</p>
+                                <p className="text-xs" style={{ color: colors.textMuted }}>{task.project}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold" style={{ backgroundColor: priorityStyles[task.priority].bg, color: priorityStyles[task.priority].color }}>
+                              {priorityStyles[task.priority].icon} {task.priority}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: statusStyles[task.status].bg, color: statusStyles[task.status].color }}>
+                              {statusStyles[task.status].icon} {statusStyles[task.status].label}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: tradeColors[task.trade].bg, color: tradeColors[task.trade].text }}>
+                              {task.trade}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold" style={{ background: 'linear-gradient(135deg, #4ECDC4 0%, #5FD9CF 100%)' }}>
+                                {task.assigneeAvatar}
+                              </div>
+                              <span className="text-sm" style={{ color: colors.text }}>{task.assignee}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-sm" style={{ color: colors.text }}>{new Date(task.dueDate).toLocaleDateString()}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-24 rounded-full h-2" style={{ backgroundColor: colors.bgMuted }}>
+                                <div className="h-2 rounded-full" style={{ width: `${task.progress}%`, backgroundColor: tradeColors[task.trade].border }}></div>
+                              </div>
+                              <span className="text-sm font-medium min-w-[3rem]" style={{ color: colors.text }}>{task.progress}%</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Calendar & Gantt Views (Pro+) */}
+            {(viewMode === "calendar" || viewMode === "gantt") && userPlan === "starter" && (
+              <div className="rounded-xl p-12 text-center" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                <span className="text-6xl mb-4 block">🔒</span>
+                <h3 className="text-xl font-bold mb-2" style={{ color: colors.text }}>
+                  {viewMode === "calendar" ? "Calendar View" : "Gantt Chart"} - Pro Feature
+                </h3>
+                <p className="mb-6" style={{ color: colors.textMuted }}>
+                  Upgrade to Pro or Enterprise to unlock advanced scheduling and timeline views
+                </p>
+                <Link
+                  href="/pricing"
+                  className="inline-flex items-center gap-2 px-6 py-3 text-white rounded-lg font-semibold transition-colors"
+                  style={{ background: 'linear-gradient(to bottom, #FF6B6B 0%, #FF5252 100%)', boxShadow: '0 2px 4px rgba(255,107,107,0.2), 0 1px 2px rgba(255,107,107,0.3)' }}
+                >
+                  Upgrade Now →
+                </Link>
+              </div>
+            )}
+
+            {viewMode === "calendar" && userPlan !== "starter" && (
+              <CalendarView
+                tasks={filteredTasks}
+                onTaskClick={(task) => {
+                  setEditingTask(task as any)
+                  setShowCreateModal(true)
+                }}
+                onDateClick={(date) => {
+                  setShowCreateModal(true)
+                }}
+              />
+            )}
+
+            {viewMode === "gantt" && userPlan !== "starter" && (
+              <GanttChartView
+                tasks={filteredTasks}
+                onTaskClick={(task) => {
+                  setEditingTask(task as any)
+                  setShowCreateModal(true)
+                }}
+              />
+            )}
+          </div>
+
+      {/* Task Creation Modal */}
+      <TaskCreationModal
+        isOpen={showCreateModal}
+        onClose={() => {
+          setShowCreateModal(false)
+          setEditingTask(null)
         }}
+        onSave={async (taskData) => {
+          console.log('TaskFlow onSave called with taskData:', taskData)
+          console.log('taskData keys:', Object.keys(taskData))
+          console.log('taskData.title:', taskData.title)
+
+          if (editingTask) {
+            // Update existing task
+            const { error } = await updateTask(editingTask.id, {
+              title: taskData.title!,
+              description: taskData.description || null,
+              project_id: taskData.projectId || null,
+              project_name: taskData.project || null,
+              trade: taskData.trade!,
+              phase: taskData.phase!,
+              priority: taskData.priority!,
+              status: taskData.status!,
+              assignee_id: taskData.assigneeId || null,
+              assignee_name: taskData.assignee || null,
+              assignee_avatar: taskData.assigneeAvatar || null,
+              start_date: taskData.startDate || null,
+              due_date: taskData.dueDate!,
+              duration: taskData.duration!,
+              progress: taskData.progress!,
+              estimated_hours: taskData.estimatedHours!,
+              actual_hours: taskData.actualHours!,
+              dependencies: taskData.dependencies!,
+              location: taskData.location || null,
+              weather_dependent: taskData.weatherDependent!,
+              weather_buffer: taskData.weatherBuffer!,
+              inspection_required: taskData.inspectionRequired!,
+              inspection_type: taskData.inspectionType || null,
+              crew_size: taskData.crewSize!,
+              equipment: taskData.equipment!,
+              materials: taskData.materials!,
+              certifications: taskData.certifications!,
+              safety_protocols: taskData.safetyProtocols!,
+              quality_standards: taskData.qualityStandards!,
+              documentation: taskData.documentation!,
+              notify_inspector: taskData.notifyInspector!,
+              client_visibility: taskData.clientVisibility!
+            })
+
+            if (error) {
+              console.error("Error updating task:", error)
+              alert("Failed to update task. Please try again.")
+            }
+          } else {
+            // Create new task
+            const { error } = await createTask({
+              title: taskData.title!,
+              description: taskData.description || null,
+              project_id: taskData.projectId || null,
+              project_name: taskData.project || null,
+              trade: taskData.trade || "general",
+              phase: taskData.phase || "pre-construction",
+              priority: taskData.priority || "medium",
+              status: taskData.status || "not-started",
+              assignee_id: taskData.assigneeId || null,
+              assignee_name: taskData.assignee || null,
+              assignee_avatar: taskData.assigneeAvatar || null,
+              start_date: taskData.startDate || null,
+              due_date: taskData.dueDate || new Date().toISOString().split('T')[0],
+              duration: taskData.duration || 1,
+              progress: taskData.progress || 0,
+              estimated_hours: taskData.estimatedHours || 8,
+              actual_hours: taskData.actualHours || 0,
+              dependencies: taskData.dependencies || [],
+              attachments: taskData.attachments || 0,
+              comments: taskData.comments || 0,
+              location: taskData.location || null,
+              weather_dependent: taskData.weatherDependent || false,
+              weather_buffer: taskData.weatherBuffer || 0,
+              inspection_required: taskData.inspectionRequired || false,
+              inspection_type: taskData.inspectionType || null,
+              crew_size: taskData.crewSize || 1,
+              equipment: taskData.equipment || [],
+              materials: taskData.materials || [],
+              certifications: taskData.certifications || [],
+              safety_protocols: taskData.safetyProtocols || [],
+              quality_standards: taskData.qualityStandards || [],
+              documentation: taskData.documentation || [],
+              notify_inspector: taskData.notifyInspector || false,
+              client_visibility: taskData.clientVisibility || false
+            })
+
+            if (error) {
+              console.error("Error creating task:", error)
+              alert("Failed to create task. Please try again.")
+            }
+          }
+        }}
+        editingTask={editingTask}
+        projects={projects}
+        teamMembers={teamMembers}
+        existingTasks={tasks}
       />
 
-      {/* Batch Upload Modal */}
-      <BatchPhotoUpload
-        isOpen={showBatchUpload}
-        onClose={() => setShowBatchUpload(false)}
-        onUploadComplete={() => {
-          loadPhotos()
-          loadStats()
-        }}
-      />
-    </div>
+      {/* Task Detail Panel — slide-over on card click */}
+      {detailTask && (
+        <TaskDetailPanel
+          task={{
+            id: detailTask.id,
+            title: detailTask.title,
+            description: detailTask.description,
+            status: detailTask.status,
+            priority: detailTask.priority,
+            trade: detailTask.trade,
+            estimatedHours: detailTask.estimatedHours,
+            actualHours: detailTask.actualHours,
+            dueDate: detailTask.dueDate,
+            assignee: detailTask.assignee,
+            progress: detailTask.progress,
+          }}
+          onClose={() => setDetailTask(null)}
+          onStatusChange={(taskId, newStatus) => {
+            setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus as Task['status'] } : t))
+            setDetailTask(prev => prev ? { ...prev, status: newStatus as Task['status'] } : null)
+          }}
+        />
+      )}
+    </>
   )
 }

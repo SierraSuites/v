@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface WelcomeBannerProps {
   userName: string
@@ -9,6 +10,8 @@ interface WelcomeBannerProps {
 }
 
 export default function WelcomeBanner({ userName, greeting, onDismiss }: WelcomeBannerProps) {
+  const router = useRouter()
+
   return (
     <div className="bg-linear-to-r from-blue-600 to-blue-700 rounded-lg shadow-lg p-6 mb-8 text-white">
       <div className="flex items-start justify-between">
@@ -21,12 +24,12 @@ export default function WelcomeBanner({ userName, greeting, onDismiss }: Welcome
           </p>
           {/* Quick Actions - Spec Section 7: Common actions without navigation hunting */}
           <div className="flex flex-wrap gap-3">
-            <Link
-              href="/projects"
-              className="px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors"
+            <button
+              onClick={() => router.push('/projects?new=true')}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-400 transition-colors cursor-pointer"
             >
               + New Project
-            </Link>
+            </button>
             <Link
               href="/fieldsnap"
               className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-400 transition-colors"

@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useTheme } from 'next-themes'
 import { getWeatherByCountry, isWeatherSuitable } from '@/lib/weather'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 interface Task {
   id: string
@@ -20,14 +20,7 @@ interface WeatherWidgetProps {
 export default function WeatherWidget({ tasks, countryCode = 'US' }: WeatherWidgetProps) {
   const [weather, setWeather] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const { theme } = useTheme()
-  const darkMode = theme === 'dark'
-
-  const cardBg     = 'var(--c-card-bg)'
-  const cardBorder = 'var(--c-border)'
-  const textPrimary   = 'var(--c-text-primary)'
-  const textSecondary = 'var(--c-text-secondary)'
-  const subBg      = 'var(--c-sub-bg)'
+  const { colors, darkMode } = useThemeColors()
 
   useEffect(() => {
     async function fetchWeather() {
@@ -52,9 +45,11 @@ export default function WeatherWidget({ tasks, countryCode = 'US' }: WeatherWidg
     return dueDate >= today && dueDate <= sevenDaysFromNow
   })
 
+  const cardStyle = { backgroundColor: colors.bg, border: `1px solid var(--border)`, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }
+
   if (loading) {
     return (
-      <div className="rounded-xl p-6" style={{ backgroundColor: cardBg, border: `1px solid ${cardBorder}`, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-xl p-6" style={cardStyle}>
         <div className="flex items-center justify-center h-32">
           <div className="animate-spin w-8 h-8 border-4 border-t-transparent rounded-full" style={{ borderColor: '#FF6B6B', borderTopColor: 'transparent' }}></div>
         </div>
@@ -64,11 +59,11 @@ export default function WeatherWidget({ tasks, countryCode = 'US' }: WeatherWidg
 
   if (!weather) {
     return (
-      <div className="rounded-xl p-6" style={{ backgroundColor: cardBg, border: `1px solid ${cardBorder}`, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+      <div className="rounded-xl p-6" style={cardStyle}>
         <div className="text-center">
           <span className="text-4xl mb-2 block">🌤️</span>
-          <p className="text-sm font-semibold mb-1" style={{ color: textPrimary }}>Weather Data Unavailable</p>
-          <p className="text-xs" style={{ color: textSecondary }}>
+          <p className="text-sm font-semibold mb-1" style={{ color: colors.text }}>Weather Data Unavailable</p>
+          <p className="text-xs" style={{ color: colors.textMuted }}>
             Configure NEXT_PUBLIC_WEATHER_API_KEY to see weather data
           </p>
         </div>
@@ -78,32 +73,32 @@ export default function WeatherWidget({ tasks, countryCode = 'US' }: WeatherWidg
 
   const suitability = isWeatherSuitable(weather)
   const suitabilityColor = suitability.suitable
-    ? { bg: darkMode ? '#1a3a2a' : '#E6F9EA', border: '#6BCB77', text: textPrimary }
-    : { bg: darkMode ? '#3a1a1a' : '#FEE2E2', border: '#DC2626', text: textPrimary }
+    ? { bg: darkMode ? '#1a3a2a' : '#E6F9EA', border: '#6BCB77', text: darkMode ? '#6BCB77' : '#1A5E2A' }
+    : { bg: darkMode ? '#3a1515' : '#FEE2E2', border: '#DC2626', text: darkMode ? '#F87171' : '#991B1B' }
 
   return (
-    <div className="rounded-xl p-6" style={{ backgroundColor: cardBg, border: `1px solid ${cardBorder}`, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+    <div className="rounded-xl p-6" style={cardStyle}>
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold" style={{ color: textPrimary }}>Weather Conditions</h3>
+        <h3 className="text-lg font-bold" style={{ color: colors.text }}>Weather Conditions</h3>
         <span className="text-4xl">{weather.icon}</span>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div>
-          <p className="text-xs font-semibold mb-1" style={{ color: textSecondary }}>Temperature</p>
-          <p className="text-2xl font-bold" style={{ color: textPrimary }}>{weather.temp}°F</p>
+          <p className="text-xs font-semibold mb-1" style={{ color: colors.textMuted }}>Temperature</p>
+          <p className="text-2xl font-bold" style={{ color: colors.text }}>{weather.temp}°F</p>
         </div>
         <div>
-          <p className="text-xs font-semibold mb-1" style={{ color: textSecondary }}>Wind Speed</p>
-          <p className="text-2xl font-bold" style={{ color: textPrimary }}>{weather.windSpeed} mph</p>
+          <p className="text-xs font-semibold mb-1" style={{ color: colors.textMuted }}>Wind Speed</p>
+          <p className="text-2xl font-bold" style={{ color: colors.text }}>{weather.windSpeed} mph</p>
         </div>
         <div>
-          <p className="text-xs font-semibold mb-1" style={{ color: textSecondary }}>Precipitation</p>
-          <p className="text-2xl font-bold" style={{ color: textPrimary }}>{weather.precipitation}%</p>
+          <p className="text-xs font-semibold mb-1" style={{ color: colors.textMuted }}>Precipitation</p>
+          <p className="text-2xl font-bold" style={{ color: colors.text }}>{weather.precipitation}%</p>
         </div>
         <div>
-          <p className="text-xs font-semibold mb-1" style={{ color: textSecondary }}>Condition</p>
-          <p className="text-sm font-semibold" style={{ color: textPrimary }}>{weather.condition}</p>
+          <p className="text-xs font-semibold mb-1" style={{ color: colors.textMuted }}>Condition</p>
+          <p className="text-sm font-semibold" style={{ color: colors.text }}>{weather.condition}</p>
         </div>
       </div>
 
@@ -134,7 +129,7 @@ export default function WeatherWidget({ tasks, countryCode = 'US' }: WeatherWidg
       {/* Weather-Dependent Tasks */}
       {weatherDependentTasks.length > 0 && (
         <div>
-          <p className="text-sm font-bold mb-3" style={{ color: textPrimary }}>
+          <p className="text-sm font-bold mb-3" style={{ color: colors.text }}>
             Weather-Dependent Tasks ({weatherDependentTasks.length})
           </p>
           <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -142,13 +137,13 @@ export default function WeatherWidget({ tasks, countryCode = 'US' }: WeatherWidg
               <div
                 key={task.id}
                 className="p-3 rounded-lg flex items-center justify-between"
-                style={{ backgroundColor: subBg, border: `1px solid ${cardBorder}` }}
+                style={{ backgroundColor: colors.bgAlt, border: `1px solid var(--border)` }}
               >
                 <div className="flex-1">
-                  <p className="text-sm font-semibold mb-1" style={{ color: textPrimary }}>
+                  <p className="text-sm font-semibold mb-1" style={{ color: colors.text }}>
                     {task.title}
                   </p>
-                  <div className="flex items-center gap-2 text-xs" style={{ color: textSecondary }}>
+                  <div className="flex items-center gap-2 text-xs" style={{ color: colors.textMuted }}>
                     <span>{task.trade}</span>
                     <span>•</span>
                     <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
@@ -163,7 +158,7 @@ export default function WeatherWidget({ tasks, countryCode = 'US' }: WeatherWidg
 
       {weatherDependentTasks.length === 0 && (
         <div className="text-center py-4">
-          <p className="text-sm" style={{ color: textSecondary }}>
+          <p className="text-sm" style={{ color: colors.textMuted }}>
             No weather-dependent tasks in the next 7 days
           </p>
         </div>

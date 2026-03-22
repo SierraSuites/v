@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
+
 
 interface Task {
   id: string
@@ -48,21 +50,6 @@ function getPriorityIcon(priority: string) {
   }
 }
 
-function getPriorityColor(priority: string) {
-  switch (priority) {
-    case 'critical':
-      return 'bg-red-100 text-red-800'
-    case 'high':
-      return 'bg-orange-100 text-orange-800'
-    case 'medium':
-      return 'bg-yellow-100 text-yellow-800'
-    case 'low':
-      return 'bg-green-100 text-green-800'
-    default:
-      return 'bg-gray-100 text-gray-800'
-  }
-}
-
 // Spec line 238: Due time formatting - "Today", "Tomorrow", or date
 function formatDueDate(dateString: string) {
   const date = new Date(dateString + 'T00:00:00')
@@ -87,10 +74,26 @@ function isOverdue(dateString: string, status: string) {
 }
 
 export default function UpcomingTasks({ tasks }: UpcomingTasksProps) {
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'critical':
+        return 'bg-red-100 text-red-800'
+      case 'high':
+        return 'bg-orange-100 text-orange-800'
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'low':
+        return 'bg-green-100 text-green-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+  const { colors, darkMode } = useThemeColors()
+
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
+    <div className=" rounded-lg shadow p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Upcoming Tasks</h2>
+        <h2 className="text-lg font-semibold" style={{ color: colors.text }}>Upcoming Tasks</h2>
         <Link
           href="/taskflow"
           className="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -101,11 +104,8 @@ export default function UpcomingTasks({ tasks }: UpcomingTasksProps) {
 
       <div className="space-y-3">
         {tasks.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <p className="text-sm mb-2">No upcoming tasks</p>
+          <div className="text-center py-8" style={{ color: colors.textMuted }}>
+            <p className="mb-2">No upcoming tasks</p>
             <Link
               href="/taskflow"
               className="text-blue-600 hover:text-blue-700 text-sm font-medium"
@@ -161,3 +161,4 @@ export default function UpcomingTasks({ tasks }: UpcomingTasksProps) {
     </div>
   )
 }
+

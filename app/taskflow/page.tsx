@@ -8,7 +8,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import TaskCreationModal from "@/components/dashboard/TaskCreationModal"
-import { getTasks, createTask, updateTask, deleteTask, subscribeToTasks, type Task as SupabaseTask } from "@/lib/supabase/tasks"
+import TaskDetailPanel from "@/components/taskflow/TaskDetailPanel"
+import { getTasks, createTask, updateTask, subscribeToTasks, type Task as SupabaseTask } from "@/lib/supabase/tasks"
 import {
   DndContext,
   DragEndEvent,
@@ -19,8 +20,6 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import { useDroppable } from '@dnd-kit/core'
 import DraggableTaskCard from "@/components/dashboard/DraggableTaskCard"
 import TeamAllocationHeatmap from "@/components/dashboard/TeamAllocationHeatmap"
@@ -28,8 +27,8 @@ import ProgressMetricsWidget from "@/components/dashboard/ProgressMetricsWidget"
 import CalendarView from "@/components/dashboard/CalendarView"
 import GanttChartView from "@/components/dashboard/GanttChartView"
 import WeatherWidget from "@/components/dashboard/WeatherWidget"
-import { ErrorBoundary, ConstructionErrorBoundary } from "@/components/ErrorBoundary"
-import TaskDetailPanel from "@/components/taskflow/TaskDetailPanel"
+import { ConstructionErrorBoundary } from "@/components/ErrorBoundary"
+import { useThemeColors } from "@/lib/hooks/useThemeColors"
 
 // Task type definition
 type Task = {
@@ -96,16 +95,17 @@ function DroppableColumn({
   children: React.ReactNode
 }) {
   const { setNodeRef } = useDroppable({ id })
+  const { colors } = useThemeColors()
 
   return (
-    <div ref={setNodeRef} className="w-80 flex-shrink-0">
+    <div ref={setNodeRef} className="w-80 shrink-0">
       <div className="rounded-xl p-4 mb-4" style={{ backgroundColor: style.bg, border: `1px solid ${style.color}` }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-lg">{style.icon}</span>
             <h3 className="font-bold text-sm" style={{ color: style.color }}>{style.label}</h3>
           </div>
-          <span className="text-sm font-semibold px-2 py-1 rounded" style={{ backgroundColor: 'var(--c-card-bg)', color: style.color }}>
+          <span className="text-sm font-semibold px-2 py-1 rounded" style={{ backgroundColor: colors.bg, color: style.color }}>
             {count}
           </span>
         </div>
@@ -117,14 +117,22 @@ function DroppableColumn({
 
 export default function TaskFlowPage() {
   const router = useRouter()
+  const { colors } = useThemeColors()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [tasksLoading, setTasksLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"dashboard" | "calendar" | "gantt" | "kanban" | "list">("dashboard")
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedProject, setSelectedProject] = useState<string>("all")
   const [selectedTrade, setSelectedTrade] = useState<string>("all")
   const [selectedPriority, setSelectedPriority] = useState<string>("all")
-  const [userPlan, setUserPlan] = useState<"starter" | "professional" | "enterprise">("professional")
+  const [userPlan, setUserPlan] = useState<"starter" | "professional" | "enterprise">(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('userPlan') as "starter" | "professional" | "enterprise") || 'professional'
+    }
+    return 'professional'
+  })
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [detailTask, setDetailTask] = useState<Task | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -143,16 +151,6 @@ export default function TaskFlowPage() {
   const userData = {
     full_name: user?.user_metadata?.full_name || "John Doe",
     company_name: user?.user_metadata?.company_name || "Demo Construction Co.",
-  }
-
-  const userName = userData.full_name?.split(' ')[0] || "User"
-
-  // Get time-based greeting
-  const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return `Good Morning, ${userName}!`
-    if (hour < 18) return `Good Afternoon, ${userName}!`
-    return `Good Evening, ${userName}!`
   }
 
   // Trade colors
@@ -211,241 +209,41 @@ export default function TaskFlowPage() {
     loadProjects()
   }, [])
 
-  // Sample team members data
-  const teamMembers: TeamMember[] = [
-    { id: "user-1", name: "Mike Johnson", avatar: "https://ui-avatars.com/api/?name=Mike+Johnson&background=FF6B6B&color=fff", role: "Electrician", trades: ["electrical"] },
-    { id: "user-2", name: "David Lee", avatar: "https://ui-avatars.com/api/?name=David+Lee&background=4A4A4A&color=fff", role: "Concrete Specialist", trades: ["concrete"] },
-    { id: "user-3", name: "Sarah Wilson", avatar: "https://ui-avatars.com/api/?name=Sarah+Wilson&background=38BDF8&color=fff", role: "HVAC Technician", trades: ["hvac"] },
-    { id: "user-4", name: "Tom Brown", avatar: "https://ui-avatars.com/api/?name=Tom+Brown&background=E0E0E0&color=000", role: "Finishing Specialist", trades: ["finishing"] },
-    { id: "user-5", name: "Emily Chen", avatar: "https://ui-avatars.com/api/?name=Emily+Chen&background=6A9BFD&color=fff", role: "Plumber", trades: ["plumbing"] },
-    { id: "user-6", name: "Robert Taylor", avatar: "https://ui-avatars.com/api/?name=Robert+Taylor&background=D97706&color=fff", role: "Framing Contractor", trades: ["framing"] },
-    { id: "user-7", name: "Lisa Martinez", avatar: "https://ui-avatars.com/api/?name=Lisa+Martinez&background=4ECDC4&color=fff", role: "Project Superintendent", trades: ["general", "electrical", "plumbing", "hvac", "concrete", "framing", "finishing"] }
-  ]
+  // Load team members from database
+  useEffect(() => {
+    async function loadTeamMembers() {
+      const supabase = createClient()
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      if (!currentUser) return
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('company_id')
+        .eq('id', currentUser.id)
+        .single()
+      if (!profile?.company_id) return
+
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('id, full_name, avatar_url, role')
+        .eq('company_id', profile.company_id)
+
+      if (data) {
+        setTeamMembers(data.map(u => ({
+          id: u.id,
+          name: u.full_name || 'Unknown',
+          avatar: u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.full_name || 'U')}&background=6A9BFD&color=fff`,
+          role: u.role || 'Team Member',
+          trades: ['general']
+        })))
+      }
+    }
+
+    loadTeamMembers()
+  }, [])
 
   // Sample tasks data
   const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: "1",
-      title: "Electrical rough-in inspection",
-      description: "Schedule and complete rough-in inspection before drywall",
-      project: "Downtown Office Renovation",
-      projectId: "proj-1",
-      trade: "electrical",
-      phase: "mep",
-      priority: "critical",
-      status: "in-progress",
-      assignee: "Mike Johnson",
-      assigneeId: "user-1",
-      assigneeAvatar: "https://ui-avatars.com/api/?name=Mike+Johnson&background=FF6B6B&color=fff",
-      startDate: "2024-11-07",
-      dueDate: "2024-11-10",
-      duration: 3,
-      progress: 75,
-      estimatedHours: 4,
-      actualHours: 3.5,
-      dependencies: [],
-      attachments: 3,
-      comments: 5,
-      location: "Floor 3, Units 301-305",
-      weatherDependent: false,
-      weatherBuffer: 0,
-      inspectionRequired: true,
-      inspectionType: "Electrical Inspection",
-      crewSize: 2,
-      equipment: ["Scaffolding", "Power Tools", "Measuring Tools"],
-      materials: ["Electrical Wire", "Conduit"],
-      certifications: ["Electrical License", "OSHA 30"],
-      safetyProtocols: ["PPE Required", "Lockout/Tagout", "Ladder Safety"],
-      qualityStandards: ["NEC Standards"],
-      documentation: ["Daily Reports", "Inspection Reports"],
-      notifyInspector: true,
-      clientVisibility: true
-    },
-    {
-      id: "2",
-      title: "Concrete foundation pour - South wing",
-      description: "Pour foundation for south wing expansion",
-      project: "Warehouse Build",
-      projectId: "proj-2",
-      trade: "concrete",
-      phase: "foundation",
-      priority: "high",
-      status: "blocked",
-      assignee: "David Lee",
-      assigneeId: "user-2",
-      assigneeAvatar: "https://ui-avatars.com/api/?name=David+Lee&background=4A4A4A&color=fff",
-      startDate: "2024-11-06",
-      dueDate: "2024-11-09",
-      duration: 3,
-      progress: 30,
-      estimatedHours: 16,
-      actualHours: 5,
-      dependencies: ["rebar-inspection"],
-      attachments: 2,
-      comments: 8,
-      location: "South Wing Foundation",
-      weatherDependent: true,
-      weatherBuffer: 2,
-      inspectionRequired: true,
-      inspectionType: "Foundation Inspection",
-      crewSize: 6,
-      equipment: ["Concrete Mixer", "Generator", "Power Tools"],
-      materials: ["Concrete", "Rebar"],
-      certifications: ["OSHA 30"],
-      safetyProtocols: ["PPE Required", "Excavation Safety"],
-      qualityStandards: ["ACI Standards"],
-      documentation: ["Daily Reports", "Progress Photos", "Material Receipts"],
-      notifyInspector: true,
-      clientVisibility: true
-    },
-    {
-      id: "3",
-      title: "HVAC ductwork installation - Main floor",
-      description: "Install main floor ductwork and vents",
-      project: "Retail Store Fit-Out",
-      projectId: "proj-3",
-      trade: "hvac",
-      phase: "mep",
-      priority: "medium",
-      status: "not-started",
-      assignee: "Sarah Wilson",
-      assigneeId: "user-3",
-      assigneeAvatar: "https://ui-avatars.com/api/?name=Sarah+Wilson&background=38BDF8&color=fff",
-      startDate: "2024-11-10",
-      dueDate: "2024-11-12",
-      duration: 2,
-      progress: 0,
-      estimatedHours: 12,
-      actualHours: 0,
-      dependencies: ["framing-complete"],
-      attachments: 1,
-      comments: 2,
-      location: "Main Retail Floor",
-      weatherDependent: false,
-      weatherBuffer: 0,
-      inspectionRequired: false,
-      inspectionType: "",
-      crewSize: 3,
-      equipment: ["Scaffolding", "Power Tools", "Measuring Tools"],
-      materials: [],
-      certifications: ["OSHA 10"],
-      safetyProtocols: ["PPE Required", "Ladder Safety"],
-      qualityStandards: [],
-      documentation: ["Daily Reports"],
-      notifyInspector: false,
-      clientVisibility: false
-    },
-    {
-      id: "4",
-      title: "Drywall installation - Residential units",
-      description: "Hang and tape drywall in units 201-210",
-      project: "Residential Kitchen Remodel",
-      projectId: "proj-4",
-      trade: "finishing",
-      phase: "finishing",
-      priority: "medium",
-      status: "in-progress",
-      assignee: "Tom Brown",
-      assigneeId: "user-4",
-      assigneeAvatar: "https://ui-avatars.com/api/?name=Tom+Brown&background=E0E0E0&color=000",
-      startDate: "2024-11-08",
-      dueDate: "2024-11-11",
-      duration: 3,
-      progress: 45,
-      estimatedHours: 24,
-      actualHours: 12,
-      dependencies: ["electrical-rough", "plumbing-rough"],
-      attachments: 0,
-      comments: 3,
-      location: "Building A, Floor 2",
-      weatherDependent: false,
-      weatherBuffer: 0,
-      inspectionRequired: false,
-      inspectionType: "",
-      crewSize: 4,
-      equipment: ["Scaffolding", "Power Tools"],
-      materials: ["Drywall"],
-      certifications: ["OSHA 10"],
-      safetyProtocols: ["PPE Required", "Ladder Safety"],
-      qualityStandards: [],
-      documentation: ["Daily Reports", "Progress Photos"],
-      notifyInspector: false,
-      clientVisibility: true
-    },
-    {
-      id: "5",
-      title: "Plumbing final connections",
-      description: "Connect all fixtures and test water pressure",
-      project: "Downtown Office Renovation",
-      projectId: "proj-1",
-      trade: "plumbing",
-      phase: "finishing",
-      priority: "high",
-      status: "review",
-      assignee: "Emily Chen",
-      assigneeId: "user-5",
-      assigneeAvatar: "https://ui-avatars.com/api/?name=Emily+Chen&background=6A9BFD&color=fff",
-      startDate: "2024-11-06",
-      dueDate: "2024-11-08",
-      duration: 2,
-      progress: 90,
-      estimatedHours: 8,
-      actualHours: 7.5,
-      dependencies: [],
-      attachments: 5,
-      comments: 12,
-      location: "All Floors",
-      weatherDependent: false,
-      weatherBuffer: 0,
-      inspectionRequired: true,
-      inspectionType: "Plumbing Inspection",
-      crewSize: 2,
-      equipment: ["Power Tools", "Measuring Tools"],
-      materials: ["Pipes", "Fixtures"],
-      certifications: ["Plumbing License", "OSHA 10"],
-      safetyProtocols: ["PPE Required"],
-      qualityStandards: [],
-      documentation: ["Daily Reports", "Inspection Reports"],
-      notifyInspector: true,
-      clientVisibility: true
-    },
-    {
-      id: "6",
-      title: "Framing interior walls - Unit 305",
-      description: "Frame interior walls according to updated plans",
-      project: "Residential Kitchen Remodel",
-      projectId: "proj-4",
-      trade: "framing",
-      phase: "framing",
-      priority: "critical",
-      status: "not-started",
-      assignee: "Robert Taylor",
-      assigneeId: "user-6",
-      assigneeAvatar: "https://ui-avatars.com/api/?name=Robert+Taylor&background=D97706&color=fff",
-      startDate: "2024-11-09",
-      dueDate: "2024-11-09",
-      duration: 1,
-      progress: 0,
-      estimatedHours: 16,
-      actualHours: 0,
-      dependencies: [],
-      attachments: 2,
-      comments: 1,
-      location: "Unit 305",
-      weatherDependent: false,
-      weatherBuffer: 0,
-      inspectionRequired: false,
-      inspectionType: "",
-      crewSize: 4,
-      equipment: ["Nail Gun", "Saw", "Measuring Tools"],
-      materials: ["Lumber"],
-      certifications: ["OSHA 10"],
-      safetyProtocols: ["PPE Required", "Ladder Safety"],
-      qualityStandards: [],
-      documentation: ["Daily Reports"],
-      notifyInspector: false,
-      clientVisibility: false
-    },
   ])
 
   // Authentication and data loading
@@ -472,6 +270,7 @@ export default function TaskFlowPage() {
 
       if (profile?.plan) {
         setUserPlan(profile.plan as "starter" | "professional" | "enterprise")
+        localStorage.setItem('userPlan', profile.plan)
       }
 
       setLoading(false)
@@ -485,10 +284,12 @@ export default function TaskFlowPage() {
     if (!user) return
 
     const loadTasks = async () => {
+      setTasksLoading(true)
       const { data, error } = await getTasks()
 
       if (error) {
         console.error("Error loading tasks:", error)
+        setTasksLoading(false)
         return
       }
 
@@ -533,6 +334,7 @@ export default function TaskFlowPage() {
         }))
 
         setTasks(convertedTasks)
+        setTasksLoading(false)
       }
     }
 
@@ -739,43 +541,10 @@ export default function TaskFlowPage() {
   // Quality Guide line 883: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header skeleton */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <div className="h-8 bg-gray-200 rounded w-36 mb-2 animate-pulse" />
-              <div className="h-4 bg-gray-200 rounded w-52 animate-pulse" />
-            </div>
-            <div className="h-10 bg-gray-200 rounded-lg w-32 animate-pulse" />
-          </div>
-          {/* View mode tabs skeleton */}
-          <div className="flex gap-2 mb-6">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-10 bg-gray-200 rounded-lg w-24 animate-pulse" />
-            ))}
-          </div>
-          {/* Kanban columns skeleton */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {['To Do', 'In Progress', 'In Review', 'Done'].map((col) => (
-              <div key={col} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-5 bg-gray-200 rounded w-20" />
-                  <div className="h-5 bg-gray-200 rounded-full w-6" />
-                </div>
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="border border-gray-100 rounded-lg p-3 mb-3">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
-                    <div className="h-3 bg-gray-200 rounded w-1/2 mb-2" />
-                    <div className="flex gap-2">
-                      <div className="h-5 bg-gray-200 rounded-full w-14" />
-                      <div className="h-5 bg-gray-200 rounded-full w-10" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.bgAlt }}>
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#FF6B6B', borderTopColor: 'transparent' }}></div>
+          <p style={{ color: colors.textMuted }}>Loading TaskFlow...</p>
         </div>
       </div>
     )
@@ -784,13 +553,15 @@ export default function TaskFlowPage() {
   return (
     <>
         {/* Header */}
-        <header className="sticky top-0 z-40" style={{ backgroundColor: 'var(--c-card-bg)', borderBottom: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05)' }}>
+        <header className="sticky top-0 z-40" style={{ backgroundColor: colors.bg, borderBottom: colors.borderBottom, boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05)' }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h1 className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{getGreeting()}</h1>
-                <p className="text-sm mt-1" style={{ color: 'var(--c-text-secondary)' }}>
-                  You have {stats.dueToday} tasks due today and {stats.overdue} overdue
+                <h1 className="text-2xl font-bold" style={{ color: colors.text }}>TaskFlow</h1>
+                <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
+                  {stats.dueToday > 0 || stats.overdue > 0
+                    ? `You have ${stats.dueToday} task${stats.dueToday !== 1 ? 's' : ''} due today and ${stats.overdue} overdue`
+                    : "All caught up — no tasks due today"}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -818,14 +589,10 @@ export default function TaskFlowPage() {
                 <button
                   key={f.key}
                   onClick={() => setQuickFilter(f.key)}
-                  className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-                    quickFilter === f.key
-                      ? 'text-white'
-                      : 'hover:bg-gray-50'
-                  }`}
+                  className="px-4 py-2 rounded text-sm font-medium transition-colors"
                   style={quickFilter === f.key
                     ? { backgroundColor: '#6A9BFD', color: '#FFFFFF' }
-                    : { backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', color: 'var(--c-text-secondary)' }
+                    : { backgroundColor: colors.bg, border: colors.border, color: colors.textMuted }
                   }
                 >
                   {f.label}
@@ -839,34 +606,34 @@ export default function TaskFlowPage() {
             </div>
 
             {/* View Toggle & Filters */}
-            <div className="flex items-center justify-between gap-4">
-              {/* View Toggle */}
-              <div className="flex items-center gap-2 rounded-lg p-1" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              {/* View Toggle — horizontally scrollable on mobile */}
+              <div className="flex items-center gap-2 rounded-lg p-1 overflow-x-auto" style={{ backgroundColor: colors.bgAlt }}>
                 <button
                   onClick={() => setViewMode("dashboard")}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "dashboard" ? "shadow-sm" : ""}`}
-                  style={viewMode === "dashboard" ? { backgroundColor: 'var(--c-card-bg)', color: 'var(--c-text-primary)' } : { color: 'var(--c-text-secondary)' }}
+                  className={`px-3 py-2.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 shrink-0 ${viewMode === "dashboard" ? "shadow-sm" : ""}`}
+                  style={viewMode === "dashboard" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
                 >
                   📋 Dashboard
                 </button>
                 <button
                   onClick={() => setViewMode("kanban")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "kanban" ? "shadow-sm" : ""}`}
-                  style={viewMode === "kanban" ? { backgroundColor: 'var(--c-card-bg)', color: 'var(--c-text-primary)' } : { color: 'var(--c-text-secondary)' }}
+                  style={viewMode === "kanban" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
                 >
                   🎯 Kanban
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "list" ? "shadow-sm" : ""}`}
-                  style={viewMode === "list" ? { backgroundColor: 'var(--c-card-bg)', color: 'var(--c-text-primary)' } : { color: 'var(--c-text-secondary)' }}
+                  style={viewMode === "list" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
                 >
                   📱 List
                 </button>
                 <button
                   onClick={() => setViewMode("calendar")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "calendar" ? "shadow-sm" : ""}`}
-                  style={viewMode === "calendar" ? { backgroundColor: 'var(--c-card-bg)', color: 'var(--c-text-primary)' } : { color: 'var(--c-text-secondary)' }}
+                  style={viewMode === "calendar" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
                   disabled={userPlan === "starter"}
                 >
                   🗓️ Calendar {userPlan === "starter" && <span className="text-xs">🔒</span>}
@@ -874,7 +641,7 @@ export default function TaskFlowPage() {
                 <button
                   onClick={() => setViewMode("gantt")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${viewMode === "gantt" ? "shadow-sm" : ""}`}
-                  style={viewMode === "gantt" ? { backgroundColor: 'var(--c-card-bg)', color: 'var(--c-text-primary)' } : { color: 'var(--c-text-secondary)' }}
+                  style={viewMode === "gantt" ? { backgroundColor: colors.bg, color: colors.text } : { color: colors.textMuted }}
                   disabled={userPlan === "starter"}
                 >
                   📊 Gantt {userPlan === "starter" && <span className="text-xs">🔒</span>}
@@ -887,7 +654,7 @@ export default function TaskFlowPage() {
                   value={selectedProject}
                   onChange={(e) => setSelectedProject(e.target.value)}
                   className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                  style={{ border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
+                  style={{ border: colors.border, color: colors.text }}
                 >
                   <option value="all">All Projects</option>
                   <option value="proj-1">Downtown Office</option>
@@ -900,7 +667,7 @@ export default function TaskFlowPage() {
                   value={selectedTrade}
                   onChange={(e) => setSelectedTrade(e.target.value)}
                   className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                  style={{ border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
+                  style={{ border: colors.border, color: colors.text }}
                 >
                   <option value="all">All Trades</option>
                   <option value="electrical">⚡ Electrical</option>
@@ -915,7 +682,7 @@ export default function TaskFlowPage() {
                   value={selectedPriority}
                   onChange={(e) => setSelectedPriority(e.target.value)}
                   className="px-3 py-2 rounded-lg focus:outline-none text-sm"
-                  style={{ border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
+                  style={{ border: colors.border, color: colors.text }}
                 >
                   <option value="all">All Priorities</option>
                   <option value="critical">🔥 Critical</option>
@@ -934,53 +701,53 @@ export default function TaskFlowPage() {
             {viewMode === "dashboard" && (
               <div className="space-y-6">
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                  <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">✅</span>
-                      <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Total</p>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Total</p>
                     </div>
-                    <p className="text-3xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{stats.total}</p>
+                    {tasksLoading ? <div className="h-9 w-12 rounded animate-pulse" style={{ backgroundColor: colors.bgMuted }} /> : <p className="text-3xl font-bold" style={{ color: colors.text }}>{stats.total}</p>}
                   </div>
 
-                  <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">🚧</span>
-                      <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>In Progress</p>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>In Progress</p>
                     </div>
-                    <p className="text-3xl font-bold" style={{ color: '#6A9BFD' }}>{stats.inProgress}</p>
+                    {tasksLoading ? <div className="h-9 w-12 rounded animate-pulse" style={{ backgroundColor: colors.bgMuted }} /> : <p className="text-3xl font-bold" style={{ color: '#6A9BFD' }}>{stats.inProgress}</p>}
                   </div>
 
-                  <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">✅</span>
-                      <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Completed</p>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Completed</p>
                     </div>
-                    <p className="text-3xl font-bold" style={{ color: '#6BCB77' }}>{stats.completed}</p>
+                    {tasksLoading ? <div className="h-9 w-12 rounded animate-pulse" style={{ backgroundColor: colors.bgMuted }} /> : <p className="text-3xl font-bold" style={{ color: '#6BCB77' }}>{stats.completed}</p>}
                   </div>
 
-                  <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">🚨</span>
-                      <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Blocked</p>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Blocked</p>
                     </div>
-                    <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>{stats.blocked}</p>
+                    {tasksLoading ? <div className="h-9 w-12 rounded animate-pulse" style={{ backgroundColor: colors.bgMuted }} /> : <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>{stats.blocked}</p>}
                   </div>
 
-                  <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">📅</span>
-                      <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Due Today</p>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Due Today</p>
                     </div>
-                    <p className="text-3xl font-bold" style={{ color: '#FFD93D' }}>{stats.dueToday}</p>
+                    {tasksLoading ? <div className="h-9 w-12 rounded animate-pulse" style={{ backgroundColor: colors.bgMuted }} /> : <p className="text-3xl font-bold" style={{ color: '#FFD93D' }}>{stats.dueToday}</p>}
                   </div>
 
-                  <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">⏰</span>
-                      <p className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Overdue</p>
+                      <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Overdue</p>
                     </div>
-                    <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>{stats.overdue}</p>
+                    {tasksLoading ? <div className="h-9 w-12 rounded animate-pulse" style={{ backgroundColor: colors.bgMuted }} /> : <p className="text-3xl font-bold" style={{ color: '#DC2626' }}>{stats.overdue}</p>}
                   </div>
                 </div>
 
@@ -991,7 +758,7 @@ export default function TaskFlowPage() {
                       <span className="text-2xl">🚨</span>
                       <div className="flex-1">
                         <h3 className="font-semibold mb-1" style={{ color: '#DC2626' }}>Critical Alerts</h3>
-                        <p className="text-sm mb-2" style={{ color: 'var(--c-text-secondary)' }}>
+                        <p className="text-sm mb-2" style={{ color: colors.textMuted }}>
                           You have {stats.overdue} overdue task{stats.overdue !== 1 ? 's' : ''} that need immediate attention
                         </p>
                         <button className="text-sm font-semibold" style={{ color: '#DC2626' }}>
@@ -1004,17 +771,17 @@ export default function TaskFlowPage() {
 
                 {/* Weather Widget */}
                 <ConstructionErrorBoundary>
-                  <WeatherWidget tasks={filteredTasks} countryCode="US" />
+                    <WeatherWidget tasks={filteredTasks} countryCode="US" />
                 </ConstructionErrorBoundary>
 
                 {/* My Tasks Today */}
-                <div className="rounded-xl p-6" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold" style={{ color: 'var(--c-text-primary)' }}>Your Tasks Today</h3>
+                    <h3 className="text-lg font-bold" style={{ color: colors.text }}>Your Tasks Today</h3>
                     <div className="flex items-center gap-2">
-                      <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: `conic-gradient(#6BCB77 ${(myTasks.filter(t => t.status === 'completed').length / myTasks.length) * 100}%, var(--c-border) 0)` }}>
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--c-card-bg)' }}>
-                          <span className="text-sm font-bold" style={{ color: 'var(--c-text-primary)' }}>
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: `conic-gradient(#6BCB77 ${(myTasks.filter(t => t.status === 'completed').length / myTasks.length) * 100}%, #E0E0E0 0)` }}>
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.bg }}>
+                          <span className="text-sm font-bold" style={{ color: colors.text }}>
                             {myTasks.filter(t => t.status === 'completed').length}/{myTasks.length}
                           </span>
                         </div>
@@ -1043,13 +810,13 @@ export default function TaskFlowPage() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-lg">{priorityStyles[task.priority].icon}</span>
-                              <h4 className="font-semibold text-sm" style={{ color: 'var(--c-text-primary)' }}>{task.title}</h4>
+                              <h4 className="font-semibold text-sm" style={{ color: colors.text }}>{task.title}</h4>
                               {task.weatherDependent && <span className="text-sm">🌤️</span>}
                               {task.inspectionRequired && <span className="text-sm">🔍</span>}
                             </div>
-                            <p className="text-xs mb-2" style={{ color: 'var(--c-text-secondary)' }}>{task.project} • {task.location}</p>
-                            <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--c-text-secondary)' }}>
-                              <span className={taskOverdue ? 'font-semibold' : ''} style={taskOverdue ? { color: '#DC2626' } : undefined}>📅 Due: {new Date(task.dueDate).toLocaleDateString()}{taskOverdue && ' (OVERDUE)'}</span>
+                            <p className="text-xs mb-2" style={{ color: colors.textMuted }}>{task.project} • {task.location}</p>
+                            <div className="flex items-center gap-3 text-xs" style={{ color: colors.textMuted }}>
+                              <span>📅 Due: {new Date(task.dueDate).toLocaleDateString()}</span>
                               <span>⏱️ {task.estimatedHours}h est</span>
                               {task.attachments > 0 && <span>📎 {task.attachments}</span>}
                               {task.comments > 0 && <span>💬 {task.comments}</span>}
@@ -1067,11 +834,11 @@ export default function TaskFlowPage() {
 
                         {/* Progress Bar */}
                         <div className="mt-3">
-                          <div className="flex items-center justify-between text-xs mb-1" style={{ color: 'var(--c-text-secondary)' }}>
+                          <div className="flex items-center justify-between text-xs mb-1" style={{ color: colors.textMuted }}>
                             <span>Progress</span>
                             <span className="font-semibold">{task.progress}%</span>
                           </div>
-                          <div className="w-full rounded-full h-2" style={{ backgroundColor: 'var(--c-border)' }}>
+                          <div className="w-full rounded-full h-2" style={{ backgroundColor: colors.bgMuted }}>
                             <div
                               className="h-2 rounded-full transition-all"
                               style={{
@@ -1129,8 +896,8 @@ export default function TaskFlowPage() {
                 </div>
                 <DragOverlay>
                   {activeId ? (
-                    <div className="rounded-lg p-3 cursor-grabbing" style={{ backgroundColor: 'var(--c-card-bg)', boxShadow: '0 8px 16px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1)', opacity: 0.9 }}>
-                      <p className="font-semibold text-sm" style={{ color: 'var(--c-text-primary)' }}>
+                    <div className="rounded-lg p-3 cursor-grabbing" style={{ backgroundColor: colors.bg, boxShadow: '0 8px 16px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1)', opacity: 0.9 }}>
+                      <p className="font-semibold text-sm" style={{ color: colors.text }}>
                         {tasks.find(t => t.id === activeId)?.title || "Task"}
                       </p>
                     </div>
@@ -1141,28 +908,29 @@ export default function TaskFlowPage() {
 
             {/* List View */}
             {viewMode === "list" && (
-              <div className="rounded-xl overflow-hidden" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+              <div className="rounded-xl overflow-hidden" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead style={{ backgroundColor: 'var(--c-sub-bg)', borderBottom: '1px solid var(--c-border)' }}>
+                    <thead style={{ backgroundColor: colors.bgAlt, borderBottom: colors.borderBottom }}>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Task</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Priority</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Trade</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Assignee</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Due Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--c-text-secondary)' }}>Progress</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Task</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Priority</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Trade</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Assignee</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Due Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>Progress</th>
+                        <th className="px-6 py-3"></th>
                       </tr>
                     </thead>
-                    <tbody style={{ borderTop: '1px solid var(--c-border)' }}>
+                    <tbody style={{ borderTop: `1px solid var(--border)` }}>
                       {filteredTasks.map((task) => (
-                        <tr key={task.id} className="transition-colors hover:bg-gray-50" style={{ borderBottom: '1px solid var(--c-border)' }}>
+                        <tr key={task.id} className="transition-colors" style={{ borderBottom: colors.borderBottom }}>
                           <td className="px-6 py-4">
                             <div className="flex items-start gap-3">
                               <div className="flex-1">
-                                <p className="font-semibold text-sm mb-1" style={{ color: 'var(--c-text-primary)' }}>{task.title}</p>
-                                <p className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>{task.project}</p>
+                                <p className="font-semibold text-sm mb-1" style={{ color: colors.text }}>{task.title}</p>
+                                <p className="text-xs" style={{ color: colors.textMuted }}>{task.project}</p>
                               </div>
                             </div>
                           </td>
@@ -1186,19 +954,30 @@ export default function TaskFlowPage() {
                               <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold" style={{ background: 'linear-gradient(135deg, #4ECDC4 0%, #5FD9CF 100%)' }}>
                                 {task.assigneeAvatar}
                               </div>
-                              <span className="text-sm" style={{ color: 'var(--c-text-primary)' }}>{task.assignee}</span>
+                              <span className="text-sm" style={{ color: colors.text }}>{task.assignee}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <span className="text-sm" style={{ color: 'var(--c-text-primary)' }}>{new Date(task.dueDate).toLocaleDateString()}</span>
+                            <span className="text-sm" style={{ color: colors.text }}>{new Date(task.dueDate).toLocaleDateString()}</span>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
-                              <div className="w-24 rounded-full h-2" style={{ backgroundColor: 'var(--c-border)' }}>
+                              <div className="w-24 rounded-full h-2" style={{ backgroundColor: colors.bgMuted }}>
                                 <div className="h-2 rounded-full" style={{ width: `${task.progress}%`, backgroundColor: tradeColors[task.trade].border }}></div>
                               </div>
-                              <span className="text-sm font-medium min-w-[3rem]" style={{ color: 'var(--c-text-primary)' }}>{task.progress}%</span>
+                              <span className="text-sm font-medium min-w-12" style={{ color: colors.text }}>{task.progress}%</span>
                             </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <button
+                              onClick={() => {
+                                setEditingTask(task)
+                                setShowCreateModal(true)
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors whitespace-nowrap"
+                            >
+                              ✏️ Edit
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -1210,12 +989,12 @@ export default function TaskFlowPage() {
 
             {/* Calendar & Gantt Views (Pro+) */}
             {(viewMode === "calendar" || viewMode === "gantt") && userPlan === "starter" && (
-              <div className="rounded-xl p-12 text-center" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+              <div className="rounded-xl p-12 text-center" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
                 <span className="text-6xl mb-4 block">🔒</span>
-                <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+                <h3 className="text-xl font-bold mb-2" style={{ color: colors.text }}>
                   {viewMode === "calendar" ? "Calendar View" : "Gantt Chart"} - Pro Feature
                 </h3>
-                <p className="mb-6" style={{ color: 'var(--c-text-secondary)' }}>
+                <p className="mb-6" style={{ color: colors.textMuted }}>
                   Upgrade to Pro or Enterprise to unlock advanced scheduling and timeline views
                 </p>
                 <Link
@@ -1235,7 +1014,7 @@ export default function TaskFlowPage() {
                   setEditingTask(task as any)
                   setShowCreateModal(true)
                 }}
-                onDateClick={(date) => {
+                onDateClick={() => {
                   setShowCreateModal(true)
                 }}
               />
@@ -1373,6 +1152,11 @@ export default function TaskFlowPage() {
             progress: detailTask.progress,
           }}
           onClose={() => setDetailTask(null)}
+          onEdit={() => {
+            setEditingTask(detailTask)
+            setDetailTask(null)
+            setShowCreateModal(true)
+          }}
           onStatusChange={(taskId, newStatus) => {
             setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus as Task['status'] } : t))
             setDetailTask(prev => prev ? { ...prev, status: newStatus as Task['status'] } : null)

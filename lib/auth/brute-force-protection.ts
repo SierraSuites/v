@@ -8,7 +8,7 @@
  * 4. Audit logging of suspicious activity
  */
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient as createClient } from '@/lib/supabase/service'
 import { logAuthEvent } from './audit-logging'
 
 // Brute force protection configuration
@@ -43,18 +43,27 @@ interface UserSecurityProfile {
 export async function checkBruteForceProtection(
   email: string
 ): Promise<BruteForceCheckResult> {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   try {
-    // Get user security profile
+    // Get user ID via auth.users join (reliable — doesn't depend on user_profiles.email)
+    const { data: userId } = await supabase.rpc('get_user_profile_id_by_email', { p_email: email })
+
+    if (!userId) {
+      return {
+        allowed: true,
+        attemptsRemaining: BRUTE_FORCE_CONFIG.maxAttempts,
+      }
+    }
+
+    // Get user security profile by id
     const { data: profile, error } = await supabase
       .from('user_profiles')
       .select('id, email, failed_login_attempts, locked_until, last_failed_login_at')
-      .eq('email', email)
+      .eq('id', userId)
       .single()
 
     if (error || !profile) {
-      // User doesn't exist - allow attempt but it will fail at auth level
       return {
         allowed: true,
         attemptsRemaining: BRUTE_FORCE_CONFIG.maxAttempts,
@@ -139,18 +148,21 @@ export async function recordFailedLoginAttempt(
   email: string,
   ipAddress?: string,
   userAgent?: string
-): Promise<void> {
-  const supabase = await createClient()
+): Promise<number> {
+  const supabase = createClient()
 
   try {
-    // Get current user profile
-    const { data: profile } = await supabase
+    // Get user ID via auth.users join (reliable — doesn't depend on user_profiles.email)
+    const { data: userId } = await supabase.rpc('get_user_profile_id_by_email', { p_email: email })
+
+    const { data: profile } = userId ? await supabase
       .from('user_profiles')
       .select('id, failed_login_attempts')
-      .eq('email', email)
-      .single()
+      .eq('id', userId)
+      .single() : { data: null }
 
     if (!profile) {
+      console.error('recordFailedLoginAttempt: user not found in user_profiles for email:', email)
       // User doesn't exist - log anyway for security monitoring
       await logAuthEvent({
         email,
@@ -160,8 +172,10 @@ export async function recordFailedLoginAttempt(
         userAgent,
         errorMessage: 'User not found',
       })
-      return
+      return BRUTE_FORCE_CONFIG.maxAttempts - 1
     }
+
+    console.log('recordFailedLoginAttempt: found profile, current count:', profile.failed_login_attempts)
 
     const newAttemptCount = (profile.failed_login_attempts || 0) + 1
     const now = new Date()
@@ -173,7 +187,7 @@ export async function recordFailedLoginAttempt(
       : null
 
     // Update user profile
-    await supabase
+    const { error: updateError } = await supabase
       .from('user_profiles')
       .update({
         failed_login_attempts: newAttemptCount,
@@ -181,6 +195,10 @@ export async function recordFailedLoginAttempt(
         locked_until: lockedUntil?.toISOString() || null,
       })
       .eq('id', profile.id)
+
+    if (updateError) {
+      console.error('Failed to update failed_login_attempts:', updateError)
+    }
 
     // Log the event
     await logAuthEvent({
@@ -198,8 +216,11 @@ export async function recordFailedLoginAttempt(
         locked_until: lockedUntil?.toISOString(),
       },
     })
+
+    return Math.max(0, BRUTE_FORCE_CONFIG.maxAttempts - newAttemptCount)
   } catch (error) {
     console.error('Failed to record login attempt:', error)
+    return BRUTE_FORCE_CONFIG.maxAttempts - 1
   }
 }
 
@@ -218,7 +239,7 @@ export async function recordSuccessfulLogin(
   ipAddress?: string,
   userAgent?: string
 ): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   try {
     // Reset failed attempts counter
@@ -253,7 +274,7 @@ export async function recordSuccessfulLogin(
  * Used when lock expires or admin override
  */
 async function resetFailedAttempts(userId: string): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   try {
     await supabase
@@ -280,7 +301,7 @@ export async function unlockUserAccount(
   userId: string,
   adminId: string
 ): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   try {
     // Get user email for logging

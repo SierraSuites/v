@@ -1,0 +1,217 @@
+// API Route: API Keys Management
+// GET /api/integrations/api-keys - List API keys
+// POST /api/integrations/api-keys - Create API key
+
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { z } from 'zod'
+
+// ============================================
+// VALIDATION SCHEMAS
+// ============================================
+
+const createApiKeySchema = z.object({
+  keyName: z.string().min(1).max(255),
+  description: z.string().optional(),
+  scopes: z.array(z.string()).min(1, 'At least one scope is required'),
+  allowedIps: z.array(z.string()).optional(),
+  rateLimitPerHour: z.number().int().min(1).max(100000).default(1000),
+  rateLimitPerDay: z.number().int().min(1).max(1000000).default(10000),
+  expiresAt: z.string().optional(), // ISO date
+})
+
+// ============================================
+// GET /api/integrations/api-keys
+// List API keys (without secrets)
+// ============================================
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+    }
+
+    // Get query parameters
+    const { searchParams } = new URL(request.url)
+    const isActive = searchParams.get('isActive')
+    const limit = parseInt(searchParams.get('limit') || '50')
+    const offset = parseInt(searchParams.get('offset') || '0')
+
+    // Build query - mask API key for security (show only first 8 chars)
+    let query = supabase
+      .from('api_keys')
+      .select(`
+        id,
+        key_name,
+        api_key,
+        description,
+        scopes,
+        allowed_ips,
+        rate_limit_per_hour,
+        rate_limit_per_day,
+        last_used_at,
+        total_requests,
+        failed_requests,
+        is_active,
+        expires_at,
+        created_at,
+        updated_at,
+        revoked_at,
+        creator:created_by (
+          id,
+          profiles (full_name)
+        )
+      `, { count: 'exact' })
+      .eq('company_id', profile.company_id)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (isActive !== null) {
+      query = query.eq('is_active', isActive === 'true')
+    }
+
+    const { data: apiKeys, error, count } = await query
+
+    if (error) {
+      console.error('Error fetching API keys:', error)
+      return NextResponse.json(
+        { error: 'Failed to fetch API keys' },
+        { status: 500 }
+      )
+    }
+
+    // Mask API keys for security (show only first 8 characters)
+    const maskedKeys = apiKeys?.map(key => ({
+      ...key,
+      api_key: key.api_key.substring(0, 11) + '...' + key.api_key.slice(-4),
+      api_secret: undefined, // Never return secret
+    }))
+
+    return NextResponse.json({
+      apiKeys: maskedKeys,
+      total: count,
+    })
+  } catch (error) {
+    console.error('Error in GET /api/integrations/api-keys:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+// ============================================
+// POST /api/integrations/api-keys
+// Create a new API key
+// ============================================
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+    }
+
+    const body = await request.json()
+    const validationResult = createApiKeySchema.safeParse(body)
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Validation failed',
+          details: validationResult.error.issues.map((issue) => ({
+            field: issue.path.join('.'),
+            message: issue.message,
+          })),
+        },
+        { status: 400 }
+      )
+    }
+
+    const data = validationResult.data
+
+    // Generate API secret (shown only once)
+    const apiSecret = 'ss_' + Array.from(crypto.getRandomValues(new Uint8Array(32)))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+
+    // Create API key (api_key will be auto-generated by trigger)
+    const { data: apiKey, error: keyError } = await supabase
+      .from('api_keys')
+      .insert({
+        company_id: profile.company_id,
+        key_name: data.keyName,
+        description: data.description || null,
+        api_secret: apiSecret,
+        scopes: data.scopes,
+        allowed_ips: data.allowedIps || null,
+        rate_limit_per_hour: data.rateLimitPerHour,
+        rate_limit_per_day: data.rateLimitPerDay,
+        expires_at: data.expiresAt || null,
+        created_by: user.id,
+      })
+      .select()
+      .single()
+
+    if (keyError) {
+      console.error('Error creating API key:', keyError)
+      return NextResponse.json(
+        { error: 'Failed to create API key' },
+        { status: 500 }
+      )
+    }
+
+    // Return full key and secret ONLY on creation
+    return NextResponse.json(
+      {
+        message: 'API key created successfully',
+        apiKey: {
+          ...apiKey,
+          api_secret: apiSecret, // Only shown once!
+        },
+        warning: 'Save the API key and secret now. The secret will not be shown again.',
+      },
+      { status: 201 }
+    )
+  } catch (error) {
+    console.error('Error in POST /api/integrations/api-keys:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

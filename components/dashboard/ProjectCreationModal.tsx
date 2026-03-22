@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 interface Project {
   id: string
@@ -107,6 +108,7 @@ export default function ProjectCreationModal({
   editingProject,
   mode = 'create'
 }: ProjectCreationModalProps) {
+  const { colors, darkMode } = useThemeColors()
   const [activeTab, setActiveTab] = useState(0)
   const [formData, setFormData] = useState<Partial<Project>>({
     name: '',
@@ -158,6 +160,12 @@ export default function ProjectCreationModal({
     { id: 2, label: 'Team & Resources', icon: '👥' },
     { id: 3, label: 'Documents & Settings', icon: '⚙️' }
   ]
+
+  const inputStyle = (hasError?: boolean) => ({
+    backgroundColor: colors.bgAlt,
+    border: hasError ? '2px solid #DC2626' : colors.border,
+    color: colors.text
+  })
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -328,7 +336,7 @@ export default function ProjectCreationModal({
           <div className="space-y-6">
             {/* Project Name */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                 Project Name *
               </label>
               <input
@@ -336,11 +344,7 @@ export default function ProjectCreationModal({
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 className="w-full px-4 py-3 rounded-lg text-sm"
-                style={{
-                  backgroundColor: 'var(--c-sub-bg)',
-                  border: errors.name ? '2px solid #DC2626' : '1px solid var(--c-border)',
-                  color: 'var(--c-text-primary)'
-                }}
+                style={inputStyle(!!errors.name)}
                 placeholder="e.g., Downtown Office Complex"
               />
               {errors.name && <p className="text-xs mt-1" style={{ color: '#DC2626' }}>{errors.name}</p>}
@@ -348,7 +352,7 @@ export default function ProjectCreationModal({
 
             {/* Client */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                 Client Name *
               </label>
               <input
@@ -356,11 +360,7 @@ export default function ProjectCreationModal({
                 value={formData.client}
                 onChange={(e) => handleInputChange('client', e.target.value)}
                 className="w-full px-4 py-3 rounded-lg text-sm"
-                style={{
-                  backgroundColor: 'var(--c-sub-bg)',
-                  border: errors.client ? '2px solid #DC2626' : '1px solid var(--c-border)',
-                  color: 'var(--c-text-primary)'
-                }}
+                style={inputStyle(!!errors.client)}
                 placeholder="e.g., Acme Corporation"
               />
               {errors.client && <p className="text-xs mt-1" style={{ color: '#DC2626' }}>{errors.client}</p>}
@@ -368,7 +368,7 @@ export default function ProjectCreationModal({
 
             {/* Project Type */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                 Project Type *
               </label>
               <div className="grid grid-cols-5 gap-2">
@@ -377,11 +377,11 @@ export default function ProjectCreationModal({
                     key={type.value}
                     type="button"
                     onClick={() => handleInputChange('type', type.value)}
-                    className="p-3 rounded-lg text-center transition-all"
+                    className="p-3 rounded-lg text-center transition-all cursor-pointer"
                     style={{
-                      backgroundColor: formData.type === type.value ? '#FF6B6B' : 'var(--c-sub-bg)',
-                      border: formData.type === type.value ? '2px solid #FF6B6B' : '1px solid var(--c-border)',
-                      color: formData.type === type.value ? '#FFFFFF' : 'var(--c-text-primary)'
+                      backgroundColor: formData.type === type.value ? '#FF6B6B' : colors.bgAlt,
+                      border: formData.type === type.value ? '2px solid #FF6B6B' : colors.border,
+                      color: formData.type === type.value ? '#FFFFFF' : colors.text
                     }}
                   >
                     <div className="text-2xl mb-1">{type.icon}</div>
@@ -393,7 +393,7 @@ export default function ProjectCreationModal({
 
             {/* Address */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                 Project Address *
               </label>
               <input
@@ -401,11 +401,7 @@ export default function ProjectCreationModal({
                 value={formData.address}
                 onChange={(e) => handleInputChange('address', e.target.value)}
                 className="w-full px-4 py-3 rounded-lg text-sm mb-3"
-                style={{
-                  backgroundColor: 'var(--c-sub-bg)',
-                  border: errors.address ? '2px solid #DC2626' : '1px solid var(--c-border)',
-                  color: 'var(--c-text-primary)'
-                }}
+                style={inputStyle(!!errors.address)}
                 placeholder="Street address"
               />
               {errors.address && <p className="text-xs mt-1 mb-2" style={{ color: '#DC2626' }}>{errors.address}</p>}
@@ -417,11 +413,7 @@ export default function ProjectCreationModal({
                     value={formData.city}
                     onChange={(e) => handleInputChange('city', e.target.value)}
                     className="w-full px-4 py-3 rounded-lg text-sm"
-                    style={{
-                      backgroundColor: 'var(--c-sub-bg)',
-                      border: errors.city ? '2px solid #DC2626' : '1px solid var(--c-border)',
-                      color: 'var(--c-text-primary)'
-                    }}
+                    style={inputStyle(!!errors.city)}
                     placeholder="City"
                   />
                   {errors.city && <p className="text-xs mt-1" style={{ color: '#DC2626' }}>{errors.city}</p>}
@@ -432,11 +424,7 @@ export default function ProjectCreationModal({
                     value={formData.state}
                     onChange={(e) => handleInputChange('state', e.target.value)}
                     className="w-full px-4 py-3 rounded-lg text-sm"
-                    style={{
-                      backgroundColor: 'var(--c-sub-bg)',
-                      border: errors.state ? '2px solid #DC2626' : '1px solid var(--c-border)',
-                      color: 'var(--c-text-primary)'
-                    }}
+                    style={inputStyle(!!errors.state)}
                     placeholder="State"
                   />
                   {errors.state && <p className="text-xs mt-1" style={{ color: '#DC2626' }}>{errors.state}</p>}
@@ -447,11 +435,7 @@ export default function ProjectCreationModal({
                     value={formData.zipCode}
                     onChange={(e) => handleInputChange('zipCode', e.target.value)}
                     className="w-full px-4 py-3 rounded-lg text-sm"
-                    style={{
-                      backgroundColor: 'var(--c-sub-bg)',
-                      border: errors.zipCode ? '2px solid #DC2626' : '1px solid var(--c-border)',
-                      color: 'var(--c-text-primary)'
-                    }}
+                    style={inputStyle(!!errors.zipCode)}
                     placeholder="Zip"
                   />
                   {errors.zipCode && <p className="text-xs mt-1" style={{ color: '#DC2626' }}>{errors.zipCode}</p>}
@@ -461,7 +445,7 @@ export default function ProjectCreationModal({
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                 Description
               </label>
               <textarea
@@ -469,7 +453,7 @@ export default function ProjectCreationModal({
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 rows={4}
                 className="w-full px-4 py-3 rounded-lg text-sm resize-none"
-                style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
+                style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                 placeholder="Describe the project scope, objectives, and any special requirements..."
               />
             </div>
@@ -482,7 +466,7 @@ export default function ProjectCreationModal({
             {/* Timeline */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+                <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                   Start Date *
                 </label>
                 <input
@@ -490,16 +474,12 @@ export default function ProjectCreationModal({
                   value={formData.startDate}
                   onChange={(e) => handleInputChange('startDate', e.target.value)}
                   className="w-full px-4 py-3 rounded-lg text-sm"
-                  style={{
-                    backgroundColor: 'var(--c-sub-bg)',
-                    border: errors.startDate ? '2px solid #DC2626' : '1px solid var(--c-border)',
-                    color: 'var(--c-text-primary)'
-                  }}
+                  style={inputStyle(!!errors.startDate)}
                 />
                 {errors.startDate && <p className="text-xs mt-1" style={{ color: '#DC2626' }}>{errors.startDate}</p>}
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+                <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                   End Date *
                 </label>
                 <input
@@ -507,11 +487,7 @@ export default function ProjectCreationModal({
                   value={formData.endDate}
                   onChange={(e) => handleInputChange('endDate', e.target.value)}
                   className="w-full px-4 py-3 rounded-lg text-sm"
-                  style={{
-                    backgroundColor: 'var(--c-sub-bg)',
-                    border: errors.endDate ? '2px solid #DC2626' : '1px solid var(--c-border)',
-                    color: 'var(--c-text-primary)'
-                  }}
+                  style={inputStyle(!!errors.endDate)}
                 />
                 {errors.endDate && <p className="text-xs mt-1" style={{ color: '#DC2626' }}>{errors.endDate}</p>}
               </div>
@@ -519,7 +495,7 @@ export default function ProjectCreationModal({
 
             {/* Budget */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                 Estimated Budget *
               </label>
               <div className="flex gap-3">
@@ -527,7 +503,7 @@ export default function ProjectCreationModal({
                   value={formData.currency}
                   onChange={(e) => handleInputChange('currency', e.target.value)}
                   className="px-4 py-3 rounded-lg text-sm"
-                  style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                 >
                   {CURRENCIES.map(curr => (
                     <option key={curr.code} value={curr.code}>
@@ -540,11 +516,7 @@ export default function ProjectCreationModal({
                   value={formData.estimatedBudget || ''}
                   onChange={(e) => handleInputChange('estimatedBudget', e.target.value === '' ? 0 : parseFloat(e.target.value))}
                   className="flex-1 px-4 py-3 rounded-lg text-sm"
-                  style={{
-                    backgroundColor: 'var(--c-sub-bg)',
-                    border: errors.estimatedBudget ? '2px solid #DC2626' : '1px solid var(--c-border)',
-                    color: 'var(--c-text-primary)'
-                  }}
+                  style={inputStyle(!!errors.estimatedBudget)}
                   placeholder="0.00"
                   min="0"
                   step="0.01"
@@ -555,7 +527,7 @@ export default function ProjectCreationModal({
 
             {/* Phases */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                 Project Phases
               </label>
 
@@ -566,18 +538,18 @@ export default function ProjectCreationModal({
                     <div
                       key={index}
                       className="p-3 rounded-lg flex items-center justify-between"
-                      style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
+                      style={{ backgroundColor: colors.bgAlt, border: colors.border }}
                     >
                       <div className="flex-1">
-                        <p className="font-semibold text-sm" style={{ color: 'var(--c-text-primary)' }}>{phase.name}</p>
-                        <p className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>
+                        <p className="font-semibold text-sm" style={{ color: colors.text }}>{phase.name}</p>
+                        <p className="text-xs" style={{ color: colors.textMuted }}>
                           {new Date(phase.startDate).toLocaleDateString()} - {new Date(phase.endDate).toLocaleDateString()}
                         </p>
                       </div>
                       <button
                         onClick={() => removePhase(index)}
-                        className="text-sm font-bold px-3 py-1 rounded hover:bg-red-100"
-                        style={{ color: '#DC2626' }}
+                        className="text-sm font-bold px-3 py-1 rounded transition-colors cursor-pointer"
+                        style={{ color: '#DC2626', backgroundColor: darkMode ? 'rgba(220, 38, 38, 0.1)' : undefined }}
                       >
                         Remove
                       </button>
@@ -587,7 +559,7 @@ export default function ProjectCreationModal({
               )}
 
               {/* Add New Phase */}
-              <div className="p-4 rounded-lg space-y-3" style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}>
+              <div className="p-4 rounded-lg space-y-3" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
                 <div>
                   <input
                     type="text"
@@ -598,9 +570,9 @@ export default function ProjectCreationModal({
                     }}
                     className="w-full px-3 py-2 rounded text-sm"
                     style={{
-                      backgroundColor: 'var(--c-card-bg)',
-                      border: phaseErrors.phaseName ? '2px solid #DC2626' : '1px solid var(--c-border)',
-                      color: 'var(--c-text-primary)'
+                      backgroundColor: colors.bg,
+                      border: phaseErrors.phaseName ? '2px solid #DC2626' : colors.border,
+                      color: colors.text
                     }}
                     placeholder="Phase name (e.g., Foundation, Framing)"
                   />
@@ -617,9 +589,9 @@ export default function ProjectCreationModal({
                       }}
                       className="w-full px-3 py-2 rounded text-sm"
                       style={{
-                        backgroundColor: 'var(--c-card-bg)',
-                        border: phaseErrors.phaseStartDate ? '2px solid #DC2626' : '1px solid var(--c-border)',
-                        color: 'var(--c-text-primary)'
+                        backgroundColor: colors.bg,
+                        border: phaseErrors.phaseStartDate ? '2px solid #DC2626' : colors.border,
+                        color: colors.text
                       }}
                     />
                     {phaseErrors.phaseStartDate && <p className="text-xs mt-1" style={{ color: '#DC2626' }}>{phaseErrors.phaseStartDate}</p>}
@@ -634,9 +606,9 @@ export default function ProjectCreationModal({
                       }}
                       className="w-full px-3 py-2 rounded text-sm"
                       style={{
-                        backgroundColor: 'var(--c-card-bg)',
-                        border: phaseErrors.phaseEndDate ? '2px solid #DC2626' : '1px solid var(--c-border)',
-                        color: 'var(--c-text-primary)'
+                        backgroundColor: colors.bg,
+                        border: phaseErrors.phaseEndDate ? '2px solid #DC2626' : colors.border,
+                        color: colors.text
                       }}
                     />
                     {phaseErrors.phaseEndDate && <p className="text-xs mt-1" style={{ color: '#DC2626' }}>{phaseErrors.phaseEndDate}</p>}
@@ -644,7 +616,7 @@ export default function ProjectCreationModal({
                 </div>
                 <button
                   onClick={addPhase}
-                  className="w-full py-2 rounded-lg text-sm font-semibold transition-colors"
+                  className="w-full py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
                   style={{ backgroundColor: '#4ECDC4', color: '#FFFFFF' }}
                 >
                   + Add Phase
@@ -659,7 +631,7 @@ export default function ProjectCreationModal({
           <div className="space-y-6">
             {/* Equipment */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                 Required Equipment
               </label>
 
@@ -670,12 +642,12 @@ export default function ProjectCreationModal({
                     <div
                       key={index}
                       className="px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2"
-                      style={{ backgroundColor: '#E6F9EA', color: 'var(--c-text-primary)', border: '1px solid #6BCB77' }}
+                      style={{ backgroundColor: darkMode ? 'rgba(107, 203, 119, 0.2)' : '#E6F9EA', color: colors.text, border: '1px solid #6BCB77' }}
                     >
                       <span>{item}</span>
                       <button
                         onClick={() => removeEquipment(item)}
-                        className="font-bold hover:opacity-70"
+                        className="font-bold hover:opacity-70 cursor-pointer"
                         style={{ color: '#DC2626' }}
                       >
                         ×
@@ -691,8 +663,8 @@ export default function ProjectCreationModal({
                   <button
                     key={item}
                     onClick={() => addEquipment(item)}
-                    className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors"
-                    style={{ backgroundColor: 'var(--c-sub-bg)', color: 'var(--c-text-primary)', border: '1px solid var(--c-border)' }}
+                    className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer"
+                    style={{ backgroundColor: colors.bgAlt, color: colors.text, border: colors.border }}
                   >
                     + {item}
                   </button>
@@ -706,7 +678,7 @@ export default function ProjectCreationModal({
                   value={customEquipment}
                   onChange={(e) => setCustomEquipment(e.target.value)}
                   className="flex-1 px-4 py-2 rounded-lg text-sm"
-                  style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                   placeholder="Add custom equipment..."
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
@@ -720,7 +692,7 @@ export default function ProjectCreationModal({
                     addEquipment(customEquipment)
                     setCustomEquipment('')
                   }}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold"
+                  className="px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer"
                   style={{ backgroundColor: '#4ECDC4', color: '#FFFFFF' }}
                 >
                   Add
@@ -730,7 +702,7 @@ export default function ProjectCreationModal({
 
             {/* Certifications Required */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                 Required Certifications
               </label>
 
@@ -741,12 +713,12 @@ export default function ProjectCreationModal({
                     <div
                       key={index}
                       className="px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2"
-                      style={{ backgroundColor: '#FEF3C7', color: 'var(--c-text-primary)', border: '1px solid #F59E0B' }}
+                      style={{ backgroundColor: darkMode ? 'rgba(245, 158, 11, 0.2)' : '#FEF3C7', color: colors.text, border: '1px solid #F59E0B' }}
                     >
                       <span>{cert}</span>
                       <button
                         onClick={() => removeCertification(cert)}
-                        className="font-bold hover:opacity-70"
+                        className="font-bold hover:opacity-70 cursor-pointer"
                         style={{ color: '#DC2626' }}
                       >
                         ×
@@ -762,8 +734,8 @@ export default function ProjectCreationModal({
                   <button
                     key={cert}
                     onClick={() => addCertification(cert)}
-                    className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors"
-                    style={{ backgroundColor: 'var(--c-sub-bg)', color: 'var(--c-text-primary)', border: '1px solid var(--c-border)' }}
+                    className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer"
+                    style={{ backgroundColor: colors.bgAlt, color: colors.text, border: colors.border }}
                   >
                     + {cert}
                   </button>
@@ -777,7 +749,7 @@ export default function ProjectCreationModal({
                   value={customCertification}
                   onChange={(e) => setCustomCertification(e.target.value)}
                   className="flex-1 px-4 py-2 rounded-lg text-sm"
-                  style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                   placeholder="Add custom certification..."
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
@@ -791,7 +763,7 @@ export default function ProjectCreationModal({
                     addCertification(customCertification)
                     setCustomCertification('')
                   }}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold"
+                  className="px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer"
                   style={{ backgroundColor: '#4ECDC4', color: '#FFFFFF' }}
                 >
                   Add
@@ -801,11 +773,11 @@ export default function ProjectCreationModal({
 
             {/* Team Members Placeholder */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                 Team Assignment
               </label>
-              <div className="p-4 rounded-lg text-center" style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}>
-                <p className="text-sm" style={{ color: 'var(--c-text-secondary)' }}>
+              <div className="p-4 rounded-lg text-center" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+                <p className="text-sm" style={{ color: colors.textMuted }}>
                   Team members will be assigned after project creation
                 </p>
               </div>
@@ -818,7 +790,7 @@ export default function ProjectCreationModal({
           <div className="space-y-6">
             {/* Status */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                 Project Status
               </label>
               <div className="grid grid-cols-5 gap-2">
@@ -827,11 +799,11 @@ export default function ProjectCreationModal({
                     key={status.value}
                     type="button"
                     onClick={() => handleInputChange('status', status.value)}
-                    className="p-3 rounded-lg text-center transition-all"
+                    className="p-3 rounded-lg text-center transition-all cursor-pointer"
                     style={{
-                      backgroundColor: formData.status === status.value ? status.color : 'var(--c-sub-bg)',
-                      border: formData.status === status.value ? `2px solid ${status.color}` : '1px solid var(--c-border)',
-                      color: formData.status === status.value ? '#FFFFFF' : 'var(--c-text-primary)'
+                      backgroundColor: formData.status === status.value ? status.color : colors.bgAlt,
+                      border: formData.status === status.value ? `2px solid ${status.color}` : colors.border,
+                      color: formData.status === status.value ? '#FFFFFF' : colors.text
                     }}
                   >
                     <div className="text-xs font-semibold">{status.label}</div>
@@ -842,17 +814,17 @@ export default function ProjectCreationModal({
 
             {/* Document Categories */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                 Document Categories
               </label>
-              <div className="p-4 rounded-lg space-y-2" style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}>
+              <div className="p-4 rounded-lg space-y-2" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
                 {formData.documentCategories?.map((category, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between p-2 rounded"
-                    style={{ backgroundColor: 'var(--c-card-bg)' }}
+                    style={{ backgroundColor: colors.bg }}
                   >
-                    <span className="text-sm" style={{ color: 'var(--c-text-primary)' }}>{category}</span>
+                    <span className="text-sm" style={{ color: colors.text }}>{category}</span>
                     <span className="text-xs" style={{ color: '#6BCB77' }}>✓</span>
                   </div>
                 ))}
@@ -861,7 +833,7 @@ export default function ProjectCreationModal({
 
             {/* Notification Settings */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                 Notification Settings
               </label>
               <div className="space-y-3">
@@ -874,18 +846,18 @@ export default function ProjectCreationModal({
                   <div
                     key={setting.key}
                     className="p-3 rounded-lg flex items-start gap-3"
-                    style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
+                    style={{ backgroundColor: colors.bgAlt, border: colors.border }}
                   >
                     <input
                       type="checkbox"
                       checked={formData.notificationSettings?.[setting.key as keyof typeof formData.notificationSettings]}
                       onChange={(e) => handleNestedInputChange('notificationSettings', setting.key, e.target.checked)}
-                      className="mt-1"
+                      className="mt-1 cursor-pointer"
                       style={{ accentColor: '#FF6B6B' }}
                     />
                     <div className="flex-1">
-                      <p className="text-sm font-semibold" style={{ color: 'var(--c-text-primary)' }}>{setting.label}</p>
-                      <p className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>{setting.desc}</p>
+                      <p className="text-sm font-semibold" style={{ color: colors.text }}>{setting.label}</p>
+                      <p className="text-xs" style={{ color: colors.textMuted }}>{setting.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -894,25 +866,25 @@ export default function ProjectCreationModal({
 
             {/* Client Visibility */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                 Client Portal Access
               </label>
               <div
                 className="p-3 rounded-lg flex items-start gap-3"
-                style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
+                style={{ backgroundColor: colors.bgAlt, border: colors.border }}
               >
                 <input
                   type="checkbox"
                   checked={formData.clientVisibility}
                   onChange={(e) => handleInputChange('clientVisibility', e.target.checked)}
-                  className="mt-1"
+                  className="mt-1 cursor-pointer"
                   style={{ accentColor: '#FF6B6B' }}
                 />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold" style={{ color: 'var(--c-text-primary)' }}>
+                  <p className="text-sm font-semibold" style={{ color: colors.text }}>
                     Allow client to view project dashboard
                   </p>
-                  <p className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>
+                  <p className="text-xs" style={{ color: colors.textMuted }}>
                     Clients can track progress, view documents, and receive updates
                   </p>
                 </div>
@@ -928,17 +900,17 @@ export default function ProjectCreationModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" style={{ backgroundColor: 'var(--c-card-bg)' }}>
+      <div className="rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" style={{ backgroundColor: colors.bg }}>
         {/* Header */}
-        <div className="p-6" style={{ borderBottom: '1px solid var(--c-border)' }}>
+        <div className="p-6" style={{ borderBottom: colors.border }}>
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
+            <h2 className="text-2xl font-bold" style={{ color: colors.text }}>
               {mode === 'edit' ? 'Edit Project' : 'Create New Project'}
             </h2>
             <button
               onClick={handleClose}
-              className="text-2xl font-bold hover:opacity-70 transition-opacity"
-              style={{ color: 'var(--c-text-secondary)' }}
+              className="text-2xl font-bold hover:opacity-70 transition-opacity cursor-pointer"
+              style={{ color: colors.textMuted }}
             >
               ×
             </button>
@@ -950,11 +922,11 @@ export default function ProjectCreationModal({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className="px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2"
+                className="px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer"
                 style={{
-                  backgroundColor: activeTab === tab.id ? '#FF6B6B' : 'var(--c-sub-bg)',
-                  color: activeTab === tab.id ? '#FFFFFF' : 'var(--c-text-primary)',
-                  border: activeTab === tab.id ? 'none' : '1px solid var(--c-border)'
+                  backgroundColor: activeTab === tab.id ? '#FF6B6B' : colors.bgAlt,
+                  color: activeTab === tab.id ? '#FFFFFF' : colors.text,
+                  border: activeTab === tab.id ? 'none' : colors.border
                 }}
               >
                 <span>{tab.icon}</span>
@@ -970,12 +942,12 @@ export default function ProjectCreationModal({
         </div>
 
         {/* Footer */}
-        <div className="p-6 flex items-center justify-between" style={{ borderTop: '1px solid var(--c-border)' }}>
+        <div className="p-6 flex items-center justify-between" style={{ borderTop: colors.border }}>
           <button
             onClick={handleBack}
             disabled={activeTab === 0}
-            className="px-6 py-2.5 rounded-lg text-sm font-semibold transition-opacity disabled:opacity-30"
-            style={{ backgroundColor: 'var(--c-sub-bg)', color: 'var(--c-text-primary)', border: '1px solid var(--c-border)' }}
+            className="px-6 py-2.5 rounded-lg text-sm font-semibold transition-opacity disabled:opacity-30 cursor-pointer"
+            style={{ backgroundColor: colors.bgAlt, color: colors.text, border: colors.border }}
           >
             ← Back
           </button>
@@ -983,8 +955,8 @@ export default function ProjectCreationModal({
           <div className="flex gap-3">
             <button
               onClick={handleClose}
-              className="px-6 py-2.5 rounded-lg text-sm font-semibold"
-              style={{ backgroundColor: 'var(--c-sub-bg)', color: 'var(--c-text-primary)', border: '1px solid var(--c-border)' }}
+              className="px-6 py-2.5 rounded-lg text-sm font-semibold cursor-pointer"
+              style={{ backgroundColor: colors.bgAlt, color: colors.text, border: colors.border }}
             >
               Cancel
             </button>
@@ -992,7 +964,7 @@ export default function ProjectCreationModal({
             {activeTab < tabs.length - 1 ? (
               <button
                 onClick={handleNext}
-                className="px-6 py-2.5 rounded-lg text-sm font-semibold"
+                className="px-6 py-2.5 rounded-lg text-sm font-semibold cursor-pointer"
                 style={{ backgroundColor: '#FF6B6B', color: '#FFFFFF' }}
               >
                 Next →
@@ -1000,7 +972,7 @@ export default function ProjectCreationModal({
             ) : (
               <button
                 onClick={handleSave}
-                className="px-6 py-2.5 rounded-lg text-sm font-semibold"
+                className="px-6 py-2.5 rounded-lg text-sm font-semibold cursor-pointer"
                 style={{ backgroundColor: '#6BCB77', color: '#FFFFFF' }}
               >
                 {mode === 'edit' ? 'Update Project' : 'Create Project'}

@@ -6,6 +6,7 @@ import { renderToBuffer } from '@react-pdf/renderer'
 import { createClient } from '@/lib/supabase/server'
 import { InvoicePDF } from '@/components/pdf/InvoicePDF'
 import { Invoice } from '@/types/financial'
+import { sendInvoiceEmail, InvoiceEmailData } from '@/lib/email/service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -109,55 +110,43 @@ export async function POST(request: NextRequest) {
       })
     )
 
-    // Convert buffer to base64 for email attachment
-    const pdfBase64 = pdfBuffer.toString('base64')
+    // Prepare email data
+    const clientName = invoice.contact?.company_name ||
+      `${invoice.contact?.first_name || ''} ${invoice.contact?.last_name || ''}`.trim() ||
+      'Valued Client'
 
-    // TODO: Integrate with your email service (SendGrid, Resend, AWS SES, etc.)
-    // For now, we'll simulate sending and log the details
-    console.log('📧 Email Invoice:', {
-      to,
-      subject,
-      message,
-      attachmentSize: pdfBuffer.length,
-      invoiceNumber: invoice.invoice_number
-    })
+    const emailData: InvoiceEmailData = {
+      invoiceNumber: invoice.invoice_number,
+      clientName,
+      clientEmail: to,
+      totalAmount: new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+      }).format(invoice.balance_due || invoice.total_amount || 0),
+      dueDate: invoice.due_date
+        ? new Date(invoice.due_date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })
+        : 'Upon receipt',
+      companyName: companyInfo.name,
+      companyEmail: companyInfo.email || process.env.EMAIL_FROM_ADDRESS || '',
+      companyPhone: companyInfo.phone || '',
+    }
 
-    // Example integration with Resend (uncomment when ready):
-    /*
-    import { Resend } from 'resend'
-    const resend = new Resend(process.env.RESEND_API_KEY)
+    // Send email with PDF attachment
+    const emailResult = await sendInvoiceEmail(emailData, pdfBuffer)
 
-    await resend.emails.send({
-      from: companyInfo.email || 'invoices@yourcompany.com',
-      to: [to],
-      subject: subject,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Invoice ${invoice.invoice_number}</h2>
-          ${message ? `<p>${message}</p>` : ''}
-          <p>Please find your invoice attached as a PDF.</p>
-          <div style="margin: 20px 0; padding: 15px; background: #f3f4f6; border-radius: 8px;">
-            <strong>Invoice Details:</strong><br/>
-            Invoice #: ${invoice.invoice_number}<br/>
-            Due Date: ${new Date(invoice.due_date).toLocaleDateString()}<br/>
-            Amount Due: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(invoice.balance_due)}
-          </div>
-          <p>Thank you for your business!</p>
-          <p style="color: #6b7280; font-size: 14px;">
-            ${companyInfo.name}<br/>
-            ${companyInfo.phone || ''}<br/>
-            ${companyInfo.email || ''}
-          </p>
-        </div>
-      `,
-      attachments: [
+    if (!emailResult.success) {
+      return NextResponse.json(
         {
-          filename: `invoice-${invoice.invoice_number}.pdf`,
-          content: pdfBase64,
+          error: 'Failed to send invoice email',
+          details: emailResult.error,
         },
-      ],
-    })
-    */
+        { status: 500 }
+      )
+    }
 
     // Update invoice email tracking
     await supabase

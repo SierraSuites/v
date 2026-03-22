@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -16,7 +16,7 @@ interface Task {
   id: string
   title: string
   description: string | null
-  status: 'todo' | 'in_progress' | 'done' | 'blocked'
+  status: 'not-started' | 'in-progress' | 'completed' | 'blocked' | 'review'
   priority: 'low' | 'medium' | 'high' | 'critical'
   due_date: string | null
   assignee_id: string | null
@@ -36,10 +36,11 @@ const PRIORITY_COLORS: Record<Task['priority'], string> = {
 }
 
 const STATUS_LABELS: Record<Task['status'], string> = {
-  todo: 'To Do',
-  in_progress: 'In Progress',
-  done: 'Done',
-  blocked: 'Blocked'
+  'not-started': 'To Do',
+  'in-progress': 'In Progress',
+  'completed': 'Done',
+  'blocked': 'Blocked',
+  'review': 'In Review'
 }
 
 function formatDate(dateStr: string) {
@@ -47,7 +48,7 @@ function formatDate(dateStr: string) {
 }
 
 function isOverdue(task: Task) {
-  return task.due_date && task.status !== 'done' && new Date(task.due_date) < new Date()
+  return task.due_date && task.status !== 'completed' && new Date(task.due_date) < new Date()
 }
 
 export default function ProjectTasksTab({ project }: Props) {
@@ -56,6 +57,10 @@ export default function ProjectTasksTab({ project }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [filterStatus, setFilterStatus] = useState<string>('active')
+  const [confirmingTaskId, setConfirmingTaskId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [undoInfo, setUndoInfo] = useState<{ task: Task; prevStatus: Task['status'] } | null>(null)
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -77,12 +82,27 @@ export default function ProjectTasksTab({ project }: Props) {
         .eq('project_id', project.id)
         .order('created_at', { ascending: false })
 
-      if (!error) setTasks((data as Task[]) || [])
+      if (!error) {
+        const fetched = (data as Task[]) || []
+        setTasks(fetched)
+        await syncProgress(fetched)
+      }
     } catch {
       // tasks table may use different schema
     } finally {
       setLoading(false)
     }
+  }
+
+  async function syncProgress(currentTasks: Task[]) {
+    if (currentTasks.length === 0) return
+    const completed = currentTasks.filter(t => t.status === 'completed').length
+    const progress = Math.round((completed / currentTasks.length) * 100)
+    const supabase = createClient()
+    await supabase
+      .from('projects')
+      .update({ progress, updated_at: new Date().toISOString() })
+      .eq('id', project.id)
   }
 
   async function handleAddTask(e: React.FormEvent) {
@@ -101,24 +121,27 @@ export default function ProjectTasksTab({ project }: Props) {
           description: form.description || null,
           priority: form.priority,
           due_date: form.due_date || null,
-          status: 'todo',
+          status: 'not-started',
           created_by: user?.id
         })
         .select()
         .single()
 
       if (!error && data) {
-        setTasks(prev => [data as Task, ...prev])
+        const updated = [data as Task, ...tasks]
+        setTasks(updated)
         setForm({ title: '', description: '', priority: 'medium', due_date: '' })
         setShowForm(false)
+        await syncProgress(updated)
       }
     } finally {
       setSubmitting(false)
     }
   }
 
-  async function toggleTaskDone(task: Task) {
-    const newStatus: Task['status'] = task.status === 'done' ? 'todo' : 'done'
+  async function toggleTaskDone(task: Task, showUndo = false) {
+    const prevStatus = task.status
+    const newStatus: Task['status'] = prevStatus === 'completed' ? 'not-started' : 'completed'
     const supabase = createClient()
     const { data } = await supabase
       .from('tasks')
@@ -127,18 +150,66 @@ export default function ProjectTasksTab({ project }: Props) {
       .select()
       .single()
 
-    if (data) setTasks(prev => prev.map(t => t.id === task.id ? data as Task : t))
+    if (data) {
+      const updated = tasks.map(t => t.id === task.id ? data as Task : t)
+      setTasks(updated)
+      await syncProgress(updated)
+
+      if (showUndo && newStatus === 'completed') {
+        if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
+        setUndoInfo({ task: data as Task, prevStatus })
+        undoTimerRef.current = setTimeout(() => setUndoInfo(null), 4000)
+      }
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+    setConfirmingTaskId(null)
+  }
+
+  async function bulkMarkComplete() {
+    const ids = Array.from(selectedIds).filter(id => tasks.find(t => t.id === id)?.status !== 'completed')
+    if (!ids.length) return
+    const updated = tasks.map(t => ids.includes(t.id) ? { ...t, status: 'completed' as Task['status'] } : t)
+    setTasks(updated)
+    setSelectedIds(new Set())
+    const supabase = createClient()
+    await supabase.from('tasks').update({ status: 'completed', updated_at: new Date().toISOString() }).in('id', ids)
+    await syncProgress(updated)
+  }
+
+  async function handleUndo() {
+    if (!undoInfo) return
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
+    setUndoInfo(null)
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('tasks')
+      .update({ status: undoInfo.prevStatus, updated_at: new Date().toISOString() })
+      .eq('id', undoInfo.task.id)
+      .select()
+      .single()
+    if (data) {
+      const updated = tasks.map(t => t.id === undoInfo.task.id ? data as Task : t)
+      setTasks(updated)
+      await syncProgress(updated)
+    }
   }
 
   const filtered = tasks.filter(t => {
-    if (filterStatus === 'active') return t.status !== 'done'
-    if (filterStatus === 'done') return t.status === 'done'
+    if (filterStatus === 'active') return t.status !== 'completed'
+    if (filterStatus === 'done') return t.status === 'completed'
     return true
   })
 
-  const todoCount = tasks.filter(t => t.status === 'todo').length
-  const inProgressCount = tasks.filter(t => t.status === 'in_progress').length
-  const doneCount = tasks.filter(t => t.status === 'done').length
+  const todoCount = tasks.filter(t => t.status === 'not-started').length
+  const inProgressCount = tasks.filter(t => t.status === 'in-progress' || t.status === 'review').length
+  const doneCount = tasks.filter(t => t.status === 'completed').length
   const overdueCount = tasks.filter(isOverdue).length
 
   return (
@@ -322,22 +393,44 @@ export default function ProjectTasksTab({ project }: Props) {
         </div>
       ) : (
         <div className="bg-white border rounded-lg overflow-hidden">
+          {selectedIds.size > 0 && (
+            <div className="flex items-center justify-between px-4 py-2.5 bg-blue-50 border-b">
+              <span className="text-sm text-blue-700 font-medium">{selectedIds.size} selected</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={bulkMarkComplete}
+                  className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700"
+                >
+                  Mark Complete
+                </button>
+                <button
+                  onClick={() => setSelectedIds(new Set())}
+                  className="px-3 py-1.5 border text-xs font-medium text-gray-600 rounded-lg hover:bg-gray-50"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
           <div className="divide-y">
             {filtered.map(task => {
               const overdue = isOverdue(task)
+              const isSelected = selectedIds.has(task.id)
               return (
-                <div key={task.id} className={`flex items-start gap-3 p-4 hover:bg-gray-50 ${overdue ? 'bg-red-50/30' : ''}`}>
+                <div key={task.id} className={`flex items-center gap-3 p-4 hover:bg-gray-50 ${isSelected ? 'bg-blue-50/40' : overdue ? 'bg-red-50/30' : ''}`}>
                   <button
-                    onClick={() => toggleTaskDone(task)}
-                    className="flex-shrink-0 mt-0.5"
+                    onClick={() => toggleSelect(task.id)}
+                    className="shrink-0"
                   >
-                    {task.status === 'done'
-                      ? <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                      : <div className="h-5 w-5 rounded border-2 border-gray-300 hover:border-blue-500" />
+                    {isSelected
+                      ? <CheckCircleIcon className="h-5 w-5 text-blue-500" />
+                      : task.status === 'completed'
+                        ? <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                        : <div className="h-5 w-5 rounded border-2 border-gray-300 hover:border-blue-500" />
                     }
                   </button>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                    <p className={`text-sm font-medium ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
                       {task.title}
                     </p>
                     {task.description && (
@@ -361,6 +454,22 @@ export default function ProjectTasksTab({ project }: Props) {
                 </div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Undo toast */}
+      {undoInfo && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-gray-900 text-white px-4 py-3 rounded-xl shadow-lg text-sm">
+          <span>Task marked as complete</span>
+          <button
+            onClick={handleUndo}
+            className="font-semibold text-blue-400 hover:text-blue-300 underline underline-offset-2"
+          >
+            Undo
+          </button>
+          <div className="w-24 h-1 bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-400 rounded-full animate-[shrink_4s_linear_forwards]" />
           </div>
         </div>
       )}

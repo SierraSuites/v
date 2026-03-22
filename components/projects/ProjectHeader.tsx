@@ -5,15 +5,23 @@
 // Displays project title, status, progress, and key metrics
 // ============================================================================
 
+import { useState } from 'react'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { Calendar, DollarSign, TrendingUp, MapPin, AlertCircle } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
+import { useRouter } from 'next/navigation'
+import EditProjectModal from './EditProjectModal'
+import TaskCreationModal from '@/components/dashboard/TaskCreationModal'
+import { createTask } from '@/lib/supabase/tasks'
 
 interface Props {
   project: ProjectDetails
 }
 
 export default function ProjectHeader({ project }: Props) {
+  const router = useRouter()
+  const [showEdit, setShowEdit] = useState(false)
+  const [showAddTask, setShowAddTask] = useState(false)
   // Status colors
   const statusColors = {
     planning: 'bg-gray-100 text-gray-800',
@@ -67,10 +75,16 @@ export default function ProjectHeader({ project }: Props) {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium">
+            <button
+              onClick={() => setShowEdit(true)}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium"
+            >
               Edit Project
             </button>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+            <button
+              onClick={() => setShowAddTask(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+            >
               + Add Task
             </button>
           </div>
@@ -192,6 +206,66 @@ export default function ProjectHeader({ project }: Props) {
           </div>
         )}
       </div>
+
+      {showEdit && (
+        <EditProjectModal project={project} onClose={() => setShowEdit(false)} />
+      )}
+
+      {showAddTask && (
+        <TaskCreationModal
+          isOpen={showAddTask}
+          onClose={() => setShowAddTask(false)}
+          onSave={async (taskData) => {
+            const { error } = await createTask({
+              title: taskData.title!,
+              description: taskData.description || null,
+              project_id: project.id,
+              project_name: project.name,
+              trade: taskData.trade || 'general',
+              phase: taskData.phase || 'pre-construction',
+              priority: taskData.priority || 'medium',
+              status: taskData.status || 'not-started',
+              assignee_id: taskData.assigneeId || null,
+              assignee_name: taskData.assignee || null,
+              assignee_avatar: taskData.assigneeAvatar || null,
+              start_date: taskData.startDate || null,
+              due_date: taskData.dueDate || new Date().toISOString().split('T')[0],
+              duration: taskData.duration || 1,
+              progress: taskData.progress || 0,
+              estimated_hours: taskData.estimatedHours || 8,
+              actual_hours: taskData.actualHours || 0,
+              dependencies: taskData.dependencies || [],
+              attachments: taskData.attachments || 0,
+              comments: taskData.comments || 0,
+              location: taskData.location || null,
+              weather_dependent: taskData.weatherDependent || false,
+              weather_buffer: taskData.weatherBuffer || 0,
+              inspection_required: taskData.inspectionRequired || false,
+              inspection_type: taskData.inspectionType || null,
+              crew_size: taskData.crewSize || 1,
+              equipment: taskData.equipment || [],
+              materials: taskData.materials || [],
+              certifications: taskData.certifications || [],
+              safety_protocols: taskData.safetyProtocols || [],
+              quality_standards: taskData.qualityStandards || [],
+              documentation: taskData.documentation || [],
+              notify_inspector: taskData.notifyInspector || false,
+              client_visibility: taskData.clientVisibility || false,
+            })
+            if (!error) router.refresh()
+          }}
+          editingTask={null}
+          projects={[{ id: project.id, name: project.name }]}
+          teamMembers={project.teamMembers.map(m => ({
+            id: m.id,
+            name: m.name,
+            avatar: m.avatar || '',
+            role: m.role,
+            trades: []
+          }))}
+          existingTasks={[]}
+        />
+      )}
     </div>
   )
 }
