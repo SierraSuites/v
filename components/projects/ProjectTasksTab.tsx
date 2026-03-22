@@ -3,15 +3,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { createClient } from '@/lib/supabase/client'
-import { updateTask } from '@/lib/supabase/tasks'
+import { updateTask, createTask } from '@/lib/supabase/tasks'
 import {
   ClockIcon,
   XMarkIcon,
   PencilIcon,
+  PlusIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline'
 import { CheckIcon } from '@heroicons/react/24/outline'
-import { CheckCircleIcon } from '@heroicons/react/24/solid'
 import TaskCreationModal from '@/components/dashboard/TaskCreationModal'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 interface Task {
   id: string
@@ -78,12 +80,16 @@ function isOverdue(task: Task) {
 export default function ProjectTasksTab({ project }: Props) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
-  const [filterStatus, setFilterStatus] = useState<string>('active')
+  const [filterStatus, setFilterStatus] = useState<string>('all')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [detailTask, setDetailTask] = useState<Task | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null)
   const [undoInfo, setUndoInfo] = useState<{ task: Task; prevStatus: Task['status'] } | null>(null)
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { colors, darkMode } = useThemeColors()
 
   useEffect(() => {
     fetchTasks()
@@ -185,6 +191,32 @@ export default function ProjectTasksTab({ project }: Props) {
     await syncProgress(updated)
   }
 
+  async function deleteTask(id: string) {
+    const supabase = createClient()
+    await supabase.from('tasks').delete().eq('id', id)
+    const updated = tasks.filter(t => t.id !== id)
+    setTasks(updated)
+    setConfirmDeleteId(null)
+    setDetailTask(null)
+    await syncProgress(updated)
+  }
+
+  async function updateTaskStatus(taskId: string, status: Task['status']) {
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('tasks')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', taskId)
+      .select()
+      .single()
+    if (data) {
+      const updated = tasks.map(t => t.id === taskId ? data as Task : t)
+      setTasks(updated)
+      await syncProgress(updated)
+    }
+    setStatusDropdownId(null)
+  }
+
   async function handleUndo() {
     if (!undoInfo) return
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
@@ -200,6 +232,50 @@ export default function ProjectTasksTab({ project }: Props) {
       const updated = tasks.map(t => t.id === undoInfo.task.id ? data as Task : t)
       setTasks(updated)
       await syncProgress(updated)
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async function handleAddTask(taskData: any) {
+    const { error } = await createTask({
+      title: taskData.title!,
+      description: taskData.description || null,
+      project_id: project.id,
+      project_name: project.name,
+      trade: taskData.trade || 'general',
+      phase: taskData.phase || 'pre-construction',
+      priority: taskData.priority || 'medium',
+      status: taskData.status || 'not-started',
+      assignee_id: taskData.assigneeId || null,
+      assignee_name: taskData.assignee || null,
+      assignee_avatar: taskData.assigneeAvatar || null,
+      start_date: taskData.startDate || null,
+      due_date: taskData.dueDate || new Date().toISOString().split('T')[0],
+      duration: taskData.duration || 1,
+      progress: taskData.progress || 0,
+      estimated_hours: taskData.estimatedHours || 8,
+      actual_hours: taskData.actualHours || 0,
+      dependencies: taskData.dependencies || [],
+      attachments: taskData.attachments || 0,
+      comments: taskData.comments || 0,
+      location: taskData.location || null,
+      weather_dependent: taskData.weatherDependent || false,
+      weather_buffer: taskData.weatherBuffer || 0,
+      inspection_required: taskData.inspectionRequired || false,
+      inspection_type: taskData.inspectionType || null,
+      crew_size: taskData.crewSize || 1,
+      equipment: taskData.equipment || [],
+      materials: taskData.materials || [],
+      certifications: taskData.certifications || [],
+      safety_protocols: taskData.safetyProtocols || [],
+      quality_standards: taskData.qualityStandards || [],
+      documentation: taskData.documentation || [],
+      notify_inspector: taskData.notifyInspector || false,
+      client_visibility: taskData.clientVisibility || false,
+    })
+    if (!error) {
+      setShowAddTaskModal(false)
+      await fetchTasks()
     }
   }
 
@@ -294,7 +370,22 @@ export default function ProjectTasksTab({ project }: Props) {
   const overdueCount = tasks.filter(isOverdue).length
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onClick={() => statusDropdownId && setStatusDropdownId(null)}>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">Tasks</h2>
+          <p className="text-sm text-gray-500 mt-1">Track and manage project tasks</p>
+        </div>
+        <button
+          onClick={() => setShowAddTaskModal(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+        >
+          <PlusIcon className="h-4 w-4" />
+          Add Task
+        </button>
+      </div>
+
       {/* Summary */}
       <div className="grid grid-cols-4 gap-3">
         <div className="bg-white rounded-lg border p-3 text-center">
@@ -318,17 +409,17 @@ export default function ProjectTasksTab({ project }: Props) {
       {/* Filter */}
       <div className="flex gap-2">
         {[
+          { key: 'all', label: 'All' },
           { key: 'active', label: 'Active' },
           { key: 'done', label: 'Completed' },
-          { key: 'all', label: 'All' }
         ].map(f => (
           <button
             key={f.key}
             onClick={() => setFilterStatus(f.key)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
               filterStatus === f.key
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             {f.label}
@@ -341,7 +432,7 @@ export default function ProjectTasksTab({ project }: Props) {
         <div className="space-y-2">
           {[1, 2, 3, 4].map(i => (
             <div key={i} className="bg-white border rounded-lg p-4 animate-pulse flex gap-3">
-              <div className="w-5 h-5 bg-gray-200 rounded" />
+              <div className="w-6 h-6 bg-gray-200 rounded" />
               <div className="flex-1">
                 <div className="h-4 bg-gray-200 rounded w-1/2 mb-1" />
                 <div className="h-3 bg-gray-200 rounded w-1/4" />
@@ -360,87 +451,103 @@ export default function ProjectTasksTab({ project }: Props) {
           </p>
         </div>
       ) : (
-        <div className="bg-white border rounded-lg overflow-hidden">
-          {selectedIds.size > 0 && (() => {
-            const selTasks = filtered.filter(t => selectedIds.has(t.id))
-            const hasIncomplete = selTasks.some(t => t.status !== 'completed')
-            const hasComplete = selTasks.some(t => t.status === 'completed')
+        <div className="space-y-2">
+          {filtered.map(task => {
+            const overdue = isOverdue(task)
+            const isSelected = selectedIds.has(task.id)
             return (
-              <div className="flex items-center justify-between px-4 py-2.5 bg-blue-50 border-b">
-                <span className="text-sm text-blue-700 font-medium">{selectedIds.size} selected</span>
-                <div className="flex gap-2">
-                  {hasIncomplete && (
-                    <button
-                      onClick={bulkMarkComplete}
-                      className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700"
-                    >
-                      Mark Complete
-                    </button>
-                  )}
-                  {hasComplete && (
-                    <button
-                      onClick={bulkMarkActive}
-                      className="px-3 py-1.5 bg-gray-600 text-white text-xs font-medium rounded-lg hover:bg-gray-700"
-                    >
-                      Mark Active
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setSelectedIds(new Set())}
-                    className="px-3 py-1.5 border text-xs font-medium text-gray-600 rounded-lg hover:bg-gray-50"
-                  >
-                    Clear
-                  </button>
-                </div>
-              </div>
-            )
-          })()}
-          <div className="divide-y">
-            {filtered.map(task => {
-              const overdue = isOverdue(task)
-              const isSelected = selectedIds.has(task.id)
-              return (
-                <div key={task.id} className={`flex items-center gap-3 p-4 hover:bg-gray-50 ${isSelected ? 'bg-blue-50/40' : overdue ? 'bg-red-50/30' : ''}`}>
-                  <button
-                    onClick={() => toggleSelect(task.id)}
-                    className="shrink-0"
-                  >
-                    {isSelected
-                      ? <CheckCircleIcon className="h-5 w-5 text-blue-500" />
-                      : task.status === 'completed'
-                        ? <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                        : <div className="h-5 w-5 rounded border-2 border-gray-300 hover:border-blue-500" />
-                    }
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <button
-                      onClick={() => !selectedIds.size && setDetailTask(task)}
-                      className={`text-sm font-medium text-left ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-900 hover:text-blue-600'}`}
-                    >
+              <div
+                key={task.id}
+                onClick={() => !selectedIds.size && setDetailTask(task)}
+                className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+                style={isSelected ? { backgroundColor: darkMode ? 'rgba(59,130,246,0.1)' : 'rgba(219,234,254,0.4)', borderColor: '#93c5fd' } : {}}
+              >
+                {/* Checkbox */}
+                <button
+                  onClick={e => { e.stopPropagation(); toggleSelect(task.id) }}
+                  className="shrink-0"
+                >
+                  {isSelected
+                    ? <div className="h-6 w-6 rounded border-2 border-blue-500 bg-blue-500 flex items-center justify-center">
+                        <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                    : task.status === 'completed'
+                      ? <div className="h-6 w-6 rounded border-2 border-green-500 bg-green-500 flex items-center justify-center">
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </div>
+                      : <div className="h-6 w-6 rounded border-2 border-gray-300 hover:border-blue-500" />
+                  }
+                </button>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-4 mb-1">
+                    <h4 className={`font-medium ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
                       {task.title}
-                    </button>
-                    {task.description && (
-                      <p className="text-xs text-gray-500 mt-0.5">{task.description}</p>
-                    )}
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${PRIORITY_COLORS[task.priority]}`}>
-                        {task.priority}
-                      </span>
-                      {task.due_date && (
-                        <span className={`text-xs flex items-center gap-0.5 ${overdue ? 'text-red-600' : 'text-gray-400'}`}>
-                          <ClockIcon className="h-3 w-3" />
-                          {overdue ? 'Overdue · ' : ''}{formatDate(task.due_date)}
-                        </span>
+                    </h4>
+                    <div className="relative shrink-0">
+                      <button
+                        onClick={e => { e.stopPropagation(); setStatusDropdownId(statusDropdownId === task.id ? null : task.id) }}
+                        className={`text-xs font-semibold px-2 py-1 rounded-md border transition-colors ${
+                          task.status === 'completed' ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' :
+                          task.status === 'in-progress' ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' :
+                          task.status === 'review' ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100' :
+                          task.status === 'blocked' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' :
+                          'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                        }`}
+                      >
+                        {STATUS_LABELS[task.status]} ▾
+                      </button>
+                      {statusDropdownId === task.id && (
+                        <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                          {(Object.entries(STATUS_LABELS) as [Task['status'], string][]).map(([val, label]) => (
+                            <button
+                              key={val}
+                              onClick={e => { e.stopPropagation(); updateTaskStatus(task.id, val) }}
+                              className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-gray-50 flex items-center gap-2 ${task.status === val ? 'text-blue-600 bg-blue-50' : 'text-gray-700'}`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${
+                                val === 'completed' ? 'bg-green-500' :
+                                val === 'in-progress' ? 'bg-blue-500' :
+                                val === 'review' ? 'bg-purple-500' :
+                                val === 'blocked' ? 'bg-red-500' : 'bg-gray-400'
+                              }`} />
+                              {label}
+                            </button>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
-                  <span className="text-xs text-gray-400 whitespace-nowrap">
-                    {STATUS_LABELS[task.status]}
-                  </span>
+                  {task.description && (
+                    <p className="text-xs text-gray-500 mb-1.5">{task.description}</p>
+                  )}
+                  <div className="flex items-center gap-3 text-sm text-gray-500 flex-wrap">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PRIORITY_COLORS[task.priority]}`}>
+                      {task.priority}
+                    </span>
+                    {task.due_date && (
+                      <span className={`text-xs flex items-center gap-0.5 ${overdue ? 'text-red-600 font-medium' : 'text-gray-400'}`}>
+                        <ClockIcon className="h-3 w-3" />
+                        {overdue ? 'Overdue · ' : ''}{formatDate(task.due_date)}
+                      </span>
+                    )}
+                    {task.trade && (
+                      <span className="text-xs text-gray-400">{task.trade}</span>
+                    )}
+                  </div>
                 </div>
-              )
-            })}
-          </div>
+
+                {/* Delete */}
+                <button
+                  onClick={e => { e.stopPropagation(); setConfirmDeleteId(task.id) }}
+                  className="shrink-0 p-1 text-gray-300 hover:text-red-500 rounded"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -554,29 +661,41 @@ export default function ProjectTasksTab({ project }: Props) {
             <div className="px-5 py-4 border-t flex gap-2">
               <button
                 onClick={() => setShowEditModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="flex items-center gap-1.5 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700"
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = darkMode ? colors.bgAlt : '#f9fafb')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
               >
                 <PencilIcon className="h-4 w-4" />
                 Edit
               </button>
-              {detailTask.status === 'completed' ? (
-                <button
-                  onClick={() => { toggleTaskDone(detailTask); setDetailTask(null) }}
-                  className="flex-1 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Mark as Active
-                </button>
-              ) : (
-                <button
-                  onClick={() => { toggleTaskDone(detailTask); setDetailTask(null) }}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
-                >
-                  Mark as Complete
-                </button>
-              )}
+              <button
+                onClick={() => setConfirmDeleteId(detailTask.id)}
+                className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </>
+      )}
+
+      {/* Add Task Modal */}
+      {showAddTaskModal && (
+        <TaskCreationModal
+          isOpen={showAddTaskModal}
+          onClose={() => setShowAddTaskModal(false)}
+          onSave={handleAddTask}
+          editingTask={null}
+          projects={[{ id: project.id, name: project.name ?? '' }]}
+          teamMembers={project.teamMembers.map(m => ({
+            id: m.id,
+            name: m.name,
+            avatar: m.avatar || '',
+            role: m.role,
+            trades: []
+          }))}
+          existingTasks={tasks.map(toModalTask)}
+        />
       )}
 
       {/* Edit Task Modal */}
@@ -590,6 +709,81 @@ export default function ProjectTasksTab({ project }: Props) {
           teamMembers={[]}
           existingTasks={tasks.map(toModalTask)}
         />
+      )}
+
+      {/* Floating selection bar */}
+      {selectedIds.size > 0 && (() => {
+        const selTasks = tasks.filter(t => selectedIds.has(t.id))
+        const hasIncomplete = selTasks.some(t => t.status !== 'completed')
+        const hasComplete = selTasks.some(t => t.status === 'completed')
+        return (
+          <div
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl text-sm"
+            style={{
+              backgroundColor: darkMode ? '#1f2937' : '#ffffff',
+              border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
+              boxShadow: darkMode ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.12)',
+            }}
+          >
+            <span style={{ color: darkMode ? '#9ca3af' : '#6b7280' }} className="text-xs font-medium">
+              {selectedIds.size} selected
+            </span>
+            <div style={{ backgroundColor: darkMode ? '#374151' : '#e5e7eb' }} className="w-px h-4" />
+            {hasIncomplete && (
+              <button
+                onClick={bulkMarkComplete}
+                className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-500"
+              >
+                Mark Complete
+              </button>
+            )}
+            {hasComplete && (
+              <button
+                onClick={bulkMarkActive}
+                className="px-3 py-1.5 text-xs font-medium rounded-lg"
+                style={{ backgroundColor: darkMode ? '#374151' : '#f3f4f6', color: darkMode ? '#d1d5db' : '#374151' }}
+              >
+                Mark Active
+              </button>
+            )}
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg"
+              style={{ color: darkMode ? '#6b7280' : '#9ca3af' }}
+              onMouseEnter={e => (e.currentTarget.style.color = darkMode ? '#d1d5db' : '#374151')}
+              onMouseLeave={e => (e.currentTarget.style.color = darkMode ? '#6b7280' : '#9ca3af')}
+            >
+              Clear
+            </button>
+          </div>
+        )
+      })()}
+
+      {/* Confirm Delete Modal */}
+      {confirmDeleteId && (
+        <>
+          <div className="fixed inset-0 bg-black/30 z-50" onClick={() => setConfirmDeleteId(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+            <div className="bg-white rounded-xl shadow-xl p-6 w-80 pointer-events-auto">
+              <h3 className="text-base font-semibold text-gray-900 mb-1">Delete Task</h3>
+              <p className="text-sm text-gray-500 mb-5">This action cannot be undone.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmDeleteId(null)}
+                  className="flex-1 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => deleteTask(confirmDeleteId)}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Undo toast */}

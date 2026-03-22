@@ -4,15 +4,10 @@ import { useState } from 'react'
 import { ProjectDetails, ProjectMilestone } from '@/lib/projects/get-project-details'
 import {
   PlusIcon,
-  CalendarIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  XCircleIcon,
   FlagIcon,
-  PencilIcon,
   TrashIcon
 } from '@heroicons/react/24/outline'
-import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 interface Props {
   project: ProjectDetails
@@ -43,6 +38,7 @@ function isOverdue(milestone: ProjectMilestone) {
 
 export default function ProjectTimelineTab({ project }: Props) {
   const [milestones, setMilestones] = useState<ProjectMilestone[]>(project.milestones)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
@@ -51,6 +47,7 @@ export default function ProjectTimelineTab({ project }: Props) {
     due_date: '',
     status: 'pending' as ProjectMilestone['status']
   })
+  const { darkMode } = useThemeColors()
 
   // Sort milestones by due_date
   const sorted = [...milestones].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
@@ -67,6 +64,32 @@ export default function ProjectTimelineTab({ project }: Props) {
   const today = new Date()
   const elapsed = Math.min(Math.max((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24), 0), totalDays)
   const progressPercent = (elapsed / totalDays) * 100
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  async function bulkMarkComplete() {
+    const ids = Array.from(selectedIds).filter(id => milestones.find(m => m.id === id)?.status !== 'completed')
+    if (!ids.length) return
+    const supabase = (await import('@/lib/supabase/client')).createClient()
+    await supabase.from('project_milestones').update({ status: 'completed', completed_at: new Date().toISOString() }).in('id', ids)
+    setMilestones(prev => prev.map(m => ids.includes(m.id) ? { ...m, status: 'completed' as ProjectMilestone['status'], completed_at: new Date().toISOString() } : m))
+    setSelectedIds(new Set())
+  }
+
+  async function bulkMarkActive() {
+    const ids = Array.from(selectedIds).filter(id => milestones.find(m => m.id === id)?.status === 'completed')
+    if (!ids.length) return
+    const supabase = (await import('@/lib/supabase/client')).createClient()
+    await supabase.from('project_milestones').update({ status: 'in-progress', completed_at: null }).in('id', ids)
+    setMilestones(prev => prev.map(m => ids.includes(m.id) ? { ...m, status: 'in-progress' as ProjectMilestone['status'], completed_at: null } : m))
+    setSelectedIds(new Set())
+  }
 
   async function handleAddMilestone(e: React.FormEvent) {
     e.preventDefault()
@@ -96,29 +119,12 @@ export default function ProjectTimelineTab({ project }: Props) {
     }
   }
 
-  async function toggleComplete(milestone: ProjectMilestone) {
-    const newStatus: ProjectMilestone['status'] = milestone.status === 'completed' ? 'in-progress' : 'completed'
-    const supabase = (await import('@/lib/supabase/client')).createClient()
-    const { data } = await supabase
-      .from('project_milestones')
-      .update({
-        status: newStatus,
-        completed_at: newStatus === 'completed' ? new Date().toISOString() : null
-      })
-      .eq('id', milestone.id)
-      .select()
-      .single()
-
-    if (data) {
-      setMilestones(prev => prev.map(m => m.id === milestone.id ? data as ProjectMilestone : m))
-    }
-  }
-
   async function deleteMilestone(milestoneId: string) {
     if (!confirm('Delete this milestone?')) return
     const supabase = (await import('@/lib/supabase/client')).createClient()
     await supabase.from('project_milestones').delete().eq('id', milestoneId)
     setMilestones(prev => prev.filter(m => m.id !== milestoneId))
+    setSelectedIds(prev => { const next = new Set(prev); next.delete(milestoneId); return next })
   }
 
   return (
@@ -169,12 +175,10 @@ export default function ProjectTimelineTab({ project }: Props) {
           <span>{formatDate(project.end_date)}</span>
         </div>
         <div className="relative h-3 bg-gray-100 rounded-full overflow-visible">
-          {/* Elapsed bar */}
           <div
             className={`h-full rounded-full ${project.isOverdue ? 'bg-red-400' : 'bg-blue-400'}`}
             style={{ width: `${Math.min(progressPercent, 100)}%` }}
           />
-          {/* Today marker */}
           {progressPercent <= 100 && (
             <div
               className="absolute top-1/2 -translate-y-1/2 w-0.5 h-5 bg-gray-800 rounded"
@@ -185,7 +189,6 @@ export default function ProjectTimelineTab({ project }: Props) {
               </span>
             </div>
           )}
-          {/* Milestone markers */}
           {sorted.map(m => {
             const mDate = new Date(m.due_date)
             const pos = Math.max(0, Math.min(100, ((mDate.getTime() - start.getTime()) / (1000 * 60 * 60 * 24) / totalDays) * 100))
@@ -291,66 +294,119 @@ export default function ProjectTimelineTab({ project }: Props) {
           </button>
         </div>
       ) : (
-        <div className="bg-white border rounded-lg overflow-hidden">
-          <div className="divide-y">
-            {sorted.map((milestone, idx) => {
-              const overdue = isOverdue(milestone)
-              return (
-                <div
-                  key={milestone.id}
-                  className={`flex items-center gap-4 p-4 hover:bg-gray-50 ${overdue ? 'bg-red-50/30' : ''}`}
+        <div className="space-y-2">
+          {sorted.map((milestone) => {
+            const overdue = isOverdue(milestone)
+            const isSelected = selectedIds.has(milestone.id)
+            return (
+              <div
+                key={milestone.id}
+                className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                style={isSelected ? { backgroundColor: darkMode ? 'rgba(59,130,246,0.1)' : 'rgba(219,234,254,0.4)', borderColor: '#93c5fd' } : {}}
+              >
+                {/* Checkbox */}
+                <button
+                  onClick={() => toggleSelect(milestone.id)}
+                  className="shrink-0"
                 >
-                  {/* Complete toggle */}
-                  <button
-                    onClick={() => toggleComplete(milestone)}
-                    className="flex-shrink-0"
-                    title={milestone.status === 'completed' ? 'Mark incomplete' : 'Mark complete'}
-                  >
-                    {milestone.status === 'completed'
-                      ? <CheckCircleSolid className="h-6 w-6 text-green-500" />
-                      : <div className="h-6 w-6 rounded-full border-2 border-gray-300 hover:border-green-400" />
-                    }
-                  </button>
+                  {isSelected
+                    ? <div className="h-6 w-6 rounded border-2 border-blue-500 bg-blue-500 flex items-center justify-center">
+                        <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                    : milestone.status === 'completed'
+                      ? <div className="h-6 w-6 rounded border-2 border-green-500 bg-green-500 flex items-center justify-center">
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </div>
+                      : <div className="h-6 w-6 rounded border-2 border-gray-300 hover:border-blue-500" />
+                  }
+                </button>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-medium text-gray-900 ${milestone.status === 'completed' ? 'line-through text-gray-400' : ''}`}>
-                      {milestone.name}
-                    </p>
-                    {milestone.description && (
-                      <p className="text-xs text-gray-500 mt-0.5">{milestone.description}</p>
-                    )}
-                  </div>
-
-                  {/* Due date */}
-                  <div className="text-right flex-shrink-0">
-                    <p className={`text-sm font-medium ${overdue ? 'text-red-600' : 'text-gray-700'}`}>
-                      {formatDate(milestone.due_date)}
-                    </p>
-                    {milestone.completed_at && (
-                      <p className="text-xs text-green-600">Done {formatDate(milestone.completed_at)}</p>
-                    )}
-                    {overdue && <p className="text-xs text-red-500">Overdue</p>}
-                  </div>
-
-                  {/* Status badge */}
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${STATUS_COLORS[milestone.status]}`}>
-                    {milestone.status.replace('-', ' ')}
-                  </span>
-
-                  {/* Delete */}
-                  <button
-                    onClick={() => deleteMilestone(milestone.id)}
-                    className="flex-shrink-0 p-1 text-gray-300 hover:text-red-500 rounded"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <p className={`font-medium text-gray-900 ${milestone.status === 'completed' ? 'line-through text-gray-400' : ''}`}>
+                    {milestone.name}
+                  </p>
+                  {milestone.description && (
+                    <p className="text-xs text-gray-500 mt-0.5">{milestone.description}</p>
+                  )}
                 </div>
-              )
-            })}
-          </div>
+
+                {/* Due date */}
+                <div className="text-right shrink-0">
+                  <p className={`text-sm font-medium ${overdue ? 'text-red-600' : 'text-gray-700'}`}>
+                    {formatDate(milestone.due_date)}
+                  </p>
+                  {milestone.completed_at && (
+                    <p className="text-xs text-green-600">Done {formatDate(milestone.completed_at)}</p>
+                  )}
+                  {overdue && <p className="text-xs text-red-500">Overdue</p>}
+                </div>
+
+                {/* Status badge */}
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${STATUS_COLORS[milestone.status]}`}>
+                  {milestone.status.replace('-', ' ')}
+                </span>
+
+                {/* Delete */}
+                <button
+                  onClick={() => deleteMilestone(milestone.id)}
+                  className="shrink-0 p-1 text-gray-300 hover:text-red-500 rounded"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
+
+      {/* Floating selection bar */}
+      {selectedIds.size > 0 && (() => {
+        const selMilestones = milestones.filter(m => selectedIds.has(m.id))
+        const hasIncomplete = selMilestones.some(m => m.status !== 'completed')
+        const hasComplete = selMilestones.some(m => m.status === 'completed')
+        return (
+          <div
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl text-sm"
+            style={{
+              backgroundColor: darkMode ? '#1f2937' : '#ffffff',
+              border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
+              boxShadow: darkMode ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.12)',
+            }}
+          >
+            <span style={{ color: darkMode ? '#9ca3af' : '#6b7280' }} className="text-xs font-medium">
+              {selectedIds.size} selected
+            </span>
+            <div style={{ backgroundColor: darkMode ? '#374151' : '#e5e7eb' }} className="w-px h-4" />
+            {hasIncomplete && (
+              <button
+                onClick={bulkMarkComplete}
+                className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-500"
+              >
+                Mark Complete
+              </button>
+            )}
+            {hasComplete && (
+              <button
+                onClick={bulkMarkActive}
+                className="px-3 py-1.5 text-xs font-medium rounded-lg"
+                style={{ backgroundColor: darkMode ? '#374151' : '#f3f4f6', color: darkMode ? '#d1d5db' : '#374151' }}
+              >
+                Mark Active
+              </button>
+            )}
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg"
+              style={{ color: darkMode ? '#6b7280' : '#9ca3af' }}
+              onMouseEnter={e => (e.currentTarget.style.color = darkMode ? '#d1d5db' : '#374151')}
+              onMouseLeave={e => (e.currentTarget.style.color = darkMode ? '#6b7280' : '#9ca3af')}
+            >
+              Clear
+            </button>
+          </div>
+        )
+      })()}
     </div>
   )
 }

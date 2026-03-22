@@ -264,7 +264,6 @@
 .dark .force-light textarea::placeholder {
   color: #94a3b8 !important;
 }
-.dark .force-light a,
 .dark .force-light button:not([data-slot="button"]) {
   background-color: revert !important;
   color: revert !important;

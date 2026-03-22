@@ -28,15 +28,20 @@ interface BudgetData {
 
 interface ProjectBudgetTabProps {
   project: ProjectDetails
+  onSpentChange?: (spent: number) => void
 }
 
-export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
+export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudgetTabProps) {
   const projectId = project.id
   const [budgetData, setBudgetData] = useState<BudgetData | null>(null)
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddExpense, setShowAddExpense] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; description: string } | null>(null)
+  const [detailExpense, setDetailExpense] = useState<Expense | null>(null)
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
+  const [editForm, setEditForm] = useState({ category: '', description: '', amount: '', date: '', vendor: '' })
 
   // New expense form state
   const [newExpense, setNewExpense] = useState({
@@ -68,21 +73,24 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
       // Load all expenses for this project
       const { data: expensesData, error: expensesError } = await supabase
         .from('project_expenses')
-        .select(`
-          id,
-          category,
-          description,
-          amount,
-          date,
-          vendor,
-          created_by
-        `)
+        .select('id, category, description, amount, date, vendor, created_by')
         .eq('project_id', projectId)
         .order('date', { ascending: false })
 
       if (expensesError) throw expensesError
 
-      const formattedExpenses: Expense[] = (expensesData || []).map(exp => ({
+      // Fetch names for all unique creators in one query
+      const creatorIds = [...new Set((expensesData || []).map((e: any) => e.created_by).filter(Boolean))]
+      const creatorMap: Record<string, { full_name: string | null, avatar_url: string | null }> = {}
+      if (creatorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('user_profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', creatorIds)
+        profiles?.forEach((p: any) => { creatorMap[p.id] = p })
+      }
+
+      const formattedExpenses: Expense[] = (expensesData || []).map((exp: any) => ({
         id: exp.id,
         category: exp.category,
         description: exp.description,
@@ -90,8 +98,8 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
         date: exp.date,
         vendor: exp.vendor,
         created_by: {
-          name: 'Unknown',
-          avatar: '?'
+          name: creatorMap[exp.created_by]?.full_name || 'Unknown',
+          avatar: creatorMap[exp.created_by]?.avatar_url || ''
         }
       }))
 
@@ -142,6 +150,29 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
 
       if (error) throw error
 
+      const addedAmount = parseFloat(newExpense.amount)
+
+      // Update expenses list instantly
+      setExpenses(prev => [{
+        id: crypto.randomUUID(),
+        category: newExpense.category,
+        description: newExpense.description,
+        amount: addedAmount,
+        date: newExpense.date,
+        vendor: newExpense.vendor || null,
+        created_by: { name: profile.full_name ?? 'You', avatar: profile.avatar_url ?? '' }
+      }, ...prev])
+
+      // Update stat cards instantly
+      setBudgetData(prev => {
+        if (!prev) return prev
+        const newTotal = prev.total_expenses + addedAmount
+        const newRemaining = prev.estimated_budget - newTotal
+        const newPct = prev.estimated_budget > 0 ? (newTotal / prev.estimated_budget) * 100 : 0
+        return { ...prev, total_expenses: newTotal, remaining: newRemaining, percentage_used: newPct }
+      })
+      onSpentChange?.(budgetData ? budgetData.total_expenses + addedAmount : addedAmount)
+
       // Reset form
       setNewExpense({
         category: 'materials',
@@ -151,36 +182,14 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
         vendor: ''
       })
       setShowAddExpense(false)
-
-      // Reload data
-      await loadBudgetData()
-    } catch (error) {
-      console.error('Failed to add expense:', error)
+    } catch (error: any) {
+      console.error('Failed to add expense:', error?.code, error?.message, error?.details)
       alert('Failed to add expense. Please try again.')
     }
   }
 
-  async function handleDeleteExpense(expenseId: string, description: string) {
-    if (!confirm(`Are you sure you want to delete expense "${description}"?`)) {
-      return
-    }
-
-    try {
-      const supabase = createClient()
-
-      const { error } = await supabase
-        .from('project_expenses')
-        .delete()
-        .eq('id', expenseId)
-
-      if (error) throw error
-
-      // Reload data
-      await loadBudgetData()
-    } catch (error) {
-      console.error('Failed to delete expense:', error)
-      alert('Failed to delete expense. Please try again.')
-    }
+  function handleDeleteExpense(expenseId: string, description: string) {
+    setConfirmDelete({ id: expenseId, description })
   }
 
   function getInitials(name: string): string {
@@ -287,8 +296,92 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
     ? 'warning'
     : 'healthy'
 
+  function openEditExpense(expense: Expense) {
+    setEditingExpense(expense)
+    setEditForm({
+      category: expense.category,
+      description: expense.description,
+      amount: String(expense.amount),
+      date: expense.date,
+      vendor: expense.vendor ?? ''
+    })
+    setDetailExpense(null)
+  }
+
+  async function handleSaveExpense(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingExpense) return
+    const supabase = createClient()
+    const updatedAmount = parseFloat(editForm.amount)
+    const { error } = await supabase
+      .from('project_expenses')
+      .update({
+        category: editForm.category,
+        description: editForm.description,
+        amount: updatedAmount,
+        date: editForm.date,
+        vendor: editForm.vendor || null
+      })
+      .eq('id', editingExpense.id)
+    if (error) { console.error('Failed to update expense:', error?.message); return }
+
+    const diff = updatedAmount - editingExpense.amount
+    setExpenses(prev => prev.map(e => e.id === editingExpense.id
+      ? { ...e, category: editForm.category, description: editForm.description, amount: updatedAmount, date: editForm.date, vendor: editForm.vendor || null }
+      : e
+    ))
+    if (budgetData && diff !== 0) {
+      const newTotal = budgetData.total_expenses + diff
+      const newRemaining = budgetData.estimated_budget - newTotal
+      const newPct = budgetData.estimated_budget > 0 ? (newTotal / budgetData.estimated_budget) * 100 : 0
+      setBudgetData({ ...budgetData, total_expenses: newTotal, remaining: newRemaining, percentage_used: newPct })
+      onSpentChange?.(newTotal)
+    }
+    setEditingExpense(null)
+  }
+
+  async function confirmDeleteExpense() {
+    if (!confirmDelete) return
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from('project_expenses').delete().eq('id', confirmDelete.id)
+      if (error) throw error
+      const deleted = expenses.find(e => e.id === confirmDelete.id)
+      setExpenses(prev => prev.filter(e => e.id !== confirmDelete.id))
+      if (deleted && budgetData) {
+        const newTotal = budgetData.total_expenses - deleted.amount
+        const newRemaining = budgetData.estimated_budget - newTotal
+        const newPct = budgetData.estimated_budget > 0 ? (newTotal / budgetData.estimated_budget) * 100 : 0
+        setBudgetData({ ...budgetData, total_expenses: newTotal, remaining: newRemaining, percentage_used: newPct })
+        onSpentChange?.(newTotal)
+      }
+    } catch (error: any) {
+      console.error('Failed to delete expense:', error?.message)
+    } finally {
+      setConfirmDelete(null)
+    }
+  }
+
   return (
+    <>
     <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">Budget</h2>
+          <p className="text-sm text-gray-500 mt-1">Track project expenses and budget allocation</p>
+        </div>
+        <button
+          onClick={() => setShowAddExpense(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Add Expense
+        </button>
+      </div>
+
       {/* Budget Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -406,19 +499,8 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
         </div>
       )}
 
-      {/* Add Expense Button */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Expense History</h3>
-        <button
-          onClick={() => setShowAddExpense(!showAddExpense)}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Expense
-        </button>
-      </div>
+      {/* Expense History Header */}
+      <h3 className="text-lg font-semibold text-gray-900">Expense History</h3>
 
       {/* Add Expense Form */}
       {showAddExpense && (
@@ -540,7 +622,8 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
           filteredExpenses.map(expense => (
             <div
               key={expense.id}
-              className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+              onClick={() => setDetailExpense(expense)}
+              className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
             >
               {/* Category Icon */}
               <div className="text-3xl shrink-0">
@@ -568,8 +651,12 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
                   )}
                   <span>•</span>
                   <span className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                      {expense.created_by.avatar}
+                    <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold overflow-hidden">
+                      {expense.created_by.avatar && expense.created_by.avatar !== '?' ? (
+                        <img src={expense.created_by.avatar} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        (expense.created_by.name?.[0] ?? '?').toUpperCase()
+                      )}
                     </div>
                     <span className="hidden sm:inline">{expense.created_by.name}</span>
                   </span>
@@ -578,7 +665,7 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
 
               {/* Actions */}
               <button
-                onClick={() => handleDeleteExpense(expense.id, expense.description)}
+                onClick={e => { e.stopPropagation(); handleDeleteExpense(expense.id, expense.description) }}
                 className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors shrink-0"
                 title="Delete"
               >
@@ -603,5 +690,183 @@ export default function ProjectBudgetTab({ project }: ProjectBudgetTabProps) {
         )}
       </div>
     </div>
+
+    {/* Expense Detail Panel */}
+    {detailExpense && (
+      <>
+        <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setDetailExpense(null)} />
+        <div className="fixed right-0 top-0 h-full w-96 bg-white shadow-xl z-50 flex flex-col">
+          <div className="flex items-center justify-between px-5 py-4 border-b">
+            <h3 className="text-base font-semibold text-gray-900">Expense Details</h3>
+            <button onClick={() => setDetailExpense(null)} className="text-gray-400 hover:text-gray-600">
+              <span className="text-xl leading-none">&times;</span>
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-5 space-y-6">
+            {/* Title & Amount */}
+            <div>
+              <p className="text-lg font-semibold text-gray-900">{detailExpense.description}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(detailExpense.amount, budgetData?.currency ?? 'USD')}</p>
+            </div>
+
+            {/* Details */}
+            <section>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100">Overview</p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Category</p>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getCategoryColor(detailExpense.category)}`}>{detailExpense.category}</span>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Date</p>
+                  <span className="font-medium text-gray-700">{formatDate(detailExpense.date)}</span>
+                </div>
+                {detailExpense.vendor && (
+                  <div className="col-span-2">
+                    <p className="text-xs text-gray-400 mb-0.5">Vendor</p>
+                    <span className="font-medium text-gray-700">{detailExpense.vendor}</span>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Added By */}
+            <section>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100">Added By</p>
+              <div className="flex items-center gap-2 text-sm">
+                <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold overflow-hidden shrink-0">
+                  {detailExpense.created_by.avatar ? (
+                    <img src={detailExpense.created_by.avatar} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    (detailExpense.created_by.name?.[0] ?? '?').toUpperCase()
+                  )}
+                </div>
+                <span className="font-medium text-gray-700">{detailExpense.created_by.name}</span>
+              </div>
+            </section>
+          </div>
+
+          {/* Footer */}
+          <div className="px-5 py-4 border-t flex gap-2">
+            <button
+              onClick={() => openEditExpense(detailExpense)}
+              className="flex items-center gap-1.5 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+              Edit
+            </button>
+            <button
+              onClick={e => { e.stopPropagation(); setDetailExpense(null); handleDeleteExpense(detailExpense.id, detailExpense.description) }}
+              className="flex-1 px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </>
+    )}
+
+    {/* Edit Expense Modal */}
+    {editingExpense && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+          <div className="flex items-center justify-between px-6 py-4 border-b">
+            <h3 className="text-base font-semibold text-gray-900">Edit Expense</h3>
+            <button onClick={() => setEditingExpense(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+          </div>
+          <form onSubmit={handleSaveExpense} className="p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
+              <input
+                required
+                value={editForm.description}
+                onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Category</label>
+                <select
+                  value={editForm.category}
+                  onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {['materials','labor','equipment','permits','subcontractors','utilities','insurance','other'].map(c => (
+                    <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Amount</label>
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editForm.amount}
+                  onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Date</label>
+                <input
+                  required
+                  type="date"
+                  value={editForm.date}
+                  onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Vendor (optional)</label>
+                <input
+                  value={editForm.vendor}
+                  onChange={e => setEditForm(f => ({ ...f, vendor: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setEditingExpense(null)} className="flex-1 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Cancel
+              </button>
+              <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+
+    {/* Delete confirmation modal */}
+    {confirmDelete && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+          <p className="text-sm text-gray-800 text-center">
+            Are you sure you want to delete expense &ldquo;{confirmDelete.description}&rdquo;?
+          </p>
+          <div className="mt-5 flex justify-center gap-3">
+            <button
+              onClick={confirmDeleteExpense}
+              className="px-5 py-2 rounded-full bg-white border border-gray-300 text-sm font-medium text-gray-800 hover:bg-gray-50"
+            >
+              OK
+            </button>
+            <button
+              onClick={() => setConfirmDelete(null)}
+              className="px-5 py-2 rounded-full bg-white border border-gray-300 text-sm font-medium text-gray-800 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }

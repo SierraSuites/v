@@ -19,11 +19,12 @@ import ProjectTasksTab from './ProjectTasksTab'
 
 interface Props {
   project: ProjectDetails
+  onSpentChange?: (spent: number) => void
 }
 
 type TabId = 'overview' | 'team' | 'documents' | 'budget' | 'timeline' | 'tasks' | 'change-orders' | 'rfis'
 
-export default function ProjectTabs({ project }: Props) {
+export default function ProjectTabs({ project, onSpentChange }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('overview')
 
   const tabs = [
@@ -34,21 +35,9 @@ export default function ProjectTabs({ project }: Props) {
       count: null
     },
     {
-      id: 'team' as TabId,
-      label: 'Team',
-      icon: <Users className="h-4 w-4" />,
-      count: project.teamMembers.length
-    },
-    {
-      id: 'documents' as TabId,
-      label: 'Documents',
-      icon: <FileText className="h-4 w-4" />,
-      count: project.documents.length
-    },
-    {
-      id: 'budget' as TabId,
-      label: 'Budget',
-      icon: <DollarSign className="h-4 w-4" />,
+      id: 'tasks' as TabId,
+      label: 'Tasks',
+      icon: <CheckSquare className="h-4 w-4" />,
       count: null
     },
     {
@@ -58,10 +47,22 @@ export default function ProjectTabs({ project }: Props) {
       count: project.milestones.length || null
     },
     {
-      id: 'tasks' as TabId,
-      label: 'Tasks',
-      icon: <CheckSquare className="h-4 w-4" />,
+      id: 'budget' as TabId,
+      label: 'Budget',
+      icon: <DollarSign className="h-4 w-4" />,
       count: null
+    },
+    {
+      id: 'documents' as TabId,
+      label: 'Documents',
+      icon: <FileText className="h-4 w-4" />,
+      count: project.documents.length
+    },
+    {
+      id: 'team' as TabId,
+      label: 'Team',
+      icon: <Users className="h-4 w-4" />,
+      count: project.teamMembers.length
     },
     {
       id: 'change-orders' as TabId,
@@ -122,7 +123,7 @@ export default function ProjectTabs({ project }: Props) {
         {activeTab === 'overview' && <ProjectOverviewTab project={project} />}
         {activeTab === 'team' && <ProjectTeamTab project={project} />}
         {activeTab === 'documents' && <ProjectDocumentsTab project={project} />}
-        {activeTab === 'budget' && <ProjectBudgetTab project={project} />}
+        {activeTab === 'budget' && <ProjectBudgetTab project={project} onSpentChange={onSpentChange} />}
         {activeTab === 'timeline' && <ProjectTimelineTab project={project} />}
         {activeTab === 'tasks' && <ProjectTasksTab project={project} />}
         {activeTab === 'change-orders' && <ProjectChangeOrdersTab project={project} />}
