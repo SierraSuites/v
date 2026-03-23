@@ -5,7 +5,7 @@
 // Displays project title, status, progress, and key metrics
 // ============================================================================
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { Calendar, DollarSign, TrendingUp, MapPin, AlertCircle } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
@@ -22,6 +22,13 @@ export default function ProjectHeader({ project }: Props) {
   const router = useRouter()
   const [showEdit, setShowEdit] = useState(false)
   const [showAddTask, setShowAddTask] = useState(false)
+  const [liveProgress, setLiveProgress] = useState(project.progress ?? 0)
+
+  useEffect(() => {
+    const handler = (e: Event) => setLiveProgress((e as CustomEvent).detail.progress)
+    window.addEventListener('project-progress-update', handler)
+    return () => window.removeEventListener('project-progress-update', handler)
+  }, [])
   // Status colors
   const statusColors = {
     planning: 'bg-gray-100 text-gray-800',
@@ -81,12 +88,6 @@ export default function ProjectHeader({ project }: Props) {
             >
               Edit Project
             </button>
-            <button
-              onClick={() => setShowAddTask(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-            >
-              + Add Task
-            </button>
           </div>
         </div>
 
@@ -96,14 +97,14 @@ export default function ProjectHeader({ project }: Props) {
           <MetricCard
             icon={<TrendingUp className="h-5 w-5" />}
             label="Progress"
-            value={`${project.progress}%`}
+            value={`${liveProgress}%`}
             color="blue"
           >
             <div className="mt-2">
               <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-blue-600 rounded-full transition-all"
-                  style={{ width: `${project.progress}%` }}
+                  style={{ width: `${liveProgress}%` }}
                 />
               </div>
             </div>

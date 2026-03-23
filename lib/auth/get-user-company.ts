@@ -55,11 +55,13 @@ export async function getUserCompany(): Promise<UserCompanyProfile | null> {
   const { data: profile, error: profileError } = await supabase
     .from('user_profiles')
     .select('id, company_id, role, subscription_tier, full_name, email, avatar_url')
+    // NOTE: company_id, role, email, subscription_tier added via migration 20260321
+    // If this query fails with column errors, run that migration in Supabase SQL Editor
     .eq('id', user.id)
     .single()
 
   if (profileError || !profile) {
-    console.error('Failed to get user profile:', profileError)
+    console.error('Failed to get user profile:', profileError?.code, profileError?.message, profileError?.details, '| user id:', user.id)
     return null
   }
 
