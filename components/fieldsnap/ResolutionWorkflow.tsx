@@ -140,7 +140,7 @@ export default function ResolutionWorkflow({
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b" style={{ borderColor: '#E0E0E0' }}>
+      <div className="p-6 border-b" style={{ borderColor: 'var(--c-border)' }}>
         <div className="flex items-center gap-3 mb-4">
           <div
             className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
@@ -156,14 +156,14 @@ export default function ResolutionWorkflow({
              punchItem.severity === 'medium' ? '📝' : 'ℹ️'}
           </div>
           <div className="flex-1">
-            <h3 className="font-bold text-lg" style={{ color: '#1A1A1A' }}>Resolution Workflow</h3>
+            <h3 className="font-bold text-lg" style={{ color: 'var(--c-text-primary)' }}>Resolution Workflow</h3>
             <p className="text-sm" style={{ color: '#6B7280' }}>Track this item through to completion</p>
           </div>
         </div>
 
         {/* Current Status Badge */}
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold" style={{ color: '#4A4A4A' }}>Current Status:</span>
+          <span className="text-sm font-semibold" style={{ color: 'var(--c-text-secondary)' }}>Current Status:</span>
           <span
             className="px-3 py-1 rounded-full text-sm font-bold"
             style={{
@@ -182,7 +182,7 @@ export default function ResolutionWorkflow({
           {/* Progress Line */}
           <div
             className="absolute left-6 top-6 bottom-6 w-0.5"
-            style={{ backgroundColor: '#E0E0E0' }}
+            style={{ backgroundColor: 'var(--c-border)' }}
           />
 
           {/* Steps */}
@@ -211,7 +211,7 @@ export default function ResolutionWorkflow({
                     <div className="flex items-center justify-between mb-1">
                       <h4
                         className="font-bold text-sm"
-                        style={{ color: isCompleted || isCurrent ? '#1A1A1A' : '#9CA3AF' }}
+                        style={{ color: isCompleted || isCurrent ? 'var(--c-text-primary)' : '#9CA3AF' }}
                       >
                         {step.label}
                       </h4>
@@ -316,7 +316,7 @@ export default function ResolutionWorkflow({
                               onChange={(e) => setNotes(e.target.value)}
                               placeholder="Add resolution notes..."
                               className="w-full px-3 py-2 rounded-lg text-sm"
-                              style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
+                              style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
                               rows={3}
                             />
                           </div>
@@ -332,7 +332,7 @@ export default function ResolutionWorkflow({
       </div>
 
       {/* Footer Tips */}
-      <div className="p-4 border-t" style={{ borderColor: '#E0E0E0', backgroundColor: '#F8F9FA' }}>
+      <div className="p-4 border-t" style={{ borderColor: 'var(--c-border)', backgroundColor: 'var(--c-sub-bg)' }}>
         <p className="text-xs" style={{ color: '#6B7280' }}>
           💡 <strong>Tip:</strong> Upload a proof photo when marking items as resolved to document the completed work.
         </p>

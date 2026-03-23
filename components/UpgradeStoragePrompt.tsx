@@ -63,12 +63,12 @@ export default function UpgradeStoragePrompt({
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden">
           {/* Header */}
-          <div className="p-6 border-b" style={{ borderColor: '#E0E0E0' }}>
+          <div className="p-6 border-b" style={{ borderColor: 'var(--c-border)' }}>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-4xl">{style.icon}</span>
                 <div>
-                  <h2 className="text-xl font-bold" style={{ color: '#1A1A1A' }}>
+                  <h2 className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
                     {quota.isOverLimit ? 'Storage Full!' : quota.isAtLimit ? 'Storage Almost Full' : 'Upgrade Your Storage'}
                   </h2>
                   <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
@@ -92,15 +92,15 @@ export default function UpgradeStoragePrompt({
             {/* Current vs Next Tier Comparison */}
             <div className="grid grid-cols-2 gap-4 mb-6">
               {/* Current Tier */}
-              <div className="p-4 rounded-lg border" style={{ borderColor: '#E5E7EB', backgroundColor: '#F8F9FA' }}>
+              <div className="p-4 rounded-lg border" style={{ borderColor: '#E5E7EB', backgroundColor: 'var(--c-sub-bg)' }}>
                 <p className="text-xs font-semibold mb-2" style={{ color: '#6B7280' }}>CURRENT PLAN</p>
-                <p className="text-lg font-bold mb-1" style={{ color: '#1A1A1A' }}>
+                <p className="text-lg font-bold mb-1" style={{ color: 'var(--c-text-primary)' }}>
                   {quota.tier.charAt(0).toUpperCase() + quota.tier.slice(1)}
                 </p>
                 <p className="text-sm" style={{ color: '#6B7280' }}>
                   {formatStorageGB(quota.maxStorageGB)} storage
                 </p>
-                <div className="mt-3 pt-3 border-t" style={{ borderColor: '#E0E0E0' }}>
+                <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--c-border)' }}>
                   <div className="flex items-center justify-between text-xs">
                     <span style={{ color: '#6B7280' }}>Used</span>
                     <span className="font-bold" style={{ color: style.text }}>
@@ -153,7 +153,7 @@ export default function UpgradeStoragePrompt({
 
             {/* Benefits */}
             <div className="mb-6">
-              <p className="font-semibold mb-3" style={{ color: '#1A1A1A' }}>
+              <p className="font-semibold mb-3" style={{ color: 'var(--c-text-primary)' }}>
                 Why upgrade to {nextTierName}?
               </p>
               <div className="space-y-2">
@@ -205,7 +205,7 @@ export default function UpgradeStoragePrompt({
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t bg-gray-50" style={{ borderColor: '#E0E0E0' }}>
+          <div className="p-6 border-t bg-gray-50" style={{ borderColor: 'var(--c-border)' }}>
             <div className="flex gap-3">
               {!quota.isOverLimit && (
                 <button

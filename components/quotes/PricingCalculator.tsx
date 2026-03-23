@@ -127,8 +127,8 @@ export default function PricingCalculator({
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b" style={{ borderColor: '#E0E0E0', backgroundColor: '#F9FAFB' }}>
-        <h3 className="text-xl font-bold" style={{ color: '#1A1A1A' }}>
+      <div className="p-6 border-b" style={{ borderColor: 'var(--c-border)', backgroundColor: '#F9FAFB' }}>
+        <h3 className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
           💰 Pricing Summary
         </h3>
       </div>
@@ -140,7 +140,7 @@ export default function PricingCalculator({
           <span className="text-lg font-medium" style={{ color: '#6B7280' }}>
             Subtotal:
           </span>
-          <span className="text-xl font-bold" style={{ color: '#1A1A1A' }}>
+          <span className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
             {formatCurrency(pricing.subtotal)}
           </span>
         </div>
@@ -164,7 +164,7 @@ export default function PricingCalculator({
           <span className="text-lg font-medium" style={{ color: '#6B7280' }}>
             Tax ({formatPercentage(taxRate)}):
           </span>
-          <span className="text-xl font-bold" style={{ color: '#1A1A1A' }}>
+          <span className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
             {formatCurrency(pricing.tax_amount)}
           </span>
         </div>
@@ -172,7 +172,7 @@ export default function PricingCalculator({
         {/* Total */}
         <div className="border-t pt-4 mt-4" style={{ borderColor: '#E5E7EB' }}>
           <div className="flex justify-between items-center">
-            <span className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>
+            <span className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
               Total:
             </span>
             <span className="text-3xl font-bold" style={{ color: '#FF6B6B' }}>
@@ -204,9 +204,9 @@ export default function PricingCalculator({
       {/* Breakdown */}
       {showBreakdown && Object.keys(breakdown).length > 0 && (
         <>
-          <div className="border-t" style={{ borderColor: '#E0E0E0' }}>
+          <div className="border-t" style={{ borderColor: 'var(--c-border)' }}>
             <div className="p-6">
-              <h4 className="text-lg font-bold mb-4" style={{ color: '#1A1A1A' }}>
+              <h4 className="text-lg font-bold mb-4" style={{ color: 'var(--c-text-primary)' }}>
                 📊 Cost Breakdown
               </h4>
 
@@ -224,7 +224,7 @@ export default function PricingCalculator({
                           </span>
                         </div>
                         <div className="text-right">
-                          <span className="font-bold" style={{ color: '#1A1A1A' }}>
+                          <span className="font-bold" style={{ color: 'var(--c-text-primary)' }}>
                             {formatCurrency(amount)}
                           </span>
                           <span className="text-xs ml-2" style={{ color: '#6B7280' }}>
@@ -250,9 +250,9 @@ export default function PricingCalculator({
           </div>
 
           {/* Tax Breakdown */}
-          <div className="border-t" style={{ borderColor: '#E0E0E0' }}>
+          <div className="border-t" style={{ borderColor: 'var(--c-border)' }}>
             <div className="p-6">
-              <h4 className="text-lg font-bold mb-4" style={{ color: '#1A1A1A' }}>
+              <h4 className="text-lg font-bold mb-4" style={{ color: 'var(--c-text-primary)' }}>
                 🧾 Tax Breakdown
               </h4>
 
@@ -261,7 +261,7 @@ export default function PricingCalculator({
                   <span className="text-sm" style={{ color: '#6B7280' }}>
                     Taxable Items:
                   </span>
-                  <span className="font-semibold" style={{ color: '#1A1A1A' }}>
+                  <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>
                     {formatCurrency(taxableTotal)}
                   </span>
                 </div>
@@ -269,7 +269,7 @@ export default function PricingCalculator({
                   <span className="text-sm" style={{ color: '#6B7280' }}>
                     Non-Taxable Items:
                   </span>
-                  <span className="font-semibold" style={{ color: '#1A1A1A' }}>
+                  <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>
                     {formatCurrency(nonTaxableTotal)}
                   </span>
                 </div>
@@ -277,7 +277,7 @@ export default function PricingCalculator({
                   <span className="text-sm font-semibold" style={{ color: '#374151' }}>
                     Tax Amount ({formatPercentage(taxRate)} on {formatCurrency(taxableTotal)}):
                   </span>
-                  <span className="font-bold" style={{ color: '#1A1A1A' }}>
+                  <span className="font-bold" style={{ color: 'var(--c-text-primary)' }}>
                     {formatCurrency(pricing.tax_amount)}
                   </span>
                 </div>
@@ -289,9 +289,9 @@ export default function PricingCalculator({
 
       {/* Margin Analysis */}
       {showMargins && (costTotal > 0 || profitTotal > 0) && (
-        <div className="border-t" style={{ borderColor: '#E0E0E0' }}>
+        <div className="border-t" style={{ borderColor: 'var(--c-border)' }}>
           <div className="p-6">
-            <h4 className="text-lg font-bold mb-4" style={{ color: '#1A1A1A' }}>
+            <h4 className="text-lg font-bold mb-4" style={{ color: 'var(--c-text-primary)' }}>
               📈 Margin Analysis
             </h4>
 
@@ -300,7 +300,7 @@ export default function PricingCalculator({
                 <span className="text-sm" style={{ color: '#6B7280' }}>
                   Direct Costs (Labor + Materials + Equipment + Subs):
                 </span>
-                <span className="font-semibold" style={{ color: '#1A1A1A' }}>
+                <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>
                   {formatCurrency(costTotal)}
                 </span>
               </div>
@@ -309,7 +309,7 @@ export default function PricingCalculator({
                 <span className="text-sm" style={{ color: '#6B7280' }}>
                   Overhead:
                 </span>
-                <span className="font-semibold" style={{ color: '#1A1A1A' }}>
+                <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>
                   {formatCurrency(overheadTotal)}
                 </span>
               </div>
@@ -318,7 +318,7 @@ export default function PricingCalculator({
                 <span className="text-sm font-semibold" style={{ color: '#374151' }}>
                   Total Cost:
                 </span>
-                <span className="font-bold" style={{ color: '#1A1A1A' }}>
+                <span className="font-bold" style={{ color: 'var(--c-text-primary)' }}>
                   {formatCurrency(totalCost)}
                 </span>
               </div>
@@ -363,14 +363,14 @@ export default function PricingCalculator({
       )}
 
       {/* Quick Stats */}
-      <div className="border-t" style={{ borderColor: '#E0E0E0', backgroundColor: '#F9FAFB' }}>
+      <div className="border-t" style={{ borderColor: 'var(--c-border)', backgroundColor: '#F9FAFB' }}>
         <div className="p-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <p className="text-xs font-semibold mb-1" style={{ color: '#6B7280' }}>
                 Line Items
               </p>
-              <p className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>
+              <p className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
                 {lineItems.length}
               </p>
             </div>

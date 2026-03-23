@@ -115,7 +115,7 @@ export default function QuickPunchItemModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between" style={{ borderColor: '#E0E0E0' }}>
+        <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between" style={{ borderColor: 'var(--c-border)' }}>
           <div className="flex items-center gap-3">
             <div
               className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
@@ -124,7 +124,7 @@ export default function QuickPunchItemModal({
               🚨
             </div>
             <div>
-              <h2 className="text-xl font-bold" style={{ color: '#1A1A1A' }}>Create Punch Item</h2>
+              <h2 className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>Create Punch Item</h2>
               <p className="text-sm" style={{ color: '#6B7280' }}>Flag issue from photo</p>
             </div>
           </div>
@@ -140,16 +140,16 @@ export default function QuickPunchItemModal({
         </div>
 
         {/* Photo Preview */}
-        <div className="p-6 border-b" style={{ borderColor: '#E0E0E0' }}>
+        <div className="p-6 border-b" style={{ borderColor: 'var(--c-border)' }}>
           <div className="flex items-center gap-4">
             <img
               src={photo.url}
               alt={photo.filename}
               className="w-24 h-24 rounded-lg object-cover"
-              style={{ border: '2px solid #E0E0E0' }}
+              style={{ border: '2px solid var(--c-border)' }}
             />
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm truncate" style={{ color: '#1A1A1A' }}>
+              <p className="font-semibold text-sm truncate" style={{ color: 'var(--c-text-primary)' }}>
                 {photo.filename}
               </p>
               <p className="text-xs mt-1" style={{ color: '#6B7280' }}>
@@ -190,7 +190,7 @@ export default function QuickPunchItemModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Title */}
           <div>
-            <label className="block text-sm font-semibold mb-2" style={{ color: '#4A4A4A' }}>
+            <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-secondary)' }}>
               Title <span style={{ color: '#DC2626' }}>*</span>
             </label>
             <input
@@ -198,7 +198,7 @@ export default function QuickPunchItemModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-4 py-3 rounded-lg text-sm"
-              style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
+              style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
               placeholder="Brief description of the issue"
               required
               disabled={loading}
@@ -208,14 +208,14 @@ export default function QuickPunchItemModal({
           {/* Severity & Category */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: '#4A4A4A' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-secondary)' }}>
                 Severity <span style={{ color: '#DC2626' }}>*</span>
               </label>
               <select
                 value={severity}
                 onChange={(e) => setSeverity(e.target.value as any)}
                 className="w-full px-4 py-3 rounded-lg text-sm"
-                style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
+                style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
                 required
                 disabled={loading}
               >
@@ -227,14 +227,14 @@ export default function QuickPunchItemModal({
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: '#4A4A4A' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-secondary)' }}>
                 Category <span style={{ color: '#DC2626' }}>*</span>
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as any)}
                 className="w-full px-4 py-3 rounded-lg text-sm"
-                style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
+                style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
                 required
                 disabled={loading}
               >
@@ -249,14 +249,14 @@ export default function QuickPunchItemModal({
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-semibold mb-2" style={{ color: '#4A4A4A' }}>
+            <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-secondary)' }}>
               Description
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-4 py-3 rounded-lg text-sm"
-              style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
+              style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
               placeholder="Detailed description of the issue and what needs to be done..."
               rows={4}
               disabled={loading}
@@ -266,7 +266,7 @@ export default function QuickPunchItemModal({
           {/* Location & Assigned To */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: '#4A4A4A' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-secondary)' }}>
                 Location
               </label>
               <input
@@ -274,14 +274,14 @@ export default function QuickPunchItemModal({
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg text-sm"
-                style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
+                style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
                 placeholder="e.g. Floor 3, Room 201"
                 disabled={loading}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: '#4A4A4A' }}>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--c-text-secondary)' }}>
                 Assign To
               </label>
               <input
@@ -289,7 +289,7 @@ export default function QuickPunchItemModal({
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg text-sm"
-                style={{ backgroundColor: '#F8F9FA', border: '1px solid #E0E0E0' }}
+                style={{ backgroundColor: 'var(--c-sub-bg)', border: '1px solid var(--c-border)' }}
                 placeholder="Team member name or role"
                 disabled={loading}
               />

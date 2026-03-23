@@ -97,10 +97,10 @@ export default function ProjectTimelineWidget({ projects }: ProjectTimelineWidge
 
   if (!timelineData || projects.length === 0) {
     return (
-      <div className="rounded-xl p-6 text-center" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+      <div className="rounded-xl p-6 text-center" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
         <span className="text-4xl mb-2 block">📅</span>
-        <p className="text-sm font-semibold mb-1" style={{ color: '#1A1A1A' }}>No Projects Yet</p>
-        <p className="text-xs" style={{ color: '#4A4A4A' }}>
+        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--c-text-primary)' }}>No Projects Yet</p>
+        <p className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>
           Create projects to see timeline visualization
         </p>
       </div>
@@ -113,14 +113,14 @@ export default function ProjectTimelineWidget({ projects }: ProjectTimelineWidge
   )
 
   return (
-    <div className="rounded-xl p-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+    <div className="rounded-xl p-6" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <span className="text-2xl">📅</span>
           <div>
-            <h3 className="text-lg font-bold" style={{ color: '#1A1A1A' }}>Project Timeline</h3>
-            <p className="text-xs" style={{ color: '#4A4A4A' }}>
+            <h3 className="text-lg font-bold" style={{ color: 'var(--c-text-primary)' }}>Project Timeline</h3>
+            <p className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>
               {formatMonth(timelineData.startDate)} - {formatMonth(timelineData.endDate)}
             </p>
           </div>
@@ -135,9 +135,9 @@ export default function ProjectTimelineWidget({ projects }: ProjectTimelineWidge
             <div
               key={index}
               className="flex-1 text-center py-2 border-b-2"
-              style={{ borderColor: '#E0E0E0', minWidth: '80px' }}
+              style={{ borderColor: 'var(--c-border)', minWidth: '80px' }}
             >
-              <span className="text-xs font-semibold" style={{ color: '#4A4A4A' }}>
+              <span className="text-xs font-semibold" style={{ color: 'var(--c-text-secondary)' }}>
                 {formatMonth(month)}
               </span>
             </div>
@@ -155,16 +155,16 @@ export default function ProjectTimelineWidget({ projects }: ProjectTimelineWidge
                 {/* Project Name */}
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm">{getTypeIcon(project.type)}</span>
-                  <span className="text-sm font-semibold truncate" style={{ color: '#1A1A1A', maxWidth: '200px' }}>
+                  <span className="text-sm font-semibold truncate" style={{ color: 'var(--c-text-primary)', maxWidth: '200px' }}>
                     {project.name}
                   </span>
-                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: colors.bg, color: '#1A1A1A' }}>
+                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: colors.bg, color: 'var(--c-text-primary)' }}>
                     {project.status}
                   </span>
                 </div>
 
                 {/* Timeline Bar Container */}
-                <div className="relative h-10 rounded-lg" style={{ backgroundColor: '#F8F9FA' }}>
+                <div className="relative h-10 rounded-lg" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
                   {/* Project Bar */}
                   <div
                     className="absolute top-1 h-8 rounded-lg transition-all hover:scale-y-110 cursor-pointer group"
@@ -190,20 +190,20 @@ export default function ProjectTimelineWidget({ projects }: ProjectTimelineWidge
                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10">
                       <div
                         className="rounded-lg p-3 shadow-lg whitespace-nowrap"
-                        style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}
+                        style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}
                       >
-                        <p className="text-xs font-semibold mb-1" style={{ color: '#1A1A1A' }}>{project.name}</p>
-                        <p className="text-xs" style={{ color: '#4A4A4A' }}>
+                        <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c-text-primary)' }}>{project.name}</p>
+                        <p className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>
                           {new Date(project.startDate).toLocaleDateString()} - {new Date(project.endDate).toLocaleDateString()}
                         </p>
-                        <p className="text-xs mt-1" style={{ color: '#4A4A4A' }}>
+                        <p className="text-xs mt-1" style={{ color: 'var(--c-text-secondary)' }}>
                           Progress: {project.progress}%
                         </p>
                       </div>
                       {/* Arrow */}
                       <div
                         className="w-2 h-2 absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 rotate-45"
-                        style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderTop: 'none', borderLeft: 'none' }}
+                        style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', borderTop: 'none', borderLeft: 'none' }}
                       />
                     </div>
 
@@ -224,7 +224,7 @@ export default function ProjectTimelineWidget({ projects }: ProjectTimelineWidge
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-4 mt-6 pt-4" style={{ borderTop: '1px solid #E0E0E0' }}>
+      <div className="flex flex-wrap gap-4 mt-6 pt-4" style={{ borderTop: '1px solid var(--c-border)' }}>
         {[
           { status: 'planning', label: 'Planning' },
           { status: 'active', label: 'Active' },
@@ -238,29 +238,29 @@ export default function ProjectTimelineWidget({ projects }: ProjectTimelineWidge
                 className="w-4 h-4 rounded"
                 style={{ backgroundColor: colors.bg, border: `2px solid ${colors.border}` }}
               />
-              <span className="text-xs" style={{ color: '#4A4A4A' }}>{label}</span>
+              <span className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>{label}</span>
             </div>
           )
         })}
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-4 mt-6 pt-4" style={{ borderTop: '1px solid #E0E0E0' }}>
+      <div className="grid grid-cols-3 gap-4 mt-6 pt-4" style={{ borderTop: '1px solid var(--c-border)' }}>
         <div className="text-center">
-          <p className="text-xs mb-1" style={{ color: '#4A4A4A' }}>Earliest Start</p>
-          <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>
+          <p className="text-xs mb-1" style={{ color: 'var(--c-text-secondary)' }}>Earliest Start</p>
+          <p className="text-sm font-semibold" style={{ color: 'var(--c-text-primary)' }}>
             {timelineData.startDate.toLocaleDateString()}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs mb-1" style={{ color: '#4A4A4A' }}>Latest End</p>
-          <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>
+          <p className="text-xs mb-1" style={{ color: 'var(--c-text-secondary)' }}>Latest End</p>
+          <p className="text-sm font-semibold" style={{ color: 'var(--c-text-primary)' }}>
             {timelineData.endDate.toLocaleDateString()}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs mb-1" style={{ color: '#4A4A4A' }}>Total Span</p>
-          <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>
+          <p className="text-xs mb-1" style={{ color: 'var(--c-text-secondary)' }}>Total Span</p>
+          <p className="text-sm font-semibold" style={{ color: 'var(--c-text-primary)' }}>
             {Math.ceil(timelineData.totalDays / 30)} months
           </p>
         </div>

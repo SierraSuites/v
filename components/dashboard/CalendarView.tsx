@@ -108,7 +108,7 @@ export default function CalendarView({ tasks, onTaskClick, onDateClick }: Calend
     const task = event.resource as Task
     const backgroundColor = tradeColors[task.trade] || '#4ECDC4'
 
-    let borderLeftColor = '#1A1A1A'
+    let borderLeftColor = 'var(--c-text-primary)'
     if (task.priority === 'critical') borderLeftColor = '#DC2626'
     else if (task.priority === 'high') borderLeftColor = '#F59E0B'
     else if (task.priority === 'medium') borderLeftColor = '#FFD93D'
@@ -118,7 +118,7 @@ export default function CalendarView({ tasks, onTaskClick, onDateClick }: Calend
       style: {
         backgroundColor,
         borderLeft: `4px solid ${borderLeftColor}`,
-        color: '#1A1A1A',
+        color: 'var(--c-text-primary)',
         borderRadius: '6px',
         padding: '4px 8px',
         fontSize: '13px',
@@ -199,7 +199,7 @@ export default function CalendarView({ tasks, onTaskClick, onDateClick }: Calend
               setDate(newDate)
             }}
             className="px-3 py-2 rounded-lg text-sm font-semibold transition-colors hover:bg-gray-100"
-            style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+            style={{ border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
           >
             ←
           </button>
@@ -212,11 +212,11 @@ export default function CalendarView({ tasks, onTaskClick, onDateClick }: Calend
               setDate(newDate)
             }}
             className="px-3 py-2 rounded-lg text-sm font-semibold transition-colors hover:bg-gray-100"
-            style={{ border: '1px solid #E0E0E0', color: '#1A1A1A' }}
+            style={{ border: '1px solid var(--c-border)', color: 'var(--c-text-primary)' }}
           >
             →
           </button>
-          <h3 className="text-lg font-bold ml-2" style={{ color: '#1A1A1A' }}>
+          <h3 className="text-lg font-bold ml-2" style={{ color: 'var(--c-text-primary)' }}>
             {format(date, 'MMMM yyyy')}
           </h3>
         </div>
@@ -225,21 +225,21 @@ export default function CalendarView({ tasks, onTaskClick, onDateClick }: Calend
           <button
             onClick={() => setView('month')}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${view === 'month' ? '' : 'hover:bg-gray-100'}`}
-            style={view === 'month' ? { backgroundColor: '#FF6B6B', color: '#FFFFFF' } : { border: '1px solid #E0E0E0', color: '#4A4A4A' }}
+            style={view === 'month' ? { backgroundColor: '#FF6B6B', color: '#FFFFFF' } : { border: '1px solid var(--c-border)', color: 'var(--c-text-secondary)' }}
           >
             Month
           </button>
           <button
             onClick={() => setView('week')}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${view === 'week' ? '' : 'hover:bg-gray-100'}`}
-            style={view === 'week' ? { backgroundColor: '#FF6B6B', color: '#FFFFFF' } : { border: '1px solid #E0E0E0', color: '#4A4A4A' }}
+            style={view === 'week' ? { backgroundColor: '#FF6B6B', color: '#FFFFFF' } : { border: '1px solid var(--c-border)', color: 'var(--c-text-secondary)' }}
           >
             Week
           </button>
           <button
             onClick={() => setView('day')}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${view === 'day' ? '' : 'hover:bg-gray-100'}`}
-            style={view === 'day' ? { backgroundColor: '#FF6B6B', color: '#FFFFFF' } : { border: '1px solid #E0E0E0', color: '#4A4A4A' }}
+            style={view === 'day' ? { backgroundColor: '#FF6B6B', color: '#FFFFFF' } : { border: '1px solid var(--c-border)', color: 'var(--c-text-secondary)' }}
           >
             Day
           </button>
@@ -250,31 +250,31 @@ export default function CalendarView({ tasks, onTaskClick, onDateClick }: Calend
       <div className="mb-4 flex items-center gap-4 text-xs flex-wrap">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: '#FFD93D' }}></div>
-          <span style={{ color: '#4A4A4A' }}>Electrical</span>
+          <span style={{ color: 'var(--c-text-secondary)' }}>Electrical</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: '#6A9BFD' }}></div>
-          <span style={{ color: '#4A4A4A' }}>Plumbing</span>
+          <span style={{ color: 'var(--c-text-secondary)' }}>Plumbing</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: '#38BDF8' }}></div>
-          <span style={{ color: '#4A4A4A' }}>HVAC</span>
+          <span style={{ color: 'var(--c-text-secondary)' }}>HVAC</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: '#4A4A4A' }}></div>
-          <span style={{ color: '#4A4A4A' }}>Concrete</span>
+          <span style={{ color: 'var(--c-text-secondary)' }}>Concrete</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: '#D97706' }}></div>
-          <span style={{ color: '#4A4A4A' }}>Framing</span>
+          <span style={{ color: 'var(--c-text-secondary)' }}>Framing</span>
         </div>
-        <span style={{ color: '#4A4A4A' }}>•</span>
-        <span style={{ color: '#4A4A4A' }}>🌤️ Weather Dependent</span>
-        <span style={{ color: '#4A4A4A' }}>🔍 Inspection Required</span>
+        <span style={{ color: 'var(--c-text-secondary)' }}>•</span>
+        <span style={{ color: 'var(--c-text-secondary)' }}>🌤️ Weather Dependent</span>
+        <span style={{ color: 'var(--c-text-secondary)' }}>🔍 Inspection Required</span>
       </div>
 
       {/* Calendar */}
-      <div className="flex-1 rounded-xl overflow-hidden" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', height: '700px' }}>
+      <div className="flex-1 rounded-xl overflow-hidden" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', height: '700px' }}>
         {events.length === 0 && (
           <div className="p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded m-4">
             ⚠️ No events to display. Check console for details.
@@ -311,23 +311,23 @@ export default function CalendarView({ tasks, onTaskClick, onDateClick }: Calend
         >
           <div
             className="rounded-xl p-6 max-w-md w-full"
-            style={{ backgroundColor: '#FFFFFF', boxShadow: '0 8px 16px rgba(0,0,0,0.15)' }}
+            style={{ backgroundColor: 'var(--c-card-bg)', boxShadow: '0 8px 16px rgba(0,0,0,0.15)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                <h3 className="text-lg font-bold mb-2" style={{ color: '#1A1A1A' }}>
+                <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--c-text-primary)' }}>
                   {selectedTask.title}
                 </h3>
-                <p className="text-sm mb-2" style={{ color: '#4A4A4A' }}>{selectedTask.project}</p>
+                <p className="text-sm mb-2" style={{ color: 'var(--c-text-secondary)' }}>{selectedTask.project}</p>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span
                     className="text-xs px-2 py-1 rounded"
-                    style={{ backgroundColor: tradeColors[selectedTask.trade], color: '#1A1A1A' }}
+                    style={{ backgroundColor: tradeColors[selectedTask.trade], color: 'var(--c-text-primary)' }}
                   >
                     {selectedTask.trade}
                   </span>
-                  <span className="text-xs" style={{ color: '#4A4A4A' }}>
+                  <span className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>
                     Due: {new Date(selectedTask.dueDate).toLocaleDateString()}
                   </span>
                   {selectedTask.weatherDependent && <span className="text-sm">🌤️</span>}
@@ -337,7 +337,7 @@ export default function CalendarView({ tasks, onTaskClick, onDateClick }: Calend
               <button
                 onClick={() => setSelectedTask(null)}
                 className="text-2xl font-bold hover:opacity-70 transition-opacity"
-                style={{ color: '#4A4A4A' }}
+                style={{ color: 'var(--c-text-secondary)' }}
               >
                 ×
               </button>
@@ -345,19 +345,19 @@ export default function CalendarView({ tasks, onTaskClick, onDateClick }: Calend
 
             <div className="space-y-3">
               <div>
-                <p className="text-xs font-semibold mb-1" style={{ color: '#4A4A4A' }}>Assigned to:</p>
-                <p className="text-sm" style={{ color: '#1A1A1A' }}>{selectedTask.assignee}</p>
+                <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c-text-secondary)' }}>Assigned to:</p>
+                <p className="text-sm" style={{ color: 'var(--c-text-primary)' }}>{selectedTask.assignee}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold mb-1" style={{ color: '#4A4A4A' }}>Progress:</p>
+                <p className="text-xs font-semibold mb-1" style={{ color: 'var(--c-text-secondary)' }}>Progress:</p>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 rounded-full h-2" style={{ backgroundColor: '#E0E0E0' }}>
+                  <div className="flex-1 rounded-full h-2" style={{ backgroundColor: 'var(--c-border)' }}>
                     <div
                       className="h-2 rounded-full"
                       style={{ width: `${selectedTask.progress}%`, backgroundColor: tradeColors[selectedTask.trade] }}
                     ></div>
                   </div>
-                  <span className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{selectedTask.progress}%</span>
+                  <span className="text-sm font-semibold" style={{ color: 'var(--c-text-primary)' }}>{selectedTask.progress}%</span>
                 </div>
               </div>
             </div>

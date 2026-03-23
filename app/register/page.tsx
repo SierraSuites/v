@@ -198,7 +198,7 @@ export default function RegisterPage() {
   // Show email verification screen after successful registration
   if (registrationComplete) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen auth-page flex items-center justify-center p-4">
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <Link href="/" className="text-2xl font-bold">
@@ -279,7 +279,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen auth-page">
       {/* Header */}
       <header className="border-b border-border">
         <div className="container mx-auto px-8 lg:px-12">

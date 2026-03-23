@@ -94,7 +94,7 @@ export default function BeforeAfterComparison({ punchItem }: BeforeAfterComparis
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b" style={{ borderColor: '#E0E0E0' }}>
+      <div className="p-6 border-b" style={{ borderColor: 'var(--c-border)' }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div
@@ -106,7 +106,7 @@ export default function BeforeAfterComparison({ punchItem }: BeforeAfterComparis
               {hasAfterPhoto ? '📸' : '⏳'}
             </div>
             <div>
-              <h3 className="font-bold text-lg" style={{ color: '#1A1A1A' }}>
+              <h3 className="font-bold text-lg" style={{ color: 'var(--c-text-primary)' }}>
                 {hasAfterPhoto ? 'Before & After Comparison' : 'Before Photo'}
               </h3>
               <p className="text-sm" style={{ color: '#6B7280' }}>
@@ -236,7 +236,7 @@ export default function BeforeAfterComparison({ punchItem }: BeforeAfterComparis
               {/* Slider Control */}
               <div
                 className="absolute top-0 bottom-0 w-1 cursor-ew-resize z-10"
-                style={{ left: `${sliderPosition}%`, backgroundColor: '#FFFFFF' }}
+                style={{ left: `${sliderPosition}%`, backgroundColor: 'var(--c-card-bg)' }}
                 onMouseDown={(e) => {
                   const handleMouseMove = (moveEvent: MouseEvent) => {
                     const rect = e.currentTarget.parentElement?.getBoundingClientRect()
@@ -258,7 +258,7 @@ export default function BeforeAfterComparison({ punchItem }: BeforeAfterComparis
               >
                 <div
                   className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
+                  style={{ backgroundColor: 'var(--c-card-bg)', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
@@ -285,7 +285,7 @@ export default function BeforeAfterComparison({ punchItem }: BeforeAfterComparis
               </div>
             </div>
 
-            <div className="p-4 text-center" style={{ backgroundColor: '#F8F9FA' }}>
+            <div className="p-4 text-center" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
               <p className="text-xs" style={{ color: '#6B7280' }}>
                 💡 Drag the slider to compare before and after
               </p>

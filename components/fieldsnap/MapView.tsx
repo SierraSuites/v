@@ -37,10 +37,10 @@ export default function MapView({ photos, onPhotoClick }: MapViewProps) {
 
   if (geoPhotos.length === 0) {
     return (
-      <div className="w-full h-[600px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-4" style={{ borderColor: '#E0E0E0', backgroundColor: '#F8F9FA' }}>
+      <div className="w-full h-[600px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-4" style={{ borderColor: 'var(--c-border)', backgroundColor: 'var(--c-sub-bg)' }}>
         <div className="text-6xl">📍</div>
         <div className="text-center">
-          <h3 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>No GPS-Tagged Photos</h3>
+          <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--c-text-primary)' }}>No GPS-Tagged Photos</h3>
           <p style={{ color: '#6B7280' }}>
             Photos with location data will appear on the map.<br />
             Enable GPS capture when uploading photos.
@@ -51,7 +51,7 @@ export default function MapView({ photos, onPhotoClick }: MapViewProps) {
   }
 
   return (
-    <div className="w-full h-[600px] rounded-xl overflow-hidden border relative" style={{ borderColor: '#E0E0E0' }}>
+    <div className="w-full h-[600px] rounded-xl overflow-hidden border relative" style={{ borderColor: 'var(--c-border)' }}>
       {/* Simple map placeholder - replace with actual map library */}
       <div ref={mapRef} className="w-full h-full relative" style={{ backgroundColor: '#E5E7EB' }}>
         {/* Map grid background */}
@@ -102,11 +102,11 @@ export default function MapView({ photos, onPhotoClick }: MapViewProps) {
         </div>
 
         {/* Info banner */}
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-lg px-6 py-3 border" style={{ borderColor: '#E0E0E0' }}>
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-lg px-6 py-3 border" style={{ borderColor: 'var(--c-border)' }}>
           <div className="flex items-center gap-3">
             <span className="text-2xl">📍</span>
             <div>
-              <p className="text-sm font-bold" style={{ color: '#1A1A1A' }}>
+              <p className="text-sm font-bold" style={{ color: 'var(--c-text-primary)' }}>
                 {geoPhotos.length} GPS-Tagged Photo{geoPhotos.length !== 1 ? 's' : ''}
               </p>
               <p className="text-xs" style={{ color: '#6B7280' }}>
@@ -126,7 +126,7 @@ export default function MapView({ photos, onPhotoClick }: MapViewProps) {
 
       {/* Selected photo popup */}
       {selectedPhoto && (
-        <div className="absolute bottom-4 right-4 w-80 bg-white rounded-xl shadow-2xl border overflow-hidden" style={{ borderColor: '#E0E0E0' }}>
+        <div className="absolute bottom-4 right-4 w-80 bg-white rounded-xl shadow-2xl border overflow-hidden" style={{ borderColor: 'var(--c-border)' }}>
           <div className="relative h-48">
             <img
               src={selectedPhoto.url}
@@ -137,11 +137,11 @@ export default function MapView({ photos, onPhotoClick }: MapViewProps) {
               onClick={() => setSelectedPhoto(null)}
               className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-100 transition-colors"
             >
-              <span className="text-xl font-bold" style={{ color: '#4A4A4A' }}>×</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--c-text-secondary)' }}>×</span>
             </button>
           </div>
           <div className="p-4">
-            <h4 className="font-bold mb-2" style={{ color: '#1A1A1A' }}>{selectedPhoto.filename}</h4>
+            <h4 className="font-bold mb-2" style={{ color: 'var(--c-text-primary)' }}>{selectedPhoto.filename}</h4>
             {selectedPhoto.description && (
               <p className="text-sm mb-3" style={{ color: '#6B7280' }}>{selectedPhoto.description}</p>
             )}

@@ -60,17 +60,17 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#F8F9FA' }}>
-          <div className="max-w-md w-full rounded-xl p-8 text-center" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+        <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--c-sub-bg)' }}>
+          <div className="max-w-md w-full rounded-xl p-8 text-center" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
             <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FEE2E2' }}>
               <span className="text-4xl">🚨</span>
             </div>
 
-            <h2 className="text-2xl font-bold mb-2" style={{ color: '#1A1A1A' }}>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--c-text-primary)' }}>
               Construction Zone Ahead
             </h2>
 
-            <p className="text-sm mb-6" style={{ color: '#4A4A4A' }}>
+            <p className="text-sm mb-6" style={{ color: 'var(--c-text-secondary)' }}>
               {this.state.error?.message || 'Something unexpected happened. Our crew is working to fix it.'}
             </p>
 
@@ -86,7 +86,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <button
                 onClick={() => window.location.href = '/dashboard'}
                 className="w-full px-6 py-3 rounded-lg font-semibold transition-all"
-                style={{ border: '1px solid #E0E0E0', color: '#4A4A4A', backgroundColor: '#FFFFFF' }}
+                style={{ border: '1px solid var(--c-border)', color: 'var(--c-text-secondary)', backgroundColor: 'var(--c-card-bg)' }}
               >
                 Go to Dashboard
               </button>
@@ -94,7 +94,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <button
                 onClick={() => window.location.reload()}
                 className="w-full px-6 py-3 rounded-lg font-semibold transition-all"
-                style={{ border: '1px solid #E0E0E0', color: '#4A4A4A', backgroundColor: '#FFFFFF' }}
+                style={{ border: '1px solid var(--c-border)', color: 'var(--c-text-secondary)', backgroundColor: 'var(--c-card-bg)' }}
               >
                 Reload Page
               </button>
@@ -105,7 +105,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <summary className="cursor-pointer text-sm font-semibold mb-2" style={{ color: '#DC2626' }}>
                   Error Details (Development Only)
                 </summary>
-                <pre className="text-xs p-3 rounded overflow-auto max-h-48" style={{ backgroundColor: '#F8F9FA', color: '#1A1A1A' }}>
+                <pre className="text-xs p-3 rounded overflow-auto max-h-48" style={{ backgroundColor: 'var(--c-sub-bg)', color: 'var(--c-text-primary)' }}>
                   {this.state.error.stack}
                 </pre>
               </details>
@@ -129,7 +129,7 @@ export function ConstructionErrorBoundary({ children }: { children: ReactNode })
           <h3 className="text-lg font-bold mb-2" style={{ color: '#DC2626' }}>
             Safety Check Failed
           </h3>
-          <p className="text-sm" style={{ color: '#4A4A4A' }}>
+          <p className="text-sm" style={{ color: 'var(--c-text-secondary)' }}>
             This component encountered an error. Please refresh the page or contact support.
           </p>
         </div>

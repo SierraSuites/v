@@ -188,7 +188,7 @@ export default function TeamMemberList({ teamId, canManage, onMemberUpdated }: T
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-lg font-bold" style={{ color: '#1A1A1A' }}>
+        <h4 className="text-lg font-bold" style={{ color: 'var(--c-text-primary)' }}>
           Team Members ({members.length})
         </h4>
         {canManage && (
@@ -222,7 +222,7 @@ export default function TeamMemberList({ teamId, canManage, onMemberUpdated }: T
               {/* Details */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-semibold truncate" style={{ color: '#1A1A1A' }}>
+                  <p className="font-semibold truncate" style={{ color: 'var(--c-text-primary)' }}>
                     {member.user?.user_metadata?.full_name || member.user?.email || 'Unknown User'}
                   </p>
                   {member.is_lead && (
@@ -319,9 +319,9 @@ export default function TeamMemberList({ teamId, canManage, onMemberUpdated }: T
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
             {/* Modal Header */}
-            <div className="p-6 border-b" style={{ borderColor: '#E0E0E0' }}>
+            <div className="p-6 border-b" style={{ borderColor: 'var(--c-border)' }}>
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold" style={{ color: '#1A1A1A' }}>
+                <h3 className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
                   ✉️ Invite Team Member
                 </h3>
                 <button
@@ -382,7 +382,7 @@ export default function TeamMemberList({ teamId, canManage, onMemberUpdated }: T
             </div>
 
             {/* Modal Footer */}
-            <div className="p-6 border-t bg-gray-50" style={{ borderColor: '#E0E0E0' }}>
+            <div className="p-6 border-t bg-gray-50" style={{ borderColor: 'var(--c-border)' }}>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowInviteModal(false)}

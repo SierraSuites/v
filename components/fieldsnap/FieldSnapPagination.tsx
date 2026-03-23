@@ -94,7 +94,7 @@ export default function FieldSnapPagination({
   }
 
   return (
-    <div className="bg-white border-t sticky bottom-0 z-10" style={{ borderColor: '#E0E0E0' }}>
+    <div className="bg-white border-t sticky bottom-0 z-10" style={{ borderColor: 'var(--c-border)' }}>
       <div className="px-4 py-3 sm:px-6">
         {/* Mobile View */}
         <div className="flex items-center justify-between sm:hidden">
@@ -103,7 +103,7 @@ export default function FieldSnapPagination({
             disabled={currentPage === 1 || loading}
             className="relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
-              backgroundColor: currentPage === 1 || loading ? '#F3F4F6' : '#FFFFFF',
+              backgroundColor: currentPage === 1 || loading ? '#F3F4F6' : 'var(--c-card-bg)',
               color: '#374151',
               border: '1px solid #E5E7EB'
             }}
@@ -118,7 +118,7 @@ export default function FieldSnapPagination({
             disabled={currentPage === totalPages || loading}
             className="relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
-              backgroundColor: currentPage === totalPages || loading ? '#F3F4F6' : '#FFFFFF',
+              backgroundColor: currentPage === totalPages || loading ? '#F3F4F6' : 'var(--c-card-bg)',
               color: '#374151',
               border: '1px solid #E5E7EB'
             }}
@@ -133,15 +133,15 @@ export default function FieldSnapPagination({
           <div className="flex items-center gap-4">
             <div className="text-sm" style={{ color: '#6B7280' }}>
               Showing{' '}
-              <span className="font-semibold" style={{ color: '#1A1A1A' }}>
+              <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>
                 {startItem}
               </span>
               {' to '}
-              <span className="font-semibold" style={{ color: '#1A1A1A' }}>
+              <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>
                 {endItem}
               </span>
               {' of '}
-              <span className="font-semibold" style={{ color: '#1A1A1A' }}>
+              <span className="font-semibold" style={{ color: 'var(--c-text-primary)' }}>
                 {totalItems}
               </span>
               {' photos'}
@@ -153,7 +153,7 @@ export default function FieldSnapPagination({
                 onClick={() => setShowPageSizeMenu(!showPageSizeMenu)}
                 className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border transition-colors"
                 style={{
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: 'var(--c-card-bg)',
                   color: '#374151',
                   borderColor: '#E5E7EB'
                 }}
@@ -236,7 +236,7 @@ export default function FieldSnapPagination({
               disabled={currentPage === 1 || loading}
               className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed border"
               style={{
-                backgroundColor: '#FFFFFF',
+                backgroundColor: 'var(--c-card-bg)',
                 color: '#374151',
                 borderColor: '#E5E7EB'
               }}
@@ -271,7 +271,7 @@ export default function FieldSnapPagination({
                       isActive ? 'shadow-sm' : ''
                     } disabled:cursor-not-allowed`}
                     style={{
-                      backgroundColor: isActive ? '#FF6B6B' : '#FFFFFF',
+                      backgroundColor: isActive ? '#FF6B6B' : 'var(--c-card-bg)',
                       color: isActive ? '#FFFFFF' : '#374151',
                       border: `1px solid ${isActive ? '#FF6B6B' : '#E5E7EB'}`
                     }}
@@ -288,7 +288,7 @@ export default function FieldSnapPagination({
               disabled={currentPage === totalPages || loading}
               className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed border"
               style={{
-                backgroundColor: '#FFFFFF',
+                backgroundColor: 'var(--c-card-bg)',
                 color: '#374151',
                 borderColor: '#E5E7EB'
               }}

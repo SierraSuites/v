@@ -192,9 +192,9 @@ export default function TaskAttachmentsPanel({ taskId, taskTitle, onClose }: Tas
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[80vh] flex flex-col">
         {/* Header */}
-        <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: '#E0E0E0' }}>
+        <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: 'var(--c-border)' }}>
           <div className="flex-1">
-            <h2 className="text-xl font-bold mb-1" style={{ color: '#1A1A1A' }}>
+            <h2 className="text-xl font-bold mb-1" style={{ color: 'var(--c-text-primary)' }}>
               Attachments
             </h2>
             <p className="text-sm" style={{ color: '#6B7280' }}>
@@ -205,12 +205,12 @@ export default function TaskAttachmentsPanel({ taskId, taskTitle, onClose }: Tas
             onClick={onClose}
             className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
           >
-            <span className="text-2xl" style={{ color: '#4A4A4A' }}>×</span>
+            <span className="text-2xl" style={{ color: 'var(--c-text-secondary)' }}>×</span>
           </button>
         </div>
 
         {/* Upload Area */}
-        <div className="p-6 border-b" style={{ borderColor: '#E0E0E0' }}>
+        <div className="p-6 border-b" style={{ borderColor: 'var(--c-border)' }}>
           <input
             ref={fileInputRef}
             type="file"
@@ -226,7 +226,7 @@ export default function TaskAttachmentsPanel({ taskId, taskTitle, onClose }: Tas
           >
             <div className="text-center">
               <span className="text-4xl block mb-2">📎</span>
-              <p className="font-semibold mb-1" style={{ color: '#1A1A1A' }}>
+              <p className="font-semibold mb-1" style={{ color: 'var(--c-text-primary)' }}>
                 {uploading ? 'Uploading...' : 'Click to upload files'}
               </p>
               <p className="text-sm" style={{ color: '#6B7280' }}>
@@ -262,7 +262,7 @@ export default function TaskAttachmentsPanel({ taskId, taskTitle, onClose }: Tas
           ) : attachments.length === 0 ? (
             <div className="text-center py-12">
               <span className="text-6xl">📎</span>
-              <p className="mt-4 font-semibold" style={{ color: '#1A1A1A' }}>No attachments yet</p>
+              <p className="mt-4 font-semibold" style={{ color: 'var(--c-text-primary)' }}>No attachments yet</p>
               <p className="text-sm" style={{ color: '#6B7280' }}>Upload files to share with your team</p>
             </div>
           ) : (
@@ -271,7 +271,7 @@ export default function TaskAttachmentsPanel({ taskId, taskTitle, onClose }: Tas
                 <div
                   key={attachment.id}
                   className="border rounded-xl p-4 hover:shadow-lg transition-shadow"
-                  style={{ borderColor: '#E0E0E0' }}
+                  style={{ borderColor: 'var(--c-border)' }}
                 >
                   <div className="flex items-start gap-3">
                     {/* File Icon */}
@@ -283,7 +283,7 @@ export default function TaskAttachmentsPanel({ taskId, taskTitle, onClose }: Tas
                     <div className="flex-1 min-w-0">
                       <p
                         className="font-semibold text-sm truncate mb-1"
-                        style={{ color: '#1A1A1A' }}
+                        style={{ color: 'var(--c-text-primary)' }}
                         title={attachment.filename}
                       >
                         {attachment.filename}
@@ -329,7 +329,7 @@ export default function TaskAttachmentsPanel({ taskId, taskTitle, onClose }: Tas
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t text-center" style={{ borderColor: '#E0E0E0' }}>
+        <div className="p-4 border-t text-center" style={{ borderColor: 'var(--c-border)' }}>
           <p className="text-xs" style={{ color: '#6B7280' }}>
             {attachments.length} attachment{attachments.length !== 1 ? 's' : ''} •{' '}
             {formatFileSize(attachments.reduce((sum, a) => sum + a.file_size, 0))} total

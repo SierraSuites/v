@@ -26,6 +26,12 @@ function ResetPasswordForm() {
     const checkSession = async () => {
       const supabase = createClient()
 
+      // PKCE flow: exchange the code param for a session
+      const code = searchParams.get('code')
+      if (code) {
+        await supabase.auth.exchangeCodeForSession(code)
+      }
+
       // Check if user is authenticated (came from email link)
       const { data: { session } } = await supabase.auth.getSession()
 
@@ -39,7 +45,7 @@ function ResetPasswordForm() {
     }
 
     checkSession()
-  }, [])
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -91,7 +97,7 @@ function ResetPasswordForm() {
   // Show loading while checking token
   if (isCheckingToken) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="min-h-screen auth-page flex items-center justify-center px-4">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-muted-foreground">Verifying reset link...</p>
@@ -103,7 +109,7 @@ function ResetPasswordForm() {
   // Show error if token is invalid
   if (!isValidToken) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="min-h-screen auth-page flex items-center justify-center px-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <Link href="/" className="text-2xl font-bold">
@@ -151,7 +157,7 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div className="min-h-screen auth-page flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="text-2xl font-bold">
@@ -272,7 +278,7 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="min-h-screen auth-page flex items-center justify-center px-4">
         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     }>

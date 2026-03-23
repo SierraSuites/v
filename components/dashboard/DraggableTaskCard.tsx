@@ -76,7 +76,7 @@ export default function DraggableTaskCard({ task }: DraggableTaskCardProps) {
       }`}
       style={{
         ...style,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: 'var(--c-card-bg)',
         borderLeft: isBlocked ? undefined : `4px solid ${tradeColors[task.trade].border}`,
         boxShadow: isDragging
           ? '0 8px 16px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1)'
@@ -113,7 +113,7 @@ export default function DraggableTaskCard({ task }: DraggableTaskCardProps) {
         </div>
       </div>
 
-      <h4 className="font-semibold text-sm mb-2" style={{ color: '#1A1A1A' }}>{task.title}</h4>
+      <h4 className="font-semibold text-sm mb-2" style={{ color: 'var(--c-text-primary)' }}>{task.title}</h4>
 
       {/* Quality Guide lines 1031-1035: Blocked reason */}
       {isBlocked && (
@@ -134,17 +134,17 @@ export default function DraggableTaskCard({ task }: DraggableTaskCardProps) {
           {task.trade}
         </span>
         {/* Quality Guide lines 994-998: Overdue date in red */}
-        <span className={`text-xs ${isOverdue ? 'font-semibold' : ''}`} style={{ color: isOverdue ? '#DC2626' : '#4A4A4A' }}>
+        <span className={`text-xs ${isOverdue ? 'font-semibold' : ''}`} style={{ color: isOverdue ? '#DC2626' : 'var(--c-text-secondary)' }}>
           📅 {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           {isOverdue && ' (OVERDUE)'}
         </span>
       </div>
 
-      <p className="text-xs mb-3" style={{ color: '#4A4A4A' }}>{task.project}</p>
+      <p className="text-xs mb-3" style={{ color: 'var(--c-text-secondary)' }}>{task.project}</p>
 
       {/* Progress bar — Quality Guide lines 1044-1049 */}
       <div className="mb-3">
-        <div className="w-full rounded-full h-1.5" style={{ backgroundColor: '#E0E0E0' }}>
+        <div className="w-full rounded-full h-1.5" style={{ backgroundColor: 'var(--c-border)' }}>
           <div
             className="h-1.5 rounded-full transition-all"
             style={{
@@ -160,7 +160,7 @@ export default function DraggableTaskCard({ task }: DraggableTaskCardProps) {
           <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-semibold" style={{ background: 'linear-gradient(135deg, #4ECDC4 0%, #5FD9CF 100%)' }}>
             {task.assigneeAvatar}
           </div>
-          <div className="flex items-center gap-1 text-xs" style={{ color: '#4A4A4A' }}>
+          <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--c-text-secondary)' }}>
             {task.attachments > 0 && <span>📎{task.attachments}</span>}
             {task.comments > 0 && <span>💬{task.comments}</span>}
           </div>

@@ -259,53 +259,53 @@ export default function CRMDashboard() {
           <>
             {/* Quality Guide lines 697-718: Metrics Grid with 5 stat cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-              <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+              <div className="rounded-xl p-5" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Total Pipeline</div>
+                  <div className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Total Pipeline</div>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6A9BFD 0%, #8BB5FE 100%)' }}>
                     <span className="text-white text-sm">💰</span>
                   </div>
                 </div>
-                <div className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{formatCurrency(metrics?.total_value || 0)}</div>
-                <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>{metrics?.total_leads || 0} active leads</div>
+                <div className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{formatCurrency(metrics?.total_value || 0)}</div>
+                <div className="text-xs mt-1" style={{ color: 'var(--c-text-secondary)' }}>{metrics?.total_leads || 0} active leads</div>
               </div>
 
-              <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+              <div className="rounded-xl p-5" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Weighted Value</div>
+                  <div className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Weighted Value</div>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6BCB77 0%, #85D68D 100%)' }}>
                     <span className="text-white text-sm">📊</span>
                   </div>
                 </div>
                 <div className="text-2xl font-bold" style={{ color: '#22C55E' }}>{formatCurrency(metrics?.weighted_value || 0)}</div>
-                <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>Probability-adjusted</div>
+                <div className="text-xs mt-1" style={{ color: 'var(--c-text-secondary)' }}>Probability-adjusted</div>
               </div>
 
-              <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+              <div className="rounded-xl p-5" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Active Deals</div>
+                  <div className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Active Deals</div>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8787 100%)' }}>
                     <span className="text-white text-sm">🎯</span>
                   </div>
                 </div>
-                <div className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{metrics?.total_leads || 0}</div>
-                <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>In pipeline</div>
+                <div className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>{metrics?.total_leads || 0}</div>
+                <div className="text-xs mt-1" style={{ color: 'var(--c-text-secondary)' }}>In pipeline</div>
               </div>
 
-              <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+              <div className="rounded-xl p-5" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Avg Deal Size</div>
+                  <div className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Avg Deal Size</div>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #A78BFA 0%, #C4B5FD 100%)' }}>
                     <span className="text-white text-sm">📈</span>
                   </div>
                 </div>
                 <div className="text-2xl font-bold" style={{ color: '#7C3AED' }}>{formatCurrency(metrics?.avg_deal_size || 0)}</div>
-                <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>Per opportunity</div>
+                <div className="text-xs mt-1" style={{ color: 'var(--c-text-secondary)' }}>Per opportunity</div>
               </div>
 
-              <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
+              <div className="rounded-xl p-5" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-medium" style={{ color: '#4A4A4A' }}>Win Rate</div>
+                  <div className="text-sm font-medium" style={{ color: 'var(--c-text-secondary)' }}>Win Rate</div>
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FFD93D 0%, #FFE066 100%)' }}>
                     <span className="text-white text-sm">🏆</span>
                   </div>
@@ -316,14 +316,14 @@ export default function CRMDashboard() {
                 }}>
                   {((metrics?.win_rate || 0) * 100).toFixed(0)}%
                 </div>
-                <div className="text-xs mt-1" style={{ color: '#4A4A4A' }}>Closed deals</div>
+                <div className="text-xs mt-1" style={{ color: 'var(--c-text-secondary)' }}>Closed deals</div>
               </div>
             </div>
 
             {/* Quality Guide lines 602-608, 749-760: Pipeline Funnel with stage colors */}
-            <div className="rounded-xl mb-8" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
-              <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #E0E0E0' }}>
-                <h2 className="text-lg font-semibold" style={{ color: '#1A1A1A' }}>Sales Pipeline</h2>
+            <div className="rounded-xl mb-8" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
+              <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--c-border)' }}>
+                <h2 className="text-lg font-semibold" style={{ color: 'var(--c-text-primary)' }}>Sales Pipeline</h2>
                 <Link href="/crm/leads" className="text-sm font-medium" style={{ color: '#6A9BFD' }}>
                   View All →
                 </Link>
@@ -333,8 +333,8 @@ export default function CRMDashboard() {
                 {pipelineData.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="text-6xl mb-4">🎯</div>
-                    <h3 className="text-xl font-semibold mb-2" style={{ color: '#1A1A1A' }}>No active leads yet</h3>
-                    <p className="mb-6" style={{ color: '#4A4A4A' }}>Start by adding your first lead to track opportunities</p>
+                    <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>No active leads yet</h3>
+                    <p className="mb-6" style={{ color: 'var(--c-text-secondary)' }}>Start by adding your first lead to track opportunities</p>
                     <Link
                       href="/crm/leads/new"
                       className="px-6 py-3 text-white rounded-lg transition-colors inline-block"
@@ -358,15 +358,15 @@ export default function CRMDashboard() {
                               <span className={`px-3 py-1 rounded-full text-xs font-medium ${stageColors[stage.stage] || 'bg-gray-100 text-gray-700'}`}>
                                 {stage.stage.replace('_', ' ').toUpperCase()}
                               </span>
-                              <span className="text-sm" style={{ color: '#4A4A4A' }}>
+                              <span className="text-sm" style={{ color: 'var(--c-text-secondary)' }}>
                                 {stage.count} {stage.count === 1 ? 'lead' : 'leads'}
                               </span>
                             </div>
-                            <div className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>
+                            <div className="text-sm font-semibold" style={{ color: 'var(--c-text-primary)' }}>
                               {formatCurrency(stage.value)}
                             </div>
                           </div>
-                          <div className="w-full rounded-full h-2" style={{ backgroundColor: '#E0E0E0' }}>
+                          <div className="w-full rounded-full h-2" style={{ backgroundColor: 'var(--c-border)' }}>
                             <div
                               className="h-2 rounded-full transition-all"
                               style={{ width: `${Math.max(percentage, 2)}%`, backgroundColor: barColor }}
@@ -382,9 +382,9 @@ export default function CRMDashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Quality Guide lines 1059-1087: Upcoming Activities with left border accent */}
-              <div className="rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
-                <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #E0E0E0' }}>
-                  <h2 className="text-lg font-semibold" style={{ color: '#1A1A1A' }}>Upcoming Activities</h2>
+              <div className="rounded-xl" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
+                <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--c-border)' }}>
+                  <h2 className="text-lg font-semibold" style={{ color: 'var(--c-text-primary)' }}>Upcoming Activities</h2>
                   <Link href="/crm/activities" className="text-sm font-medium" style={{ color: '#6A9BFD' }}>
                     View All →
                   </Link>
@@ -392,7 +392,7 @@ export default function CRMDashboard() {
 
                 <div className="divide-y divide-gray-100">
                   {upcomingActivities.length === 0 ? (
-                    <div className="p-12 text-center" style={{ color: '#4A4A4A' }}>
+                    <div className="p-12 text-center" style={{ color: 'var(--c-text-secondary)' }}>
                       <div className="text-4xl mb-2">📅</div>
                       <p>No upcoming activities</p>
                     </div>
@@ -410,12 +410,12 @@ export default function CRMDashboard() {
                             <div className="text-2xl">{getActivityIcon(activity.activity_type)}</div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
-                                <div className="font-medium text-sm" style={{ color: '#1A1A1A' }}>{activity.subject}</div>
-                                <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: '#F8F9FA', color: '#4A4A4A' }}>
+                                <div className="font-medium text-sm" style={{ color: 'var(--c-text-primary)' }}>{activity.subject}</div>
+                                <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--c-sub-bg)', color: 'var(--c-text-secondary)' }}>
                                   {activity.activity_type.replace('_', ' ')}
                                 </span>
                               </div>
-                              <div className="text-sm" style={{ color: '#4A4A4A' }}>
+                              <div className="text-sm" style={{ color: 'var(--c-text-secondary)' }}>
                                 {activity.contact?.full_name || 'No contact'}
                               </div>
                               <div className="text-xs mt-1" style={{ color: '#9CA3AF' }}>
@@ -431,9 +431,9 @@ export default function CRMDashboard() {
               </div>
 
               {/* Quality Guide lines 912-949: Recent Contacts with avatar initials */}
-              <div className="rounded-xl" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}>
-                <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #E0E0E0' }}>
-                  <h2 className="text-lg font-semibold" style={{ color: '#1A1A1A' }}>Recent Contacts</h2>
+              <div className="rounded-xl" style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}>
+                <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--c-border)' }}>
+                  <h2 className="text-lg font-semibold" style={{ color: 'var(--c-text-primary)' }}>Recent Contacts</h2>
                   <Link href="/crm/contacts" className="text-sm font-medium" style={{ color: '#6A9BFD' }}>
                     View All →
                   </Link>
@@ -441,7 +441,7 @@ export default function CRMDashboard() {
 
                 <div className="divide-y divide-gray-100">
                   {recentContacts.length === 0 ? (
-                    <div className="p-12 text-center" style={{ color: '#4A4A4A' }}>
+                    <div className="p-12 text-center" style={{ color: 'var(--c-text-secondary)' }}>
                       <div className="text-4xl mb-2">👥</div>
                       <p>No contacts yet</p>
                     </div>
@@ -462,9 +462,9 @@ export default function CRMDashboard() {
                             {contact.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || '?'}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm" style={{ color: '#1A1A1A' }}>{contact.full_name}</div>
+                            <div className="font-medium text-sm" style={{ color: 'var(--c-text-primary)' }}>{contact.full_name}</div>
                             {contact.company && (
-                              <div className="text-xs" style={{ color: '#4A4A4A' }}>{contact.company}</div>
+                              <div className="text-xs" style={{ color: 'var(--c-text-secondary)' }}>{contact.company}</div>
                             )}
                             <div className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
                               {contact.email || contact.phone || 'No contact info'}
@@ -491,37 +491,37 @@ export default function CRMDashboard() {
               <Link
                 href="/crm/contacts"
                 className="rounded-xl p-6 hover:shadow-md transition-all hover:-translate-y-0.5"
-                style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}
+                style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}
               >
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ background: 'linear-gradient(135deg, #6A9BFD 0%, #8BB5FE 100%)' }}>
                   <span className="text-white text-xl">👥</span>
                 </div>
-                <h3 className="text-lg font-semibold mb-1" style={{ color: '#1A1A1A' }}>Manage Contacts</h3>
-                <p className="text-sm" style={{ color: '#4A4A4A' }}>View and organize all your contacts</p>
+                <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--c-text-primary)' }}>Manage Contacts</h3>
+                <p className="text-sm" style={{ color: 'var(--c-text-secondary)' }}>View and organize all your contacts</p>
               </Link>
 
               <Link
                 href="/crm/leads"
                 className="rounded-xl p-6 hover:shadow-md transition-all hover:-translate-y-0.5"
-                style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}
+                style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}
               >
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ background: 'linear-gradient(135deg, #6BCB77 0%, #85D68D 100%)' }}>
                   <span className="text-white text-xl">🎯</span>
                 </div>
-                <h3 className="text-lg font-semibold mb-1" style={{ color: '#1A1A1A' }}>Leads Pipeline</h3>
-                <p className="text-sm" style={{ color: '#4A4A4A' }}>Track opportunities through your sales funnel</p>
+                <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--c-text-primary)' }}>Leads Pipeline</h3>
+                <p className="text-sm" style={{ color: 'var(--c-text-secondary)' }}>Track opportunities through your sales funnel</p>
               </Link>
 
               <Link
                 href="/crm/activities"
                 className="rounded-xl p-6 hover:shadow-md transition-all hover:-translate-y-0.5"
-                style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0' }}
+                style={{ backgroundColor: 'var(--c-card-bg)', border: '1px solid var(--c-border)' }}
               >
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ background: 'linear-gradient(135deg, #A78BFA 0%, #C4B5FD 100%)' }}>
                   <span className="text-white text-xl">📅</span>
                 </div>
-                <h3 className="text-lg font-semibold mb-1" style={{ color: '#1A1A1A' }}>Activities</h3>
-                <p className="text-sm" style={{ color: '#4A4A4A' }}>Schedule calls, meetings, and follow-ups</p>
+                <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--c-text-primary)' }}>Activities</h3>
+                <p className="text-sm" style={{ color: 'var(--c-text-secondary)' }}>Schedule calls, meetings, and follow-ups</p>
               </Link>
             </div>
           </>

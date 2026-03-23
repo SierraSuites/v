@@ -5,6 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* Dark mode color tokens for inline styles — used across all pages */
+  --c-card-bg: #FFFFFF;
+  --c-sub-bg: #F8F9FA;
+  --c-border: #E0E0E0;
+  --c-text-primary: #1A1A1A;
+  --c-text-secondary: #4A4A4A;
+
   /* Updated to sophisticated B2B SaaS color scheme with light tan background */
   --background: oklch(0.985 0.005 60); /* Light tan/off-white #FAF9F7 */
   --foreground: oklch(0.25 0.02 264); /* Deep navy #2D3748 */
@@ -101,6 +108,13 @@
   --sidebar-accent-foreground: oklch(0.98 0 0);
   --sidebar-border: oklch(0.25 0.01 264);
   --sidebar-ring: oklch(0.6 0.12 280);
+
+  /* Dark mode color tokens for inline styles */
+  --c-card-bg: #1a1d2e;
+  --c-sub-bg: #0f1117;
+  --c-border: #2d3149;
+  --c-text-primary: #f1f5f9;
+  --c-text-secondary: #94a3b8;
 }
 
 @theme inline {
@@ -307,8 +321,36 @@
 }
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: #4a5270 !important;
+  color: #7b87a8 !important;
 }
+
+/* Light gradient backgrounds in dark mode */
+.dark .from-blue-50   { --tw-gradient-from: #1e3558 !important; }
+.dark .from-blue-100  { --tw-gradient-from: #1e3558 !important; }
+.dark .to-indigo-100  { --tw-gradient-to: #2d2f6e !important; }
+.dark .to-indigo-50   { --tw-gradient-to: #2d2f6e !important; }
+.dark .from-purple-50 { --tw-gradient-from: #3b2d5e !important; }
+.dark .to-purple-100  { --tw-gradient-to: #4a2d7e !important; }
+.dark .bg-blue-50     { background-color: #1e3558 !important; }
+.dark .bg-indigo-50   { background-color: #2d2f6e !important; }
+.dark .bg-purple-50   { background-color: #3b2d5e !important; }
+.dark .bg-blue-100    { background-color: #1e3558 !important; }
+.dark .bg-indigo-100  { background-color: #2d2f6e !important; }
+.dark .bg-purple-100  { background-color: #3b2d5e !important; }
+.dark .bg-green-50    { background-color: #1a3a2a !important; }
+.dark .bg-green-100   { background-color: #1a3a2a !important; }
+.dark .bg-yellow-50   { background-color: #3a2e10 !important; }
+.dark .bg-yellow-100  { background-color: #3a2e10 !important; }
+.dark .bg-red-50      { background-color: #3a1a1a !important; }
+.dark .bg-red-100     { background-color: #3a1a1a !important; }
+
+/* Pages with hardcoded inline styles (e.g. taskflow) */
+.dark main                   { background-color: #0f1117 !important; }
+.dark header[style]          { background-color: #161827 !important; border-bottom-color: #2d3149 !important; }
+.dark .rounded-xl[style]     { background-color: #1a1d2e !important; border-color: #2d3149 !important; }
+.dark .rounded-lg[style]     { background-color: #1a1d2e !important; border-color: #2d3149 !important; }
+.dark [style*="F8F9FA"]      { background-color: #0f1117 !important; }
+.dark [style*="background-color: rgb(255, 255, 255)"] { background-color: #1a1d2e !important; }
 
 /* Tables */
 .dark table     { color: #e2e8f0; }
@@ -328,3 +370,46 @@
 .dark .rounded-lg.border,
 .dark .rounded-xl.border,
 .dark .rounded-2xl.border { border-color: #2d3149 !important; }
+
+/* ─── Auth pages always render in light mode ─────────────────────────────── */
+.auth-page {
+  --background: oklch(0.985 0.005 60);
+  --foreground: oklch(0.25 0.02 264);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.25 0.02 264);
+  --border: oklch(0.9 0.005 60);
+  --input: oklch(0.9 0.005 60);
+  --muted-foreground: oklch(0.5 0.01 264);
+  --primary: oklch(0.45 0.08 280);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.45 0.08 280);
+  background-color: oklch(0.985 0.005 60) !important;
+  color: oklch(0.25 0.02 264) !important;
+}
+
+.dark .auth-page input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.dark .auth-page textarea,
+.dark .auth-page select {
+  background-color: white !important;
+  color: #374151 !important;
+  border-color: #e5e7eb !important;
+}
+.dark .auth-page input::placeholder,
+.dark .auth-page textarea::placeholder { color: #9ca3af !important; }
+.dark .auth-page .rounded-xl.border,
+.dark .auth-page .rounded-lg.border { background-color: white !important; border-color: #e5e7eb !important; }
+
+/* Restore light-mode text colors inside auth pages */
+.dark .auth-page .text-gray-900 { color: #111827 !important; }
+.dark .auth-page .text-gray-800 { color: #1f2937 !important; }
+.dark .auth-page .text-gray-700 { color: #374151 !important; }
+.dark .auth-page .text-gray-600 { color: #4b5563 !important; }
+.dark .auth-page .text-gray-500 { color: #6b7280 !important; }
+.dark .auth-page .text-gray-400 { color: #9ca3af !important; }
+.dark .auth-page label         { color: #374151 !important; }
+.dark .auth-page h1, .dark .auth-page h2, .dark .auth-page h3 { color: #111827 !important; }
+.dark .auth-page p              { color: #4b5563 !important; }
+.dark .auth-page a:not(.btn):not([class*="bg-"]) { color: #4f46e5 !important; }
+.dark .auth-page .bg-white      { background-color: white !important; }
+.dark .auth-page .bg-gray-50    { background-color: #f9fafb !important; }
+.dark .auth-page .bg-gray-100   { background-color: #f3f4f6 !important; }

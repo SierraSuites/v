@@ -166,7 +166,7 @@ export default function TeamManager({ companyId, onTeamSelect }: TeamManagerProp
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>
+          <h2 className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
             👥 Teams
           </h2>
           <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
@@ -186,9 +186,9 @@ export default function TeamManager({ companyId, onTeamSelect }: TeamManagerProp
 
       {/* Teams Grid */}
       {teams.length === 0 ? (
-        <div className="bg-white rounded-xl border p-12 text-center" style={{ borderColor: '#E0E0E0' }}>
+        <div className="bg-white rounded-xl border p-12 text-center" style={{ borderColor: 'var(--c-border)' }}>
           <p className="text-4xl mb-3">👥</p>
-          <p className="text-lg font-semibold mb-2" style={{ color: '#1A1A1A' }}>
+          <p className="text-lg font-semibold mb-2" style={{ color: 'var(--c-text-primary)' }}>
             No Teams Yet
           </p>
           <p className="text-sm mb-4" style={{ color: '#6B7280' }}>
@@ -212,7 +212,7 @@ export default function TeamManager({ companyId, onTeamSelect }: TeamManagerProp
               onClick={() => handleSelectTeam(team)}
               className="bg-white rounded-xl border p-6 cursor-pointer transition-all hover:shadow-lg"
               style={{
-                borderColor: selectedTeam?.id === team.id ? team.color : '#E0E0E0',
+                borderColor: selectedTeam?.id === team.id ? team.color : 'var(--c-border)',
                 borderWidth: selectedTeam?.id === team.id ? '2px' : '1px'
               }}
             >
@@ -229,7 +229,7 @@ export default function TeamManager({ companyId, onTeamSelect }: TeamManagerProp
                      team.team_type === 'safety' ? '🦺' : '👥'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-lg truncate" style={{ color: '#1A1A1A' }}>
+                    <h3 className="font-bold text-lg truncate" style={{ color: 'var(--c-text-primary)' }}>
                       {team.name}
                     </h3>
                     <p className="text-xs" style={{ color: '#6B7280' }}>
@@ -273,7 +273,7 @@ export default function TeamManager({ companyId, onTeamSelect }: TeamManagerProp
 
       {/* Selected Team Details */}
       {selectedTeam && (
-        <div className="bg-white rounded-xl border p-6" style={{ borderColor: '#E0E0E0' }}>
+        <div className="bg-white rounded-xl border p-6" style={{ borderColor: 'var(--c-border)' }}>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div
@@ -286,7 +286,7 @@ export default function TeamManager({ companyId, onTeamSelect }: TeamManagerProp
                  selectedTeam.team_type === 'safety' ? '🦺' : '👥'}
               </div>
               <div>
-                <h3 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>
+                <h3 className="text-2xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
                   {selectedTeam.name}
                 </h3>
                 <p className="text-sm" style={{ color: '#6B7280' }}>
@@ -316,9 +316,9 @@ export default function TeamManager({ companyId, onTeamSelect }: TeamManagerProp
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden">
             {/* Modal Header */}
-            <div className="p-6 border-b" style={{ borderColor: '#E0E0E0' }}>
+            <div className="p-6 border-b" style={{ borderColor: 'var(--c-border)' }}>
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold" style={{ color: '#1A1A1A' }}>
+                <h3 className="text-xl font-bold" style={{ color: 'var(--c-text-primary)' }}>
                   ➕ Create New Team
                 </h3>
                 <button
@@ -419,7 +419,7 @@ export default function TeamManager({ companyId, onTeamSelect }: TeamManagerProp
             </div>
 
             {/* Modal Footer */}
-            <div className="p-6 border-t bg-gray-50" style={{ borderColor: '#E0E0E0' }}>
+            <div className="p-6 border-t bg-gray-50" style={{ borderColor: 'var(--c-border)' }}>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowCreateModal(false)}
