@@ -110,7 +110,7 @@ export default function HomePage() {
               <h1 className="text-3xl font-bold tracking-tight text-balance text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] md:text-4xl lg:text-5xl">
                 The AI-Powered Future of
                 <br />
-                <span className="bg-linear-to-r from-blue-300 via-blue-400 to-blue-300 bg-clip-text text-transparent drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
+                <span className="bg-gradient-to-r from-blue-300 via-blue-400 to-blue-300 bg-clip-text text-transparent drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
                   Construction Management
                 </span>
               </h1>
@@ -141,7 +141,7 @@ export default function HomePage() {
             <div className="mx-auto max-w-3xl text-center mb-12 animate-slide-up">
               <h2 className="text-2xl font-bold tracking-tight text-balance md:text-3xl">
                 <span className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">Construction's </span>
-                <span className="bg-linear-to-r from-destructive via-chart-5 to-destructive bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                <span className="bg-gradient-to-r from-destructive via-chart-5 to-destructive bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                   $177 Billion Open Secret
                 </span>
               </h2>
@@ -211,7 +211,7 @@ export default function HomePage() {
                 construction DNA.
               </p>
               <p className="mt-3 text-lg font-bold md:text-xl">
-                <span className="bg-linear-to-r from-primary via-chart-1 to-chart-4 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                <span className="bg-gradient-to-r from-primary via-chart-1 to-chart-4 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                   The Sierra Suites is the Solution
                 </span>
               </p>
@@ -225,7 +225,7 @@ export default function HomePage() {
           <div className="mx-auto max-w-3xl text-center animate-slide-up">
             <h2 className="text-3xl font-bold tracking-tight text-balance md:text-4xl lg:text-5xl">
               <span className="text-foreground">A Unified Platform, </span>
-              <span className="bg-linear-to-r from-primary via-chart-1 to-chart-4 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary via-chart-1 to-chart-4 bg-clip-text text-transparent">
                 Not Another Tool to Manage
               </span>
             </h2>
@@ -239,7 +239,7 @@ export default function HomePage() {
           <div className="mt-20 grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
             <div className="animate-slide-up">
               <h3 className="text-2xl font-bold md:text-3xl">
-                <span className="bg-linear-to-r from-primary via-chart-1 to-chart-4 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-primary via-chart-1 to-chart-4 bg-clip-text text-transparent">
                   The Project Management Core
                 </span>
               </h3>
@@ -282,7 +282,7 @@ export default function HomePage() {
             </div>
             <div className="order-1 lg:order-2 animate-slide-up">
               <h3 className="text-2xl font-bold md:text-3xl">
-                <span className="bg-linear-to-r from-primary via-chart-1 to-chart-4 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-primary via-chart-1 to-chart-4 bg-clip-text text-transparent">
                   The Construction Execution Toolkit
                 </span>
               </h3>
@@ -311,7 +311,7 @@ export default function HomePage() {
           <div className="mt-20 grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
             <div className="animate-slide-up">
               <h3 className="text-2xl font-bold md:text-3xl">
-                <span className="bg-linear-to-r from-primary via-chart-1 to-chart-4 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-primary via-chart-1 to-chart-4 bg-clip-text text-transparent">
                   The AI Co-Pilot
                 </span>
               </h3>
@@ -354,7 +354,7 @@ export default function HomePage() {
             </div>
             <div className="order-1 lg:order-2 animate-slide-up">
               <h3 className="text-2xl font-bold md:text-3xl">
-                <span className="bg-linear-to-r from-primary via-chart-1 to-chart-4 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-primary via-chart-1 to-chart-4 bg-clip-text text-transparent">
                   ESG & Compliance Made Simple
                 </span>
               </h3>
@@ -381,11 +381,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="py-20 md:py-24 lg:py-28 border-y border-border bg-linear-to-b from-background to-muted/20">
+      <section className="py-20 md:py-24 lg:py-28 border-y border-border bg-gradient-to-b from-background to-muted/20">
         <div className="container mx-auto px-8 lg:px-12">
           <div className="mx-auto max-w-3xl text-center animate-slide-up">
             <h2 className="text-3xl font-bold tracking-tight text-balance text-foreground drop-shadow-lg md:text-4xl lg:text-5xl">
-              <span className="bg-linear-to-r from-primary via-chart-1 to-chart-4 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary via-chart-1 to-chart-4 bg-clip-text text-transparent">
                 Enterprise-Grade Security,
               </span>
               <span className="text-foreground"> Built In</span>

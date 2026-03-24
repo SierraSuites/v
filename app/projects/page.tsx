@@ -897,7 +897,7 @@ export default function ProjectsPage() {
                       </button>
                     )}
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-4">
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
                     <div className="flex items-center gap-2 text-white text-xs">
                       <span>📍</span>
                       <span className="truncate">{project.address}</span>
@@ -1036,7 +1036,7 @@ export default function ProjectsPage() {
                           {project.teamMembers.slice(0, 3).map((member, idx) => (
                             <div
                               key={idx}
-                              className="w-8 h-8 rounded-full bg-linear-to-br from-blue-600 to-blue-400 border-2 border-white flex items-center justify-center text-white text-xs font-semibold"
+                              className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-blue-400 border-2 border-white flex items-center justify-center text-white text-xs font-semibold"
                               title={member.name}
                             >
                               {member.avatar}
