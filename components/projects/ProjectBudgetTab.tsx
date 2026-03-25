@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getUserCompany } from '@/lib/auth/get-user-company'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 interface Expense {
   id: string
@@ -12,6 +13,7 @@ interface Expense {
   amount: number
   date: string
   vendor: string | null
+  payment_status: 'pending' | 'paid' | 'overdue'
   created_by: {
     name: string
     avatar: string
@@ -33,6 +35,7 @@ interface ProjectBudgetTabProps {
 
 export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudgetTabProps) {
   const projectId = project.id
+  const { darkMode, colors } = useThemeColors()
   const [budgetData, setBudgetData] = useState<BudgetData | null>(null)
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
@@ -41,7 +44,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; description: string } | null>(null)
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
-  const [editForm, setEditForm] = useState({ category: '', description: '', amount: '', date: '', vendor: '' })
+  const [editForm, setEditForm] = useState({ category: '', description: '', amount: '', date: '', vendor: '', payment_status: 'pending' as 'pending' | 'paid' | 'overdue' })
 
   // New expense form state
   const [newExpense, setNewExpense] = useState({
@@ -49,7 +52,8 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
     description: '',
     amount: '',
     date: new Date().toISOString().split('T')[0],
-    vendor: ''
+    vendor: '',
+    payment_status: 'pending' as 'pending' | 'paid' | 'overdue'
   })
 
   useEffect(() => {
@@ -73,7 +77,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
       // Load all expenses for this project
       const { data: expensesData, error: expensesError } = await supabase
         .from('project_expenses')
-        .select('id, category, description, amount, date, vendor, created_by')
+        .select('id, category, description, amount, date, vendor, payment_status, created_by')
         .eq('project_id', projectId)
         .order('date', { ascending: false })
 
@@ -97,6 +101,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
         amount: exp.amount,
         date: exp.date,
         vendor: exp.vendor,
+        payment_status: exp.payment_status || 'pending',
         created_by: {
           name: creatorMap[exp.created_by]?.full_name || 'Unknown',
           avatar: creatorMap[exp.created_by]?.avatar_url || ''
@@ -145,6 +150,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
           amount: parseFloat(newExpense.amount),
           date: newExpense.date,
           vendor: newExpense.vendor || null,
+          payment_status: newExpense.payment_status,
           created_by: profile.id
         })
 
@@ -160,6 +166,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
         amount: addedAmount,
         date: newExpense.date,
         vendor: newExpense.vendor || null,
+        payment_status: newExpense.payment_status,
         created_by: { name: profile.full_name ?? 'You', avatar: profile.avatar_url ?? '' }
       }, ...prev])
 
@@ -179,7 +186,8 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
         description: '',
         amount: '',
         date: new Date().toISOString().split('T')[0],
-        vendor: ''
+        vendor: '',
+        payment_status: 'pending'
       })
       setShowAddExpense(false)
     } catch (error: any) {
@@ -303,7 +311,8 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
       description: expense.description,
       amount: String(expense.amount),
       date: expense.date,
-      vendor: expense.vendor ?? ''
+      vendor: expense.vendor ?? '',
+      payment_status: expense.payment_status
     })
     setDetailExpense(null)
   }
@@ -320,14 +329,15 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
         description: editForm.description,
         amount: updatedAmount,
         date: editForm.date,
-        vendor: editForm.vendor || null
+        vendor: editForm.vendor || null,
+        payment_status: editForm.payment_status
       })
       .eq('id', editingExpense.id)
     if (error) { console.error('Failed to update expense:', error?.message); return }
 
     const diff = updatedAmount - editingExpense.amount
     setExpenses(prev => prev.map(e => e.id === editingExpense.id
-      ? { ...e, category: editForm.category, description: editForm.description, amount: updatedAmount, date: editForm.date, vendor: editForm.vendor || null }
+      ? { ...e, category: editForm.category, description: editForm.description, amount: updatedAmount, date: editForm.date, vendor: editForm.vendor || null, payment_status: editForm.payment_status }
       : e
     ))
     if (budgetData && diff !== 0) {
@@ -502,100 +512,160 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
       {/* Expense History Header */}
       <h3 className="text-lg font-semibold text-gray-900">Expense History</h3>
 
-      {/* Add Expense Form */}
+      {/* Add Expense Modal */}
       {showAddExpense && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">New Expense</h4>
-          <form onSubmit={handleAddExpense} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div
+            className="rounded-xl w-full max-w-lg flex flex-col"
+            style={{ backgroundColor: colors.bg, boxShadow: "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)" }}
+          >
+            {/* Header */}
+            <div
+              className="flex items-center justify-between px-6 py-4"
+              style={{ borderBottom: colors.borderBottom }}
+            >
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Category
-                </label>
-                <select
-                  value={newExpense.category}
-                  onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                >
-                  {categories.slice(1).map(cat => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
-                  ))}
-                </select>
+                <h2 className="text-2xl font-bold" style={{ color: colors.text }}>Add Expense</h2>
+                <p className="text-sm mt-1" style={{ color: colors.textMuted }}>Record a new project expense</p>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Amount ({budgetData.currency})
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={newExpense.amount}
-                  onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={newExpense.date}
-                  onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Vendor (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={newExpense.vendor}
-                  onChange={(e) => setNewExpense({ ...newExpense, vendor: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Vendor name"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                value={newExpense.description}
-                onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                rows={2}
-                placeholder="What was this expense for?"
-                required
-              />
-            </div>
-
-            <div className="flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setShowAddExpense(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Add Expense
+                <svg className="w-6 h-6" style={{ color: colors.textMuted }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
-          </form>
+
+            {/* Body */}
+            <form onSubmit={handleAddExpense}>
+              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                    Description <span className="text-[#FF6B6B]">*</span>
+                  </label>
+                  <textarea
+                    value={newExpense.description}
+                    onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+                    style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
+                    rows={2}
+                    placeholder="What was this expense for?"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Category */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                      Category
+                    </label>
+                    <select
+                      value={newExpense.category}
+                      onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
+                      className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+                      style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text, colorScheme: darkMode ? 'dark' : 'light' }}
+                      required
+                    >
+                      {categories.slice(1).map(cat => (
+                        <option key={cat.value} value={cat.value}>{cat.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Amount */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                      Amount ({budgetData.currency}) <span className="text-[#FF6B6B]">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newExpense.amount}
+                      onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
+                      className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{ backgroundColor: colors.bg, border: `1px solid ${colors.border}`, color: colors.text }}
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+
+                  {/* Date */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                      Date <span className="text-[#FF6B6B]">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={newExpense.date}
+                      onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
+                      className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{ backgroundColor: colors.bg, border: `1px solid ${colors.border}`, color: colors.text }}
+                      required
+                    />
+                  </div>
+
+                  {/* Vendor */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                      Vendor
+                    </label>
+                    <input
+                      type="text"
+                      value={newExpense.vendor}
+                      onChange={(e) => setNewExpense({ ...newExpense, vendor: e.target.value })}
+                      className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{ backgroundColor: colors.bg, border: `1px solid ${colors.border}`, color: colors.text }}
+                      placeholder="Vendor name"
+                    />
+                  </div>
+
+                  {/* Payment Status */}
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                      Payment Status
+                    </label>
+                    <select
+                      value={newExpense.payment_status}
+                      onChange={(e) => setNewExpense({ ...newExpense, payment_status: e.target.value as 'pending' | 'paid' | 'overdue' })}
+                      className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+                      style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text, colorScheme: darkMode ? 'dark' : 'light' }}
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="paid">Paid</option>
+                      <option value="overdue">Overdue</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div
+                className="px-6 py-4 flex items-center justify-end gap-3"
+                style={{ borderTop: colors.borderBottom }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setShowAddExpense(false)}
+                  className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+                  style={{ border: colors.border, color: colors.text }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-lg bg-[#FF6B6B] text-white font-medium hover:bg-[#FF5252] transition-colors"
+                  style={{ boxShadow: "0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)" }}
+                >
+                  Add Expense
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -695,36 +765,55 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
     {detailExpense && (
       <>
         <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setDetailExpense(null)} />
-        <div className="fixed right-0 top-0 h-full w-96 bg-white shadow-xl z-50 flex flex-col">
-          <div className="flex items-center justify-between px-5 py-4 border-b">
-            <h3 className="text-base font-semibold text-gray-900">Expense Details</h3>
-            <button onClick={() => setDetailExpense(null)} className="text-gray-400 hover:text-gray-600">
+        <div
+          className="fixed right-0 top-0 h-full w-96 shadow-xl z-50 flex flex-col"
+          style={{ backgroundColor: darkMode ? colors.bg : '#ffffff' }}
+        >
+          <div
+            className="flex items-center justify-between px-5 py-4"
+            style={{ borderBottom: `1px solid ${darkMode ? colors.border : '#e5e7eb'}` }}
+          >
+            <h3 className="text-base font-semibold" style={{ color: darkMode ? colors.text : '#111827' }}>Expense Details</h3>
+            <button onClick={() => setDetailExpense(null)} style={{ color: darkMode ? '#9ca3af' : '#9ca3af' }} className="hover:opacity-70">
               <span className="text-xl leading-none">&times;</span>
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-5 space-y-6">
             {/* Title & Amount */}
             <div>
-              <p className="text-lg font-semibold text-gray-900">{detailExpense.description}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(detailExpense.amount, budgetData?.currency ?? 'USD')}</p>
+              <p className="text-lg font-semibold" style={{ color: darkMode ? colors.text : '#111827' }}>{detailExpense.description}</p>
+              <p className="text-2xl font-bold mt-1" style={{ color: darkMode ? colors.text : '#111827' }}>{formatCurrency(detailExpense.amount, budgetData?.currency ?? 'USD')}</p>
             </div>
 
             {/* Details */}
             <section>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100">Overview</p>
+              <p
+                className="text-xs font-bold uppercase tracking-widest mb-3 pb-1.5"
+                style={{ color: darkMode ? '#6b7280' : '#9ca3af', borderBottom: `1px solid ${darkMode ? colors.border : '#f3f4f6'}` }}
+              >Overview</p>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Category</p>
+                  <p className="text-xs mb-0.5" style={{ color: darkMode ? '#6b7280' : '#9ca3af' }}>Category</p>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getCategoryColor(detailExpense.category)}`}>{detailExpense.category}</span>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Date</p>
-                  <span className="font-medium text-gray-700">{formatDate(detailExpense.date)}</span>
+                  <p className="text-xs mb-0.5" style={{ color: darkMode ? '#6b7280' : '#9ca3af' }}>Payment Status</p>
+                  <span className={`text-xs px-2 py-0.5 rounded font-medium capitalize ${
+                    detailExpense.payment_status === 'paid'
+                      ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : detailExpense.payment_status === 'overdue'
+                      ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                      : 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  }`}>{detailExpense.payment_status}</span>
+                </div>
+                <div>
+                  <p className="text-xs mb-0.5" style={{ color: darkMode ? '#6b7280' : '#9ca3af' }}>Date</p>
+                  <span className="font-medium" style={{ color: darkMode ? colors.text : '#374151' }}>{formatDate(detailExpense.date)}</span>
                 </div>
                 {detailExpense.vendor && (
                   <div className="col-span-2">
-                    <p className="text-xs text-gray-400 mb-0.5">Vendor</p>
-                    <span className="font-medium text-gray-700">{detailExpense.vendor}</span>
+                    <p className="text-xs mb-0.5" style={{ color: darkMode ? '#6b7280' : '#9ca3af' }}>Vendor</p>
+                    <span className="font-medium" style={{ color: darkMode ? colors.text : '#374151' }}>{detailExpense.vendor}</span>
                   </div>
                 )}
               </div>
@@ -732,7 +821,10 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
 
             {/* Added By */}
             <section>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100">Added By</p>
+              <p
+                className="text-xs font-bold uppercase tracking-widest mb-3 pb-1.5"
+                style={{ color: darkMode ? '#6b7280' : '#9ca3af', borderBottom: `1px solid ${darkMode ? colors.border : '#f3f4f6'}` }}
+              >Added By</p>
               <div className="flex items-center gap-2 text-sm">
                 <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold overflow-hidden shrink-0">
                   {detailExpense.created_by.avatar ? (
@@ -741,23 +833,29 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
                     (detailExpense.created_by.name?.[0] ?? '?').toUpperCase()
                   )}
                 </div>
-                <span className="font-medium text-gray-700">{detailExpense.created_by.name}</span>
+                <span className="font-medium" style={{ color: darkMode ? colors.text : '#374151' }}>{detailExpense.created_by.name}</span>
               </div>
             </section>
           </div>
 
           {/* Footer */}
-          <div className="px-5 py-4 border-t flex gap-2">
+          <div
+            className="px-5 py-4 flex gap-2"
+            style={{ borderTop: `1px solid ${darkMode ? colors.border : '#e5e7eb'}` }}
+          >
             <button
               onClick={() => openEditExpense(detailExpense)}
-              className="flex items-center gap-1.5 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 border rounded-lg text-sm font-medium transition-colors cursor-pointer"
+              style={{ borderColor: darkMode ? colors.border : '#e5e7eb', color: darkMode ? colors.text : '#374151' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = darkMode ? colors.bgAlt : '#f9fafb')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
               Edit
             </button>
             <button
               onClick={e => { e.stopPropagation(); setDetailExpense(null); handleDeleteExpense(detailExpense.id, detailExpense.description) }}
-              className="flex-1 px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
+              className="flex-1 px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors cursor-pointer dark:border-red-800 dark:hover:bg-red-900/30"
             >
               Delete
             </button>
@@ -790,7 +888,8 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
                 <select
                   value={editForm.category}
                   onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text, colorScheme: darkMode ? 'dark' : 'light' }}
                 >
                   {['materials','labor','equipment','permits','subcontractors','utilities','insurance','other'].map(c => (
                     <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
@@ -829,6 +928,19 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Payment Status</label>
+              <select
+                value={editForm.payment_status}
+                onChange={e => setEditForm(f => ({ ...f, payment_status: e.target.value as 'pending' | 'paid' | 'overdue' }))}
+                className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+                style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text, colorScheme: darkMode ? 'dark' : 'light' }}
+              >
+                <option value="pending">Pending</option>
+                <option value="paid">Paid</option>
+                <option value="overdue">Overdue</option>
+              </select>
             </div>
             <div className="flex gap-3 pt-2">
               <button type="button" onClick={() => setEditingExpense(null)} className="flex-1 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">

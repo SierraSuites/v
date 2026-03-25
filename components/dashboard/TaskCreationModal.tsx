@@ -320,7 +320,7 @@ export default function TaskCreationModal({
 
   const inputStyle = (hasError?: boolean) => ({
     color: colors.text,
-    backgroundColor: colors.bg,
+    backgroundColor: colors.bgAlt,
     border: hasError ? '1px solid rgb(239 68 68)' : colors.border
   })
 

@@ -55,10 +55,10 @@ interface Props {
 }
 
 const PRIORITY_COLORS: Record<Task['priority'], string> = {
-  low: 'bg-gray-100 text-gray-500',
-  medium: 'bg-blue-50 text-blue-600',
-  high: 'bg-orange-50 text-orange-600',
-  critical: 'bg-red-100 text-red-700'
+  low: 'bg-slate-100 text-slate-600 dark:bg-slate-700/60 dark:text-slate-300',
+  medium: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
+  high: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+  critical: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
 }
 
 const STATUS_LABELS: Record<Task['status'], string> = {
@@ -459,7 +459,7 @@ export default function ProjectTasksTab({ project }: Props) {
               <div
                 key={task.id}
                 onClick={() => !selectedIds.size && setDetailTask(task)}
-                className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+                className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)] dark:hover:border-gray-500 transition-shadow transition-colors cursor-pointer"
                 style={isSelected ? { backgroundColor: darkMode ? 'rgba(59,130,246,0.1)' : 'rgba(219,234,254,0.4)', borderColor: '#93c5fd' } : {}}
               >
                 {/* Checkbox */}
@@ -489,11 +489,11 @@ export default function ProjectTasksTab({ project }: Props) {
                       <button
                         onClick={e => { e.stopPropagation(); setStatusDropdownId(statusDropdownId === task.id ? null : task.id) }}
                         className={`text-xs font-semibold px-2 py-1 rounded-md border transition-colors ${
-                          task.status === 'completed' ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' :
-                          task.status === 'in-progress' ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' :
-                          task.status === 'review' ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100' :
-                          task.status === 'blocked' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' :
-                          'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                          task.status === 'completed' ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/40 dark:text-green-300 dark:border-green-600 dark:hover:bg-green-900/60' :
+                          task.status === 'in-progress' ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-200 dark:border-blue-500 dark:hover:bg-blue-900/60' :
+                          task.status === 'review' ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-500 dark:hover:bg-purple-900/60' :
+                          task.status === 'blocked' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-300 dark:border-red-500 dark:hover:bg-red-900/60' :
+                          'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 dark:bg-gray-700/50 dark:text-gray-300 dark:border-gray-500 dark:hover:bg-gray-700'
                         }`}
                       >
                         {STATUS_LABELS[task.status]} ▾
@@ -636,12 +636,12 @@ export default function ProjectTasksTab({ project }: Props) {
                     )}
                     {(detailTask.certifications?.length ?? 0) > 0 && (
                       <div><p className="text-xs text-gray-400 mb-0.5">Certifications</p>
-                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.certifications!.map(c => <span key={c} className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">{c}</span>)}</div>
+                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.certifications!.map(c => <span key={c} className="text-xs bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 px-1.5 py-0.5 rounded">{c}</span>)}</div>
                       </div>
                     )}
                     {(detailTask.safety_protocols?.length ?? 0) > 0 && (
                       <div><p className="text-xs text-gray-400 mb-0.5">Safety Protocols</p>
-                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.safety_protocols!.map(s => <span key={s} className="text-xs bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded">{s}</span>)}</div>
+                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.safety_protocols!.map(s => <span key={s} className="text-xs bg-orange-50 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300 px-1.5 py-0.5 rounded">{s}</span>)}</div>
                       </div>
                     )}
                   </div>
@@ -661,7 +661,7 @@ export default function ProjectTasksTab({ project }: Props) {
             <div className="px-5 py-4 border-t flex gap-2">
               <button
                 onClick={() => setShowEditModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700"
+                className="flex items-center gap-1.5 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 cursor-pointer"
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = darkMode ? colors.bgAlt : '#f9fafb')}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
               >
@@ -670,7 +670,7 @@ export default function ProjectTasksTab({ project }: Props) {
               </button>
               <button
                 onClick={() => setConfirmDeleteId(detailTask.id)}
-                className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50"
+                className="flex-1 px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium cursor-pointer hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/30"
               >
                 Delete
               </button>
