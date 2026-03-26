@@ -394,36 +394,7 @@ export default function ProjectsPage() {
   // Projects data
   const [projects, setProjects] = useState<Project[]>([])
 
-  // Load projects from Supabase
-  useEffect(() => {
-    const loadProjects = async () => {
-      const { data, error } = await getProjects()
 
-      if (error) {
-        console.error("Error loading projects:", error)
-        toast.error("Failed to load projects")
-        return
-      }
-
-      if (data) {
-        const convertedProjects = data.map(convertSupabaseProject)
-
-        // Fetch team members for all projects
-        const projectIds = convertedProjects.map(p => p.id)
-        const teamMembersMap = await getTeamMembersForProjects(projectIds)
-
-        // Add team members to each project
-        const projectsWithTeams = convertedProjects.map(project => ({
-          ...project,
-          teamMembers: teamMembersMap[project.id] || []
-        }))
-
-        setProjects(projectsWithTeams)
-      }
-    }
-
-    loadProjects()
-  }, [])
 
   // Set up real-time subscriptions for projects
   useEffect(() => {
@@ -457,13 +428,12 @@ export default function ProjectsPage() {
   }, [])
 
   useEffect(() => {
-    const loadUser = async () => {
+    const loadAll = async () => {
       const supabase = createClient()
       const { data: { session } } = await supabase.auth.getSession()
 
       if (session) {
         setUser(session.user)
-        // Read plan from user_profiles (secure, RLS-protected)
         const { data: profile } = await supabase
           .from('user_profiles')
           .select('plan')
@@ -475,12 +445,27 @@ export default function ProjectsPage() {
           localStorage.setItem('userPlan', profile.plan)
         }
       } else {
-        // For demo, use placeholder
         setUser({ user_metadata: { full_name: "John Doe" } })
       }
+
+      // Load projects before revealing the page
+      const { data, error } = await getProjects()
+      if (error) {
+        console.error("Error loading projects:", error)
+        toast.error("Failed to load projects")
+      } else if (data) {
+        const convertedProjects = data.map(convertSupabaseProject)
+        const projectIds = convertedProjects.map(p => p.id)
+        const teamMembersMap = await getTeamMembersForProjects(projectIds)
+        setProjects(convertedProjects.map(project => ({
+          ...project,
+          teamMembers: teamMembersMap[project.id] || []
+        })))
+      }
+
       setLoading(false)
     }
-    loadUser()
+    loadAll()
   }, [])
 
   // Sync URL params to filter state
@@ -550,64 +535,12 @@ export default function ProjectsPage() {
 
   const canCreateProject = projects.length < projectLimits[userPlan]
 
-  // Quality Guide line 1774: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0d0f17]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header skeleton */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-2 animate-pulse" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48 animate-pulse" />
-            </div>
-            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-36 animate-pulse" />
-          </div>
-          {/* Stats skeleton */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-            {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} className="rounded-xl bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-gray-700 p-4 animate-pulse">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" />
-                </div>
-                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-12" />
-              </div>
-            ))}
-          </div>
-          {/* Filter bar skeleton */}
-          <div className="rounded-xl bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-gray-700 p-4 mb-6 animate-pulse">
-            <div className="flex gap-4">
-              <div className="flex-1 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg" />
-              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-28" />
-              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-28" />
-            </div>
-          </div>
-          {/* Project cards skeleton */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="rounded-xl bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-gray-700 overflow-hidden animate-pulse">
-                <div className="h-48 bg-gray-200 dark:bg-gray-700" />
-                <div className="p-5">
-                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4" />
-                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full w-full mb-4" />
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="h-12 bg-gray-100 dark:bg-gray-700 rounded-lg" />
-                    <div className="h-12 bg-gray-100 dark:bg-gray-700 rounded-lg" />
-                  </div>
-                  <div className="flex justify-between">
-                    <div className="flex -space-x-2">
-                      {[1, 2, 3].map(j => (
-                        <div key={j} className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full border-2 border-white dark:border-gray-800" />
-                      ))}
-                    </div>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="min-h-screen bg-gray-50 dark:bg-[#0d0f17] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading projects...</p>
         </div>
       </div>
     )
@@ -621,6 +554,7 @@ export default function ProjectsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold" style={{ color: colors.text }}>Projects</h1>
+              <p className="text-sm mt-0.5" style={{ color: colors.textMuted }}>Manage and track all your construction projects</p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -846,7 +780,24 @@ export default function ProjectsPage() {
         </div>
 
         {/* Projects Grid/List */}
-        {filteredProjects.length === 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="rounded-xl overflow-hidden animate-pulse" style={{ backgroundColor: colors.bg, border: colors.border }}>
+                <div className="h-32" style={{ backgroundColor: colors.bgMuted }} />
+                <div className="p-5 space-y-3">
+                  <div className="h-4 rounded-full w-2/3" style={{ backgroundColor: colors.bgMuted }} />
+                  <div className="h-3 rounded-full w-1/2" style={{ backgroundColor: colors.bgMuted }} />
+                  <div className="h-2 rounded-full w-full mt-4" style={{ backgroundColor: colors.bgMuted }} />
+                  <div className="flex gap-2 pt-1">
+                    <div className="h-6 w-16 rounded-full" style={{ backgroundColor: colors.bgMuted }} />
+                    <div className="h-6 w-20 rounded-full" style={{ backgroundColor: colors.bgMuted }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredProjects.length === 0 ? (
           <div className="rounded-xl p-12 text-center" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
             <div className="max-w-md mx-auto">
               <span className="text-6xl mb-4 block">🏗️</span>

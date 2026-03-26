@@ -5,7 +5,9 @@
 // Summary of project information, recent activity, and key metrics
 // ============================================================================
 
-import { ProjectDetails } from '@/lib/projects/get-project-details'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { ProjectDetails, ProjectMilestone } from '@/lib/projects/get-project-details'
 import { Calendar, TrendingUp, FileText, Users, AlertTriangle } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -14,28 +16,48 @@ interface Props {
 }
 
 export default function ProjectOverviewTab({ project }: Props) {
+  const [milestones, setMilestones] = useState<ProjectMilestone[]>(project.milestones)
+  const [expenses, setExpenses] = useState(project.expenses)
+
+  useEffect(() => {
+    const supabase = createClient()
+
+    async function fetchLiveData() {
+      const [milestonesRes, expensesRes] = await Promise.all([
+        supabase.from('project_milestones').select('*').eq('project_id', project.id).order('due_date', { ascending: true }),
+        supabase.from('project_expenses').select('*').eq('project_id', project.id).order('date', { ascending: false })
+      ])
+      if (milestonesRes.data) setMilestones(milestonesRes.data as ProjectMilestone[])
+      if (expensesRes.data) setExpenses(expensesRes.data as typeof project.expenses)
+    }
+
+    fetchLiveData()
+  }, [project.id])
+
   // Calculate completion percentage by milestone
-  const completedMilestones = project.milestones.filter(m => m.status === 'completed').length
-  const totalMilestones = project.milestones.length
+  const completedMilestones = milestones.filter(m => m.status === 'completed').length
+  const totalMilestones = milestones.length
   const milestoneProgress = totalMilestones > 0 ? (completedMilestones / totalMilestones) * 100 : 0
 
   // Get upcoming milestones
-  const upcomingMilestones = project.milestones
+  const upcomingMilestones = milestones
     .filter(m => m.status !== 'completed' && m.status !== 'cancelled')
     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
     .slice(0, 5)
 
   // Get recent expenses
-  const recentExpenses = [...project.expenses]
+  const recentExpenses = [...expenses]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5)
 
   // Calculate expense breakdown
-  const expensesByCategory = project.expenses.reduce((acc, expense) => {
+  const expensesByCategory = expenses.reduce((acc, expense) => {
     const category = expense.category || 'other'
     acc[category] = (acc[category] || 0) + expense.amount
     return acc
   }, {} as Record<string, number>)
+
+  const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0)
 
   const topCategories = Object.entries(expensesByCategory)
     .sort(([, a], [, b]) => b - a)
@@ -198,7 +220,7 @@ export default function ProjectOverviewTab({ project }: Props) {
             {topCategories.length > 0 ? (
               <div className="space-y-4">
                 {topCategories.map(([category, amount]) => {
-                  const percentage = (amount / project.spent) * 100
+                  const percentage = totalSpent > 0 ? (amount / totalSpent) * 100 : 0
                   return (
                     <div key={category}>
                       <div className="flex items-center justify-between mb-2">
@@ -222,7 +244,7 @@ export default function ProjectOverviewTab({ project }: Props) {
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-400">Total Spent:</span>
-                    <span className="font-bold text-gray-900 dark:text-gray-100">${(project.spent / 1000).toFixed(1)}k</span>
+                    <span className="font-bold text-gray-900 dark:text-gray-100">${(totalSpent / 1000).toFixed(1)}k</span>
                   </div>
                   <div className="flex items-center justify-between text-sm mt-2">
                     <span className="text-gray-600 dark:text-gray-400">Estimated Budget:</span>
@@ -230,8 +252,8 @@ export default function ProjectOverviewTab({ project }: Props) {
                   </div>
                   <div className="flex items-center justify-between text-sm mt-2">
                     <span className="text-gray-600 dark:text-gray-400">Remaining:</span>
-                    <span className={`font-semibold ${project.budgetRemaining < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                      ${(Math.abs(project.budgetRemaining) / 1000).toFixed(1)}k {project.budgetRemaining < 0 ? 'over' : ''}
+                    <span className={`font-semibold ${project.estimated_budget - totalSpent < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                      ${(Math.abs(project.estimated_budget - totalSpent) / 1000).toFixed(1)}k {project.estimated_budget - totalSpent < 0 ? 'over' : ''}
                     </span>
                   </div>
                 </div>
