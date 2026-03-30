@@ -5,7 +5,9 @@ import { ProjectDetails, ProjectMilestone } from '@/lib/projects/get-project-det
 import {
   PlusIcon,
   FlagIcon,
-  TrashIcon
+  TrashIcon,
+  XMarkIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
@@ -47,7 +49,14 @@ export default function ProjectTimelineTab({ project }: Props) {
     due_date: '',
     status: 'pending' as ProjectMilestone['status']
   })
-  const { darkMode } = useThemeColors()
+  const { darkMode, colors } = useThemeColors()
+
+  // Detail sidebar state
+  const [detailMilestone, setDetailMilestone] = useState<ProjectMilestone | null>(null)
+  const [editingDetail, setEditingDetail] = useState(false)
+  const [editForm, setEditForm] = useState({ name: '', description: '', due_date: '', status: 'pending' as ProjectMilestone['status'] })
+  const [confirmDeleteDetailId, setConfirmDeleteDetailId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
   // Sort milestones by due_date
   const sorted = [...milestones].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
@@ -64,6 +73,62 @@ export default function ProjectTimelineTab({ project }: Props) {
   const today = new Date()
   const elapsed = Math.min(Math.max((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24), 0), totalDays)
   const progressPercent = (elapsed / totalDays) * 100
+
+  function openDetail(milestone: ProjectMilestone) {
+    setDetailMilestone(milestone)
+    setEditingDetail(false)
+    setConfirmDeleteDetailId(null)
+  }
+
+  function startEdit() {
+    if (!detailMilestone) return
+    setEditForm({
+      name: detailMilestone.name,
+      description: detailMilestone.description ?? '',
+      due_date: detailMilestone.due_date.slice(0, 10),
+      status: detailMilestone.status,
+    })
+    setEditingDetail(true)
+  }
+
+  async function handleEditSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!detailMilestone || !editForm.name || !editForm.due_date) return
+    setSaving(true)
+    try {
+      const supabase = (await import('@/lib/supabase/client')).createClient()
+      const { data, error } = await supabase
+        .from('project_milestones')
+        .update({
+          name: editForm.name,
+          description: editForm.description || null,
+          due_date: editForm.due_date,
+          status: editForm.status,
+        })
+        .eq('id', detailMilestone.id)
+        .select()
+        .single()
+
+      if (!error && data) {
+        const updated = data as ProjectMilestone
+        setMilestones(prev => prev.map(m => m.id === updated.id ? updated : m))
+        setDetailMilestone(updated)
+        setEditingDetail(false)
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDetailDelete() {
+    if (!confirmDeleteDetailId) return
+    const supabase = (await import('@/lib/supabase/client')).createClient()
+    await supabase.from('project_milestones').delete().eq('id', confirmDeleteDetailId)
+    setMilestones(prev => prev.filter(m => m.id !== confirmDeleteDetailId))
+    setSelectedIds(prev => { const next = new Set(prev); next.delete(confirmDeleteDetailId); return next })
+    setDetailMilestone(null)
+    setConfirmDeleteDetailId(null)
+  }
 
   function toggleSelect(id: string) {
     setSelectedIds(prev => {
@@ -209,73 +274,124 @@ export default function ProjectTimelineTab({ project }: Props) {
         </p>
       </div>
 
-      {/* Add Milestone Form */}
+      {/* Add Milestone Modal */}
       {showForm && (
-        <div className="bg-white border rounded-lg p-6">
-          <h3 className="text-base font-semibold text-gray-900 mb-4">New Milestone</h3>
-          <form onSubmit={handleAddMilestone} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Milestone Name *</label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                  placeholder="e.g., Foundation Complete, Framing Inspection"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <input
-                  type="text"
-                  value={form.description}
-                  onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                  placeholder="Optional details about this milestone"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div
+            className="rounded-xl w-full max-w-lg flex flex-col"
+            style={{ backgroundColor: colors.bg, boxShadow: "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)" }}
+          >
+            {/* Header */}
+            <div
+              className="flex items-center justify-between px-6 py-4"
+              style={{ borderBottom: colors.borderBottom }}
+            >
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
-                <input
-                  type="date"
-                  value={form.due_date}
-                  onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
+                <h2 className="text-2xl font-bold" style={{ color: colors.text }}>Add Milestone</h2>
+                <p className="text-sm mt-1" style={{ color: colors.textMuted }}>Add a key milestone to track project progress</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  value={form.status}
-                  onChange={e => setForm(p => ({ ...p, status: e.target.value as ProjectMilestone['status'] }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-              >
-                {submitting ? 'Adding...' : 'Add Milestone'}
-              </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
               >
-                Cancel
+                <svg className="w-6 h-6" style={{ color: colors.textMuted }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
-          </form>
+
+            {/* Body */}
+            <form onSubmit={handleAddMilestone}>
+              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+                {/* Milestone Name */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                    Milestone Name <span className="text-[#FF6B6B]">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                    placeholder="e.g., Foundation Complete, Framing Inspection"
+                    className="w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+                    style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
+                    required
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                    Description
+                  </label>
+                  <input
+                    type="text"
+                    value={form.description}
+                    onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                    placeholder="Optional details about this milestone"
+                    className="w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+                    style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
+                  />
+                </div>
+
+                {/* Due Date */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                    Due Date <span className="text-[#FF6B6B]">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={form.due_date}
+                    onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+                    style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
+                    required
+                  />
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                    Status
+                  </label>
+                  <select
+                    value={form.status}
+                    onChange={e => setForm(p => ({ ...p, status: e.target.value as ProjectMilestone['status'] }))}
+                    className="w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+                    style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text, colorScheme: darkMode ? 'dark' : 'light' }}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div
+                className="px-6 py-4 flex items-center justify-end gap-3"
+                style={{ borderTop: colors.borderBottom }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+                  style={{ border: colors.border, color: colors.text }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-2.5 rounded-lg bg-[#FF6B6B] text-white font-medium hover:bg-[#FF5252] transition-colors disabled:opacity-50"
+                  style={{ boxShadow: "0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)" }}
+                >
+                  {submitting ? 'Adding...' : 'Add Milestone'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -301,12 +417,13 @@ export default function ProjectTimelineTab({ project }: Props) {
             return (
               <div
                 key={milestone.id}
-                className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                onClick={() => !selectedIds.size && openDetail(milestone)}
+                className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)] dark:hover:border-gray-500 transition-shadow transition-colors cursor-pointer"
                 style={isSelected ? { backgroundColor: darkMode ? 'rgba(59,130,246,0.1)' : 'rgba(219,234,254,0.4)', borderColor: '#93c5fd' } : {}}
               >
                 {/* Checkbox */}
                 <button
-                  onClick={() => toggleSelect(milestone.id)}
+                  onClick={e => { e.stopPropagation(); toggleSelect(milestone.id) }}
                   className="shrink-0"
                 >
                   {isSelected
@@ -349,7 +466,7 @@ export default function ProjectTimelineTab({ project }: Props) {
 
                 {/* Delete */}
                 <button
-                  onClick={() => deleteMilestone(milestone.id)}
+                  onClick={e => { e.stopPropagation(); deleteMilestone(milestone.id) }}
                   className="shrink-0 p-1 text-gray-300 hover:text-red-500 rounded"
                 >
                   <TrashIcon className="h-4 w-4" />
@@ -358,6 +475,232 @@ export default function ProjectTimelineTab({ project }: Props) {
             )
           })}
         </div>
+      )}
+
+      {/* Milestone Detail Sidebar */}
+      {detailMilestone && (
+        <>
+          <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setDetailMilestone(null)} />
+          <div
+            className="fixed right-0 top-0 h-full w-96 shadow-xl z-50 flex flex-col"
+            style={{ backgroundColor: darkMode ? colors.bg : '#ffffff' }}
+          >
+            {/* Header */}
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: `1px solid ${darkMode ? colors.border : '#e5e7eb'}` }}
+            >
+              <h3 className="text-base font-semibold" style={{ color: darkMode ? colors.text : '#111827' }}>
+                Milestone Details
+              </h3>
+              <button
+                onClick={() => setDetailMilestone(null)}
+                style={{ color: darkMode ? '#9ca3af' : '#9ca3af' }}
+                className="hover:opacity-70"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-6">
+              {editingDetail ? (
+                <form onSubmit={handleEditSave} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>
+                      Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.name}
+                      onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
+                      required
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{
+                        backgroundColor: darkMode ? colors.bgAlt : '#ffffff',
+                        borderColor: darkMode ? colors.border : '#d1d5db',
+                        color: darkMode ? colors.text : '#111827',
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>
+                      Description
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.description}
+                      onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{
+                        backgroundColor: darkMode ? colors.bgAlt : '#ffffff',
+                        borderColor: darkMode ? colors.border : '#d1d5db',
+                        color: darkMode ? colors.text : '#111827',
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>
+                      Due Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={editForm.due_date}
+                      onChange={e => setEditForm(p => ({ ...p, due_date: e.target.value }))}
+                      required
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{
+                        backgroundColor: darkMode ? colors.bgAlt : '#ffffff',
+                        borderColor: darkMode ? colors.border : '#d1d5db',
+                        color: darkMode ? colors.text : '#111827',
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>
+                      Status
+                    </label>
+                    <select
+                      value={editForm.status}
+                      onChange={e => setEditForm(p => ({ ...p, status: e.target.value as ProjectMilestone['status'] }))}
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{
+                        backgroundColor: darkMode ? colors.bgAlt : '#ffffff',
+                        borderColor: darkMode ? colors.border : '#d1d5db',
+                        color: darkMode ? colors.text : '#111827',
+                      }}
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  {/* Name & Description */}
+                  <div>
+                    <p className={`text-lg font-semibold ${detailMilestone.status === 'completed' ? 'line-through' : ''}`}
+                      style={{ color: detailMilestone.status === 'completed' ? '#9ca3af' : (darkMode ? colors.text : '#111827') }}>
+                      {detailMilestone.name}
+                    </p>
+                    {detailMilestone.description && (
+                      <p className="text-sm mt-1" style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>
+                        {detailMilestone.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Overview */}
+                  <section>
+                    <p className="text-xs font-bold uppercase tracking-widest mb-3 pb-1.5"
+                      style={{ color: darkMode ? '#6b7280' : '#9ca3af', borderBottom: `1px solid ${darkMode ? colors.border : '#f3f4f6'}` }}>
+                      Overview
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-xs mb-0.5" style={{ color: darkMode ? '#6b7280' : '#9ca3af' }}>Status</p>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${STATUS_COLORS[detailMilestone.status]}`}>
+                          {detailMilestone.status.replace('-', ' ')}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-xs mb-0.5" style={{ color: darkMode ? '#6b7280' : '#9ca3af' }}>Due Date</p>
+                        <span className={`font-medium text-sm ${isOverdue(detailMilestone) ? 'text-red-500' : ''}`}
+                          style={!isOverdue(detailMilestone) ? { color: darkMode ? colors.text : '#374151' } : {}}>
+                          {formatDate(detailMilestone.due_date)}
+                        </span>
+                      </div>
+                      {isOverdue(detailMilestone) && (
+                        <div className="col-span-2">
+                          <span className="text-xs font-medium text-red-500">Overdue</span>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+
+                  {/* Completion */}
+                  {detailMilestone.completed_at && (
+                    <section>
+                      <p className="text-xs font-bold uppercase tracking-widest mb-3 pb-1.5"
+                        style={{ color: darkMode ? '#6b7280' : '#9ca3af', borderBottom: `1px solid ${darkMode ? colors.border : '#f3f4f6'}` }}>
+                        Completion
+                      </p>
+                      <div>
+                        <p className="text-xs mb-0.5" style={{ color: darkMode ? '#6b7280' : '#9ca3af' }}>Completed On</p>
+                        <span className="font-medium text-sm text-green-600">{formatDate(detailMilestone.completed_at)}</span>
+                      </div>
+                    </section>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div
+              className="px-5 py-4 flex gap-2"
+              style={{ borderTop: `1px solid ${darkMode ? colors.border : '#e5e7eb'}` }}
+            >
+              {confirmDeleteDetailId ? (
+                <>
+                  <span className="flex-1 text-sm" style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>
+                    Delete this milestone?
+                  </span>
+                  <button
+                    onClick={handleDetailDelete}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteDetailId(null)}
+                    className="px-4 py-2 border rounded-lg text-sm font-medium"
+                    style={{ borderColor: darkMode ? colors.border : '#e5e7eb', color: darkMode ? colors.text : '#374151' }}
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : editingDetail ? (
+                <>
+                  <button
+                    onClick={handleEditSave}
+                    disabled={saving}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {saving ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => setEditingDetail(false)}
+                    className="px-4 py-2 border rounded-lg text-sm font-medium"
+                    style={{ borderColor: darkMode ? colors.border : '#e5e7eb', color: darkMode ? colors.text : '#374151' }}
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={startEdit}
+                    className="flex items-center gap-1.5 px-4 py-2 border rounded-lg text-sm font-medium cursor-pointer"
+                    style={{ borderColor: darkMode ? colors.border : '#e5e7eb', color: darkMode ? colors.text : '#374151' }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = darkMode ? colors.bgAlt : '#f9fafb')}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+                  >
+                    <PencilIcon className="h-4 w-4" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteDetailId(detailMilestone.id)}
+                    className="flex-1 px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium cursor-pointer hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/30"
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </>
       )}
 
       {/* Floating selection bar */}
