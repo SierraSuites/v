@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 // Template Types
 type TemplateCategory =
@@ -74,6 +75,7 @@ interface BulkCommunication {
 }
 
 export default function CommunicationTemplatesPage() {
+  const confirm = useConfirm()
   const [activeView, setActiveView] = useState<'templates' | 'scheduled' | 'bulk' | 'create'>('templates')
   const [templates, setTemplates] = useState<CommunicationTemplate[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<CommunicationTemplate | null>(null)
@@ -1038,8 +1040,8 @@ Best regards,
                         </span>
                         {comm.status === 'scheduled' && (
                           <button
-                            onClick={() => {
-                              if (confirm('Cancel this scheduled communication?')) {
+                            onClick={async () => {
+                              if (await confirm({ description: 'Cancel this scheduled communication?' })) {
                                 setScheduledCommunications(prev =>
                                   prev.map(c => c.id === comm.id ? { ...c, status: 'cancelled' as const } : c)
                                 )

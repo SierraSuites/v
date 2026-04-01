@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { PhotoIcon } from '@heroicons/react/24/outline'
 
 interface Photo {
@@ -40,10 +41,12 @@ export default function ClientPortalPhotosPage() {
           {photos.map(photo => (
             <a key={photo.id} href={photo.url} target="_blank" rel="noreferrer" className="group block">
               <div className="aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
-                <img
+                <Image
                   src={photo.url}
                   alt={photo.filename}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  fill
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                  className="object-cover group-hover:scale-105 transition-transform"
                 />
               </div>
               <p className="mt-1.5 text-xs text-gray-500 truncate">{photo.filename}</p>

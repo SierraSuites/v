@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Contact {
   id: string
@@ -36,6 +37,7 @@ interface Contact {
 export default function ContactsPage() {
   const router = useRouter()
   const supabase = createClient()
+  const confirm = useConfirm()
 
   const [contacts, setContacts] = useState<Contact[]>([])
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>([])
@@ -119,7 +121,7 @@ export default function ContactsPage() {
 
   const handleBulkDelete = async () => {
     if (selectedContacts.size === 0) return
-    if (!confirm(`Delete ${selectedContacts.size} contact(s)?`)) return
+    if (!await confirm({ description: `Delete ${selectedContacts.size} contact(s)?`, destructive: true })) return
 
     try {
       const { error } = await supabase

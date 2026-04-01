@@ -16,6 +16,7 @@ import {
   isQuoteExpired
 } from '@/lib/quotes'
 import toast from 'react-hot-toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function QuotesPage() {
   const router = useRouter()

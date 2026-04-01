@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import SustainabilityAccessWrapper from '@/components/sustainability/SustainabilityAccessWrapper'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface WasteEntry {
   id: string
@@ -46,6 +47,7 @@ interface Project {
 
 export default function WasteManagementPage() {
   const supabase = createClient()
+  const confirm = useConfirm()
   const [entries, setEntries] = useState<WasteEntry[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [stats, setStats] = useState<WasteStats>({
@@ -219,7 +221,7 @@ export default function WasteManagementPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this waste entry?')) return
+    if (!await confirm({ description: 'Are you sure you want to delete this waste entry?', destructive: true })) return
 
     try {
       const { error } = await supabase

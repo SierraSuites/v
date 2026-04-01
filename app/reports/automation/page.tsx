@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Workflow {
   id: string
@@ -24,6 +25,7 @@ interface Workflow {
 export default function AutomationPage() {
   const router = useRouter()
   const supabase = createClient()
+  const confirm = useConfirm()
 
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [loading, setLoading] = useState(true)
@@ -68,7 +70,7 @@ export default function AutomationPage() {
   }
 
   const deleteWorkflow = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this workflow?')) return
+    if (!await confirm({ description: 'Are you sure you want to delete this workflow?', destructive: true })) return
 
     try {
       const { error } = await supabase

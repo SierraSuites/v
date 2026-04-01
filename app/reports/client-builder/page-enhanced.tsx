@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import toast from 'react-hot-toast'
 import { clientCommunication, formatCurrency, formatDate } from '@/lib/client-communication-integration'
 import type { ProjectData, FieldSnapPhoto } from '@/lib/client-communication-integration'
 
@@ -58,9 +60,10 @@ export default function ClientReportBuilderEnhancedPage() {
   const loadProjects = async () => {
     setLoading(true)
     try {
-      // In production, get userId from auth
-      const userId = 'current-user-id'
-      const userProjects = await clientCommunication.projects.getActiveProjects(userId)
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const userProjects = await clientCommunication.projects.getActiveProjects(user.id)
       setProjects(userProjects)
     } catch (error) {
       console.error('Error loading projects:', error)
@@ -236,28 +239,16 @@ export default function ClientReportBuilderEnhancedPage() {
     if (!selectedProject || reportSections.length === 0) return
 
     setShowExportModal(false)
-    alert(`Generating ${format.toUpperCase()} report... This will take 15-30 seconds.`)
+    toast(`Generating ${format.toUpperCase()} report... This will take 15-30 seconds.`)
 
     // In production, call API to generate document
     try {
-      // const response = await fetch('/api/reports/generate', {
-      //   method: 'POST',
-      //   body: JSON.stringify({
-      //     project_id: selectedProject,
-      //     title: reportTitle,
-      //     sections: reportSections,
-      //     photos: selectedPhotos,
-      //     format: format
-      //   })
-      // })
-      // const { download_url } = await response.json()
-
       setTimeout(() => {
-        alert(`✅ Report exported successfully! Download starting...`)
+        toast.success('Report exported successfully! Download starting...')
       }, 2000)
     } catch (error) {
       console.error('Error exporting report:', error)
-      alert('Error generating report. Please try again.')
+      toast.error('Error generating report. Please try again.')
     }
   }
 

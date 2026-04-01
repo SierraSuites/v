@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import SustainabilityAccessWrapper from '@/components/sustainability/SustainabilityAccessWrapper'
 import { CARBON_FACTORS } from '@/lib/sustainability-permissions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Material {
   id: string
@@ -36,6 +37,7 @@ interface MaterialComparison {
 
 export default function MaterialsDatabasePage() {
   const supabase = createClient()
+  const confirm = useConfirm()
   const [materials, setMaterials] = useState<Material[]>([])
   const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([])
   const [loading, setLoading] = useState(true)
@@ -195,7 +197,7 @@ export default function MaterialsDatabasePage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this material?')) return
+    if (!await confirm({ description: 'Are you sure you want to delete this material?', destructive: true })) return
 
     try {
       const { error } = await supabase

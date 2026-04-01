@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import SustainabilityAccessWrapper from '@/components/sustainability/SustainabilityAccessWrapper'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface WaterEntry {
   id: string
@@ -33,6 +34,7 @@ interface Project {
 
 export default function WaterUsagePage() {
   const supabase = createClient()
+  const confirm = useConfirm()
   const [entries, setEntries] = useState<WaterEntry[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [stats, setStats] = useState<WaterStats>({ totalUsage: 0, avgPerDay: 0, entryCount: 0, topActivity: '—' })
@@ -117,7 +119,7 @@ export default function WaterUsagePage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this entry?')) return
+    if (!await confirm({ description: 'Delete this entry?', destructive: true })) return
     await supabase.from('water_usage').delete().eq('id', id)
     loadData()
   }

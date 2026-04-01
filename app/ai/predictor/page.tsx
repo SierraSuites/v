@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import AIAccessWrapper from '@/components/ai/AIAccessWrapper'
 import { formatCurrency, formatNumber, formatPercentage } from '@/lib/ai-permissions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Prediction {
   id: string
@@ -46,6 +47,7 @@ interface Project {
 
 export default function ProjectPredictorPage() {
   const supabase = createClient()
+  const confirm = useConfirm()
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<string>('all')
@@ -303,7 +305,7 @@ export default function ProjectPredictorPage() {
   }
 
   const handleDismiss = async (id: string) => {
-    if (!confirm('Are you sure you want to dismiss this prediction?')) return
+    if (!await confirm({ description: 'Are you sure you want to dismiss this prediction?', destructive: true })) return
 
     // In production, update in database
     setPredictions(predictions.map(p =>

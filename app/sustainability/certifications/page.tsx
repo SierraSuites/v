@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import SustainabilityAccessWrapper from '@/components/sustainability/SustainabilityAccessWrapper'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Certification {
   id: string
@@ -47,6 +48,7 @@ interface Project {
 
 export default function CertificationsPage() {
   const supabase = createClient()
+  const confirm = useConfirm()
   const [certifications, setCertifications] = useState<Certification[]>([])
   const [requirements, setRequirements] = useState<Requirement[]>([])
   const [projects, setProjects] = useState<Project[]>([])
@@ -209,7 +211,7 @@ export default function CertificationsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this certification?')) return
+    if (!await confirm({ description: 'Are you sure you want to delete this certification?', destructive: true })) return
 
     try {
       const { error } = await supabase

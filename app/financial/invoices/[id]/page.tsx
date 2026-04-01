@@ -27,11 +27,13 @@ import {
 } from '@heroicons/react/24/outline'
 import { usePermissionGuard } from '@/hooks/usePermissionGuard'
 import toast, { Toaster } from 'react-hot-toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function InvoiceDetailPage() {
   const router = useRouter()
   const params = useParams()
   const invoiceId = params.id as string
+  const confirm = useConfirm()
 
   // RBAC: Require canViewFinancials permission
   const { loading: permissionLoading } = usePermissionGuard({
@@ -241,7 +243,7 @@ export default function InvoiceDetailPage() {
   async function handleVoidInvoice() {
     if (!invoice) return
 
-    if (!confirm('Are you sure you want to void this invoice? This action cannot be undone.')) {
+    if (!await confirm({ description: 'Are you sure you want to void this invoice? This action cannot be undone.', destructive: true })) {
       return
     }
 

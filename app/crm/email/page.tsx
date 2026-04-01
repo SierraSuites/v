@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface EmailTemplate {
   id: string
@@ -30,6 +31,7 @@ interface Contact {
 export default function EmailCenterPage() {
   const router = useRouter()
   const supabase = createClient()
+  const confirm = useConfirm()
 
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -93,7 +95,7 @@ export default function EmailCenterPage() {
   }
 
   const deleteTemplate = async (id: string) => {
-    if (!confirm('Delete this email template?')) return
+    if (!await confirm({ description: 'Delete this email template?', destructive: true })) return
 
     try {
       const { error } = await supabase

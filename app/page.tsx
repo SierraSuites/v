@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import Link from "next/link"
+import Image from "next/image"
 import { useState, useEffect } from "react"
 import { ArrowRight, CheckCircle2, Shield, Target, X, TrendingUp, Clock, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -96,10 +97,12 @@ export default function HomePage() {
 
       <div className="relative">
         <div className="absolute inset-0 z-0">
-          <img
+          <Image
             src="/hero-construction.jpg"
             alt="Construction site at dusk"
-            className="h-full w-full object-cover"
+            fill
+            className="object-cover"
+            priority
           />
         </div>
 

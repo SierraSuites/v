@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { QuoteWithRelations, QuoteActivity, QuoteStatus } from '@/types/quotes'
 import toast from 'react-hot-toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface PageProps {
   params: Promise<{
@@ -23,6 +24,7 @@ interface PageProps {
 export default function QuoteDetailPage({ params }: PageProps) {
   const router = useRouter()
   const { id } = use(params)
+  const confirm = useConfirm()
 
   const [quote, setQuote] = useState<QuoteWithRelations | null>(null)
   const [loading, setLoading] = useState(true)
@@ -79,7 +81,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
   }
 
   async function handleDelete() {
-    if (!confirm('Are you sure you want to delete this quote? This action cannot be undone.')) {
+    if (!await confirm({ description: 'Are you sure you want to delete this quote? This action cannot be undone.', destructive: true })) {
       return
     }
 
@@ -100,7 +102,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
   }
 
   async function handleConvertToProject() {
-    if (!confirm('Convert this approved quote to a project? A new project will be created with all quote data.')) {
+    if (!await confirm({ description: 'Convert this approved quote to a project? A new project will be created with all quote data.' })) {
       return
     }
     setConverting(true)
@@ -181,7 +183,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
       return
     }
 
-    if (!confirm(`Send quote to ${clientEmail}?\n\nAn email will be sent with the quote PDF attached.`)) {
+    if (!await confirm({ description: `Send quote to ${clientEmail}?\n\nAn email will be sent with the quote PDF attached.` })) {
       return
     }
 

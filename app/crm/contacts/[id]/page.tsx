@@ -20,6 +20,7 @@ import {
   CheckIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Contact {
   id: string
@@ -99,6 +100,7 @@ export default function ContactDetailPage() {
   const params = useParams()
   const id = params.id as string
   const supabase = createClient()
+  const confirm = useConfirm()
 
   const [contact, setContact] = useState<Contact | null>(null)
   const [activities, setActivities] = useState<Activity[]>([])
@@ -167,7 +169,7 @@ export default function ContactDetailPage() {
   }
 
   async function handleDelete() {
-    if (!confirm('Delete this contact? This cannot be undone.')) return
+    if (!await confirm({ description: 'Delete this contact? This cannot be undone.', destructive: true })) return
     const { error } = await supabase.from('crm_contacts').delete().eq('id', id)
     if (!error) router.push('/crm/contacts')
   }
