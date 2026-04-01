@@ -10,6 +10,7 @@ import {
   getStatusColor
 } from '@/lib/quotes'
 import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
 
 interface QuoteBuilderProps {
   quoteId?: string // For editing existing quote
@@ -161,7 +162,7 @@ export default function QuoteBuilder({
       }
     } catch (err) {
       console.error('Error loading quote data:', err)
-      alert('Failed to load quote data')
+      toast.error('Failed to load quote data')
     } finally {
       setLoading(false)
     }
@@ -256,17 +257,17 @@ export default function QuoteBuilder({
     try {
       // Validation
       if (!title.trim()) {
-        alert('Please enter a quote title')
+        toast.error('Please enter a quote title')
         return
       }
 
       if (lineItems.length === 0) {
-        alert('Please add at least one line item')
+        toast.error('Please add at least one line item')
         return
       }
 
       if (lineItems.some(item => !item.description.trim())) {
-        alert('All line items must have a description')
+        toast.error('All line items must have a description')
         return
       }
 
@@ -317,14 +318,14 @@ export default function QuoteBuilder({
 
       if (savedQuote) {
         onSave?.(savedQuote)
-        alert(quoteId ? 'Quote updated successfully!' : 'Quote created successfully!')
+        toast.error(quoteId ? 'Quote updated successfully!' : 'Quote created successfully!')
         if (!quoteId) {
           router.push(`/quotes/${savedQuote.id}`)
         }
       }
     } catch (err) {
       console.error('Error saving quote:', err)
-      alert('Failed to save quote')
+      toast.error('Failed to save quote')
     } finally {
       setSaving(false)
     }

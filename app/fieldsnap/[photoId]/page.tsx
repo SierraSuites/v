@@ -11,6 +11,7 @@ import PunchListPanel from '@/components/fieldsnap/PunchListPanel'
 import Link from 'next/link'
 import { type Photo } from '@/lib/supabase/photos'
 import { useThemeColors } from "@/lib/hooks/useThemeColors"
+import toast from 'react-hot-toast'
 
 export default function PhotoDetailPage() {
   const params = useParams()
@@ -50,7 +51,7 @@ export default function PhotoDetailPage() {
       })
     } catch (err) {
       console.error('Error loading photo:', err)
-      alert('Failed to load photo')
+      toast.error('Failed to load photo')
     } finally {
       setLoading(false)
     }

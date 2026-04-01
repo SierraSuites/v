@@ -13,6 +13,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { QuoteType, QuoteFormData, QuoteItemFormData, Contact } from '@/types/quotes'
 import ExcelImport from '@/components/quotes/ExcelImport'
+import toast from 'react-hot-toast'
 
 // Extended QuoteItemFormData with additional fields used in the form
 interface ExtendedQuoteItemFormData extends QuoteItemFormData {
@@ -332,7 +333,7 @@ function NewQuoteForm() {
       router.push(`/quotes/${quoteId}`)
     } catch (error) {
       console.error('Error creating quote:', error)
-      alert('Failed to create quote. Please try again.')
+      toast.error('Failed to create quote. Please try again.')
     } finally {
       setLoading(false)
     }

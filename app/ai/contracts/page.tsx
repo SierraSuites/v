@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AIAccessWrapper from '@/components/ai/AIAccessWrapper'
+import toast from 'react-hot-toast'
 
 interface ContractAnalysis {
   id: string
@@ -387,7 +388,7 @@ export default function ContractGuardianPage() {
 
     // Simulate upload and analysis
     setTimeout(() => {
-      alert(`✅ Contract uploaded! AI legal analysis will complete in 3-5 minutes. We'll email you when ready.`)
+      toast.success(`Contract uploaded! AI legal analysis will complete in 3-5 minutes. We'll email you when ready.`)
       setUploadingFile(false)
       setShowUploadModal(false)
     }, 2000)

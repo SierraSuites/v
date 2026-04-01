@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientCommunication, formatCurrency, formatDate } from '@/lib/client-communication-integration'
+import toast from 'react-hot-toast'
 
 interface ClientApproval {
   id: string
@@ -270,7 +271,7 @@ function ApprovalsContent() {
   const handleCreateApproval = async () => {
     // Validation
     if (!newApproval.title || !newApproval.requested_from) {
-      alert('Please fill in required fields')
+      toast.error('Please fill in required fields')
       return
     }
 
@@ -308,7 +309,7 @@ function ApprovalsContent() {
       due_date: ''
     })
 
-    alert('✅ Approval request created! Email sent to client.')
+    toast.success('Approval request created! Email sent to client.')
   }
 
   const handleSendReminder = (approval: ClientApproval) => {
@@ -318,7 +319,7 @@ function ApprovalsContent() {
         : a
     )
     setApprovals(updated)
-    alert(`📧 Reminder sent to ${approval.requested_from}`)
+    toast(`Reminder sent to ${approval.requested_from}`)
   }
 
   const handleApprove = (approval: ClientApproval) => {
@@ -341,7 +342,7 @@ function ApprovalsContent() {
         : a
     )
     setApprovals(updated)
-    alert('❌ Approval rejected')
+    toast.error('Approval rejected')
   }
 
   // Signature drawing functions
@@ -400,7 +401,7 @@ function ApprovalsContent() {
 
   const saveSignature = () => {
     if (signaturePoints.length === 0) {
-      alert('Please provide a signature')
+      toast.error('Please provide a signature')
       return
     }
 
@@ -430,7 +431,7 @@ function ApprovalsContent() {
     setSelectedApproval(null)
     clearSignature()
 
-    alert('✅ Approval signed and recorded!')
+    toast.success('Approval signed and recorded!')
   }
 
   const selectedProjectData = projects.find(p => p.id === selectedProject)

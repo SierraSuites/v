@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import AIAccessWrapper from '@/components/ai/AIAccessWrapper'
 import { formatCurrency, formatNumber } from '@/lib/ai-permissions'
+import toast from 'react-hot-toast'
 
 interface SafetyPrediction {
   id: string
@@ -231,7 +232,7 @@ export default function SafetySentinelPage() {
     setTimeout(() => {
       setUploadingPhoto(false)
       setShowPhotoUpload(false)
-      alert('Photo analyzed! Found 3 safety issues. Check results below.')
+      toast.success('Photo analyzed! Found 3 safety issues. Check results below.')
       loadData()
     }, 3000)
   }

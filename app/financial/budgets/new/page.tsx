@@ -14,6 +14,7 @@ import {
   TrashIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/outline'
+import toast from 'react-hot-toast'
 
 interface BudgetItem {
   id: string
@@ -131,7 +132,7 @@ export default function NewBudgetPage() {
       router.push(`/financial/budgets/${data.budget.id}`)
     } catch (error) {
       console.error('Error creating budget:', error)
-      alert('Failed to create budget')
+      toast.error('Failed to create budget')
     } finally {
       setLoading(false)
     }

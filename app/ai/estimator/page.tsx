@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import AIAccessWrapper from '@/components/ai/AIAccessWrapper'
 import { formatCurrency, formatNumber } from '@/lib/ai-permissions'
+import toast from 'react-hot-toast'
 
 interface EstimateStep {
   step: number
@@ -270,7 +271,7 @@ export default function SmartEstimatorPage() {
   }
 
   const handleConvertToProposal = () => {
-    alert('Converting to professional proposal...\n\nThis would:\n• Generate PDF proposal\n• Add 3D renderings\n• Include phasing schedule\n• Add material samples\n• Create client presentation')
+    toast('Converting to professional proposal...')
   }
 
   const handleSaveToQuotes = async () => {
@@ -294,10 +295,10 @@ export default function SmartEstimatorPage() {
       }])
 
       if (error) throw error
-      alert('Estimate saved successfully!')
+      toast.success('Estimate saved successfully!')
     } catch (error) {
       console.error('Error saving estimate:', error)
-      alert('Failed to save estimate')
+      toast.error('Failed to save estimate')
     }
   }
 

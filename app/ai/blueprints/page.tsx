@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import AIAccessWrapper from '@/components/ai/AIAccessWrapper'
 import { formatCurrency, formatNumber } from '@/lib/ai-permissions'
+import toast from 'react-hot-toast'
 
 interface BlueprintAnalysis {
   id: string
@@ -272,7 +273,7 @@ export default function BlueprintAnalyzerPage() {
       setTimeout(() => {
         setAnalyzing(false)
         setShowUploadModal(false)
-        alert('Blueprint analyzed successfully! Check the results below.')
+        toast.success('Blueprint analyzed successfully! Check the results below.')
         loadData()
       }, 3000)
     }, 2000)

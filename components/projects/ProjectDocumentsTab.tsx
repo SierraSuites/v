@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getUserCompany } from '@/lib/auth/get-user-company'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
+import toast from 'react-hot-toast'
 
 interface Document {
   id: string
@@ -103,7 +104,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
         // Validate file size (max 50MB)
         const maxSize = 50 * 1024 * 1024
         if (file.size > maxSize) {
-          alert(`File ${file.name} is too large. Maximum size is 50MB.`)
+          toast.error(`File ${file.name} is too large. Maximum size is 50MB.`)
           continue
         }
 
@@ -121,7 +122,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
 
         if (uploadError) {
           console.error('Upload error:', uploadError)
-          alert(`Failed to upload ${file.name}: ${uploadError.message}`)
+          toast.error(`Failed to upload ${file.name}: ${uploadError.message}`)
           continue
         }
 
@@ -145,7 +146,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
 
         if (dbError) {
           console.error('Database error:', dbError)
-          alert(`Failed to save ${file.name} record: ${dbError.message}`)
+          toast.error(`Failed to save ${file.name} record: ${dbError.message}`)
         }
       }
 
@@ -153,7 +154,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
       await loadDocuments()
     } catch (error) {
       console.error('Upload failed:', error)
-      alert('Upload failed. Please try again.')
+      toast.error('Upload failed. Please try again.')
     } finally {
       setUploading(false)
     }
@@ -179,7 +180,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
       setDocuments(prev => prev.filter(d => d.id !== documentId))
     } catch (error) {
       console.error('Failed to delete document:', error)
-      alert('Failed to delete document. Please try again.')
+      toast.error('Failed to delete document. Please try again.')
     }
   }
 
@@ -197,7 +198,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
       document.body.removeChild(a)
     } catch (error) {
       console.error('Download failed:', error)
-      alert('Failed to download file. Please try again.')
+      toast.error('Failed to download file. Please try again.')
     }
   }
 

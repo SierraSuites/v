@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientCommunication, formatCurrency, formatDate } from '@/lib/client-communication-integration'
+import toast from 'react-hot-toast'
 
 interface TurnoverPackage {
   id: string
@@ -408,10 +409,10 @@ function ProjectTurnoverContent() {
 
   const handleGeneratePackage = async (format: string) => {
     setShowGenerateModal(false)
-    alert(`Generating ${format.toUpperCase()} turnover package... This may take 30-60 seconds.`)
+    toast(`Generating ${format.toUpperCase()} turnover package... This may take 30-60 seconds.`)
 
     setTimeout(() => {
-      alert('✅ Turnover package generated successfully!')
+      toast.success('Turnover package generated successfully!')
       if (turnoverPackage) {
         setTurnoverPackage({
           ...turnoverPackage,
@@ -425,7 +426,7 @@ function ProjectTurnoverContent() {
 
   const handleDeliverPackage = async (method: string) => {
     setShowDeliverModal(false)
-    alert(`Delivering turnover package via ${method}...`)
+    toast(`Delivering turnover package via ${method}...`)
 
     setTimeout(() => {
       if (turnoverPackage) {
@@ -437,7 +438,7 @@ function ProjectTurnoverContent() {
           status: 'delivered'
         })
       }
-      alert('✅ Turnover package delivered successfully!')
+      toast.success('Turnover package delivered successfully!')
     }, 2000)
   }
 

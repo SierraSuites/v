@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 interface Activity {
   id: string
@@ -106,7 +107,7 @@ export default function ActivitiesPage() {
       loadActivities()
     } catch (error) {
       console.error('Error completing activity:', error)
-      alert('Failed to complete activity')
+      toast.error('Failed to complete activity')
     }
   }
 
@@ -124,7 +125,7 @@ export default function ActivitiesPage() {
       loadActivities()
     } catch (error) {
       console.error('Error deleting activity:', error)
-      alert('Failed to delete activity')
+      toast.error('Failed to delete activity')
     }
   }
 

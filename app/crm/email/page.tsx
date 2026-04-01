@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 interface EmailTemplate {
   id: string
@@ -105,7 +106,7 @@ export default function EmailCenterPage() {
       loadData()
     } catch (error) {
       console.error('Error deleting template:', error)
-      alert('Failed to delete template')
+      toast.error('Failed to delete template')
     }
   }
 
@@ -120,12 +121,12 @@ export default function EmailCenterPage() {
 
   const handleSendEmail = async () => {
     if (emailForm.recipients.length === 0) {
-      alert('Please select at least one recipient')
+      toast.error('Please select at least one recipient')
       return
     }
 
     if (!emailForm.subject || !emailForm.body) {
-      alert('Subject and body are required')
+      toast.error('Subject and body are required')
       return
     }
 
@@ -169,7 +170,7 @@ export default function EmailCenterPage() {
         }
       }
 
-      alert(`Email sent to ${emailForm.recipients.length} recipient(s)!\n\nNote: In production, this would integrate with your email service (Gmail, Outlook, SendGrid, etc.)`)
+      toast.success(`Email sent to ${emailForm.recipients.length} recipient(s)!`)
 
       setShowComposeModal(false)
       setEmailForm({ recipients: [], subject: '', body: '', template_id: '' })
@@ -177,7 +178,7 @@ export default function EmailCenterPage() {
       loadData()
     } catch (error) {
       console.error('Error logging email:', error)
-      alert('Failed to log email activity')
+      toast.error('Failed to log email activity')
     }
   }
 

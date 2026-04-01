@@ -11,6 +11,7 @@ import {
   getRoleIcon,
   canManageRole
 } from '@/lib/permissions'
+import toast from 'react-hot-toast'
 
 interface TeamMemberListProps {
   teamId: string
@@ -75,7 +76,7 @@ export default function TeamMemberList({ teamId, canManage, onMemberUpdated }: T
       onMemberUpdated?.()
     } catch (err) {
       console.error('Error updating role:', err)
-      alert('Failed to update role')
+      toast.error('Failed to update role')
     } finally {
       setUpdatingMember(null)
     }
@@ -99,7 +100,7 @@ export default function TeamMemberList({ teamId, canManage, onMemberUpdated }: T
       onMemberUpdated?.()
     } catch (err) {
       console.error('Error removing member:', err)
-      alert('Failed to remove member')
+      toast.error('Failed to remove member')
     } finally {
       setUpdatingMember(null)
     }
@@ -121,7 +122,7 @@ export default function TeamMemberList({ teamId, canManage, onMemberUpdated }: T
       onMemberUpdated?.()
     } catch (err) {
       console.error('Error toggling lead status:', err)
-      alert('Failed to update lead status')
+      toast.error('Failed to update lead status')
     } finally {
       setUpdatingMember(null)
     }
@@ -129,7 +130,7 @@ export default function TeamMemberList({ teamId, canManage, onMemberUpdated }: T
 
   const handleInviteMember = async () => {
     if (!inviteForm.email.trim() || !inviteForm.email.includes('@')) {
-      alert('Please enter a valid email address')
+      toast.error('Please enter a valid email address')
       return
     }
 
@@ -139,7 +140,7 @@ export default function TeamMemberList({ teamId, canManage, onMemberUpdated }: T
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
-        alert('Not authenticated')
+        toast.error('Not authenticated')
         return
       }
 
@@ -166,10 +167,10 @@ export default function TeamMemberList({ teamId, canManage, onMemberUpdated }: T
 
       setInviteForm({ email: '', role: 'field_engineer' })
       setShowInviteModal(false)
-      alert('Invitation sent successfully!')
+      toast.success('Invitation sent successfully!')
     } catch (err) {
       console.error('Error inviting member:', err)
-      alert('Failed to send invitation')
+      toast.error('Failed to send invitation')
     } finally {
       setInviting(false)
     }

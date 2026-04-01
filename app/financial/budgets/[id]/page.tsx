@@ -34,6 +34,7 @@ import {
   LineChart,
   Line,
 } from 'recharts'
+import toast from 'react-hot-toast'
 
 interface BudgetItem {
   id: string
@@ -120,7 +121,7 @@ export default function BudgetDetailPage() {
       router.push('/financial/budgets')
     } catch (error) {
       console.error('Error deleting budget:', error)
-      alert('Failed to delete budget')
+      toast.error('Failed to delete budget')
     } finally {
       setDeleting(false)
     }

@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import toast from 'react-hot-toast'
 
 interface ProposalSection {
   id: string
@@ -183,11 +184,11 @@ function ProposalBuilderContent() {
   }
 
   const handleExport = (format: string) => {
-    alert(`Generating ${format.toUpperCase()} proposal... This will take 15-30 seconds.`)
+    toast(`Generating ${format.toUpperCase()} proposal... This will take 15-30 seconds.`)
     setShowExportModal(false)
 
     setTimeout(() => {
-      alert(`✅ Proposal exported successfully! Download starting...`)
+      toast.success(`Proposal exported successfully! Download starting...`)
     }, 2000)
   }
 

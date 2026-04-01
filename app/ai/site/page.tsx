@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AIAccessWrapper from '@/components/ai/AIAccessWrapper'
+import toast from 'react-hot-toast'
 
 interface SiteMedia {
   id: string
@@ -330,7 +331,7 @@ export default function SiteIntelligencePage() {
 
     // Simulate upload and analysis
     setTimeout(() => {
-      alert(`✅ ${files.length} file(s) uploaded! AI analysis will complete in 2-3 minutes.`)
+      toast.success(`${files.length} file(s) uploaded! AI analysis will complete in 2-3 minutes.`)
       setUploadingFiles(false)
       setShowUploadModal(false)
     }, 2000)

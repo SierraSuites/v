@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 interface Contact {
   id: string
@@ -132,7 +133,7 @@ export default function ContactsPage() {
       loadContacts()
     } catch (error) {
       console.error('Error deleting contacts:', error)
-      alert('Failed to delete contacts')
+      toast.error('Failed to delete contacts')
     }
   }
 

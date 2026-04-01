@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AIAccessWrapper from '@/components/ai/AIAccessWrapper'
+import toast from 'react-hot-toast'
 
 interface MaterialItem {
   id: string
@@ -414,11 +415,11 @@ export default function MaterialOptimizerPage() {
     setSelectedOptimization(null)
 
     // Show success message
-    alert(`✅ Optimization applied! You'll save ${formatCurrency(selectedOptimization.savings)}`)
+    toast.success(`Optimization applied! You'll save ${formatCurrency(selectedOptimization.savings)}`)
   }
 
   const handleExportToPO = () => {
-    alert('📋 Exporting optimized materials to purchase order system...')
+    toast('Exporting optimized materials to purchase order system...')
   }
 
   const formatCurrency = (amount: number): string => {

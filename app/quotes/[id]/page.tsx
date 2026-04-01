@@ -12,6 +12,7 @@ import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { QuoteWithRelations, QuoteActivity, QuoteStatus } from '@/types/quotes'
+import toast from 'react-hot-toast'
 
 interface PageProps {
   params: Promise<{
@@ -67,11 +68,11 @@ export default function QuoteDetailPage({ params }: PageProps) {
       if (response.ok) {
         await loadQuote()
       } else {
-        alert('Failed to update status')
+        toast.error('Failed to update status')
       }
     } catch (error) {
       console.error('Error updating status:', error)
-      alert('Error updating status')
+      toast.error('Error updating status')
     } finally {
       setStatusUpdating(false)
     }
@@ -90,11 +91,11 @@ export default function QuoteDetailPage({ params }: PageProps) {
       if (response.ok) {
         router.push('/quotes')
       } else {
-        alert('Failed to delete quote')
+        toast.error('Failed to delete quote')
       }
     } catch (error) {
       console.error('Error deleting quote:', error)
-      alert('Error deleting quote')
+      toast.error('Error deleting quote')
     }
   }
 
@@ -111,11 +112,11 @@ export default function QuoteDetailPage({ params }: PageProps) {
       if (response.ok && data.project_id) {
         router.push(`/projects/${data.project_id}`)
       } else {
-        alert(data.error || 'Failed to convert quote to project')
+        toast.error(data.error || 'Failed to convert quote to project')
       }
     } catch (error) {
       console.error('Error converting quote:', error)
-      alert('Error converting quote to project')
+      toast.error('Error converting quote to project')
     } finally {
       setConverting(false)
     }
@@ -133,11 +134,11 @@ export default function QuoteDetailPage({ params }: PageProps) {
         const { data } = await response.json()
         router.push(`/quotes/${data.id}`)
       } else {
-        alert('Failed to duplicate quote')
+        toast.error('Failed to duplicate quote')
       }
     } catch (error) {
       console.error('Error duplicating quote:', error)
-      alert('Error duplicating quote')
+      toast.error('Error duplicating quote')
     }
   }
 
@@ -166,7 +167,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
       window.URL.revokeObjectURL(url)
     } catch (error) {
       console.error('Error downloading PDF:', error)
-      alert('Failed to generate PDF. Please try again.')
+      toast.error('Failed to generate PDF. Please try again.')
     } finally {
       setDownloadingPDF(false)
     }
@@ -176,7 +177,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
     const clientEmail = (quote as any)?.client_email || quote?.client?.email
 
     if (!clientEmail) {
-      alert('This quote has no client email address. Please add one before sending.')
+      toast.error('This quote has no client email address. Please add one before sending.')
       return
     }
 
@@ -193,14 +194,14 @@ export default function QuoteDetailPage({ params }: PageProps) {
       const data = await response.json()
 
       if (response.ok) {
-        alert(`Quote successfully sent to ${clientEmail}!`)
+        toast.success(`Quote successfully sent to ${clientEmail}!`)
         await loadQuote() // Reload to get updated send count
       } else {
-        alert(data.error || 'Failed to send email')
+        toast.error(data.error || 'Failed to send email')
       }
     } catch (error) {
       console.error('Error sending email:', error)
-      alert('Failed to send email. Please try again.')
+      toast.error('Failed to send email. Please try again.')
     } finally {
       setSendingEmail(false)
     }

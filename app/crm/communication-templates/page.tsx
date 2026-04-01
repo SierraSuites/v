@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 
 
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 
 // Template Types
 type TemplateCategory =
@@ -659,7 +660,7 @@ Best regards,
     setTemplateTags([])
     setActiveView('templates')
 
-    alert('Template created successfully!')
+    toast.success('Template created successfully!')
   }
 
   const extractVariables = (text: string): string[] => {
@@ -687,7 +688,7 @@ Best regards,
     setScheduleDate('')
     setScheduleRecipients([])
 
-    alert('Communication scheduled successfully!')
+    toast.success('Communication scheduled successfully!')
   }
 
   const handleBulkSend = () => {
@@ -714,7 +715,7 @@ Best regards,
           ? { ...b, status: 'completed', sent_count: selectedProjects.length, completed_at: new Date().toISOString() }
           : b
       ))
-      alert(`Successfully sent ${selectedProjects.length} communications!`)
+      toast.success(`Successfully sent ${selectedProjects.length} communications!`)
     }, 2000)
 
     setShowBulkModal(false)
@@ -904,7 +905,7 @@ Best regards,
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(selectedTemplate.body)
-                            alert('Template copied to clipboard!')
+                            toast.success('Template copied to clipboard!')
                           }}
                           className="px-3 py-1.5 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
                         >
