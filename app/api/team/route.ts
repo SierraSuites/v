@@ -114,16 +114,16 @@ export async function GET(req: NextRequest) {
       console.error('Error fetching role assignments:', rolesError)
     }
 
-    // Get highest role for each member
-    const memberRolesPromises = teamMembers.map(async (member) => {
-      const { data: highestRole } = await supabase.rpc('get_user_highest_role', {
-        user_uuid: member.id,
-        p_company_id: profile.company_id
+    // Get highest role for all members in parallel (one RPC call per member, all concurrent)
+    const memberRoles = await Promise.all(
+      teamMembers.map(async (member) => {
+        const { data: highestRole } = await supabase.rpc('get_user_highest_role', {
+          user_uuid: member.id,
+          p_company_id: profile.company_id
+        })
+        return { userId: member.id, highestRole: highestRole || 'viewer' }
       })
-      return { userId: member.id, highestRole: highestRole || 'viewer' }
-    })
-
-    const memberRoles = await Promise.all(memberRolesPromises)
+    )
 
     // Combine data
     const enrichedMembers = teamMembers.map(member => {
@@ -264,18 +264,11 @@ export async function PATCH(req: NextRequest) {
       )
     }
 
-    // Get company IDs
-    const { data: requesterProfile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .single()
-
-    const { data: targetProfile } = await supabase
-      .from('profiles')
-      .select('company_id, email, full_name')
-      .eq('id', userId)
-      .single()
+    // Get both profiles in parallel
+    const [{ data: requesterProfile }, { data: targetProfile }] = await Promise.all([
+      supabase.from('profiles').select('company_id').eq('id', user.id).single(),
+      supabase.from('profiles').select('company_id, email, full_name').eq('id', userId).single(),
+    ])
 
     if (!requesterProfile || !targetProfile) {
       return NextResponse.json(
