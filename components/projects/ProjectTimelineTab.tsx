@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ProjectDetails, ProjectMilestone } from '@/lib/projects/get-project-details'
 import {
   PlusIcon,
@@ -13,6 +13,7 @@ import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 interface Props {
   project: ProjectDetails
+  onMilestoneCountChange?: (count: number) => void
 }
 
 const STATUS_COLORS: Record<ProjectMilestone['status'], string> = {
@@ -38,9 +39,25 @@ function isOverdue(milestone: ProjectMilestone) {
     && new Date(milestone.due_date) < new Date()
 }
 
-export default function ProjectTimelineTab({ project }: Props) {
+export default function ProjectTimelineTab({ project, onMilestoneCountChange }: Props) {
   const [milestones, setMilestones] = useState<ProjectMilestone[]>(project.milestones)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    async function fetchMilestones() {
+      const supabase = (await import('@/lib/supabase/client')).createClient()
+      const { data } = await supabase
+        .from('project_milestones')
+        .select('*')
+        .eq('project_id', project.id)
+        .order('due_date', { ascending: true })
+      if (data) {
+        setMilestones(data as ProjectMilestone[])
+        onMilestoneCountChange?.(data.length)
+      }
+    }
+    fetchMilestones()
+  }, [project.id])
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
@@ -176,6 +193,7 @@ export default function ProjectTimelineTab({ project }: Props) {
 
       if (!error && data) {
         setMilestones(prev => [...prev, data as ProjectMilestone])
+        onMilestoneCountChange?.(milestones.length + 1)
         setForm({ name: '', description: '', due_date: '', status: 'pending' })
         setShowForm(false)
       }
@@ -188,7 +206,11 @@ export default function ProjectTimelineTab({ project }: Props) {
     if (!confirm('Delete this milestone?')) return
     const supabase = (await import('@/lib/supabase/client')).createClient()
     await supabase.from('project_milestones').delete().eq('id', milestoneId)
-    setMilestones(prev => prev.filter(m => m.id !== milestoneId))
+    setMilestones(prev => {
+      const next = prev.filter(m => m.id !== milestoneId)
+      onMilestoneCountChange?.(next.length)
+      return next
+    })
     setSelectedIds(prev => { const next = new Set(prev); next.delete(milestoneId); return next })
   }
 
@@ -197,12 +219,12 @@ export default function ProjectTimelineTab({ project }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Timeline & Milestones</h2>
-          <p className="text-sm text-gray-500 mt-1">Track key project milestones and deliverables</p>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Timeline & Milestones</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Track key project milestones and deliverables</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+          className="inline-flex items-center cursor-pointer gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
         >
           <PlusIcon className="h-4 w-4" />
           Add Milestone
@@ -375,7 +397,7 @@ export default function ProjectTimelineTab({ project }: Props) {
               >
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => { setShowForm(false); setForm({ name: '', description: '', due_date: '', status: 'pending' }) }}
                   className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
                   style={{ border: colors.border, color: colors.text }}
                 >
@@ -418,7 +440,7 @@ export default function ProjectTimelineTab({ project }: Props) {
               <div
                 key={milestone.id}
                 onClick={() => !selectedIds.size && openDetail(milestone)}
-                className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)] dark:hover:border-gray-500 transition-shadow transition-colors cursor-pointer"
+                className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)] dark:hover:border-gray-500 transition-all cursor-pointer"
                 style={isSelected ? { backgroundColor: darkMode ? 'rgba(59,130,246,0.1)' : 'rgba(219,234,254,0.4)', borderColor: '#93c5fd' } : {}}
               >
                 {/* Checkbox */}

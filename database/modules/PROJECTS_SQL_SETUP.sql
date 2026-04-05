@@ -450,22 +450,71 @@ CREATE TRIGGER update_project_spent_on_expense_change
   EXECUTE FUNCTION update_project_spent();
 
 -- ============================================
--- STORAGE BUCKET SETUP (Run in Supabase Dashboard > Storage)
+-- STORAGE BUCKET SETUP
 -- ============================================
--- Create a storage bucket for project documents
--- Name: project-documents
--- Public: false
--- File size limit: 50MB
--- Allowed MIME types: application/pdf, image/*, application/vnd.*, text/*
+-- Creates the project-documents bucket and storage RLS policies.
+-- Files are stored at: {projectId}/{timestamp}-{sanitizedFilename}
+-- Bucket is public so getPublicUrl() works for previews/downloads.
 
--- Storage policies (to be created in Supabase Dashboard):
--- 1. "Project members can upload files"
--- 2. "Project members can view files"
--- 3. "Project owners can delete files"
+INSERT INTO storage.buckets (id, name, public, file_size_limit)
+VALUES ('project-documents', 'project-documents', true, 52428800)
+ON CONFLICT (id) DO NOTHING;
+
+-- Allow authenticated project members to upload
+CREATE POLICY "Project members can upload files"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    bucket_id = 'project-documents'
+    AND EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id::text = (string_to_array(objects.name, '/'))[1]
+      AND (
+        projects.user_id = auth.uid()
+        OR EXISTS (
+          SELECT 1 FROM public.project_members
+          WHERE project_members.project_id = projects.id
+          AND project_members.user_id = auth.uid()
+        )
+      )
+    )
+  );
+
+-- Allow authenticated project members to view/download files
+CREATE POLICY "Project members can view files"
+  ON storage.objects FOR SELECT
+  TO authenticated
+  USING (
+    bucket_id = 'project-documents'
+    AND EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id::text = (string_to_array(objects.name, '/'))[1]
+      AND (
+        projects.user_id = auth.uid()
+        OR EXISTS (
+          SELECT 1 FROM public.project_members
+          WHERE project_members.project_id = projects.id
+          AND project_members.user_id = auth.uid()
+        )
+      )
+    )
+  );
+
+-- Allow project owners to delete files
+CREATE POLICY "Project owners can delete files"
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (
+    bucket_id = 'project-documents'
+    AND EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE projects.id::text = (string_to_array(objects.name, '/'))[1]
+      AND projects.user_id = auth.uid()
+    )
+  );
 
 -- ============================================
 -- COMPLETE!
 -- ============================================
 -- Copy and paste this entire script into the Supabase SQL Editor
 -- Run it to create all tables, policies, and triggers
--- Then create the storage bucket manually in the Storage section

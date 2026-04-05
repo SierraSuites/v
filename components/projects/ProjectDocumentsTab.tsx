@@ -5,11 +5,12 @@ import { createClient } from '@/lib/supabase/client'
 import { getUserCompany } from '@/lib/auth/get-user-company'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import toast from 'react-hot-toast'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 interface Document {
   id: string
   name: string
-  file_url: string
+  file_path: string
   file_type: string
   file_size: number
   category: string
@@ -26,17 +27,35 @@ interface ProjectDocumentsTabProps {
 }
 
 export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProps) {
+  const { colors, darkMode } = useThemeColors()
   const projectId = project.id
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [filter, setFilter] = useState<string>('all')
   const [dragActive, setDragActive] = useState(false)
+  const [previewDoc, setPreviewDoc] = useState<Document | null>(null)
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     loadDocuments()
   }, [projectId])
+
+  useEffect(() => {
+    if (!previewDoc) {
+      if (previewBlobUrl) {
+        URL.revokeObjectURL(previewBlobUrl)
+        setPreviewBlobUrl(null)
+      }
+      return
+    }
+    const url = getPublicUrl(previewDoc.file_path)
+    fetch(url)
+      .then(r => r.blob())
+      .then(blob => setPreviewBlobUrl(URL.createObjectURL(blob)))
+      .catch(() => setPreviewBlobUrl(url)) // fallback to direct URL
+  }, [previewDoc])
 
   async function loadDocuments() {
     try {
@@ -48,7 +67,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
         .select(`
           id,
           name,
-          file_url,
+          file_path,
           file_type,
           file_size,
           category,
@@ -67,7 +86,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
       const formattedDocs: Document[] = (data || []).map(doc => ({
         id: doc.id,
         name: doc.name,
-        file_url: doc.file_url,
+        file_path: (doc as any).file_path,
         file_type: doc.file_type,
         file_size: doc.file_size,
         category: doc.category,
@@ -80,8 +99,8 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
       }))
 
       setDocuments(formattedDocs)
-    } catch (error) {
-      console.error('Failed to load documents:', error)
+    } catch (error: any) {
+      console.error('Failed to load documents:', error?.code, error?.message, error?.details, error?.hint)
     } finally {
       setLoading(false)
     }
@@ -137,7 +156,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
           .insert({
             project_id: projectId,
             name: file.name,
-            file_url: publicUrl,
+            file_path: filePath,
             file_type: file.type,
             file_size: file.size,
             category: detectCategory(file.name),
@@ -182,6 +201,11 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
       console.error('Failed to delete document:', error)
       toast.error('Failed to delete document. Please try again.')
     }
+  }
+
+  function getPublicUrl(filePath: string) {
+    const supabase = createClient()
+    return supabase.storage.from('project-documents').getPublicUrl(filePath).data.publicUrl
   }
 
   async function handleDownload(fileUrl: string, fileName: string) {
@@ -379,7 +403,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
               className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
             >
               {/* File Icon */}
-              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0 text-2xl">
+              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center shrink-0 text-2xl">
                 {getFileIcon(doc.file_type, doc.category)}
               </div>
 
@@ -401,29 +425,37 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="flex items-center gap-1 shrink-0">
                 <button
-                  onClick={() => window.open(doc.file_url, '_blank')}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={() => setPreviewDoc(doc)}
+                  className="p-2 rounded-lg transition-colors"
+                  style={{ color: colors.textMuted }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = colors.bgMuted)}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                   title="Preview"
                 >
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 </button>
                 <button
-                  onClick={() => handleDownload(doc.file_url, doc.name)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={() => handleDownload(getPublicUrl(doc.file_path), doc.name)}
+                  className="p-2 rounded-lg transition-colors"
+                  style={{ color: colors.textMuted }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = colors.bgMuted)}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                   title="Download"
                 >
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                 </button>
                 <button
                   onClick={() => handleDelete(doc.id, doc.name)}
-                  className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                  className="p-2 rounded-lg transition-colors text-red-500"
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = darkMode ? 'rgba(239,68,68,0.15)' : '#FEF2F2')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                   title="Delete"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -447,6 +479,107 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
           </div>
         )}
       </div>
+
+      {/* Preview Modal */}
+      {previewDoc && (() => {
+        const url = getPublicUrl(previewDoc.file_path)
+        const isPdf = previewDoc.file_type.includes('pdf')
+        const isImage = previewDoc.file_type.startsWith('image/')
+        const canPreview = isPdf || isImage
+
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
+            onClick={() => setPreviewDoc(null)}
+          >
+            <div
+              className="bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden"
+              style={{ width: '90vw', maxWidth: '1100px', height: '90vh' }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-xl">{getFileIcon(previewDoc.file_type, previewDoc.category)}</span>
+                  <span className="font-medium text-gray-900 truncate">{previewDoc.name}</span>
+                  <span className="text-sm text-gray-500 shrink-0">{formatFileSize(previewDoc.file_size)}</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 ml-4">
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    Open in tab
+                  </a>
+                  <button
+                    onClick={() => handleDownload(url, previewDoc.name)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download
+                  </button>
+                  <button
+                    onClick={() => setPreviewDoc(null)}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Close"
+                  >
+                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Preview Body */}
+              <div className="flex-1 overflow-hidden bg-gray-100">
+                {isPdf && (
+                  previewBlobUrl
+                    ? <iframe src={previewBlobUrl} className="w-full h-full border-0" title={previewDoc.name} />
+                    : <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <svg className="w-8 h-8 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      </div>
+                )}
+                {isImage && (
+                  <div className="w-full h-full flex items-center justify-center p-6">
+                    <img
+                      src={url}
+                      alt={previewDoc.name}
+                      className="max-w-full max-h-full object-contain rounded shadow"
+                    />
+                  </div>
+                )}
+                {!canPreview && (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-gray-500">
+                    <div className="text-6xl">{getFileIcon(previewDoc.file_type, previewDoc.category)}</div>
+                    <p className="text-lg font-medium text-gray-700">Preview not available for this file type</p>
+                    <p className="text-sm">{previewDoc.file_type || 'Unknown type'}</p>
+                    <button
+                      onClick={() => handleDownload(url, previewDoc.name)}
+                      className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download to view
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

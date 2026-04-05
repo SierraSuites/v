@@ -19,6 +19,27 @@ import PunchListWidget from '@/components/dashboard/PunchListWidget'
 import BudgetTrackingWidget from '@/components/dashboard/BudgetTrackingWidget'
 
 // Types
+interface DashboardStatsData {
+  totalProjects: number
+  activeProjects: number
+  onHoldProjects: number
+  completedProjects: number
+  tasksCompleted: number
+  tasksInProgress: number
+  tasksOverdue: number
+  completionRate: number
+  totalQuoteValue: number
+  pendingQuotes: number
+  acceptedQuotes: number
+  criticalItems: number
+  openItems: number
+  resolvedItems: number
+  storageUsed: number
+  storageLimit: number
+  photoCount: number
+  teamMembers: number
+}
+
 interface Project {
   id: string
   name: string
@@ -66,6 +87,7 @@ export default function DashboardPage() {
   const [recentActivities, setRecentActivities] = useState<Activity[]>([])
   const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([])
   const [allProjects, setAllProjects] = useState<any[]>([])
+  const [dashboardStats, setDashboardStats] = useState<DashboardStatsData | null>(null)
 
   // Theme
   const { colors, darkMode } = useThemeColors()
@@ -77,24 +99,50 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const res = await fetch('/api/dashboard/recent')
+        const [recentRes, statsRes] = await Promise.all([
+          fetch('/api/dashboard/recent'),
+          fetch('/api/dashboard/stats'),
+        ])
 
-        if (!res.ok) {
-          if (res.status === 401) {
+        if (!recentRes.ok) {
+          if (recentRes.status === 401) {
             router.push('/login')
             return
           }
           throw new Error('Failed to load dashboard')
         }
 
-        const data = await res.json()
-
+        const data = await recentRes.json()
         setUser(data.user)
         setCompanyId(data.companyId)
         setRecentProjects(data.projects)
         setRecentActivities(data.activities)
         setUpcomingTasks(data.tasks)
         setAllProjects(data.allProjects || [])
+
+        if (statsRes.ok) {
+          const statsData = await statsRes.json()
+          setDashboardStats({
+            totalProjects: statsData.projects.total,
+            activeProjects: statsData.projects.active,
+            onHoldProjects: statsData.projects.onHold,
+            completedProjects: statsData.projects.completed,
+            tasksCompleted: statsData.tasks.completed,
+            tasksInProgress: statsData.tasks.inProgress,
+            tasksOverdue: statsData.tasks.overdue,
+            completionRate: statsData.tasks.completionRate,
+            totalQuoteValue: statsData.quotes.totalValue,
+            pendingQuotes: statsData.quotes.pending,
+            acceptedQuotes: statsData.quotes.accepted,
+            criticalItems: statsData.punchItems.critical,
+            openItems: statsData.punchItems.open,
+            resolvedItems: statsData.punchItems.resolved,
+            storageUsed: statsData.storage.used,
+            storageLimit: statsData.storage.limit,
+            photoCount: statsData.storage.photoCount,
+            teamMembers: statsData.team.members,
+          })
+        }
       } catch (error) {
         console.error('Error loading dashboard:', error)
       } finally {
@@ -152,7 +200,7 @@ export default function DashboardPage() {
 
         {/* Dashboard Stats */}
         <div className="mt-8">
-          <DashboardStats />
+          <DashboardStats stats={dashboardStats} />
         </div>
 
         {/* Main Grid */}

@@ -13,7 +13,6 @@ import { useRouter } from 'next/navigation'
 import EditProjectModal from './EditProjectModal'
 import TaskCreationModal from '@/components/dashboard/TaskCreationModal'
 import { createTask } from '@/lib/supabase/tasks'
-
 interface Props {
   project: ProjectDetails
 }
@@ -31,11 +30,11 @@ export default function ProjectHeader({ project }: Props) {
   }, [])
   // Status colors
   const statusColors = {
-    planning: 'bg-gray-100 text-gray-800',
-    active: 'bg-green-100 text-green-800',
-    'on-hold': 'bg-yellow-100 text-yellow-800',
-    completed: 'bg-blue-100 text-blue-800',
-    cancelled: 'bg-red-100 text-red-800'
+    planning: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+    active: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+    'on-hold': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
+    completed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+    cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
   }
 
   // Calculate days elapsed
@@ -47,20 +46,20 @@ export default function ProjectHeader({ project }: Props) {
   const timeProgress = Math.min(100, Math.max(0, (elapsedDays / totalDays) * 100))
 
   return (
-    <div className="bg-white border-b">
+    <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Title Row */}
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{project.name}</h1>
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[project.status]}`}>
                 {project.status.replace('-', ' ').toUpperCase()}
               </span>
             </div>
 
             {/* Client & Location */}
-            <div className="flex items-center gap-4 text-gray-600">
+            <div className="flex items-center gap-4 text-gray-600 dark:text-gray-400">
               <div className="flex items-center gap-1">
                 <span className="font-medium">Client:</span>
                 <span>{project.client}</span>
@@ -84,7 +83,7 @@ export default function ProjectHeader({ project }: Props) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowEdit(true)}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium"
+              className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
             >
               Edit Project
             </button>
@@ -101,7 +100,7 @@ export default function ProjectHeader({ project }: Props) {
             color="blue"
           >
             <div className="mt-2">
-              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-blue-600 rounded-full transition-all"
                   style={{ width: `${liveProgress}%` }}
@@ -118,7 +117,7 @@ export default function ProjectHeader({ project }: Props) {
             color={project.daysRemaining < 0 ? 'red' : project.daysRemaining < 7 ? 'yellow' : 'green'}
           >
             <div className="mt-2">
-              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${
                     project.daysRemaining < 0 ? 'bg-red-600' :
@@ -127,7 +126,7 @@ export default function ProjectHeader({ project }: Props) {
                   style={{ width: `${Math.min(100, timeProgress)}%` }}
                 />
               </div>
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                 <span>{format(startDate, 'MMM d, yyyy')}</span>
                 <span>{format(endDate, 'MMM d, yyyy')}</span>
               </div>
@@ -142,7 +141,7 @@ export default function ProjectHeader({ project }: Props) {
             color={project.isOverBudget ? 'red' : project.budgetPercentage > 90 ? 'yellow' : 'green'}
           >
             <div className="mt-2">
-              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${
                     project.isOverBudget ? 'bg-red-600' :
@@ -151,7 +150,7 @@ export default function ProjectHeader({ project }: Props) {
                   style={{ width: `${Math.min(100, project.budgetPercentage)}%` }}
                 />
               </div>
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                 <span>{project.budgetPercentage.toFixed(0)}% used</span>
                 <span className={project.budgetRemaining < 0 ? 'text-red-600 font-medium' : ''}>
                   ${(Math.abs(project.budgetRemaining) / 1000).toFixed(1)}k {project.budgetRemaining < 0 ? 'over' : 'left'}
@@ -166,7 +165,7 @@ export default function ProjectHeader({ project }: Props) {
               {project.teamMembers.slice(0, 3).map((member, i) => (
                 <div
                   key={i}
-                  className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-xs font-medium"
+                  className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 border-2 border-white flex items-center justify-center text-xs font-medium"
                 >
                   {member.avatar ? (
                     <img src={member.avatar} className="w-full h-full rounded-full object-cover" alt={member.name} />
@@ -189,12 +188,12 @@ export default function ProjectHeader({ project }: Props) {
 
         {/* Alerts */}
         {(project.isOverBudget || project.isOverdue) && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
               <div>
-                <h3 className="text-sm font-semibold text-red-900 mb-1">Action Required</h3>
-                <ul className="text-sm text-red-800 space-y-1">
+                <h3 className="text-sm font-semibold text-red-900 dark:text-red-300 mb-1">Action Required</h3>
+                <ul className="text-sm text-red-800 dark:text-red-400 space-y-1">
                   {project.isOverBudget && (
                     <li>• Project is over budget by ${(Math.abs(project.budgetRemaining) / 1000).toFixed(1)}k</li>
                   )}
@@ -289,14 +288,14 @@ function MetricCard({ icon, label, value, color, children }: MetricCardProps) {
   }
 
   return (
-    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
       <div className="flex items-center gap-3 mb-2">
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconColors[color]}`}>
           {icon}
         </div>
         <div>
-          <div className="text-xs text-gray-600">{label}</div>
-          <div className="text-lg font-bold text-gray-900">{value}</div>
+          <div className="text-xs text-gray-600 dark:text-gray-400">{label}</div>
+          <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{value}</div>
         </div>
       </div>
       {children}

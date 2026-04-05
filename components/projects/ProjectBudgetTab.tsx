@@ -384,7 +384,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
         </div>
         <button
           onClick={() => setShowAddExpense(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+          className="inline-flex items-center cursor-pointer gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -398,8 +398,8 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-medium text-gray-600">Total Budget</p>
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: darkMode ? 'rgba(37,99,235,0.2)' : '#dbeafe' }}>
+              <svg className="w-5 h-5" style={{ color: darkMode ? '#60a5fa' : '#2563eb' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -413,8 +413,8 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-medium text-gray-600">Spent</p>
-            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: darkMode ? 'rgba(234,88,12,0.2)' : '#ffedd5' }}>
+              <svg className="w-5 h-5" style={{ color: darkMode ? '#fb923c' : '#ea580c' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
             </div>
@@ -434,16 +434,16 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
         }`}>
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-medium text-gray-600">Remaining</p>
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-              budgetStatus === 'over' ? 'bg-red-100' :
-              budgetStatus === 'warning' ? 'bg-yellow-100' :
-              'bg-green-100'
-            }`}>
-              <svg className={`w-5 h-5 ${
-                budgetStatus === 'over' ? 'text-red-600' :
-                budgetStatus === 'warning' ? 'text-yellow-600' :
-                'text-green-600'
-              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{
+              backgroundColor: darkMode
+                ? budgetStatus === 'over' ? 'rgba(220,38,38,0.2)' : budgetStatus === 'warning' ? 'rgba(202,138,4,0.2)' : 'rgba(22,163,74,0.2)'
+                : budgetStatus === 'over' ? '#fee2e2' : budgetStatus === 'warning' ? '#fef9c3' : '#dcfce7'
+            }}>
+              <svg className="w-5 h-5" style={{
+                color: darkMode
+                  ? budgetStatus === 'over' ? '#f87171' : budgetStatus === 'warning' ? '#facc15' : '#4ade80'
+                  : budgetStatus === 'over' ? '#dc2626' : budgetStatus === 'warning' ? '#ca8a04' : '#16a34a'
+              }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>

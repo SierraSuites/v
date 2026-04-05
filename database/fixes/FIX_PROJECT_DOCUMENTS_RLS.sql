@@ -1,6 +1,7 @@
 -- ============================================================
 -- FIX: project_documents RLS permission denied (code 42501)
--- Run this in Supabase SQL editor
+-- Status: RESOLVED — policies merged into PROJECTS_SQL_SETUP.sql
+-- Storage bucket setup also added to PROJECTS_SQL_SETUP.sql
 -- ============================================================
 
 -- Drop any conflicting existing policies
