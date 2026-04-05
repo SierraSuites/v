@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AIAccessWrapper from '@/components/ai/AIAccessWrapper'
+import toast from 'react-hot-toast'
 
 interface ContractAnalysis {
   id: string
@@ -387,7 +388,7 @@ export default function ContractGuardianPage() {
 
     // Simulate upload and analysis
     setTimeout(() => {
-      alert(`✅ Contract uploaded! AI legal analysis will complete in 3-5 minutes. We'll email you when ready.`)
+      toast.success(`Contract uploaded! AI legal analysis will complete in 3-5 minutes. We'll email you when ready.`)
       setUploadingFile(false)
       setShowUploadModal(false)
     }, 2000)
@@ -461,7 +462,7 @@ export default function ContractGuardianPage() {
 
   return (
     <AIAccessWrapper requiredTier="enterprise">
-      <div className="min-h-screen bg-linear-to-b from-indigo-50 via-blue-50 to-white p-8">
+      <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-blue-50 to-white p-8">
         {/* Header */}
         <div className="max-w-7xl mx-auto mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -482,7 +483,7 @@ export default function ContractGuardianPage() {
           </div>
 
           {/* How It Works Banner */}
-          <div className="bg-linear-to-r from-indigo-100 to-blue-100 border-l-4 border-indigo-600 p-6 rounded-lg mb-6">
+          <div className="bg-gradient-to-r from-indigo-100 to-blue-100 border-l-4 border-indigo-600 p-6 rounded-lg mb-6">
             <div className="flex items-start gap-4">
               <div className="text-3xl">🤖</div>
               <div>

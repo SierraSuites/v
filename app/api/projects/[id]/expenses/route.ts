@@ -27,11 +27,23 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const supabase = await createClient()
 
-    // Fetch project budget info
+    // Single query: fetch project with embedded expenses (one DB round-trip)
     const { data: project, error: projectError } = await supabase
       .from('projects')
-      .select('estimated_budget, currency')
+      .select(`
+        estimated_budget,
+        currency,
+        project_expenses (
+          *,
+          created_by_profile:user_profiles!project_expenses_created_by_fkey (
+            id,
+            full_name,
+            avatar_url
+          )
+        )
+      `)
       .eq('id', id)
+      .order('date', { ascending: false, foreignTable: 'project_expenses' })
       .single()
 
     if (projectError) {
@@ -39,30 +51,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
-    // Fetch expenses with created_by user profile
-    const { data: expenses, error: expensesError } = await supabase
-      .from('project_expenses')
-      .select(`
-        *,
-        created_by_profile:user_profiles!project_expenses_created_by_fkey (
-          id,
-          full_name,
-          avatar_url
-        )
-      `)
-      .eq('project_id', id)
-      .order('date', { ascending: false })
-
-    if (expensesError) {
-      console.error('[GET /api/projects/:id/expenses] Expenses fetch error:', expensesError)
-      return NextResponse.json(
-        { error: 'Failed to fetch expenses' },
-        { status: 500 }
-      )
-    }
-
     return NextResponse.json({
-      expenses: expenses || [],
+      expenses: project.project_expenses ?? [],
       estimated_budget: project.estimated_budget,
       currency: project.currency,
     })

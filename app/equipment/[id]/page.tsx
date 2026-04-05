@@ -14,6 +14,7 @@ import {
   ArrowRightOnRectangleIcon,
   ArrowLeftOnRectangleIcon,
 } from '@heroicons/react/24/outline'
+import toast from 'react-hot-toast'
 
 interface Equipment {
   id: string
@@ -379,11 +380,11 @@ function CheckinModal({
       if (res.ok) {
         onSuccess()
       } else {
-        alert('Failed to check in equipment')
+        toast.error('Failed to check in equipment')
       }
     } catch (error) {
       console.error('Error checking in:', error)
-      alert('Failed to check in equipment')
+      toast.error('Failed to check in equipment')
     } finally {
       setSaving(false)
     }

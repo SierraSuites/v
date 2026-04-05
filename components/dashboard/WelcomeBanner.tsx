@@ -13,7 +13,7 @@ export default function WelcomeBanner({ userName, greeting, onDismiss }: Welcome
   const router = useRouter()
 
   return (
-    <div className="bg-linear-to-r from-blue-600 to-blue-700 rounded-lg shadow-lg p-6 mb-8 text-white">
+    <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg shadow-lg p-6 mb-8 text-white">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <h1 className="text-2xl font-bold mb-2">

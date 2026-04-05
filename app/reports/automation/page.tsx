@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Workflow {
   id: string
@@ -24,6 +25,7 @@ interface Workflow {
 export default function AutomationPage() {
   const router = useRouter()
   const supabase = createClient()
+  const confirm = useConfirm()
 
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [loading, setLoading] = useState(true)
@@ -68,7 +70,7 @@ export default function AutomationPage() {
   }
 
   const deleteWorkflow = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this workflow?')) return
+    if (!await confirm({ description: 'Are you sure you want to delete this workflow?', destructive: true })) return
 
     try {
       const { error } = await supabase
@@ -173,7 +175,7 @@ export default function AutomationPage() {
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Start Templates</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-linear-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-6 cursor-pointer hover:shadow-lg transition-shadow">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg p-6 cursor-pointer hover:shadow-lg transition-shadow">
               <div className="text-3xl mb-3">📅</div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Daily Client Updates</h3>
               <p className="text-sm text-gray-600 mb-4">Send daily progress reports to all active clients at 5 PM</p>
@@ -182,7 +184,7 @@ export default function AutomationPage() {
               </button>
             </div>
 
-            <div className="bg-linear-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-lg p-6 cursor-pointer hover:shadow-lg transition-shadow">
+            <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-lg p-6 cursor-pointer hover:shadow-lg transition-shadow">
               <div className="text-3xl mb-3">⚠️</div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Budget Alert System</h3>
               <p className="text-sm text-gray-600 mb-4">Auto-generate budget variance report when projects exceed 90%</p>
@@ -191,7 +193,7 @@ export default function AutomationPage() {
               </button>
             </div>
 
-            <div className="bg-linear-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-lg p-6 cursor-pointer hover:shadow-lg transition-shadow">
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-lg p-6 cursor-pointer hover:shadow-lg transition-shadow">
               <div className="text-3xl mb-3">📊</div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Weekly Compliance Report</h3>
               <p className="text-sm text-gray-600 mb-4">Generate compliance documentation every Friday for safety audits</p>

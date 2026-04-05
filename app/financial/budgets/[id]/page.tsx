@@ -34,6 +34,8 @@ import {
   LineChart,
   Line,
 } from 'recharts'
+import toast from 'react-hot-toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface BudgetItem {
   id: string
@@ -81,6 +83,7 @@ export default function BudgetDetailPage() {
   const router = useRouter()
   const params = useParams()
   const budgetId = params.id as string
+  const confirm = useConfirm()
 
   const [budget, setBudget] = useState<Budget | null>(null)
   const [loading, setLoading] = useState(true)
@@ -107,7 +110,7 @@ export default function BudgetDetailPage() {
   }
 
   async function handleDelete() {
-    if (!confirm('Are you sure you want to delete this budget? This action cannot be undone.')) {
+    if (!await confirm({ description: 'Are you sure you want to delete this budget? This action cannot be undone.', destructive: true })) {
       return
     }
 
@@ -120,7 +123,7 @@ export default function BudgetDetailPage() {
       router.push('/financial/budgets')
     } catch (error) {
       console.error('Error deleting budget:', error)
-      alert('Failed to delete budget')
+      toast.error('Failed to delete budget')
     } finally {
       setDeleting(false)
     }

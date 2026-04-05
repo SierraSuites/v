@@ -15,6 +15,8 @@ import {
   formatCurrency,
   isQuoteExpired
 } from '@/lib/quotes'
+import toast from 'react-hot-toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function QuotesPage() {
   const router = useRouter()
@@ -52,7 +54,7 @@ export default function QuotesPage() {
         .single()
 
       if (!profile?.company_id) {
-        alert('No company found for your account')
+        toast.error('No company found for your account')
         return
       }
 
@@ -61,7 +63,7 @@ export default function QuotesPage() {
       setQuotes(allQuotes)
     } catch (err) {
       console.error('Error loading quotes:', err)
-      alert('Failed to load quotes')
+      toast.error('Failed to load quotes')
     } finally {
       setLoading(false)
     }
@@ -100,7 +102,7 @@ export default function QuotesPage() {
       await loadStats()
     } catch (err) {
       console.error('Error deleting quote:', err)
-      alert('Failed to delete quote')
+      toast.error('Failed to delete quote')
     }
   }
 
@@ -113,7 +115,7 @@ export default function QuotesPage() {
       }
     } catch (err) {
       console.error('Error duplicating quote:', err)
-      alert('Failed to duplicate quote')
+      toast.error('Failed to duplicate quote')
     }
   }
 
@@ -142,7 +144,7 @@ export default function QuotesPage() {
       window.URL.revokeObjectURL(url)
     } catch (error) {
       console.error('Error downloading PDF:', error)
-      alert('Failed to generate PDF. Please try again.')
+      toast.error('Failed to generate PDF. Please try again.')
     } finally {
       setDownloadingPDF(null)
     }

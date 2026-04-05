@@ -24,9 +24,11 @@ import {
 } from '@heroicons/react/24/outline'
 import { usePermissionGuard } from '@/hooks/usePermissionGuard'
 import toast, { Toaster } from 'react-hot-toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 export default function ExpensesPage() {
   const router = useRouter()
+  const confirm = useConfirm()
 
   // RBAC: Require canViewFinancials permission
   const { loading: permissionLoading } = usePermissionGuard({
@@ -159,7 +161,7 @@ export default function ExpensesPage() {
   }
 
   async function handleDeleteExpense(expenseId: string) {
-    if (!confirm('Are you sure you want to delete this expense?')) {
+    if (!await confirm({ description: 'Are you sure you want to delete this expense?', destructive: true })) {
       return
     }
 

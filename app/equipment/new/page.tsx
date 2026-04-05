@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
+import toast from 'react-hot-toast'
 
 export default function NewEquipmentPage() {
   const router = useRouter()
@@ -63,11 +64,11 @@ export default function NewEquipmentPage() {
         const data = await res.json()
         router.push(`/equipment/${data.equipment.id}`)
       } else {
-        alert('Failed to create equipment')
+        toast.error('Failed to create equipment')
       }
     } catch (error) {
       console.error('Error creating equipment:', error)
-      alert('Failed to create equipment')
+      toast.error('Failed to create equipment')
     } finally {
       setSaving(false)
     }

@@ -13,6 +13,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { QuoteType, QuoteFormData, QuoteItemFormData, Contact } from '@/types/quotes'
 import ExcelImport from '@/components/quotes/ExcelImport'
+import toast from 'react-hot-toast'
 
 // Extended QuoteItemFormData with additional fields used in the form
 interface ExtendedQuoteItemFormData extends QuoteItemFormData {
@@ -332,7 +333,7 @@ function NewQuoteForm() {
       router.push(`/quotes/${quoteId}`)
     } catch (error) {
       console.error('Error creating quote:', error)
-      alert('Failed to create quote. Please try again.')
+      toast.error('Failed to create quote. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -399,7 +400,7 @@ function NewQuoteForm() {
   // ============================================================
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 px-4">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -903,7 +904,7 @@ function NewQuoteForm() {
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Pricing & Discounts</h2>
 
               {/* Subtotal Display */}
-              <div className="bg-linear-to-r from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-200">
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-200">
                 <div className="flex items-center justify-between">
                   <span className="text-lg font-semibold text-gray-700">Subtotal:</span>
                   <span className="text-3xl font-bold text-blue-600">{formatCurrency(totals.subtotal)}</span>
@@ -995,7 +996,7 @@ function NewQuoteForm() {
               </div>
 
               {/* Total Summary */}
-              <div className="bg-linear-to-r from-green-50 to-blue-50 rounded-xl p-6 border-2 border-green-300">
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border-2 border-green-300">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-gray-700">
                     <span>Subtotal:</span>
@@ -1173,7 +1174,7 @@ function NewQuoteForm() {
               </div>
 
               {/* Pricing Summary */}
-              <div className="bg-linear-to-r from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-300">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-300">
                 <h3 className="font-bold text-gray-900 mb-4">Pricing Summary</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between text-gray-700">
@@ -1247,7 +1248,7 @@ function NewQuoteForm() {
               )}
 
               {/* Ready to Create */}
-              <div className="bg-linear-to-r from-blue-600 to-purple-600 rounded-xl p-8 text-white text-center">
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 text-white text-center">
                 <div className="text-5xl mb-4">✨</div>
                 <h3 className="text-2xl font-bold mb-2">Ready to Create!</h3>
                 <p className="text-lg opacity-90">
@@ -1324,7 +1325,7 @@ function NewQuoteForm() {
 export default function NewQuotePage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     }>

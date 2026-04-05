@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { ArrowLeftIcon, BellIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Alert {
   id: string
@@ -28,6 +29,7 @@ const metricOptions = [
 
 export default function ReportAlertsPage() {
   const supabase = createClient()
+  const confirm = useConfirm()
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
@@ -72,7 +74,7 @@ export default function ReportAlertsPage() {
   }
 
   async function deleteAlert(id: string) {
-    if (!confirm('Delete this alert?')) return
+    if (!await confirm({ description: 'Delete this alert?', destructive: true })) return
     await supabase.from('report_alerts').delete().eq('id', id)
     setAlerts(prev => prev.filter(a => a.id !== id))
   }

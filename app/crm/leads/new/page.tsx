@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 interface Contact {
   id: string
@@ -67,7 +68,7 @@ export default function NewLeadPage() {
     e.preventDefault()
 
     if (!formData.title) {
-      alert('Lead title is required')
+      toast.error('Lead title is required')
       return
     }
 
@@ -104,7 +105,7 @@ export default function NewLeadPage() {
       router.push(`/crm/leads/${data.id}`)
     } catch (error: any) {
       console.error('Error creating lead:', error)
-      alert(`Failed to create lead: ${error.message}`)
+      toast.error(`Failed to create lead: ${error.message}`)
     } finally {
       setLoading(false)
     }

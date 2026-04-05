@@ -12,6 +12,8 @@ import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { QuoteWithRelations, QuoteActivity, QuoteStatus } from '@/types/quotes'
+import toast from 'react-hot-toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface PageProps {
   params: Promise<{
@@ -22,6 +24,7 @@ interface PageProps {
 export default function QuoteDetailPage({ params }: PageProps) {
   const router = useRouter()
   const { id } = use(params)
+  const confirm = useConfirm()
 
   const [quote, setQuote] = useState<QuoteWithRelations | null>(null)
   const [loading, setLoading] = useState(true)
@@ -67,18 +70,18 @@ export default function QuoteDetailPage({ params }: PageProps) {
       if (response.ok) {
         await loadQuote()
       } else {
-        alert('Failed to update status')
+        toast.error('Failed to update status')
       }
     } catch (error) {
       console.error('Error updating status:', error)
-      alert('Error updating status')
+      toast.error('Error updating status')
     } finally {
       setStatusUpdating(false)
     }
   }
 
   async function handleDelete() {
-    if (!confirm('Are you sure you want to delete this quote? This action cannot be undone.')) {
+    if (!await confirm({ description: 'Are you sure you want to delete this quote? This action cannot be undone.', destructive: true })) {
       return
     }
 
@@ -90,16 +93,16 @@ export default function QuoteDetailPage({ params }: PageProps) {
       if (response.ok) {
         router.push('/quotes')
       } else {
-        alert('Failed to delete quote')
+        toast.error('Failed to delete quote')
       }
     } catch (error) {
       console.error('Error deleting quote:', error)
-      alert('Error deleting quote')
+      toast.error('Error deleting quote')
     }
   }
 
   async function handleConvertToProject() {
-    if (!confirm('Convert this approved quote to a project? A new project will be created with all quote data.')) {
+    if (!await confirm({ description: 'Convert this approved quote to a project? A new project will be created with all quote data.' })) {
       return
     }
     setConverting(true)
@@ -111,11 +114,11 @@ export default function QuoteDetailPage({ params }: PageProps) {
       if (response.ok && data.project_id) {
         router.push(`/projects/${data.project_id}`)
       } else {
-        alert(data.error || 'Failed to convert quote to project')
+        toast.error(data.error || 'Failed to convert quote to project')
       }
     } catch (error) {
       console.error('Error converting quote:', error)
-      alert('Error converting quote to project')
+      toast.error('Error converting quote to project')
     } finally {
       setConverting(false)
     }
@@ -133,11 +136,11 @@ export default function QuoteDetailPage({ params }: PageProps) {
         const { data } = await response.json()
         router.push(`/quotes/${data.id}`)
       } else {
-        alert('Failed to duplicate quote')
+        toast.error('Failed to duplicate quote')
       }
     } catch (error) {
       console.error('Error duplicating quote:', error)
-      alert('Error duplicating quote')
+      toast.error('Error duplicating quote')
     }
   }
 
@@ -166,7 +169,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
       window.URL.revokeObjectURL(url)
     } catch (error) {
       console.error('Error downloading PDF:', error)
-      alert('Failed to generate PDF. Please try again.')
+      toast.error('Failed to generate PDF. Please try again.')
     } finally {
       setDownloadingPDF(false)
     }
@@ -176,11 +179,11 @@ export default function QuoteDetailPage({ params }: PageProps) {
     const clientEmail = (quote as any)?.client_email || quote?.client?.email
 
     if (!clientEmail) {
-      alert('This quote has no client email address. Please add one before sending.')
+      toast.error('This quote has no client email address. Please add one before sending.')
       return
     }
 
-    if (!confirm(`Send quote to ${clientEmail}?\n\nAn email will be sent with the quote PDF attached.`)) {
+    if (!await confirm({ description: `Send quote to ${clientEmail}?\n\nAn email will be sent with the quote PDF attached.` })) {
       return
     }
 
@@ -193,14 +196,14 @@ export default function QuoteDetailPage({ params }: PageProps) {
       const data = await response.json()
 
       if (response.ok) {
-        alert(`Quote successfully sent to ${clientEmail}!`)
+        toast.success(`Quote successfully sent to ${clientEmail}!`)
         await loadQuote() // Reload to get updated send count
       } else {
-        alert(data.error || 'Failed to send email')
+        toast.error(data.error || 'Failed to send email')
       }
     } catch (error) {
       console.error('Error sending email:', error)
-      alert('Failed to send email. Please try again.')
+      toast.error('Failed to send email. Please try again.')
     } finally {
       setSendingEmail(false)
     }
@@ -287,7 +290,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
   const isExpired = quote.valid_until && new Date(quote.valid_until) < new Date()
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -657,7 +660,7 @@ export default function QuoteDetailPage({ params }: PageProps) {
             </div>
 
             {/* Tracking Stats */}
-            <div className="bg-linear-to-br from-purple-50 to-pink-50 rounded-xl shadow-lg p-6 border-2 border-purple-200">
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl shadow-lg p-6 border-2 border-purple-200">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Tracking</h2>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">

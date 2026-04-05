@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AIAccessWrapper from '@/components/ai/AIAccessWrapper'
+import toast from 'react-hot-toast'
 
 interface MaterialItem {
   id: string
@@ -414,11 +415,11 @@ export default function MaterialOptimizerPage() {
     setSelectedOptimization(null)
 
     // Show success message
-    alert(`✅ Optimization applied! You'll save ${formatCurrency(selectedOptimization.savings)}`)
+    toast.success(`Optimization applied! You'll save ${formatCurrency(selectedOptimization.savings)}`)
   }
 
   const handleExportToPO = () => {
-    alert('📋 Exporting optimized materials to purchase order system...')
+    toast('Exporting optimized materials to purchase order system...')
   }
 
   const formatCurrency = (amount: number): string => {
@@ -476,7 +477,7 @@ export default function MaterialOptimizerPage() {
 
   return (
     <AIAccessWrapper requiredTier="enterprise">
-      <div className="min-h-screen bg-linear-to-b from-green-50 via-emerald-50 to-white p-8">
+      <div className="min-h-screen bg-gradient-to-b from-green-50 via-emerald-50 to-white p-8">
         {/* Header */}
         <div className="max-w-7xl mx-auto mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -497,7 +498,7 @@ export default function MaterialOptimizerPage() {
           </div>
 
           {/* How It Works Banner */}
-          <div className="bg-linear-to-r from-green-100 to-emerald-100 border-l-4 border-green-600 p-6 rounded-lg mb-6">
+          <div className="bg-gradient-to-r from-green-100 to-emerald-100 border-l-4 border-green-600 p-6 rounded-lg mb-6">
             <div className="flex items-start gap-4">
               <div className="text-3xl">🤖</div>
               <div>
