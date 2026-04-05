@@ -229,7 +229,6 @@ export default function ProfilePage() {
                 className="w-20 h-20 rounded-full flex items-center justify-center overflow-hidden text-white font-bold text-2xl ring-4"
                 style={{
                   backgroundColor: '#5865f2',
-                  ringColor: sectionBg,
                   outline: `4px solid ${sectionBg}`,
                 }}
               >

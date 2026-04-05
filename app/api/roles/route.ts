@@ -211,32 +211,38 @@ export async function POST(req: NextRequest) {
 
     const { roleName, description, color, icon, permissions } = validationResult.data
 
-    // Create the custom role
-    const customRole = await customRolesService.createCustomRole(
-      profile.company_id,
-      roleName,
-      permissions,
-      { description, color, icon }
-    )
+    // Create the custom role directly using server client
+    const roleSlug = roleName.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+
+    const { data: customRole, error: createError } = await supabase
+      .from('custom_roles')
+      .insert({
+        company_id: profile.company_id,
+        role_name: roleName,
+        role_slug: roleSlug,
+        description: description || null,
+        color: color || '#6B7280',
+        icon: icon || '👤',
+        permissions,
+        is_system_role: false,
+        created_by: user.id
+      })
+      .select()
+      .single()
+
+    if (createError) {
+      if (createError.code === '23505') {
+        return NextResponse.json({ error: `A role with the name "${roleName}" already exists` }, { status: 409 })
+      }
+      throw createError
+    }
 
     return NextResponse.json(
-      {
-        message: 'Custom role created successfully',
-        role: customRole
-      },
+      { message: 'Custom role created successfully', role: customRole },
       { status: 201 }
     )
   } catch (error: any) {
     console.error('Error creating custom role:', error)
-
-    // Handle specific error cases
-    if (error.message?.includes('already exists')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 409 } // Conflict
-      )
-    }
-
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

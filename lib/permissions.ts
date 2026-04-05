@@ -1,5 +1,3 @@
-import { createClient } from '@/lib/supabase/client'
-
 // ============================================
 // TYPES
 // ============================================
@@ -495,6 +493,7 @@ export const permissionService = {
    * Get user's highest role across all teams
    */
   async getUserHighestRole(userId?: string): Promise<UserRole> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     // Get user if not provided
@@ -530,6 +529,7 @@ export const permissionService = {
    * Get user's role for a specific project
    */
   async getUserProjectRole(projectId: string, userId?: string): Promise<UserRole> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     // Get user if not provided
@@ -610,6 +610,7 @@ export const permissionService = {
    * Get all projects user can access
    */
   async getUserAccessibleProjects(userId?: string): Promise<string[]> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     // Get user if not provided
@@ -638,6 +639,7 @@ export const permissionService = {
    * Check if user can view a specific media asset
    */
   async canViewMediaAsset(mediaAssetId: string, userId?: string): Promise<boolean> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     // Get user if not provided
@@ -665,6 +667,7 @@ export const permissionService = {
    * Check if user can delete a specific media asset
    */
   async canDeleteMediaAsset(mediaAssetId: string, userId?: string): Promise<boolean> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     // Get user if not provided
@@ -702,6 +705,7 @@ export const permissionService = {
    * Get user's teams
    */
   async getUserTeams(userId?: string): Promise<CompanyTeam[]> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     // Get user if not provided
@@ -735,6 +739,7 @@ export const permissionService = {
    * Get team members
    */
   async getTeamMembers(teamId: string): Promise<TeamMember[]> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     const { data, error } = await supabase
@@ -762,6 +767,7 @@ export const permissionService = {
     granted: boolean,
     reason?: string
   ): Promise<void> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -791,6 +797,7 @@ export const permissionService = {
     companyId: string,
     permissionName: keyof PermissionSet
   ): Promise<boolean> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     const { data, error } = await supabase.rpc('user_has_permission', {
@@ -822,6 +829,7 @@ export const permissionService = {
     userId: string,
     companyId: string
   ): Promise<PermissionSet> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     const { data, error } = await supabase.rpc('get_user_permissions', {
@@ -841,6 +849,7 @@ export const permissionService = {
    * Check if user can access specific company
    */
   async canAccessCompany(userId: string, companyId: string): Promise<boolean> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     const { data, error } = await supabase
@@ -861,6 +870,7 @@ export const permissionService = {
    * Get user's role assignments for a company
    */
   async getUserRoleAssignments(userId: string, companyId: string) {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     const { data, error } = await supabase

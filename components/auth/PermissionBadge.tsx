@@ -5,6 +5,7 @@ import type { UserRole } from '@/lib/permissions'
 import { Badge } from '@/components/ui/badge'
 
 const roleColors: Record<UserRole, { bg: string; text: string }> = {
+  owner: { bg: '#EA580C', text: '#FFFFFF' },
   admin: { bg: '#DC2626', text: '#FFFFFF' },
   superintendent: { bg: '#EA580C', text: '#FFFFFF' },
   project_manager: { bg: '#D97706', text: '#FFFFFF' },
@@ -15,6 +16,7 @@ const roleColors: Record<UserRole, { bg: string; text: string }> = {
 }
 
 const roleLabels: Record<UserRole, string> = {
+  owner: 'Owner',
   admin: 'Admin',
   superintendent: 'Superintendent',
   project_manager: 'Project Manager',
