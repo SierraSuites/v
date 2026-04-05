@@ -120,7 +120,10 @@ const nextConfig = {
               // Media: Allow self and Supabase
               "media-src 'self' https://*.supabase.co blob:",
 
-              // Objects: Disallow plugins
+              // Frames: Allow blob URLs for in-app PDF preview
+              "frame-src 'self' blob:",
+
+              // Objects: Disallow plugins (except PDF embed fallback)
               "object-src 'none'",
 
               // Base URI: Restrict base tag to same origin

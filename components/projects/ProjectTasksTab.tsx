@@ -13,7 +13,6 @@ import {
 } from '@heroicons/react/24/outline'
 import { CheckIcon } from '@heroicons/react/24/outline'
 import TaskCreationModal from '@/components/dashboard/TaskCreationModal'
-import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 interface Task {
   id: string
@@ -89,7 +88,6 @@ export default function ProjectTasksTab({ project }: Props) {
   const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null)
   const [undoInfo, setUndoInfo] = useState<{ task: Task; prevStatus: Task['status'] } | null>(null)
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const { colors, darkMode } = useThemeColors()
 
   useEffect(() => {
     fetchTasks()
@@ -374,12 +372,12 @@ export default function ProjectTasksTab({ project }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Tasks</h2>
-          <p className="text-sm text-gray-500 mt-1">Track and manage project tasks</p>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Tasks</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Track and manage project tasks</p>
         </div>
         <button
           onClick={() => setShowAddTaskModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+          className="inline-flex items-center cursor-pointer gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
         >
           <PlusIcon className="h-4 w-4" />
           Add Task
@@ -388,21 +386,21 @@ export default function ProjectTasksTab({ project }: Props) {
 
       {/* Summary */}
       <div className="grid grid-cols-4 gap-3">
-        <div className="bg-white rounded-lg border p-3 text-center">
-          <div className="text-lg font-bold text-gray-600">{todoCount}</div>
-          <div className="text-xs text-gray-500">To Do</div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center">
+          <div className="text-lg font-bold text-gray-600 dark:text-gray-400">{todoCount}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">To Do</div>
         </div>
-        <div className="bg-white rounded-lg border p-3 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center">
           <div className="text-lg font-bold text-blue-600">{inProgressCount}</div>
-          <div className="text-xs text-gray-500">In Progress</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">In Progress</div>
         </div>
-        <div className="bg-white rounded-lg border p-3 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center">
           <div className="text-lg font-bold text-green-600">{doneCount}</div>
-          <div className="text-xs text-gray-500">Done</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Done</div>
         </div>
-        <div className="bg-white rounded-lg border p-3 text-center">
-          <div className={`text-lg font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>{overdueCount}</div>
-          <div className="text-xs text-gray-500">Overdue</div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center">
+          <div className={`text-lg font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-gray-400 dark:text-gray-500'}`}>{overdueCount}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Overdue</div>
         </div>
       </div>
 
@@ -419,7 +417,7 @@ export default function ProjectTasksTab({ project }: Props) {
             className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
               filterStatus === f.key
                 ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
             }`}
           >
             {f.label}
@@ -431,22 +429,22 @@ export default function ProjectTasksTab({ project }: Props) {
       {loading ? (
         <div className="space-y-2">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="bg-white border rounded-lg p-4 animate-pulse flex gap-3">
-              <div className="w-6 h-6 bg-gray-200 rounded" />
+            <div key={i} className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4 animate-pulse flex gap-3">
+              <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded" />
               <div className="flex-1">
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-1" />
-                <div className="h-3 bg-gray-200 rounded w-1/4" />
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-1" />
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
               </div>
             </div>
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white border rounded-lg p-12 text-center">
-          <CheckIcon className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-          <h3 className="text-base font-medium text-gray-900 mb-1">
+        <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-12 text-center">
+          <CheckIcon className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+          <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-1">
             {filterStatus === 'done' ? 'No completed tasks yet' : 'No active tasks'}
           </h3>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             {filterStatus !== 'done' ? 'Add tasks to track work on this project' : 'Complete some tasks to see them here'}
           </p>
         </div>
@@ -459,8 +457,8 @@ export default function ProjectTasksTab({ project }: Props) {
               <div
                 key={task.id}
                 onClick={() => !selectedIds.size && setDetailTask(task)}
-                className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)] dark:hover:border-gray-500 transition-shadow transition-colors cursor-pointer"
-                style={isSelected ? { backgroundColor: darkMode ? 'rgba(59,130,246,0.1)' : 'rgba(219,234,254,0.4)', borderColor: '#93c5fd' } : {}}
+                className={`flex items-center gap-4 p-4 bg-white dark:bg-gray-800 border rounded-lg hover:shadow-md dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)] transition-all cursor-pointer ${isSelected ? 'border-blue-300' : 'border-gray-200 dark:border-gray-700 dark:hover:border-gray-500'}`}
+                style={isSelected ? { backgroundColor: 'rgba(219,234,254,0.4)' } : {}}
               >
                 {/* Checkbox */}
                 <button
@@ -482,7 +480,7 @@ export default function ProjectTasksTab({ project }: Props) {
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4 mb-1">
-                    <h4 className={`font-medium ${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                    <h4 className={`font-medium ${task.status === 'completed' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
                       {task.title}
                     </h4>
                     <div className="relative shrink-0">
@@ -499,12 +497,12 @@ export default function ProjectTasksTab({ project }: Props) {
                         {STATUS_LABELS[task.status]} ▾
                       </button>
                       {statusDropdownId === task.id && (
-                        <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                        <div className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 overflow-hidden">
                           {(Object.entries(STATUS_LABELS) as [Task['status'], string][]).map(([val, label]) => (
                             <button
                               key={val}
                               onClick={e => { e.stopPropagation(); updateTaskStatus(task.id, val) }}
-                              className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-gray-50 flex items-center gap-2 ${task.status === val ? 'text-blue-600 bg-blue-50' : 'text-gray-700'}`}
+                              className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center gap-2 ${task.status === val ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-700 dark:text-gray-300'}`}
                             >
                               <span className={`w-1.5 h-1.5 rounded-full ${
                                 val === 'completed' ? 'bg-green-500' :
@@ -520,9 +518,9 @@ export default function ProjectTasksTab({ project }: Props) {
                     </div>
                   </div>
                   {task.description && (
-                    <p className="text-xs text-gray-500 mb-1.5">{task.description}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">{task.description}</p>
                   )}
-                  <div className="flex items-center gap-3 text-sm text-gray-500 flex-wrap">
+                  <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PRIORITY_COLORS[task.priority]}`}>
                       {task.priority}
                     </span>
@@ -555,64 +553,64 @@ export default function ProjectTasksTab({ project }: Props) {
       {detailTask && (
         <>
           <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setDetailTask(null)} />
-          <div className="fixed right-0 top-0 h-full w-96 bg-white shadow-xl z-50 flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b">
-              <h3 className="text-base font-semibold text-gray-900">Task Details</h3>
-              <button onClick={() => setDetailTask(null)} className="text-gray-400 hover:text-gray-600">
+          <div className="fixed right-0 top-0 h-full w-96 bg-white dark:bg-gray-800 shadow-xl z-50 flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b dark:border-gray-700">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Task Details</h3>
+              <button onClick={() => setDetailTask(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-5 space-y-6">
               {/* Title & Description */}
               <div>
-                <p className={`text-lg font-semibold ${detailTask.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                <p className={`text-lg font-semibold ${detailTask.status === 'completed' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
                   {detailTask.title}
                 </p>
                 {detailTask.description && (
-                  <p className="text-sm text-gray-500 mt-1">{detailTask.description}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{detailTask.description}</p>
                 )}
               </div>
 
               {/* Status & Priority */}
               <section>
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100">Overview</p>
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100 dark:border-gray-700">Overview</p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><p className="text-xs text-gray-400 mb-0.5">Status</p><span className="font-medium text-gray-700">{STATUS_LABELS[detailTask.status]}</span></div>
-                  <div><p className="text-xs text-gray-400 mb-0.5">Priority</p><span className={`text-xs px-1.5 py-0.5 rounded font-medium ${PRIORITY_COLORS[detailTask.priority]}`}>{detailTask.priority}</span></div>
-                  {detailTask.trade && <div><p className="text-xs text-gray-400 mb-0.5">Trade</p><span className="font-medium text-gray-700 capitalize">{detailTask.trade}</span></div>}
-                  {detailTask.phase && <div><p className="text-xs text-gray-400 mb-0.5">Phase</p><span className="font-medium text-gray-700 capitalize">{detailTask.phase.replace('-', ' ')}</span></div>}
-                  {detailTask.location && <div className="col-span-2"><p className="text-xs text-gray-400 mb-0.5">Location</p><span className="font-medium text-gray-700">{detailTask.location}</span></div>}
+                  <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Status</p><span className="font-medium text-gray-700 dark:text-gray-300">{STATUS_LABELS[detailTask.status]}</span></div>
+                  <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Priority</p><span className={`text-xs px-1.5 py-0.5 rounded font-medium ${PRIORITY_COLORS[detailTask.priority]}`}>{detailTask.priority}</span></div>
+                  {detailTask.trade && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Trade</p><span className="font-medium text-gray-700 dark:text-gray-300 capitalize">{detailTask.trade}</span></div>}
+                  {detailTask.phase && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Phase</p><span className="font-medium text-gray-700 dark:text-gray-300 capitalize">{detailTask.phase.replace('-', ' ')}</span></div>}
+                  {detailTask.location && <div className="col-span-2"><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Location</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.location}</span></div>}
                 </div>
               </section>
 
               {/* Scheduling */}
               <section>
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100">Scheduling</p>
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100 dark:border-gray-700">Scheduling</p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  {detailTask.start_date && <div><p className="text-xs text-gray-400 mb-0.5">Start Date</p><span className="font-medium text-gray-700">{formatDate(detailTask.start_date)}</span></div>}
-                  <div><p className="text-xs text-gray-400 mb-0.5">Due Date</p><span className="font-medium text-gray-700">{detailTask.due_date ? formatDate(detailTask.due_date) : '—'}</span></div>
-                  {detailTask.duration != null && <div><p className="text-xs text-gray-400 mb-0.5">Duration</p><span className="font-medium text-gray-700">{detailTask.duration}d</span></div>}
-                  {detailTask.estimated_hours != null && <div><p className="text-xs text-gray-400 mb-0.5">Est. Hours</p><span className="font-medium text-gray-700">{detailTask.estimated_hours}h</span></div>}
-                  {detailTask.actual_hours != null && detailTask.actual_hours > 0 && <div><p className="text-xs text-gray-400 mb-0.5">Actual Hours</p><span className="font-medium text-gray-700">{detailTask.actual_hours}h</span></div>}
-                  {detailTask.progress != null && <div><p className="text-xs text-gray-400 mb-0.5">Progress</p><span className="font-medium text-gray-700">{detailTask.progress}%</span></div>}
+                  {detailTask.start_date && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Start Date</p><span className="font-medium text-gray-700 dark:text-gray-300">{formatDate(detailTask.start_date)}</span></div>}
+                  <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Due Date</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.due_date ? formatDate(detailTask.due_date) : '—'}</span></div>
+                  {detailTask.duration != null && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Duration</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.duration}d</span></div>}
+                  {detailTask.estimated_hours != null && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Est. Hours</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.estimated_hours}h</span></div>}
+                  {detailTask.actual_hours != null && detailTask.actual_hours > 0 && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Actual Hours</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.actual_hours}h</span></div>}
+                  {detailTask.progress != null && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Progress</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.progress}%</span></div>}
                 </div>
               </section>
 
               {/* Resources */}
               {(detailTask.assignee_name || detailTask.crew_size || (detailTask.equipment?.length ?? 0) > 0 || (detailTask.materials?.length ?? 0) > 0) && (
                 <section>
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100">Resources</p>
+                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100 dark:border-gray-700">Resources</p>
                   <div className="space-y-2 text-sm">
-                    {detailTask.assignee_name && <div><p className="text-xs text-gray-400 mb-0.5">Assignee</p><span className="font-medium text-gray-700">{detailTask.assignee_name}</span></div>}
-                    {detailTask.crew_size != null && detailTask.crew_size > 0 && <div><p className="text-xs text-gray-400 mb-0.5">Crew Size</p><span className="font-medium text-gray-700">{detailTask.crew_size}</span></div>}
+                    {detailTask.assignee_name && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Assignee</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.assignee_name}</span></div>}
+                    {detailTask.crew_size != null && detailTask.crew_size > 0 && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Crew Size</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.crew_size}</span></div>}
                     {(detailTask.equipment?.length ?? 0) > 0 && (
-                      <div><p className="text-xs text-gray-400 mb-0.5">Equipment</p>
-                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.equipment!.map(e => <span key={e} className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{e}</span>)}</div>
+                      <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Equipment</p>
+                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.equipment!.map(e => <span key={e} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">{e}</span>)}</div>
                       </div>
                     )}
                     {(detailTask.materials?.length ?? 0) > 0 && (
-                      <div><p className="text-xs text-gray-400 mb-0.5">Materials</p>
-                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.materials!.map(m => <span key={m} className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{m}</span>)}</div>
+                      <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Materials</p>
+                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.materials!.map(m => <span key={m} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">{m}</span>)}</div>
                       </div>
                     )}
                   </div>
@@ -622,25 +620,25 @@ export default function ProjectTasksTab({ project }: Props) {
               {/* Quality & Safety */}
               {(detailTask.inspection_required || detailTask.weather_dependent || (detailTask.safety_protocols?.length ?? 0) > 0 || (detailTask.certifications?.length ?? 0) > 0) && (
                 <section>
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100">Quality & Safety</p>
+                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100 dark:border-gray-700">Quality & Safety</p>
                   <div className="space-y-2 text-sm">
                     {detailTask.inspection_required && (
-                      <div><p className="text-xs text-gray-400 mb-0.5">Inspection</p>
-                        <span className="font-medium text-gray-700">{detailTask.inspection_type ?? 'Required'}</span>
+                      <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Inspection</p>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.inspection_type ?? 'Required'}</span>
                       </div>
                     )}
                     {detailTask.weather_dependent && (
-                      <div><p className="text-xs text-gray-400 mb-0.5">Weather Dependent</p>
-                        <span className="font-medium text-gray-700">Yes{detailTask.weather_buffer ? ` · ${detailTask.weather_buffer}d buffer` : ''}</span>
+                      <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Weather Dependent</p>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Yes{detailTask.weather_buffer ? ` · ${detailTask.weather_buffer}d buffer` : ''}</span>
                       </div>
                     )}
                     {(detailTask.certifications?.length ?? 0) > 0 && (
-                      <div><p className="text-xs text-gray-400 mb-0.5">Certifications</p>
+                      <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Certifications</p>
                         <div className="flex flex-wrap gap-1 mt-1">{detailTask.certifications!.map(c => <span key={c} className="text-xs bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 px-1.5 py-0.5 rounded">{c}</span>)}</div>
                       </div>
                     )}
                     {(detailTask.safety_protocols?.length ?? 0) > 0 && (
-                      <div><p className="text-xs text-gray-400 mb-0.5">Safety Protocols</p>
+                      <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Safety Protocols</p>
                         <div className="flex flex-wrap gap-1 mt-1">{detailTask.safety_protocols!.map(s => <span key={s} className="text-xs bg-orange-50 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300 px-1.5 py-0.5 rounded">{s}</span>)}</div>
                       </div>
                     )}
@@ -650,20 +648,18 @@ export default function ProjectTasksTab({ project }: Props) {
 
               {/* Meta */}
               <section>
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100">Details</p>
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100 dark:border-gray-700">Details</p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><p className="text-xs text-gray-400 mb-0.5">Created</p><span className="font-medium text-gray-700">{formatDate(detailTask.created_at)}</span></div>
-                  {detailTask.dependencies != null && <div><p className="text-xs text-gray-400 mb-0.5">Dependencies</p><span className="font-medium text-gray-700">{detailTask.dependencies.length}</span></div>}
-                  {detailTask.client_visibility != null && <div><p className="text-xs text-gray-400 mb-0.5">Client Visible</p><span className="font-medium text-gray-700">{detailTask.client_visibility ? 'Yes' : 'No'}</span></div>}
+                  <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Created</p><span className="font-medium text-gray-700 dark:text-gray-300">{formatDate(detailTask.created_at)}</span></div>
+                  {detailTask.dependencies != null && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Dependencies</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.dependencies.length}</span></div>}
+                  {detailTask.client_visibility != null && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Client Visible</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.client_visibility ? 'Yes' : 'No'}</span></div>}
                 </div>
               </section>
             </div>
-            <div className="px-5 py-4 border-t flex gap-2">
+            <div className="px-5 py-4 border-t dark:border-gray-700 flex gap-2">
               <button
                 onClick={() => setShowEditModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 cursor-pointer"
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = darkMode ? colors.bgAlt : '#f9fafb')}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+                className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 <PencilIcon className="h-4 w-4" />
                 Edit
@@ -718,17 +714,12 @@ export default function ProjectTasksTab({ project }: Props) {
         const hasComplete = selTasks.some(t => t.status === 'completed')
         return (
           <div
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl text-sm"
-            style={{
-              backgroundColor: darkMode ? '#1f2937' : '#ffffff',
-              border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
-              boxShadow: darkMode ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.12)',
-            }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
           >
-            <span style={{ color: darkMode ? '#9ca3af' : '#6b7280' }} className="text-xs font-medium">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
               {selectedIds.size} selected
             </span>
-            <div style={{ backgroundColor: darkMode ? '#374151' : '#e5e7eb' }} className="w-px h-4" />
+            <div className="w-px h-4 bg-gray-200 dark:bg-gray-600" />
             {hasIncomplete && (
               <button
                 onClick={bulkMarkComplete}
@@ -740,18 +731,14 @@ export default function ProjectTasksTab({ project }: Props) {
             {hasComplete && (
               <button
                 onClick={bulkMarkActive}
-                className="px-3 py-1.5 text-xs font-medium rounded-lg"
-                style={{ backgroundColor: darkMode ? '#374151' : '#f3f4f6', color: darkMode ? '#d1d5db' : '#374151' }}
+                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
               >
                 Mark Active
               </button>
             )}
             <button
               onClick={() => setSelectedIds(new Set())}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg"
-              style={{ color: darkMode ? '#6b7280' : '#9ca3af' }}
-              onMouseEnter={e => (e.currentTarget.style.color = darkMode ? '#d1d5db' : '#374151')}
-              onMouseLeave={e => (e.currentTarget.style.color = darkMode ? '#6b7280' : '#9ca3af')}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200"
             >
               Clear
             </button>
@@ -764,13 +751,13 @@ export default function ProjectTasksTab({ project }: Props) {
         <>
           <div className="fixed inset-0 bg-black/30 z-50" onClick={() => setConfirmDeleteId(null)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-            <div className="bg-white rounded-xl shadow-xl p-6 w-80 pointer-events-auto">
-              <h3 className="text-base font-semibold text-gray-900 mb-1">Delete Task</h3>
-              <p className="text-sm text-gray-500 mb-5">This action cannot be undone.</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-80 pointer-events-auto">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Delete Task</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">This action cannot be undone.</p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setConfirmDeleteId(null)}
-                  className="flex-1 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Cancel
                 </button>

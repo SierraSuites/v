@@ -246,26 +246,24 @@ export default function TaskFlowPage() {
   const [tasks, setTasks] = useState<Task[]>([
   ])
 
-  // Authentication and data loading
+  // Load all data before revealing page
   useEffect(() => {
     const supabase = createClient()
 
-    // Check authentication
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+    const loadAll = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
 
-      if (!user) {
+      if (!authUser) {
         router.push("/login")
         return
       }
 
-      setUser(user)
+      setUser(authUser)
 
-      // Get user plan from profile
       const { data: profile } = await supabase
         .from("user_profiles")
         .select("plan")
-        .eq("id", user.id)
+        .eq("id", authUser.id)
         .single()
 
       if (profile?.plan) {
@@ -273,18 +271,6 @@ export default function TaskFlowPage() {
         localStorage.setItem('userPlan', profile.plan)
       }
 
-      setLoading(false)
-    }
-
-    checkAuth()
-  }, [router])
-
-  // Load tasks from Supabase
-  useEffect(() => {
-    if (!user) return
-
-    const loadTasks = async () => {
-      setTasksLoading(true)
       const { data, error } = await getTasks()
 
       if (error) {
@@ -336,9 +322,11 @@ export default function TaskFlowPage() {
         setTasks(convertedTasks)
         setTasksLoading(false)
       }
+
+      setLoading(false)
     }
 
-    loadTasks()
+    loadAll()
 
     // Subscribe to real-time updates
     const unsubscribe = subscribeToTasks((payload) => {
@@ -437,7 +425,7 @@ export default function TaskFlowPage() {
     return () => {
       unsubscribe()
     }
-  }, [user])
+  }, [router])
 
   // Filter tasks (includes quick filters per Quality Guide lines 916-929)
   const filteredTasks = tasks.filter(task => {
@@ -520,31 +508,15 @@ export default function TaskFlowPage() {
     setActiveId(null)
   }
 
-  useEffect(() => {
-    const loadUser = async () => {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (session) {
-        setUser(session.user)
-        // Plan is loaded from user_profiles.plan in the other useEffect (secure, RLS-protected)
-      } else {
-        setUser({ user_metadata: { full_name: "John Doe" } })
-      }
-      setLoading(false)
-    }
-    loadUser()
-  }, [])
 
 
 
-  // Quality Guide line 883: Skeleton loaders instead of spinner
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.bgAlt }}>
+      <div className="min-h-screen bg-gray-50 dark:bg-[#0d0f17] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#FF6B6B', borderTopColor: 'transparent' }}></div>
-          <p style={{ color: colors.textMuted }}>Loading TaskFlow...</p>
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading TaskFlow...</p>
         </div>
       </div>
     )

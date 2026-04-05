@@ -86,11 +86,6 @@ export default function AppShell({ children, user }: AppShellProps) {
       name: 'Projects',
       href: '/projects',
       icon: '🏗️',
-      subItems: [
-        { name: 'All Projects', href: '/projects' },
-        { name: 'Active Projects', href: '/projects?status=active' },
-        { name: 'Archived', href: '/projects?status=archived' },
-      ],
     },
     {
       name: 'TaskFlow',

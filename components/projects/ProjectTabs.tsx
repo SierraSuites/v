@@ -26,6 +26,7 @@ type TabId = 'overview' | 'team' | 'documents' | 'budget' | 'timeline' | 'tasks'
 
 export default function ProjectTabs({ project, onSpentChange }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('overview')
+  const [milestoneCount, setMilestoneCount] = useState(project.milestones.length)
 
   const tabs = [
     {
@@ -44,7 +45,7 @@ export default function ProjectTabs({ project, onSpentChange }: Props) {
       id: 'timeline' as TabId,
       label: 'Timeline',
       icon: <Calendar className="h-4 w-4" />,
-      count: project.milestones.length || null
+      count: milestoneCount || null
     },
     {
       id: 'budget' as TabId,
@@ -81,7 +82,7 @@ export default function ProjectTabs({ project, onSpentChange }: Props) {
   return (
     <div>
       {/* Tab Navigation */}
-      <div className="border-b border-gray-200 mb-6">
+      <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
         <nav className="-mb-px flex space-x-8 overflow-x-auto">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id
@@ -93,11 +94,11 @@ export default function ProjectTabs({ project, onSpentChange }: Props) {
                   group inline-flex items-center gap-2 px-1 py-4 border-b-2 font-medium text-sm whitespace-nowrap
                   ${isActive
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300'
                   }
                 `}
               >
-                <span className={isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'}>
+                <span className={isActive ? 'text-blue-600' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-300'}>
                   {tab.icon}
                 </span>
                 {tab.label}
@@ -106,7 +107,7 @@ export default function ProjectTabs({ project, onSpentChange }: Props) {
                     ml-2 py-0.5 px-2.5 rounded-full text-xs
                     ${isActive
                       ? 'bg-blue-100 text-blue-600'
-                      : 'bg-gray-100 text-gray-600'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                     }
                   `}>
                     {tab.count}
@@ -124,7 +125,7 @@ export default function ProjectTabs({ project, onSpentChange }: Props) {
         {activeTab === 'team' && <ProjectTeamTab project={project} />}
         {activeTab === 'documents' && <ProjectDocumentsTab project={project} />}
         {activeTab === 'budget' && <ProjectBudgetTab project={project} onSpentChange={onSpentChange} />}
-        {activeTab === 'timeline' && <ProjectTimelineTab project={project} />}
+        {activeTab === 'timeline' && <ProjectTimelineTab project={project} onMilestoneCountChange={setMilestoneCount} />}
         {activeTab === 'tasks' && <ProjectTasksTab project={project} />}
         {activeTab === 'change-orders' && <ProjectChangeOrdersTab project={project} />}
         {activeTab === 'rfis' && <ProjectRFIsTab project={project} />}
