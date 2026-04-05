@@ -19,6 +19,7 @@ import {
   TrashIcon,
   FolderIcon,
 } from '@heroicons/react/24/outline'
+import toast from 'react-hot-toast'
 
 interface Document {
   id: string
@@ -104,7 +105,7 @@ export default function DocumentsPage() {
       window.open(data.download_url, '_blank')
     } catch (error) {
       console.error('Error downloading document:', error)
-      alert('Failed to download document')
+      toast.error('Failed to download document')
     }
   }
 

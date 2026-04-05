@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientCommunication, formatCurrency, formatDate } from '@/lib/client-communication-integration'
+import toast from 'react-hot-toast'
 
 interface ClientApproval {
   id: string
@@ -270,7 +271,7 @@ function ApprovalsContent() {
   const handleCreateApproval = async () => {
     // Validation
     if (!newApproval.title || !newApproval.requested_from) {
-      alert('Please fill in required fields')
+      toast.error('Please fill in required fields')
       return
     }
 
@@ -308,7 +309,7 @@ function ApprovalsContent() {
       due_date: ''
     })
 
-    alert('✅ Approval request created! Email sent to client.')
+    toast.success('Approval request created! Email sent to client.')
   }
 
   const handleSendReminder = (approval: ClientApproval) => {
@@ -318,7 +319,7 @@ function ApprovalsContent() {
         : a
     )
     setApprovals(updated)
-    alert(`📧 Reminder sent to ${approval.requested_from}`)
+    toast(`Reminder sent to ${approval.requested_from}`)
   }
 
   const handleApprove = (approval: ClientApproval) => {
@@ -341,7 +342,7 @@ function ApprovalsContent() {
         : a
     )
     setApprovals(updated)
-    alert('❌ Approval rejected')
+    toast.error('Approval rejected')
   }
 
   // Signature drawing functions
@@ -400,7 +401,7 @@ function ApprovalsContent() {
 
   const saveSignature = () => {
     if (signaturePoints.length === 0) {
-      alert('Please provide a signature')
+      toast.error('Please provide a signature')
       return
     }
 
@@ -430,13 +431,13 @@ function ApprovalsContent() {
     setSelectedApproval(null)
     clearSignature()
 
-    alert('✅ Approval signed and recorded!')
+    toast.success('Approval signed and recorded!')
   }
 
   const selectedProjectData = projects.find(p => p.id === selectedProject)
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-indigo-50 via-blue-50 to-white p-8">
+    <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-blue-50 to-white p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -458,7 +459,7 @@ function ApprovalsContent() {
           </div>
 
           {/* Info Banner */}
-          <div className="bg-linear-to-r from-indigo-100 to-blue-100 border-l-4 border-indigo-600 p-6 rounded-lg">
+          <div className="bg-gradient-to-r from-indigo-100 to-blue-100 border-l-4 border-indigo-600 p-6 rounded-lg">
             <div className="flex items-start gap-4">
               <div className="text-3xl">💡</div>
               <div>
@@ -947,7 +948,7 @@ function ApprovalsContent() {
 export default function ApprovalsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     }>

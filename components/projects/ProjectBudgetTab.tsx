@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getUserCompany } from '@/lib/auth/get-user-company'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
+import toast from 'react-hot-toast'
 
 interface Expense {
   id: string
@@ -192,7 +193,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
       setShowAddExpense(false)
     } catch (error: any) {
       console.error('Failed to add expense:', error?.code, error?.message, error?.details)
-      alert('Failed to add expense. Please try again.')
+      toast.error('Failed to add expense. Please try again.')
     }
   }
 

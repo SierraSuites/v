@@ -15,6 +15,7 @@ import {
   ClockIcon,
   EyeIcon
 } from '@heroicons/react/24/outline'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Report {
   id: string
@@ -54,6 +55,7 @@ export default function ReportDetailPage() {
   const params = useParams()
   const id = params.id as string
   const supabase = createClient()
+  const confirm = useConfirm()
 
   const [report, setReport] = useState<Report | null>(null)
   const [loading, setLoading] = useState(true)
@@ -91,7 +93,7 @@ export default function ReportDetailPage() {
 
   async function handleSendToClient() {
     if (!report) return
-    if (!confirm('Mark this report as sent to client?')) return
+    if (!await confirm({ description: 'Mark this report as sent to client?' })) return
     setSending(true)
     try {
       const { error } = await supabase.from('reports').update({
@@ -105,7 +107,7 @@ export default function ReportDetailPage() {
   }
 
   async function handleDelete() {
-    if (!confirm('Delete this report? This cannot be undone.')) return
+    if (!await confirm({ description: 'Delete this report? This cannot be undone.', destructive: true })) return
     setDeleting(true)
     const { error } = await supabase.from('reports').delete().eq('id', id)
     if (!error) router.push('/reports')

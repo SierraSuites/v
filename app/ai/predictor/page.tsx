@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import AIAccessWrapper from '@/components/ai/AIAccessWrapper'
 import { formatCurrency, formatNumber, formatPercentage } from '@/lib/ai-permissions'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Prediction {
   id: string
@@ -46,6 +47,7 @@ interface Project {
 
 export default function ProjectPredictorPage() {
   const supabase = createClient()
+  const confirm = useConfirm()
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<string>('all')
@@ -303,7 +305,7 @@ export default function ProjectPredictorPage() {
   }
 
   const handleDismiss = async (id: string) => {
-    if (!confirm('Are you sure you want to dismiss this prediction?')) return
+    if (!await confirm({ description: 'Are you sure you want to dismiss this prediction?', destructive: true })) return
 
     // In production, update in database
     setPredictions(predictions.map(p =>
@@ -321,7 +323,7 @@ export default function ProjectPredictorPage() {
   if (loading) {
     return (
       <AIAccessWrapper requiredTier="enterprise">
-        <div className="min-h-screen bg-linear-to-b from-purple-50 to-white flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Analyzing project data...</p>
@@ -333,9 +335,9 @@ export default function ProjectPredictorPage() {
 
   return (
     <AIAccessWrapper requiredTier="enterprise">
-      <div className="min-h-screen bg-linear-to-b from-purple-50 to-white">
+      <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
         {/* Header */}
-        <div className="bg-linear-to-r from-purple-600 via-pink-600 to-red-600 text-white shadow-lg">
+        <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex items-center justify-between">
               <div>
@@ -444,7 +446,7 @@ export default function ProjectPredictorPage() {
           </div>
 
           {/* How It Works Banner */}
-          <div className="bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
             <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
               <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -564,7 +566,7 @@ export default function ProjectPredictorPage() {
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
-                                className="bg-linear-to-r from-orange-500 to-red-500 h-2 rounded-full"
+                                className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full"
                                 style={{ width: `${factor.impact_percentage}%` }}
                               />
                             </div>

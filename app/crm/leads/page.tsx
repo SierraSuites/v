@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 interface Lead {
   id: string
@@ -152,7 +153,7 @@ export default function LeadsPipelinePage() {
       setDraggedLead(null)
     } catch (error) {
       console.error('Error updating lead stage:', error)
-      alert('Failed to update lead stage')
+      toast.error('Failed to update lead stage')
     }
   }
 

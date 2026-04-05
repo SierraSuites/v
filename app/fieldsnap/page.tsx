@@ -31,6 +31,7 @@ import WeatherWidget from "@/components/dashboard/WeatherWidget"
 import { ErrorBoundary, ConstructionErrorBoundary } from "@/components/ErrorBoundary"
 import TaskDetailPanel from "@/components/taskflow/TaskDetailPanel"
 import { useThemeColors } from "@/lib/hooks/useThemeColors"
+import toast from 'react-hot-toast'
 
 // Task type definition
 type Task = {
@@ -707,7 +708,7 @@ export default function TaskFlowPage() {
       console.error("Error updating task status:", error)
       // Revert on error
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: task.status } : t))
-      alert("Failed to update task status. Please try again.")
+      toast.error("Failed to update task status. Please try again.")
     }
 
     setActiveId(null)
@@ -1300,7 +1301,7 @@ export default function TaskFlowPage() {
 
             if (error) {
               console.error("Error updating task:", error)
-              alert("Failed to update task. Please try again.")
+              toast.error("Failed to update task. Please try again.")
             }
           } else {
             // Create new task
@@ -1343,7 +1344,7 @@ export default function TaskFlowPage() {
 
             if (error) {
               console.error("Error creating task:", error)
-              alert("Failed to create task. Please try again.")
+              toast.error("Failed to create task. Please try again.")
             }
           }
         }}

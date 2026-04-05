@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 export default function NewEmailTemplatePage() {
   const router = useRouter()
@@ -53,7 +54,7 @@ export default function NewEmailTemplatePage() {
     e.preventDefault()
 
     if (!formData.name || !formData.subject || !formData.body) {
-      alert('Name, subject, and body are required')
+      toast.error('Name, subject, and body are required')
       return
     }
 
@@ -82,7 +83,7 @@ export default function NewEmailTemplatePage() {
       router.push('/crm/email')
     } catch (error: any) {
       console.error('Error creating template:', error)
-      alert(`Failed to create template: ${error.message}`)
+      toast.error(`Failed to create template: ${error.message}`)
     } finally {
       setLoading(false)
     }

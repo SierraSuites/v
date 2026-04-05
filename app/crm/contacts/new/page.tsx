@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 export default function NewContactPage() {
   const router = useRouter()
@@ -60,7 +61,7 @@ export default function NewContactPage() {
     e.preventDefault()
 
     if (!formData.first_name || !formData.last_name) {
-      alert('First name and last name are required')
+      toast.error('First name and last name are required')
       return
     }
 
@@ -109,7 +110,7 @@ export default function NewContactPage() {
       router.push(`/crm/contacts/${data.id}`)
     } catch (error: any) {
       console.error('Error creating contact:', error)
-      alert(`Failed to create contact: ${error.message}`)
+      toast.error(`Failed to create contact: ${error.message}`)
     } finally {
       setLoading(false)
     }

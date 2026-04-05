@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AIAccessWrapper from '@/components/ai/AIAccessWrapper'
+import toast from 'react-hot-toast'
 
 interface SiteMedia {
   id: string
@@ -330,7 +331,7 @@ export default function SiteIntelligencePage() {
 
     // Simulate upload and analysis
     setTimeout(() => {
-      alert(`✅ ${files.length} file(s) uploaded! AI analysis will complete in 2-3 minutes.`)
+      toast.success(`${files.length} file(s) uploaded! AI analysis will complete in 2-3 minutes.`)
       setUploadingFiles(false)
       setShowUploadModal(false)
     }, 2000)
@@ -380,7 +381,7 @@ export default function SiteIntelligencePage() {
 
   return (
     <AIAccessWrapper requiredTier="enterprise">
-      <div className="min-h-screen bg-linear-to-b from-purple-50 via-indigo-50 to-white p-8">
+      <div className="min-h-screen bg-gradient-to-b from-purple-50 via-indigo-50 to-white p-8">
         {/* Header */}
         <div className="max-w-7xl mx-auto mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -401,7 +402,7 @@ export default function SiteIntelligencePage() {
           </div>
 
           {/* How It Works Banner */}
-          <div className="bg-linear-to-r from-purple-100 to-indigo-100 border-l-4 border-purple-600 p-6 rounded-lg mb-6">
+          <div className="bg-gradient-to-r from-purple-100 to-indigo-100 border-l-4 border-purple-600 p-6 rounded-lg mb-6">
             <div className="flex items-start gap-4">
               <div className="text-3xl">🤖</div>
               <div>

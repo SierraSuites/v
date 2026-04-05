@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import toast from 'react-hot-toast'
 
 interface ProposalSection {
   id: string
@@ -183,11 +184,11 @@ function ProposalBuilderContent() {
   }
 
   const handleExport = (format: string) => {
-    alert(`Generating ${format.toUpperCase()} proposal... This will take 15-30 seconds.`)
+    toast(`Generating ${format.toUpperCase()} proposal... This will take 15-30 seconds.`)
     setShowExportModal(false)
 
     setTimeout(() => {
-      alert(`✅ Proposal exported successfully! Download starting...`)
+      toast.success(`Proposal exported successfully! Download starting...`)
     }, 2000)
   }
 
@@ -224,7 +225,7 @@ function ProposalBuilderContent() {
 
   if (!selectedQuote) {
     return (
-      <div className="min-h-screen bg-linear-to-b from-purple-50 via-indigo-50 to-white p-8">
+      <div className="min-h-screen bg-gradient-to-b from-purple-50 via-indigo-50 to-white p-8">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             📊 Professional Proposal Generator
@@ -318,7 +319,7 @@ function ProposalBuilderContent() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-purple-50 via-indigo-50 to-white p-8">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 via-indigo-50 to-white p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -348,7 +349,7 @@ function ProposalBuilderContent() {
           </div>
 
           {/* Quote Info Banner */}
-          <div className="bg-linear-to-r from-purple-100 to-indigo-100 border-l-4 border-purple-600 p-6 rounded-lg">
+          <div className="bg-gradient-to-r from-purple-100 to-indigo-100 border-l-4 border-purple-600 p-6 rounded-lg">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="font-bold text-gray-900 mb-2">Converting Quote:</h3>
@@ -447,7 +448,7 @@ function ProposalBuilderContent() {
               {/* Section Editors */}
               {sections.filter(s => s.visible).map((section) => (
                 <div key={section.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                  <div className="bg-linear-to-r from-purple-100 to-indigo-100 px-6 py-4 flex items-center justify-between">
+                  <div className="bg-gradient-to-r from-purple-100 to-indigo-100 px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{getSectionIcon(section.type)}</span>
                       <div>
@@ -577,7 +578,7 @@ function ProposalBuilderContent() {
 export default function ProposalBuilderPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-linear-to-b from-purple-50 via-indigo-50 to-white flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-purple-50 via-indigo-50 to-white flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     }>

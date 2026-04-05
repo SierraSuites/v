@@ -18,6 +18,7 @@ import {
   UserIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Lead {
   id: string
@@ -72,6 +73,7 @@ export default function LeadDetailPage() {
   const params = useParams()
   const id = params.id as string
   const supabase = createClient()
+  const confirm = useConfirm()
 
   const [lead, setLead] = useState<Lead | null>(null)
   const [activities, setActivities] = useState<Activity[]>([])
@@ -139,7 +141,7 @@ export default function LeadDetailPage() {
   }
 
   async function handleDelete() {
-    if (!confirm('Delete this lead? This cannot be undone.')) return
+    if (!await confirm({ description: 'Delete this lead? This cannot be undone.', destructive: true })) return
     const { error } = await supabase.from('crm_leads').update({ is_active: false }).eq('id', id)
     if (!error) router.push('/crm/leads')
   }

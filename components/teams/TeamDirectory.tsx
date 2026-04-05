@@ -18,6 +18,7 @@ import {
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser'
 import { getRoleColor, getRoleIcon, getRoleDisplayName } from '@/lib/permissions'
 import UserRoleBadge from '@/components/users/UserRoleBadge'
+import toast from 'react-hot-toast'
 
 // ============================================
 // TYPES
@@ -143,7 +144,7 @@ export default function TeamDirectory({
       // Refetch to update UI
       fetchTeamMembers()
     } catch (err: any) {
-      alert(err.message || 'Failed to update member status')
+      toast.error(err.message || 'Failed to update member status')
     }
   }
 

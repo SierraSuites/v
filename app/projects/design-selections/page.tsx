@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientCommunication, formatCurrency, formatDate } from '@/lib/client-communication-integration'
+import toast from 'react-hot-toast'
 
 interface DesignSelection {
   id: string
@@ -315,7 +316,7 @@ function DesignSelectionsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-purple-50 via-pink-50 to-white p-8">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 via-pink-50 to-white p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -353,7 +354,7 @@ function DesignSelectionsContent() {
           </div>
 
           {/* Info Banner */}
-          <div className="bg-linear-to-r from-purple-100 to-pink-100 border-l-4 border-purple-600 p-6 rounded-lg">
+          <div className="bg-gradient-to-r from-purple-100 to-pink-100 border-l-4 border-purple-600 p-6 rounded-lg">
             <div className="flex items-start gap-4">
               <div className="text-3xl">💡</div>
               <div>
@@ -680,7 +681,7 @@ function DesignSelectionsContent() {
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       onClick={() => {
-                        alert('Generating PDF selection package...')
+                        toast('Generating PDF selection package...')
                         setShowPackageModal(false)
                       }}
                       className="p-6 border-2 border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 text-left"
@@ -692,7 +693,7 @@ function DesignSelectionsContent() {
 
                     <button
                       onClick={() => {
-                        alert('Generating interactive web link...')
+                        toast('Generating interactive web link...')
                         setShowPackageModal(false)
                       }}
                       className="p-6 border-2 border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 text-left"
@@ -722,7 +723,7 @@ function DesignSelectionsContent() {
 export default function DesignSelectionsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-linear-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     }>

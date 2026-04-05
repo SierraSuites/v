@@ -9,6 +9,7 @@ import { uploadMediaAsset } from '@/lib/supabase/fieldsnap'
 // queueForAIAnalysis removed - was fake AI feature
 import { getWeatherData } from '@/lib/weather'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 // ============================================
 // TYPES
@@ -278,7 +279,7 @@ export default function FieldSnapCapturePage() {
       }
     } catch (error) {
       console.error('Camera access denied:', error)
-      alert('Camera access is required for photo capture')
+      toast.error('Camera access is required for photo capture')
     }
   }
 
@@ -317,7 +318,7 @@ export default function FieldSnapCapturePage() {
 
   function startVoiceInput() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert('Voice input is not supported in this browser')
+      toast.error('Voice input is not supported in this browser')
       return
     }
 
@@ -408,12 +409,12 @@ export default function FieldSnapCapturePage() {
 
   async function startUpload() {
     if (uploadFiles.length === 0) {
-      alert('Please select files to upload')
+      toast.error('Please select files to upload')
       return
     }
 
     if (!selectedProject) {
-      alert('Please select a project')
+      toast.error('Please select a project')
       return
     }
 
@@ -495,7 +496,7 @@ export default function FieldSnapCapturePage() {
 
     // Show success message
     const successCount = uploadFiles.filter(f => f.status === 'completed').length
-    alert(`Successfully uploaded ${successCount} photos`)
+    toast.success(`Successfully uploaded ${successCount} photos`)
 
     // Redirect to main page
     setTimeout(() => {

@@ -11,6 +11,7 @@ import {
   getRoleIcon
 } from '@/lib/permissions'
 import TeamMemberList from './TeamMemberList'
+import toast from 'react-hot-toast'
 
 interface TeamManagerProps {
   companyId?: string
@@ -60,7 +61,7 @@ export default function TeamManager({ companyId, onTeamSelect }: TeamManagerProp
 
   const handleCreateTeam = async () => {
     if (!createForm.name.trim()) {
-      alert('Team name is required')
+      toast.error('Team name is required')
       return
     }
 
@@ -70,7 +71,7 @@ export default function TeamManager({ companyId, onTeamSelect }: TeamManagerProp
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
-        alert('Not authenticated')
+        toast.error('Not authenticated')
         return
       }
 
@@ -87,7 +88,7 @@ export default function TeamManager({ companyId, onTeamSelect }: TeamManagerProp
       }
 
       if (!targetCompanyId) {
-        alert('No company associated with your account')
+        toast.error('No company associated with your account')
         return
       }
 
@@ -130,10 +131,10 @@ export default function TeamManager({ companyId, onTeamSelect }: TeamManagerProp
       setShowCreateModal(false)
       await loadTeams()
 
-      alert('Team created successfully!')
+      toast.success('Team created successfully!')
     } catch (err) {
       console.error('Error creating team:', err)
-      alert('Failed to create team')
+      toast.error('Failed to create team')
     } finally {
       setCreating(false)
     }

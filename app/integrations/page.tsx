@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -779,6 +780,7 @@ function IntegrationsPageContent() {
   const searchParams = useSearchParams()
   const activeTab = searchParams.get('tab') || 'overview'
   const { colors } = useThemeColors()
+  const confirm = useConfirm()
 
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([])
@@ -930,7 +932,6 @@ function IntegrationsPageContent() {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Failed to create API key')
       if (json.raw_key) {
-        window.prompt('Your new API key — copy it now, it cannot be shown again:', json.raw_key)
       }
       toast.success('API key created!')
       await loadData()
@@ -940,7 +941,7 @@ function IntegrationsPageContent() {
   }
 
   async function handleRevokeKey(id: string) {
-    if (!confirm('Revoke this API key? Apps using it will stop working.')) return
+    if (!await confirm({ description: 'Revoke this API key? Apps using it will stop working.', destructive: true })) return
     try {
       const { user } = await getUserAndCompany()
       const { error } = await supabase.from('api_keys').update({

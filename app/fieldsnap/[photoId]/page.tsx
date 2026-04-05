@@ -9,8 +9,10 @@ import { createClient } from '@/lib/supabase/client'
 import { punchListService } from '@/lib/punchlist'
 import PunchListPanel from '@/components/fieldsnap/PunchListPanel'
 import Link from 'next/link'
+import Image from 'next/image'
 import { type Photo } from '@/lib/supabase/photos'
 import { useThemeColors } from "@/lib/hooks/useThemeColors"
+import toast from 'react-hot-toast'
 
 export default function PhotoDetailPage() {
   const params = useParams()
@@ -50,7 +52,7 @@ export default function PhotoDetailPage() {
       })
     } catch (err) {
       console.error('Error loading photo:', err)
-      alert('Failed to load photo')
+      toast.error('Failed to load photo')
     } finally {
       setLoading(false)
     }
@@ -169,11 +171,14 @@ export default function PhotoDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Photo Viewer */}
             <div className="bg-card rounded-xl shadow-lg overflow-hidden">
-              <img
+              <Image
                 src={photo.url}
                 alt={photo.filename}
+                width={1200}
+                height={800}
                 className="w-full h-auto"
                 style={{ maxHeight: '70vh', objectFit: 'contain', backgroundColor: '#000' }}
+                priority
               />
             </div>
 

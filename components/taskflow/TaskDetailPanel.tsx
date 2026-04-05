@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { XMarkIcon, ClockIcon, ChatBubbleLeftIcon, ListBulletIcon, PencilSquareIcon } from '@heroicons/react/24/outline'
+import toast from 'react-hot-toast'
 
 interface ChecklistItem {
   id: string
@@ -192,7 +193,7 @@ export default function TaskDetailPanel({ task, onClose, onEdit, onStatusChange 
       loadTimeEntries()
     } else {
       const { error } = await res.json()
-      alert(error || 'Failed to start timer')
+      toast.error(error || 'Failed to start timer')
     }
   }
 

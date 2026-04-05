@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Edit2, Trash2, Copy, Save, X, ChevronDown, ChevronUp } from 'lucide-react'
 import type { TaskTemplate, WorkflowTemplate } from '@/lib/task-templates'
+import toast from 'react-hot-toast'
 
 interface CustomTemplateManagerProps {
   isOpen: boolean
@@ -134,12 +135,12 @@ export default function CustomTemplateManager({
 
   async function saveTemplate() {
     if (!formData.name.trim()) {
-      alert('Please enter a template name')
+      toast.error('Please enter a template name')
       return
     }
 
     if (tasks.length === 0 || !tasks[0].title.trim()) {
-      alert('Please add at least one task')
+      toast.error('Please add at least one task')
       return
     }
 
@@ -186,10 +187,10 @@ export default function CustomTemplateManager({
       setCreating(false)
       setEditingTemplate(null)
       onTemplateCreated?.()
-      alert(editingTemplate ? 'Template updated successfully!' : 'Template created successfully!')
+      toast.error(editingTemplate ? 'Template updated successfully!' : 'Template created successfully!')
     } catch (error: any) {
       console.error('Failed to save template:', error)
-      alert('Failed to save template: ' + error.message)
+      toast.error('Failed to save template: ' + error.message)
     }
   }
 
@@ -206,10 +207,10 @@ export default function CustomTemplateManager({
       if (error) throw error
 
       await loadCustomTemplates()
-      alert('Template deleted successfully!')
+      toast.success('Template deleted successfully!')
     } catch (error: any) {
       console.error('Failed to delete template:', error)
-      alert('Failed to delete template: ' + error.message)
+      toast.error('Failed to delete template: ' + error.message)
     }
   }
 

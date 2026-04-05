@@ -9,6 +9,7 @@ import {
   getPermissionLevelColor,
   getPermissionLevelIcon
 } from '@/lib/permissions'
+import toast from 'react-hot-toast'
 
 interface SharePhotoModalProps {
   photoId: string
@@ -84,17 +85,17 @@ export default function SharePhotoModal({
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
-        alert('Not authenticated')
+        toast.error('Not authenticated')
         return
       }
 
       // Validate input
       if (shareType === 'team' && !selectedTeamId) {
-        alert('Please select a team')
+        toast.error('Please select a team')
         return
       }
       if (shareType === 'user' && !userEmail.trim()) {
-        alert('Please enter an email address')
+        toast.error('Please enter an email address')
         return
       }
 
@@ -116,7 +117,7 @@ export default function SharePhotoModal({
           .single()
 
         if (!targetUser) {
-          alert('User not found. They must have an account to receive shares.')
+          toast.error('User not found. They must have an account to receive shares.')
           return
         }
         targetUserId = targetUser.id
@@ -146,13 +147,13 @@ export default function SharePhotoModal({
 
       await loadData()
       onShared?.()
-      alert('Shared successfully!')
+      toast.success('Shared successfully!')
     } catch (err: any) {
       console.error('Error sharing:', err)
       if (err.code === '23505') {
-        alert('Already shared with this team/user')
+        toast.success('Already shared with this team/user')
       } else {
-        alert('Failed to share photo')
+        toast.error('Failed to share photo')
       }
     } finally {
       setSharing(false)
@@ -175,7 +176,7 @@ export default function SharePhotoModal({
       onShared?.()
     } catch (err) {
       console.error('Error revoking share:', err)
-      alert('Failed to revoke share')
+      toast.error('Failed to revoke share')
     }
   }
 

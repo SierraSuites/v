@@ -14,6 +14,7 @@ import {
   DocumentIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
+import toast from 'react-hot-toast'
 
 interface Project {
   id: string
@@ -89,7 +90,7 @@ export default function DocumentUploadPage() {
     e.preventDefault()
 
     if (!selectedFile) {
-      alert('Please select a file')
+      toast.error('Please select a file')
       return
     }
 
@@ -122,7 +123,7 @@ export default function DocumentUploadPage() {
       router.push(`/documents/${data.document.id}`)
     } catch (error: any) {
       console.error('Upload error:', error)
-      alert(`Upload failed: ${error.message}`)
+      toast.error(`Upload failed: ${error.message}`)
     } finally {
       setUploading(false)
     }

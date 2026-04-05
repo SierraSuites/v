@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 // ============================================
 // TYPES
@@ -37,6 +38,7 @@ interface ApiKey {
 // ============================================
 
 export default function ApiKeysPage() {
+  const confirm = useConfirm()
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -140,7 +142,7 @@ export default function ApiKeysPage() {
   }
 
   const revokeKey = async (keyId: string) => {
-    if (!confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) {
+    if (!await confirm({ description: 'Are you sure you want to revoke this API key? This action cannot be undone.', destructive: true })) {
       return
     }
 

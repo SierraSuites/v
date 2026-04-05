@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import type { QuoteWithRelations, QuoteItemFormData } from '@/types/quotes'
+import toast from 'react-hot-toast'
 
 interface PageProps {
   params: Promise<{
@@ -111,7 +112,7 @@ export default function EditQuotePage({ params }: PageProps) {
 
   async function handleSave() {
     if (!title.trim()) {
-      alert('Please enter a quote title')
+      toast.error('Please enter a quote title')
       return
     }
 
@@ -170,7 +171,7 @@ export default function EditQuotePage({ params }: PageProps) {
       router.push(`/quotes/${id}`)
     } catch (error) {
       console.error('Error saving quote:', error)
-      alert('Failed to save quote. Please try again.')
+      toast.error('Failed to save quote. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -201,7 +202,7 @@ export default function EditQuotePage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-orange-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">

@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { clientCommunication, formatCurrency, formatDate } from '@/lib/client-communication-integration'
+import toast from 'react-hot-toast'
 
 interface TurnoverPackage {
   id: string
@@ -408,10 +409,10 @@ function ProjectTurnoverContent() {
 
   const handleGeneratePackage = async (format: string) => {
     setShowGenerateModal(false)
-    alert(`Generating ${format.toUpperCase()} turnover package... This may take 30-60 seconds.`)
+    toast(`Generating ${format.toUpperCase()} turnover package... This may take 30-60 seconds.`)
 
     setTimeout(() => {
-      alert('✅ Turnover package generated successfully!')
+      toast.success('Turnover package generated successfully!')
       if (turnoverPackage) {
         setTurnoverPackage({
           ...turnoverPackage,
@@ -425,7 +426,7 @@ function ProjectTurnoverContent() {
 
   const handleDeliverPackage = async (method: string) => {
     setShowDeliverModal(false)
-    alert(`Delivering turnover package via ${method}...`)
+    toast(`Delivering turnover package via ${method}...`)
 
     setTimeout(() => {
       if (turnoverPackage) {
@@ -437,7 +438,7 @@ function ProjectTurnoverContent() {
           status: 'delivered'
         })
       }
-      alert('✅ Turnover package delivered successfully!')
+      toast.success('Turnover package delivered successfully!')
     }, 2000)
   }
 
@@ -452,7 +453,7 @@ function ProjectTurnoverContent() {
 
   if (!turnoverPackage) {
     return (
-      <div className="min-h-screen bg-linear-to-b from-green-50 via-emerald-50 to-white p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-green-50 via-emerald-50 to-white p-8 flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">📦</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading Turnover Package...</h2>
@@ -462,7 +463,7 @@ function ProjectTurnoverContent() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-green-50 via-emerald-50 to-white p-8">
+    <div className="min-h-screen bg-gradient-to-b from-green-50 via-emerald-50 to-white p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -1047,7 +1048,7 @@ function ProjectTurnoverContent() {
 export default function ProjectTurnoverPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-linear-to-br from-green-50 via-white to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     }>

@@ -8,6 +8,7 @@ import {
   type WorkflowTemplate,
   type TaskTemplate
 } from '@/lib/task-templates'
+import toast from 'react-hot-toast'
 
 interface TaskTemplateSelectorProps {
   projectId: string
@@ -36,7 +37,7 @@ export default function TaskTemplateSelector({
       onClose()
     } catch (error) {
       console.error('Failed to apply template:', error)
-      alert('Failed to apply template. Please try again.')
+      toast.error('Failed to apply template. Please try again.')
     } finally {
       setApplying(false)
     }

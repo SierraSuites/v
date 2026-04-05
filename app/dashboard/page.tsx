@@ -151,7 +151,7 @@ export default function DashboardPage() {
     }
 
     loadDashboard()
-  }, [router])
+  }, []) // router.push only called on 401, no need to re-run on router change
 
   // ============================================================================
   // HELPER FUNCTIONS

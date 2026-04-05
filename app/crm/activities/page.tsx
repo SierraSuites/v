@@ -7,6 +7,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Activity {
   id: string
@@ -33,6 +35,7 @@ interface Activity {
 export default function ActivitiesPage() {
   const router = useRouter()
   const supabase = createClient()
+  const confirm = useConfirm()
 
   const [activities, setActivities] = useState<Activity[]>([])
   const [filteredActivities, setFilteredActivities] = useState<Activity[]>([])
@@ -106,12 +109,12 @@ export default function ActivitiesPage() {
       loadActivities()
     } catch (error) {
       console.error('Error completing activity:', error)
-      alert('Failed to complete activity')
+      toast.error('Failed to complete activity')
     }
   }
 
   const deleteActivity = async (id: string) => {
-    if (!confirm('Delete this activity?')) return
+    if (!await confirm({ description: 'Delete this activity?', destructive: true })) return
 
     try {
       const { error } = await supabase
@@ -124,7 +127,7 @@ export default function ActivitiesPage() {
       loadActivities()
     } catch (error) {
       console.error('Error deleting activity:', error)
-      alert('Failed to delete activity')
+      toast.error('Failed to delete activity')
     }
   }
 
