@@ -77,8 +77,8 @@ function isOverdue(task: Task) {
 }
 
 export default function ProjectTasksTab({ project }: Props) {
-  const [tasks, setTasks] = useState<Task[]>([])
-  const [loading, setLoading] = useState(true)
+  const [tasks, setTasks] = useState<Task[]>(project.tasks as Task[])
+  const [loading, setLoading] = useState(false)
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [detailTask, setDetailTask] = useState<Task | null>(null)
@@ -94,7 +94,6 @@ export default function ProjectTasksTab({ project }: Props) {
   }, [project.id])
 
   async function fetchTasks() {
-    setLoading(true)
     try {
       const supabase = createClient()
       const { data, error } = await supabase

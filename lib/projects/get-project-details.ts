@@ -69,6 +69,73 @@ export interface ProjectExpense {
   created_at: string
 }
 
+export interface ProjectChangeOrder {
+  id: string
+  co_number: string
+  title: string
+  description: string
+  reason: string | null
+  original_amount: number
+  change_amount: number
+  days_added: number
+  original_end_date: string | null
+  status: 'draft' | 'pending_client' | 'client_approved' | 'client_rejected' | 'executed' | 'cancelled'
+  created_at: string
+  updated_at: string
+  created_by: string | null
+}
+
+export interface ProjectRFI {
+  id: string
+  rfi_number: string
+  subject: string
+  question: string
+  response: string | null
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  status: 'draft' | 'open' | 'answered' | 'closed' | 'cancelled'
+  due_date: string | null
+  responded_at: string | null
+  drawing_references: string[]
+  spec_references: string[]
+  created_at: string
+  updated_at: string
+}
+
+export interface ProjectTask {
+  id: string
+  title: string
+  description: string | null
+  status: 'not-started' | 'in-progress' | 'completed' | 'blocked' | 'review'
+  priority: 'low' | 'medium' | 'high' | 'critical'
+  trade: string | null
+  phase: string | null
+  start_date: string | null
+  due_date: string | null
+  duration: number | null
+  estimated_hours: number | null
+  actual_hours: number | null
+  progress: number | null
+  assignee_id: string | null
+  assignee_name: string | null
+  crew_size: number | null
+  equipment: string[] | null
+  materials: string[] | null
+  certifications: string[] | null
+  safety_protocols: string[] | null
+  quality_standards: string[] | null
+  location: string | null
+  weather_dependent: boolean | null
+  weather_buffer: number | null
+  inspection_required: boolean | null
+  inspection_type: string | null
+  dependencies: string[] | null
+  attachments: number | null
+  comments: number | null
+  client_visibility: boolean | null
+  created_at: string
+  updated_at: string
+}
+
 export interface ProjectDetails {
   // Basic project info
   id: string
@@ -118,6 +185,9 @@ export interface ProjectDetails {
   documents: ProjectDocument[]
   milestones: ProjectMilestone[]
   expenses: ProjectExpense[]
+  tasks: ProjectTask[]
+  changeOrders: ProjectChangeOrder[]
+  rfis: ProjectRFI[]
 
   // Computed fields
   budgetRemaining: number
@@ -180,6 +250,19 @@ export async function getProjectDetails(
     if (!project) {
       return { data: null, error: new Error('Project not found') }
     }
+
+    // Fetch change orders and RFIs separately
+    const [changeOrdersRes, rfisRes] = await Promise.all([
+      supabase.from('project_change_orders').select('*').eq('project_id', projectId).order('created_at', { ascending: false }),
+      supabase.from('project_rfis').select('*').eq('project_id', projectId).order('created_at', { ascending: false })
+    ])
+
+    // Fetch tasks separately (no FK relationship registered with PostgREST)
+    const { data: tasksData } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
 
     // For each team member, fetch their user profile
     const teamMemberIds = project.project_members?.map((pm: any) => pm.user_id) || []
@@ -283,6 +366,9 @@ export async function getProjectDetails(
       documents,
       milestones: project.project_milestones || [],
       expenses: project.project_expenses || [],
+      tasks: (tasksData as ProjectTask[]) || [],
+      changeOrders: (changeOrdersRes.error ? [] : changeOrdersRes.data as ProjectChangeOrder[]) || [],
+      rfis: (rfisRes.error ? [] : rfisRes.data as ProjectRFI[]) || [],
 
       // Computed fields
       budgetRemaining,

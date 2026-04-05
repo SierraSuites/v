@@ -58,8 +58,8 @@ function isOverdue(dueDate: string | null, status: RFI['status']) {
 }
 
 export default function ProjectRFIsTab({ project }: Props) {
-  const [rfis, setRFIs] = useState<RFI[]>([])
-  const [loading, setLoading] = useState(true)
+  const [rfis, setRFIs] = useState<RFI[]>(project.rfis as RFI[])
+  const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -82,7 +82,6 @@ export default function ProjectRFIsTab({ project }: Props) {
 
   async function fetchRFIs() {
     try {
-      setLoading(true)
       const res = await fetch(`/api/projects/${project.id}/rfis`)
       if (res.ok) {
         const data = await res.json()

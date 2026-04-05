@@ -28,8 +28,23 @@ interface ProjectDocumentsTabProps {
 export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProps) {
   const { colors, darkMode } = useThemeColors()
   const projectId = project.id
-  const [documents, setDocuments] = useState<Document[]>([])
-  const [loading, setLoading] = useState(true)
+  const [documents, setDocuments] = useState<Document[]>(
+    project.documents.map(d => ({
+      id: d.id,
+      name: d.name,
+      file_path: d.file_path,
+      file_type: d.file_type || '',
+      file_size: d.file_size || 0,
+      category: d.category,
+      uploaded_at: d.uploaded_at,
+      uploaded_by: {
+        id: d.uploaded_by?.id || '',
+        name: d.uploaded_by?.name || 'Unknown',
+        avatar: d.uploaded_by?.name ? getInitials(d.uploaded_by.name) : '?'
+      }
+    }))
+  )
+  const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [filter, setFilter] = useState<string>('all')
   const [dragActive, setDragActive] = useState(false)
@@ -58,7 +73,6 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
 
   async function loadDocuments() {
     try {
-      setLoading(true)
       const supabase = createClient()
 
       const { data, error } = await supabase

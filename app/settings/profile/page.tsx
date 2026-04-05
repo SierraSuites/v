@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { usePermissionGuard } from '@/hooks/usePermissionGuard'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter'
 import toast, { Toaster } from 'react-hot-toast'
 import {
@@ -13,51 +13,85 @@ import {
   BuildingOfficeIcon,
   EnvelopeIcon,
   PhoneIcon,
-  MapPinIcon,
   CameraIcon,
   KeyIcon,
-  BellIcon
+  BellIcon,
+  GlobeAltIcon,
+  LockClosedIcon,
 } from '@heroicons/react/24/outline'
+
+interface ProfileData {
+  id: string
+  company_id: string | null
+  email: string
+  full_name: string | null
+  avatar_url: string | null
+  phone: string | null
+  role: string
+  timezone: string | null
+  language: string | null
+  notification_preferences: {
+    email?: boolean
+    push?: boolean
+    sms?: boolean
+  } | null
+}
+
+interface CompanyData {
+  id: string
+  name: string
+  website: string | null
+  phone: string | null
+  email: string | null
+  industry: string | null
+  size: string | null
+  address: {
+    street?: string
+    city?: string
+    state?: string
+    zip?: string
+  } | null
+}
 
 export default function ProfilePage() {
   const router = useRouter()
-  const [profile, setProfile] = useState<any>(null)
+  const { colors, darkMode } = useThemeColors()
+
+  const [profile, setProfile] = useState<ProfileData | null>(null)
+  const [company, setCompany] = useState<CompanyData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const isAdmin = profile?.role === 'owner' || profile?.role === 'admin'
 
   // Profile fields
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
-  const [title, setTitle] = useState('')
-  const [bio, setBio] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState('')
+  const [timezone, setTimezone] = useState('America/New_York')
 
   // Company fields
   const [companyName, setCompanyName] = useState('')
   const [companyWebsite, setCompanyWebsite] = useState('')
-  const [companyAddress, setCompanyAddress] = useState('')
+  const [companyPhone, setCompanyPhone] = useState('')
+  const [companyEmail, setCompanyEmail] = useState('')
+  const [companyStreet, setCompanyStreet] = useState('')
   const [companyCity, setCompanyCity] = useState('')
   const [companyState, setCompanyState] = useState('')
   const [companyZip, setCompanyZip] = useState('')
-  const [companyPhone, setCompanyPhone] = useState('')
+
+  // Notification preferences
+  const [notifEmail, setNotifEmail] = useState(true)
+  const [notifPush, setNotifPush] = useState(true)
+  const [notifSms, setNotifSms] = useState(false)
 
   // Password change
   const [showPasswordChange, setShowPasswordChange] = useState(false)
-  const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
   // Email change
   const [showEmailChange, setShowEmailChange] = useState(false)
   const [newEmail, setNewEmail] = useState('')
-  const [emailChangePassword, setEmailChangePassword] = useState('')
-
-  // Notification preferences
-  const [emailNotifications, setEmailNotifications] = useState(true)
-  const [projectUpdates, setProjectUpdates] = useState(true)
-  const [invoiceReminders, setInvoiceReminders] = useState(true)
-  const [weeklyReports, setWeeklyReports] = useState(false)
 
   useEffect(() => {
     loadProfile()
@@ -66,7 +100,6 @@ export default function ProfilePage() {
   async function loadProfile() {
     try {
       const supabase = createClient()
-
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
@@ -74,14 +107,11 @@ export default function ProfilePage() {
         return
       }
 
-      // Load user profile
+      // user_profiles.id == auth.users.id
       const { data: profileData, error: profileError } = await supabase
         .from('user_profiles')
-        .select(`
-          *,
-          companies(*)
-        `)
-        .eq('user_id', user.id)
+        .select('id, company_id, email, full_name, avatar_url, phone, role, timezone, language, notification_preferences')
+        .eq('id', user.id)
         .single()
 
       if (profileError) throw profileError
@@ -90,31 +120,33 @@ export default function ProfilePage() {
       setEmail(user.email || '')
       setFullName(profileData.full_name || '')
       setPhone(profileData.phone || '')
-      setTitle(profileData.title || '')
-      setBio(profileData.bio || '')
-      setAvatarUrl(profileData.avatar_url || '')
+      setTimezone(profileData.timezone || 'America/New_York')
 
-      // Load company data
-      const company = Array.isArray(profileData.companies)
-        ? profileData.companies[0]
-        : profileData.companies
+      const notifs = profileData.notification_preferences || {}
+      setNotifEmail(notifs.email ?? true)
+      setNotifPush(notifs.push ?? true)
+      setNotifSms(notifs.sms ?? false)
 
-      if (company) {
-        setCompanyName(company.name || '')
-        setCompanyWebsite(company.website || '')
-        setCompanyAddress(company.address || '')
-        setCompanyCity(company.city || '')
-        setCompanyState(company.state || '')
-        setCompanyZip(company.zip || '')
-        setCompanyPhone(company.phone || '')
-      }
+      // Fetch company separately
+      if (profileData.company_id) {
+        const { data: companyData } = await supabase
+          .from('companies')
+          .select('id, name, website, phone, email, industry, size, address')
+          .eq('id', profileData.company_id)
+          .single()
 
-      // Load notification preferences (if exists in profile)
-      if (profileData.notification_preferences) {
-        setEmailNotifications(profileData.notification_preferences.email || true)
-        setProjectUpdates(profileData.notification_preferences.projects || true)
-        setInvoiceReminders(profileData.notification_preferences.invoices || true)
-        setWeeklyReports(profileData.notification_preferences.weekly_reports || false)
+        if (companyData) {
+          setCompany(companyData)
+          setCompanyName(companyData.name || '')
+          setCompanyWebsite(companyData.website || '')
+          setCompanyPhone(companyData.phone || '')
+          setCompanyEmail(companyData.email || '')
+          const addr = companyData.address || {}
+          setCompanyStreet(addr.street || '')
+          setCompanyCity(addr.city || '')
+          setCompanyState(addr.state || '')
+          setCompanyZip(addr.zip || '')
+        }
       }
     } catch (error: any) {
       console.error('Error loading profile:', error)
@@ -127,36 +159,25 @@ export default function ProfilePage() {
   async function handleProfileUpdate(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    const loadingToast = toast.loading('Updating profile...')
-
+    const t = toast.loading('Saving...')
     try {
       const supabase = createClient()
-
-      // Update user profile
-      const { error: profileError } = await supabase
+      const { error } = await supabase
         .from('user_profiles')
         .update({
           full_name: fullName,
-          phone,
-          title,
-          bio,
-          notification_preferences: {
-            email: emailNotifications,
-            projects: projectUpdates,
-            invoices: invoiceReminders,
-            weekly_reports: weeklyReports
-          },
+          phone: phone || null,
+          timezone,
+          notification_preferences: { email: notifEmail, push: notifPush, sms: notifSms },
           updated_at: new Date().toISOString()
         })
-        .eq('id', profile.id)
+        .eq('id', profile!.id)
 
-      if (profileError) throw profileError
-
-      toast.success('Profile updated successfully', { id: loadingToast })
+      if (error) throw error
+      toast.success('Profile saved', { id: t })
       await loadProfile()
     } catch (error: any) {
-      console.error('Error updating profile:', error)
-      toast.error(error?.message || 'Error updating profile', { id: loadingToast })
+      toast.error(error?.message || 'Failed to save profile', { id: t })
     } finally {
       setSaving(false)
     }
@@ -164,33 +185,33 @@ export default function ProfilePage() {
 
   async function handleCompanyUpdate(e: React.FormEvent) {
     e.preventDefault()
+    if (!isAdmin) return
     setSaving(true)
-    const loadingToast = toast.loading('Updating company...')
-
+    const t = toast.loading('Saving...')
     try {
       const supabase = createClient()
-
-      const { error: companyError } = await supabase
+      const { error } = await supabase
         .from('companies')
         .update({
           name: companyName,
-          website: companyWebsite,
-          address: companyAddress,
-          city: companyCity,
-          state: companyState,
-          zip: companyZip,
-          phone: companyPhone,
+          website: companyWebsite || null,
+          phone: companyPhone || null,
+          email: companyEmail || null,
+          address: {
+            street: companyStreet || null,
+            city: companyCity || null,
+            state: companyState || null,
+            zip: companyZip || null,
+          },
           updated_at: new Date().toISOString()
         })
-        .eq('id', profile.company_id)
+        .eq('id', company!.id)
 
-      if (companyError) throw companyError
-
-      toast.success('Company updated successfully', { id: loadingToast })
+      if (error) throw error
+      toast.success('Company saved', { id: t })
       await loadProfile()
     } catch (error: any) {
-      console.error('Error updating company:', error)
-      toast.error(error?.message || 'Error updating company', { id: loadingToast })
+      toast.error(error?.message || 'Failed to save company', { id: t })
     } finally {
       setSaving(false)
     }
@@ -198,37 +219,26 @@ export default function ProfilePage() {
 
   async function handlePasswordChange(e: React.FormEvent) {
     e.preventDefault()
-
     if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match')
+      toast.error('Passwords do not match')
       return
     }
-
     if (newPassword.length < 8) {
       toast.error('Password must be at least 8 characters')
       return
     }
-
     setSaving(true)
-    const loadingToast = toast.loading('Changing password...')
-
+    const t = toast.loading('Changing password...')
     try {
       const supabase = createClient()
-
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      })
-
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
       if (error) throw error
-
-      toast.success('Password changed successfully', { id: loadingToast })
+      toast.success('Password changed', { id: t })
       setShowPasswordChange(false)
-      setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
     } catch (error: any) {
-      console.error('Error changing password:', error)
-      toast.error(error?.message || 'Error changing password', { id: loadingToast })
+      toast.error(error?.message || 'Failed to change password', { id: t })
     } finally {
       setSaving(false)
     }
@@ -236,43 +246,25 @@ export default function ProfilePage() {
 
   async function handleEmailChange(e: React.FormEvent) {
     e.preventDefault()
-
-    if (!newEmail || !emailChangePassword) {
-      toast.error('Please fill in all fields')
+    if (!newEmail || newEmail === email) {
+      toast.error('Enter a different email address')
       return
     }
-
-    if (newEmail === email) {
-      toast.error('New email is the same as current email')
-      return
-    }
-
     setSaving(true)
-    const loadingToast = toast.loading('Sending verification email...')
-
+    const t = toast.loading('Sending verification...')
     try {
-      const response = await fetch('/api/auth/change-email', {
+      const res = await fetch('/api/auth/change-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          newEmail,
-          password: emailChangePassword,
-        }),
+        body: JSON.stringify({ newEmail }),
       })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to send verification email')
-      }
-
-      toast.success(data.message || 'Verification email sent! Please check your inbox.', { id: loadingToast })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed')
+      toast.success(data.message || 'Verification email sent', { id: t })
       setShowEmailChange(false)
       setNewEmail('')
-      setEmailChangePassword('')
     } catch (error: any) {
-      console.error('Error changing email:', error)
-      toast.error(error?.message || 'Error sending verification email', { id: loadingToast })
+      toast.error(error?.message || 'Failed to send verification', { id: t })
     } finally {
       setSaving(false)
     }
@@ -281,321 +273,192 @@ export default function ProfilePage() {
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (!file.type.startsWith('image/')) { toast.error('Please upload an image'); return }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return }
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file')
-      return
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB')
-      return
-    }
-
-    const loadingToast = toast.loading('Uploading photo...')
-
+    const t = toast.loading('Uploading photo...')
     try {
       const supabase = createClient()
-
-      // Generate unique filename
       const fileExt = file.name.split('.').pop()
-      const fileName = `${profile.id}-${Date.now()}.${fileExt}`
+      const fileName = `${profile!.id}-${Date.now()}.${fileExt}`
 
-      // Upload to Supabase Storage
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        })
-
+        .upload(fileName, file, { cacheControl: '3600', upsert: true })
       if (uploadError) throw uploadError
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName)
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName)
 
-      // Update profile with new avatar URL
       const { error: updateError } = await supabase
         .from('user_profiles')
         .update({ avatar_url: publicUrl })
-        .eq('id', profile.id)
-
+        .eq('id', profile!.id)
       if (updateError) throw updateError
 
-      setAvatarUrl(publicUrl)
-      toast.success('Photo uploaded successfully', { id: loadingToast })
+      setProfile(p => p ? { ...p, avatar_url: publicUrl } : p)
+      toast.success('Photo updated', { id: t })
     } catch (error: any) {
-      console.error('Error uploading avatar:', error)
-      toast.error(error?.message || 'Error uploading photo', { id: loadingToast })
+      toast.error(error?.message || 'Upload failed', { id: t })
     }
   }
 
+  const cardStyle = { backgroundColor: colors.bg, border: colors.border, borderRadius: '0.5rem' }
+  const inputStyle = {
+    backgroundColor: colors.bgAlt,
+    border: colors.border,
+    color: colors.text,
+    borderRadius: '0.5rem',
+    padding: '0.5rem 0.75rem',
+    fontSize: '0.875rem',
+    width: '100%',
+    outline: 'none',
+  }
+  const labelStyle = { fontSize: '0.875rem', fontWeight: 500, color: colors.textMuted, marginBottom: '0.375rem', display: 'block' }
+
+  const TIMEZONES = [
+    'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+    'America/Phoenix', 'America/Anchorage', 'Pacific/Honolulu', 'UTC',
+    'Europe/London', 'Europe/Paris', 'Asia/Tokyo', 'Australia/Sydney',
+  ]
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: colors.bgAlt }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading profile...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto" />
+          <p className="mt-3 text-sm" style={{ color: colors.textMuted }}>Loading profile...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen p-6" style={{ backgroundColor: colors.bgAlt }}>
       <Toaster position="top-right" />
 
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
-          <p className="text-gray-600 mt-1">Manage your account and company information</p>
+          <h1 className="text-2xl font-bold" style={{ color: colors.text }}>Profile Settings</h1>
+          <p className="text-sm mt-1" style={{ color: colors.textMuted }}>Manage your account and company information</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
           {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              {/* Avatar */}
-              <div className="text-center">
-                <div className="relative inline-block">
-                  <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                    {avatarUrl ? (
-                      <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      <UserIcon className="w-16 h-16 text-gray-400" />
-                    )}
-                  </div>
-                  <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700">
-                    <CameraIcon className="w-5 h-5" />
-                  </label>
-                  <input
-                    id="avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                  />
+          <div className="lg:col-span-1 space-y-4">
+            {/* Avatar card */}
+            <div className="p-6 text-center" style={cardStyle}>
+              <div className="relative inline-block">
+                <div className="w-28 h-28 rounded-full flex items-center justify-center overflow-hidden mx-auto"
+                  style={{ backgroundColor: colors.bgMuted }}>
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-3xl font-bold text-blue-500">
+                      {fullName ? fullName[0].toUpperCase() : <UserIcon className="w-12 h-12" />}
+                    </span>
+                  )}
                 </div>
-                <h2 className="mt-4 text-xl font-bold text-gray-900">{fullName}</h2>
-                <p className="text-sm text-gray-600">{title || 'No title set'}</p>
-                <p className="text-sm text-gray-500 mt-1">{email}</p>
+                <label htmlFor="avatar-upload"
+                  className="absolute bottom-0 right-0 bg-blue-600 text-white p-1.5 rounded-full cursor-pointer hover:bg-blue-700">
+                  <CameraIcon className="w-4 h-4" />
+                </label>
+                <input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
               </div>
 
-              {/* Quick Actions */}
-              <div className="mt-6 space-y-2">
-                <button
-                  onClick={() => setShowPasswordChange(!showPasswordChange)}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-lg"
-                >
-                  <KeyIcon className="w-5 h-5" />
-                  Change Password
-                </button>
-                <button
-                  onClick={() => setShowEmailChange(!showEmailChange)}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-lg"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  Change Email
-                </button>
-              </div>
+              <h2 className="mt-4 text-lg font-semibold" style={{ color: colors.text }}>{fullName || 'No name set'}</h2>
+              <p className="text-sm mt-0.5" style={{ color: colors.textMuted }}>{email}</p>
+              <span className="inline-block mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium capitalize"
+                style={{
+                  backgroundColor: darkMode ? 'rgba(59,130,246,0.2)' : '#dbeafe',
+                  color: darkMode ? '#93c5fd' : '#1d4ed8'
+                }}>
+                {profile?.role || 'member'}
+              </span>
+            </div>
+
+            {/* Quick actions */}
+            <div className="p-4 space-y-1" style={cardStyle}>
+              <button onClick={() => { setShowPasswordChange(!showPasswordChange); setShowEmailChange(false) }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors"
+                style={{ color: colors.text }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = colors.bgMuted)}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
+                <KeyIcon className="w-4 h-4" style={{ color: colors.textMuted }} />
+                Change Password
+              </button>
+              <button onClick={() => { setShowEmailChange(!showEmailChange); setShowPasswordChange(false) }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors"
+                style={{ color: colors.text }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = colors.bgMuted)}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
+                <EnvelopeIcon className="w-4 h-4" style={{ color: colors.textMuted }} />
+                Change Email
+              </button>
             </div>
           </div>
 
-          {/* Main Content */}
+          {/* Main content */}
           <div className="lg:col-span-2 space-y-6">
+
             {/* Personal Information */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <UserIcon className="w-5 h-5" />
+            <div className="p-6" style={cardStyle}>
+              <h3 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ color: colors.text }}>
+                <UserIcon className="w-4 h-4" />
                 Personal Information
               </h3>
-
               <form onSubmit={handleProfileUpdate} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                    <label style={labelStyle}>Full Name</label>
+                    <input style={inputStyle} type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Job Title
-                    </label>
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g., Project Manager"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                    <label style={labelStyle}>Email</label>
+                    <input style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }} type="email" value={email} disabled />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                    <label style={labelStyle}>Phone</label>
+                    <input style={inputStyle} type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={email}
-                      disabled
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                    <label style={labelStyle}>Timezone</label>
+                    <select style={{ ...inputStyle, appearance: 'none' as any }} value={timezone} onChange={e => setTimezone(e.target.value)}>
+                      {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+                    </select>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Bio
-                  </label>
-                  <textarea
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    rows={3}
-                    placeholder="Tell us about yourself..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {saving ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* Company Information */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <BuildingOfficeIcon className="w-5 h-5" />
-                Company Information
-              </h3>
-
-              <form onSubmit={handleCompanyUpdate} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Company Name
-                    </label>
-                    <input
-                      type="text"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Website
-                    </label>
-                    <input
-                      type="url"
-                      value={companyWebsite}
-                      onChange={(e) => setCompanyWebsite(e.target.value)}
-                      placeholder="https://..."
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Address
-                    </label>
-                    <input
-                      type="text"
-                      value={companyAddress}
-                      onChange={(e) => setCompanyAddress(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      City
-                    </label>
-                    <input
-                      type="text"
-                      value={companyCity}
-                      onChange={(e) => setCompanyCity(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      State
-                    </label>
-                    <input
-                      type="text"
-                      value={companyState}
-                      onChange={(e) => setCompanyState(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      ZIP Code
-                    </label>
-                    <input
-                      type="text"
-                      value={companyZip}
-                      onChange={(e) => setCompanyZip(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone
-                    </label>
-                    <input
-                      type="tel"
-                      value={companyPhone}
-                      onChange={(e) => setCompanyPhone(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                {/* Notification Preferences inline */}
+                <div className="pt-4" style={{ borderTop: colors.borderBottom }}>
+                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ color: colors.text }}>
+                    <BellIcon className="w-4 h-4" />
+                    Notification Preferences
+                  </h4>
+                  <div className="space-y-2">
+                    {[
+                      { label: 'Email notifications', value: notifEmail, set: setNotifEmail },
+                      { label: 'Push notifications', value: notifPush, set: setNotifPush },
+                      { label: 'SMS notifications', value: notifSms, set: setNotifSms },
+                    ].map(({ label, value, set }) => (
+                      <label key={label} className="flex items-center justify-between cursor-pointer">
+                        <span className="text-sm" style={{ color: colors.textMuted }}>{label}</span>
+                        <div className="relative">
+                          <input type="checkbox" className="sr-only" checked={value} onChange={e => set(e.target.checked)} />
+                          <div className="w-9 h-5 rounded-full transition-colors"
+                            style={{ backgroundColor: value ? '#3b82f6' : (darkMode ? '#374151' : '#d1d5db') }} />
+                          <div className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"
+                            style={{ transform: value ? 'translateX(16px)' : 'translateX(0)' }} />
+                        </div>
+                      </label>
+                    ))}
                   </div>
                 </div>
 
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                  >
+                <div className="flex justify-end pt-2">
+                  <button type="submit" disabled={saving}
+                    className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
                     {saving ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
@@ -604,57 +467,29 @@ export default function ProfilePage() {
 
             {/* Password Change */}
             {showPasswordChange && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <KeyIcon className="w-5 h-5" />
+              <div className="p-6" style={cardStyle}>
+                <h3 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ color: colors.text }}>
+                  <KeyIcon className="w-4 h-4" />
                   Change Password
                 </h3>
-
                 <form onSubmit={handlePasswordChange} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      New Password
-                    </label>
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="At least 8 characters"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <PasswordStrengthMeter
-                      password={newPassword}
-                      userInputs={[email, fullName]}
-                      showFeedback={true}
-                    />
+                    <label style={labelStyle}>New Password</label>
+                    <input style={inputStyle} type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="At least 8 characters" />
+                    <PasswordStrengthMeter password={newPassword} userInputs={[email, fullName]} showFeedback />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Confirm New Password
-                    </label>
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Re-enter new password"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                    <label style={labelStyle}>Confirm New Password</label>
+                    <input style={inputStyle} type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Re-enter password" />
                   </div>
-
                   <div className="flex justify-end gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswordChange(false)}
-                      className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                    >
+                    <button type="button" onClick={() => setShowPasswordChange(false)}
+                      className="px-4 py-2 text-sm rounded-lg transition-colors"
+                      style={{ border: colors.border, color: colors.text }}>
                       Cancel
                     </button>
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                    >
+                    <button type="submit" disabled={saving}
+                      className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
                       {saving ? 'Changing...' : 'Change Password'}
                     </button>
                   </div>
@@ -664,150 +499,115 @@ export default function ProfilePage() {
 
             {/* Email Change */}
             {showEmailChange && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  Change Email Address
+              <div className="p-6" style={cardStyle}>
+                <h3 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ color: colors.text }}>
+                  <EnvelopeIcon className="w-4 h-4" />
+                  Change Email
                 </h3>
-
-                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Important:</strong> A verification email will be sent to your new email address.
-                    You must click the verification link to complete the email change.
-                  </p>
+                <div className="mb-4 p-3 rounded-lg text-sm"
+                  style={{ backgroundColor: darkMode ? 'rgba(234,179,8,0.1)' : '#fefce8', color: darkMode ? '#fde047' : '#854d0e', border: `1px solid ${darkMode ? 'rgba(234,179,8,0.2)' : '#fef08a'}` }}>
+                  A verification link will be sent to your new address. Your email won't change until you click it.
                 </div>
-
                 <form onSubmit={handleEmailChange} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Current Email
-                    </label>
-                    <input
-                      type="email"
-                      value={email}
-                      disabled
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
-                    />
+                    <label style={labelStyle}>Current Email</label>
+                    <input style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }} type="email" value={email} disabled />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      New Email Address
-                    </label>
-                    <input
-                      type="email"
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                      placeholder="Enter new email address"
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                    <label style={labelStyle}>New Email Address</label>
+                    <input style={inputStyle} type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="new@example.com" required />
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Confirm Password
-                    </label>
-                    <input
-                      type="password"
-                      value={emailChangePassword}
-                      onChange={(e) => setEmailChangePassword(e.target.value)}
-                      placeholder="Enter your current password"
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <p className="text-sm text-gray-500 mt-1">
-                      For security, please confirm your current password
-                    </p>
-                  </div>
-
                   <div className="flex justify-end gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowEmailChange(false)
-                        setNewEmail('')
-                        setEmailChangePassword('')
-                      }}
-                      className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                    >
+                    <button type="button" onClick={() => { setShowEmailChange(false); setNewEmail('') }}
+                      className="px-4 py-2 text-sm rounded-lg"
+                      style={{ border: colors.border, color: colors.text }}>
                       Cancel
                     </button>
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {saving ? 'Sending...' : 'Send Verification Email'}
+                    <button type="submit" disabled={saving}
+                      className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                      {saving ? 'Sending...' : 'Send Verification'}
                     </button>
                   </div>
                 </form>
               </div>
             )}
 
-            {/* Notification Preferences */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <BellIcon className="w-5 h-5" />
-                Notification Preferences
-              </h3>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-900">Email Notifications</p>
-                    <p className="text-sm text-gray-600">Receive email notifications</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={emailNotifications}
-                    onChange={(e) => setEmailNotifications(e.target.checked)}
-                    className="w-5 h-5 text-blue-600 rounded"
-                  />
+            {/* Company Information */}
+            {company && (
+              <div className="p-6" style={cardStyle}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-base font-semibold flex items-center gap-2" style={{ color: colors.text }}>
+                    <BuildingOfficeIcon className="w-4 h-4" />
+                    Company Information
+                  </h3>
+                  {!isAdmin && (
+                    <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-md"
+                      style={{ backgroundColor: colors.bgMuted, color: colors.textMuted }}>
+                      <LockClosedIcon className="w-3 h-3" />
+                      Admin only
+                    </span>
+                  )}
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-900">Project Updates</p>
-                    <p className="text-sm text-gray-600">Get notified about project changes</p>
+                <form onSubmit={handleCompanyUpdate} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label style={labelStyle}>Company Name</label>
+                      <input style={isAdmin ? inputStyle : { ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
+                        type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} disabled={!isAdmin} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Website</label>
+                      <input style={isAdmin ? inputStyle : { ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
+                        type="url" value={companyWebsite} onChange={e => setCompanyWebsite(e.target.value)}
+                        placeholder="https://..." disabled={!isAdmin} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Phone</label>
+                      <input style={isAdmin ? inputStyle : { ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
+                        type="tel" value={companyPhone} onChange={e => setCompanyPhone(e.target.value)} disabled={!isAdmin} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Email</label>
+                      <input style={isAdmin ? inputStyle : { ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
+                        type="email" value={companyEmail} onChange={e => setCompanyEmail(e.target.value)} disabled={!isAdmin} />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label style={labelStyle}>Street Address</label>
+                      <input style={isAdmin ? inputStyle : { ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
+                        type="text" value={companyStreet} onChange={e => setCompanyStreet(e.target.value)} disabled={!isAdmin} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>City</label>
+                      <input style={isAdmin ? inputStyle : { ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
+                        type="text" value={companyCity} onChange={e => setCompanyCity(e.target.value)} disabled={!isAdmin} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label style={labelStyle}>State</label>
+                        <input style={isAdmin ? inputStyle : { ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
+                          type="text" value={companyState} onChange={e => setCompanyState(e.target.value)} disabled={!isAdmin} />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>ZIP</label>
+                        <input style={isAdmin ? inputStyle : { ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
+                          type="text" value={companyZip} onChange={e => setCompanyZip(e.target.value)} disabled={!isAdmin} />
+                      </div>
+                    </div>
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={projectUpdates}
-                    onChange={(e) => setProjectUpdates(e.target.checked)}
-                    className="w-5 h-5 text-blue-600 rounded"
-                  />
-                </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-900">Invoice Reminders</p>
-                    <p className="text-sm text-gray-600">Reminders for overdue invoices</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={invoiceReminders}
-                    onChange={(e) => setInvoiceReminders(e.target.checked)}
-                    className="w-5 h-5 text-blue-600 rounded"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-900">Weekly Reports</p>
-                    <p className="text-sm text-gray-600">Receive weekly summary emails</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={weeklyReports}
-                    onChange={(e) => setWeeklyReports(e.target.checked)}
-                    className="w-5 h-5 text-blue-600 rounded"
-                  />
-                </div>
+                  {isAdmin && (
+                    <div className="flex justify-end pt-2">
+                      <button type="submit" disabled={saving}
+                        className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                        {saving ? 'Saving...' : 'Save Company'}
+                      </button>
+                    </div>
+                  )}
+                </form>
               </div>
-            </div>
+            )}
+
           </div>
         </div>
       </div>

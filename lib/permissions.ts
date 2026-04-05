@@ -493,17 +493,25 @@ export const permissionService = {
       targetUserId = user.id
     }
 
-    const { data, error } = await supabase.rpc('get_user_project_role', {
-      user_uuid: targetUserId,
-      project_uuid: projectId
-    })
+    // Check if user owns the project
+    const { data: ownedProject } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('id', projectId)
+      .eq('user_id', targetUserId)
+      .single()
 
-    if (error) {
-      console.error('Error getting user project role:', error)
-      return 'viewer'
-    }
+    if (ownedProject) return 'admin'
 
-    return (data as UserRole) || 'viewer'
+    // Check project_members for their role
+    const { data: membership } = await supabase
+      .from('project_members')
+      .select('role')
+      .eq('project_id', projectId)
+      .eq('user_id', targetUserId)
+      .single()
+
+    return (membership?.role as UserRole) || 'viewer'
   },
 
   /**
