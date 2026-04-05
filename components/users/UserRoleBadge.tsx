@@ -42,10 +42,17 @@ export default function UserRoleBadge({
     }
   }
 
-  const roleConfig = {
+  const roleConfig: Record<string, { label: string; icon: string; bgColor: string; textColor: string; borderColor: string }> = {
+    owner: {
+      label: 'Owner',
+      icon: '👑',
+      bgColor: '#FFF7ED',
+      textColor: '#C2410C',
+      borderColor: '#FDBA74'
+    },
     admin: {
       label: 'Admin',
-      icon: '👑',
+      icon: '🛡️',
       bgColor: '#F3E8FF',
       textColor: '#7C3AED',
       borderColor: '#C4B5FD'
@@ -94,7 +101,13 @@ export default function UserRoleBadge({
     }
   }
 
-  const config = roleConfig[role]
+  const config = roleConfig[role] ?? {
+    label: role ?? 'Unknown',
+    icon: '👤',
+    bgColor: '#F3F4F6',
+    textColor: '#4B5563',
+    borderColor: '#E5E7EB'
+  }
 
   const sizeStyles = {
     sm: {

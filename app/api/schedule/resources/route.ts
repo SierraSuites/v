@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     // Get user's company
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     // Get all team members in the company
     const { data: teamMembers, error: teamError } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('id, full_name, email, role')
       .eq('company_id', profile.company_id)
       .order('full_name')

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 // ============================================
 
 export type UserRole =
+  | 'owner'
   | 'admin'
   | 'superintendent'
   | 'project_manager'
@@ -116,6 +117,52 @@ export interface SharedMediaAsset {
 // ============================================
 
 export const ROLE_PERMISSIONS: Record<UserRole, PermissionSet> = {
+  owner: {
+    // Project
+    canViewAllProjects: true,
+    canEditProjects: true,
+    canDeleteProjects: true,
+    canCreateProjects: true,
+    // Team
+    canManageTeam: true,
+    canInviteMembers: true,
+    canRemoveMembers: true,
+    canChangeRoles: true,
+    // Photos
+    canViewAllPhotos: true,
+    canUploadPhotos: true,
+    canDeletePhotos: true,
+    canSharePhotos: true,
+    canEditPhotoMetadata: true,
+    // Analytics
+    canViewAnalytics: true,
+    canExportData: true,
+    canViewReports: true,
+    // AI
+    canManageAI: true,
+    canRunAIAnalysis: true,
+    canViewAIInsights: true,
+    // Tasks
+    canManageTasks: true,
+    canAssignTasks: true,
+    canViewAllTasks: true,
+    // Punch List
+    canManagePunchList: true,
+    canResolvePunchItems: true,
+    canViewPunchList: true,
+    // Financial
+    canManageFinances: true,
+    canApproveExpenses: true,
+    canViewFinancials: true,
+    // Documents
+    canUploadDocuments: true,
+    canDeleteDocuments: true,
+    canShareDocuments: true,
+    // Settings
+    canManageCompanySettings: true,
+    canManageIntegrations: true
+  },
+
   admin: {
     // Project
     canViewAllProjects: true,
@@ -797,7 +844,7 @@ export const permissionService = {
     const supabase = createClient()
 
     const { data, error } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', userId)
       .eq('company_id', companyId)
@@ -903,6 +950,7 @@ export const permissionService = {
  */
 export function getRoleDisplayName(role: UserRole): string {
   const names: Record<UserRole, string> = {
+    owner: 'Owner',
     admin: 'Administrator',
     superintendent: 'Superintendent',
     project_manager: 'Project Manager',
@@ -919,6 +967,7 @@ export function getRoleDisplayName(role: UserRole): string {
  */
 export function getRoleColor(role: UserRole): string {
   const colors: Record<UserRole, string> = {
+    owner: '#EA580C', // Orange-red
     admin: '#DC2626', // Red
     superintendent: '#F59E0B', // Orange
     project_manager: '#6366F1', // Indigo
@@ -935,7 +984,8 @@ export function getRoleColor(role: UserRole): string {
  */
 export function getRoleIcon(role: UserRole): string {
   const icons: Record<UserRole, string> = {
-    admin: '👑',
+    owner: '👑',
+    admin: '🛡️',
     superintendent: '🏗️',
     project_manager: '📋',
     field_engineer: '🔧',
@@ -951,6 +1001,7 @@ export function getRoleIcon(role: UserRole): string {
  */
 export function getRoleLevel(role: UserRole): number {
   const levels: Record<UserRole, number> = {
+    owner: 8,
     admin: 7,
     superintendent: 6,
     accountant: 5,

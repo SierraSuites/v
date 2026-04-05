@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { UserRole, PermissionSet, permissionService } from '@/lib/permissions'
+import { UserRole, PermissionSet, ROLE_PERMISSIONS, permissionService } from '@/lib/permissions'
 
 export interface CurrentUser {
   id: string
@@ -52,7 +52,7 @@ export function useCurrentUser() {
 
         // Get user profile
         const { data: profile, error: profileError } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('*')
           .eq('id', authUser.id)
           .single()
@@ -65,20 +65,10 @@ export function useCurrentUser() {
           throw new Error('User is not associated with a company')
         }
 
-        // Get highest role
-        const highestRole = await permissionService.getUserHighestRole(authUser.id)
-
-        // Get role assignments
-        const roleAssignments = await permissionService.getUserRoleAssignments(
-          authUser.id,
-          profile.company_id
-        )
-
-        // Get merged permissions
-        const permissions = await permissionService.getMergedPermissions(
-          authUser.id,
-          profile.company_id
-        )
+        // Derive role and permissions directly from user_profiles.role
+        const highestRole: UserRole = (profile.role as UserRole) || 'viewer'
+        const roleAssignments: any[] = []
+        const permissions: PermissionSet = ROLE_PERMISSIONS[highestRole] ?? ROLE_PERMISSIONS.viewer
 
         if (!cancelled) {
           setUser({
@@ -249,16 +239,15 @@ export function useRealtimeUser() {
 
         // Initial load
         const { data: profile } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('*')
           .eq('id', authUser.id)
           .single()
 
         if (!profile?.company_id) return
 
-        const highestRole = await permissionService.getUserHighestRole(authUser.id)
-        const roleAssignments = await permissionService.getUserRoleAssignments(authUser.id, profile.company_id)
-        const permissions = await permissionService.getMergedPermissions(authUser.id, profile.company_id)
+        const highestRole: UserRole = (profile.role as UserRole) || 'viewer'
+        const permissions: PermissionSet = ROLE_PERMISSIONS[highestRole] ?? ROLE_PERMISSIONS.viewer
 
         setUser({
           id: authUser.id,
@@ -273,12 +262,12 @@ export function useRealtimeUser() {
           created_at: profile.created_at,
           last_sign_in_at: authUser.last_sign_in_at ?? null,
           highestRole,
-          roleAssignments,
+          roleAssignments: [],
           permissions
         })
         setLoading(false)
 
-        // Subscribe to profile changes
+        // Subscribe to profile changes (re-derive role/permissions on update)
         profileChannel = supabase
           .channel('profile_changes')
           .on(
@@ -286,22 +275,18 @@ export function useRealtimeUser() {
             {
               event: '*',
               schema: 'public',
-              table: 'profiles',
+              table: 'user_profiles',
               filter: `id=eq.${authUser.id}`
             },
             async () => {
-              // Refetch user data
               const { data: updatedProfile } = await supabase
-                .from('profiles')
+                .from('user_profiles')
                 .select('*')
                 .eq('id', authUser.id)
                 .single()
 
               if (updatedProfile?.company_id) {
-                const updatedRole = await permissionService.getUserHighestRole(authUser.id)
-                const updatedAssignments = await permissionService.getUserRoleAssignments(authUser.id, updatedProfile.company_id)
-                const updatedPermissions = await permissionService.getMergedPermissions(authUser.id, updatedProfile.company_id)
-
+                const updatedRole: UserRole = (updatedProfile.role as UserRole) || 'viewer'
                 setUser({
                   id: authUser.id,
                   email: authUser.email!,
@@ -315,38 +300,9 @@ export function useRealtimeUser() {
                   created_at: updatedProfile.created_at,
                   last_sign_in_at: authUser.last_sign_in_at ?? null,
                   highestRole: updatedRole,
-                  roleAssignments: updatedAssignments,
-                  permissions: updatedPermissions
+                  roleAssignments: [],
+                  permissions: ROLE_PERMISSIONS[updatedRole] ?? ROLE_PERMISSIONS.viewer
                 })
-              }
-            }
-          )
-          .subscribe()
-
-        // Subscribe to role assignment changes
-        rolesChannel = supabase
-          .channel('role_changes')
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'user_role_assignments',
-              filter: `user_id=eq.${authUser.id}`
-            },
-            async () => {
-              // Refetch roles and permissions
-              if (profile.company_id) {
-                const updatedRole = await permissionService.getUserHighestRole(authUser.id)
-                const updatedAssignments = await permissionService.getUserRoleAssignments(authUser.id, profile.company_id)
-                const updatedPermissions = await permissionService.getMergedPermissions(authUser.id, profile.company_id)
-
-                setUser(prev => prev ? {
-                  ...prev,
-                  highestRole: updatedRole,
-                  roleAssignments: updatedAssignments,
-                  permissions: updatedPermissions
-                } : null)
               }
             }
           )

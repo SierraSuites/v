@@ -70,13 +70,13 @@ export async function GET(
 
     // Get user's company to ensure same-company access
     const { data: requesterProfile } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
 
     const { data: targetProfile } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', targetUserId)
       .single()
@@ -207,13 +207,13 @@ export async function POST(
 
     // Get company IDs for both users
     const { data: requesterProfile } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
 
     const { data: targetProfile } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id, email, full_name')
       .eq('id', targetUserId)
       .single()
@@ -384,13 +384,13 @@ export async function DELETE(
 
     // Get company IDs
     const { data: requesterProfile } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
 
     const { data: targetProfile } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id, email, full_name')
       .eq('id', targetUserId)
       .single()

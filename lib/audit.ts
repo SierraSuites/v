@@ -162,7 +162,7 @@ export const auditService = {
       let companyId = params.companyId
       if (!companyId) {
         const { data: profile } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('company_id')
           .eq('id', targetUserId)
           .single()

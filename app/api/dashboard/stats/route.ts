@@ -35,13 +35,13 @@ export async function GET(request: NextRequest) {
     // 2. GET USER'S PROFILE
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('id, plan, full_name')
+      .select('id, full_name, subscription_tier')
       .eq('id', user.id)
       .single()
 
     if (profileError || !profile) {
       return NextResponse.json(
-        { error: 'Not Found', message: 'User profile not found' },
+        { error: 'Not Found', message: 'User profile not found', detail: profileError },
         { status: 404 }
       )
     }
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
       professional: 50,
       enterprise: 500
     }
-    const storageLimit = storageLimits[profile.plan as keyof typeof storageLimits] || 5
+    const storageLimit = storageLimits[profile.subscription_tier as keyof typeof storageLimits] || 5
 
     // 9. TEAM COUNT (single user mode)
     const teamMembers = 1

@@ -106,7 +106,8 @@ export default function TeamDirectory({
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch team members')
+        console.error('Team API error:', response.status, JSON.stringify(data))
+        throw new Error(`${response.status}: ${data.error || 'Failed to fetch team members'} — ${JSON.stringify(data.detail || '')}`)
       }
 
       setMembers(data.teamMembers || [])

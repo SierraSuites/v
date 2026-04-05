@@ -126,7 +126,7 @@ export async function GET(
 
     // Verify role belongs to user's company
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
@@ -192,7 +192,7 @@ export async function PUT(
     }
 
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
@@ -291,7 +291,7 @@ export async function DELETE(
     }
 
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
