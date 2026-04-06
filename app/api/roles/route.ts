@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { customRolesService } from '@/lib/custom-roles'
 import { ROLE_PERMISSIONS, UserRole, getRoleDisplayName, getRoleColor, getRoleIcon, getRoleLevel } from '@/lib/permissions'
 import { z } from 'zod'
 
@@ -85,7 +84,7 @@ export async function GET(req: NextRequest) {
 
     // Get user's company ID
     const { data: profile, error: profileError } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
@@ -97,34 +96,44 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Build built-in roles array
-    const builtInRoles = Object.keys(ROLE_PERMISSIONS).map((role) => ({
-      id: role,
-      role_name: getRoleDisplayName(role as UserRole),
-      role_slug: role,
-      description: getBuiltInRoleDescription(role as UserRole),
-      color: getRoleColor(role as UserRole),
-      icon: getRoleIcon(role as UserRole),
-      permissions: ROLE_PERMISSIONS[role as UserRole],
-      is_builtin: true,
-      role_level: getRoleLevel(role as UserRole)
+    // Fetch system roles from custom_roles table so we get real UUIDs
+    const { data: systemRolesFromDB } = await supabase
+      .from('custom_roles')
+      .select('id, role_slug, role_name')
+      .eq('is_system_role', true)
+
+    // Build built-in roles — use DB UUID if available, fall back to slug as id
+    const builtInRoles = Object.keys(ROLE_PERMISSIONS).map((role) => {
+      const dbRole = systemRolesFromDB?.find(r => r.role_slug === role)
+      return {
+        id: dbRole?.id ?? role,
+        role_name: getRoleDisplayName(role as UserRole),
+        role_slug: role,
+        description: getBuiltInRoleDescription(role as UserRole),
+        color: getRoleColor(role as UserRole),
+        icon: getRoleIcon(role as UserRole),
+        permissions: ROLE_PERMISSIONS[role as UserRole],
+        is_builtin: true,
+        role_level: getRoleLevel(role as UserRole)
+      }
+    })
+
+    // Get custom roles for the company using the server client directly
+    const { data: customRolesData } = await supabase
+      .from('custom_roles')
+      .select('*')
+      .eq('company_id', profile.company_id)
+      .eq('is_active', true)
+      .order('role_name')
+
+    const customRoles = (customRolesData || []).map(role => ({
+      ...role,
+      is_builtin: false
     }))
-
-    // Get custom roles for the company
-    const customRoles = await customRolesService.getCompanyCustomRoles(profile.company_id)
-
-    // Get member counts for custom roles
-    const customRolesWithCounts = await Promise.all(
-      customRoles.map(async (role) => ({
-        ...role,
-        is_builtin: false,
-        member_count: await customRolesService.getRoleMemberCount(role.id)
-      }))
-    )
 
     return NextResponse.json({
       builtInRoles,
-      customRoles: customRolesWithCounts
+      customRoles
     })
   } catch (error) {
     console.error('Error fetching roles:', error)
@@ -155,7 +164,7 @@ export async function POST(req: NextRequest) {
 
     // Get user's company ID and check permissions
     const { data: profile, error: profileError } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
@@ -168,11 +177,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user has permission to manage team
-    const { data: highestRole } = await supabase.rpc('get_user_highest_role', {
-      user_uuid: user.id
-    })
+    const { data: roleProfile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
 
-    const userPermissions = ROLE_PERMISSIONS[highestRole as UserRole] || ROLE_PERMISSIONS.viewer
+    const userPermissions = ROLE_PERMISSIONS[(roleProfile?.role as UserRole)] || ROLE_PERMISSIONS.viewer
 
     if (!userPermissions.canManageTeam) {
       return NextResponse.json(
@@ -200,32 +211,38 @@ export async function POST(req: NextRequest) {
 
     const { roleName, description, color, icon, permissions } = validationResult.data
 
-    // Create the custom role
-    const customRole = await customRolesService.createCustomRole(
-      profile.company_id,
-      roleName,
-      permissions,
-      { description, color, icon }
-    )
+    // Create the custom role directly using server client
+    const roleSlug = roleName.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+
+    const { data: customRole, error: createError } = await supabase
+      .from('custom_roles')
+      .insert({
+        company_id: profile.company_id,
+        role_name: roleName,
+        role_slug: roleSlug,
+        description: description || null,
+        color: color || '#6B7280',
+        icon: icon || '👤',
+        permissions,
+        is_system_role: false,
+        created_by: user.id
+      })
+      .select()
+      .single()
+
+    if (createError) {
+      if (createError.code === '23505') {
+        return NextResponse.json({ error: `A role with the name "${roleName}" already exists` }, { status: 409 })
+      }
+      throw createError
+    }
 
     return NextResponse.json(
-      {
-        message: 'Custom role created successfully',
-        role: customRole
-      },
+      { message: 'Custom role created successfully', role: customRole },
       { status: 201 }
     )
   } catch (error: any) {
     console.error('Error creating custom role:', error)
-
-    // Handle specific error cases
-    if (error.message?.includes('already exists')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 409 } // Conflict
-      )
-    }
-
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -239,6 +256,7 @@ export async function POST(req: NextRequest) {
 
 function getBuiltInRoleDescription(role: UserRole): string {
   const descriptions: Record<UserRole, string> = {
+    owner: 'Company owner with unrestricted access to all features, settings, billing, and user management.',
     admin: 'Full access to all features, settings, and company management. Can manage all users and permissions.',
     superintendent: 'Senior field leadership with full project and team management. Can oversee multiple projects and manage budgets.',
     project_manager: 'Manages assigned projects including tasks, schedules, budgets, and documentation. Limited to assigned projects.',

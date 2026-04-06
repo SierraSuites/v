@@ -61,8 +61,8 @@ function formatDate(dateStr: string) {
 }
 
 export default function ProjectChangeOrdersTab({ project }: Props) {
-  const [changeOrders, setChangeOrders] = useState<ChangeOrder[]>([])
-  const [loading, setLoading] = useState(true)
+  const [changeOrders, setChangeOrders] = useState<ChangeOrder[]>(project.changeOrders as ChangeOrder[])
+  const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -80,7 +80,6 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
 
   async function fetchChangeOrders() {
     try {
-      setLoading(true)
       const res = await fetch(`/api/projects/${project.id}/change-orders`)
       if (res.ok) {
         const data = await res.json()

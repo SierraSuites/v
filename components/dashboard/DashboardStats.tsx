@@ -71,7 +71,9 @@ export default function DashboardStats({ stats: propStats }: { stats?: Dashboard
       const res = await fetch('/api/dashboard/stats')
       if (!res.ok) {
         if (res.status === 401) throw new Error('Not authenticated')
-        throw new Error('Failed to load stats')
+        const errBody = await res.json().catch(() => ({}))
+        console.error('Stats API error body:', JSON.stringify(errBody))
+        throw new Error(`Stats API ${res.status}: ${errBody?.message || errBody?.error || 'unknown'}`)
       }
 
       const data = await res.json()

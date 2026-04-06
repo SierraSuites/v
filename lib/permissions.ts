@@ -1,10 +1,9 @@
-import { createClient } from '@/lib/supabase/client'
-
 // ============================================
 // TYPES
 // ============================================
 
 export type UserRole =
+  | 'owner'
   | 'admin'
   | 'superintendent'
   | 'project_manager'
@@ -116,6 +115,52 @@ export interface SharedMediaAsset {
 // ============================================
 
 export const ROLE_PERMISSIONS: Record<UserRole, PermissionSet> = {
+  owner: {
+    // Project
+    canViewAllProjects: true,
+    canEditProjects: true,
+    canDeleteProjects: true,
+    canCreateProjects: true,
+    // Team
+    canManageTeam: true,
+    canInviteMembers: true,
+    canRemoveMembers: true,
+    canChangeRoles: true,
+    // Photos
+    canViewAllPhotos: true,
+    canUploadPhotos: true,
+    canDeletePhotos: true,
+    canSharePhotos: true,
+    canEditPhotoMetadata: true,
+    // Analytics
+    canViewAnalytics: true,
+    canExportData: true,
+    canViewReports: true,
+    // AI
+    canManageAI: true,
+    canRunAIAnalysis: true,
+    canViewAIInsights: true,
+    // Tasks
+    canManageTasks: true,
+    canAssignTasks: true,
+    canViewAllTasks: true,
+    // Punch List
+    canManagePunchList: true,
+    canResolvePunchItems: true,
+    canViewPunchList: true,
+    // Financial
+    canManageFinances: true,
+    canApproveExpenses: true,
+    canViewFinancials: true,
+    // Documents
+    canUploadDocuments: true,
+    canDeleteDocuments: true,
+    canShareDocuments: true,
+    // Settings
+    canManageCompanySettings: true,
+    canManageIntegrations: true
+  },
+
   admin: {
     // Project
     canViewAllProjects: true,
@@ -448,6 +493,7 @@ export const permissionService = {
    * Get user's highest role across all teams
    */
   async getUserHighestRole(userId?: string): Promise<UserRole> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     // Get user if not provided
@@ -483,6 +529,7 @@ export const permissionService = {
    * Get user's role for a specific project
    */
   async getUserProjectRole(projectId: string, userId?: string): Promise<UserRole> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     // Get user if not provided
@@ -493,17 +540,25 @@ export const permissionService = {
       targetUserId = user.id
     }
 
-    const { data, error } = await supabase.rpc('get_user_project_role', {
-      user_uuid: targetUserId,
-      project_uuid: projectId
-    })
+    // Check if user owns the project
+    const { data: ownedProject } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('id', projectId)
+      .eq('user_id', targetUserId)
+      .single()
 
-    if (error) {
-      console.error('Error getting user project role:', error)
-      return 'viewer'
-    }
+    if (ownedProject) return 'admin'
 
-    return (data as UserRole) || 'viewer'
+    // Check project_members for their role
+    const { data: membership } = await supabase
+      .from('project_members')
+      .select('role')
+      .eq('project_id', projectId)
+      .eq('user_id', targetUserId)
+      .single()
+
+    return (membership?.role as UserRole) || 'viewer'
   },
 
   /**
@@ -555,6 +610,7 @@ export const permissionService = {
    * Get all projects user can access
    */
   async getUserAccessibleProjects(userId?: string): Promise<string[]> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     // Get user if not provided
@@ -583,6 +639,7 @@ export const permissionService = {
    * Check if user can view a specific media asset
    */
   async canViewMediaAsset(mediaAssetId: string, userId?: string): Promise<boolean> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     // Get user if not provided
@@ -610,6 +667,7 @@ export const permissionService = {
    * Check if user can delete a specific media asset
    */
   async canDeleteMediaAsset(mediaAssetId: string, userId?: string): Promise<boolean> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     // Get user if not provided
@@ -647,6 +705,7 @@ export const permissionService = {
    * Get user's teams
    */
   async getUserTeams(userId?: string): Promise<CompanyTeam[]> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     // Get user if not provided
@@ -680,6 +739,7 @@ export const permissionService = {
    * Get team members
    */
   async getTeamMembers(teamId: string): Promise<TeamMember[]> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     const { data, error } = await supabase
@@ -707,6 +767,7 @@ export const permissionService = {
     granted: boolean,
     reason?: string
   ): Promise<void> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -736,6 +797,7 @@ export const permissionService = {
     companyId: string,
     permissionName: keyof PermissionSet
   ): Promise<boolean> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     const { data, error } = await supabase.rpc('user_has_permission', {
@@ -767,6 +829,7 @@ export const permissionService = {
     userId: string,
     companyId: string
   ): Promise<PermissionSet> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     const { data, error } = await supabase.rpc('get_user_permissions', {
@@ -786,10 +849,11 @@ export const permissionService = {
    * Check if user can access specific company
    */
   async canAccessCompany(userId: string, companyId: string): Promise<boolean> {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     const { data, error } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', userId)
       .eq('company_id', companyId)
@@ -806,6 +870,7 @@ export const permissionService = {
    * Get user's role assignments for a company
    */
   async getUserRoleAssignments(userId: string, companyId: string) {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
 
     const { data, error } = await supabase
@@ -895,6 +960,7 @@ export const permissionService = {
  */
 export function getRoleDisplayName(role: UserRole): string {
   const names: Record<UserRole, string> = {
+    owner: 'Owner',
     admin: 'Administrator',
     superintendent: 'Superintendent',
     project_manager: 'Project Manager',
@@ -911,6 +977,7 @@ export function getRoleDisplayName(role: UserRole): string {
  */
 export function getRoleColor(role: UserRole): string {
   const colors: Record<UserRole, string> = {
+    owner: '#EA580C', // Orange-red
     admin: '#DC2626', // Red
     superintendent: '#F59E0B', // Orange
     project_manager: '#6366F1', // Indigo
@@ -927,7 +994,8 @@ export function getRoleColor(role: UserRole): string {
  */
 export function getRoleIcon(role: UserRole): string {
   const icons: Record<UserRole, string> = {
-    admin: '👑',
+    owner: '👑',
+    admin: '🛡️',
     superintendent: '🏗️',
     project_manager: '📋',
     field_engineer: '🔧',
@@ -943,6 +1011,7 @@ export function getRoleIcon(role: UserRole): string {
  */
 export function getRoleLevel(role: UserRole): number {
   const levels: Record<UserRole, number> = {
+    owner: 8,
     admin: 7,
     superintendent: 6,
     accountant: 5,

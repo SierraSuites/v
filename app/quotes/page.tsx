@@ -48,7 +48,7 @@ export default function QuotesPage() {
 
       // Get user's company
       const { data: profile } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('company_id')
         .eq('id', user.id)
         .single()
@@ -77,7 +77,7 @@ export default function QuotesPage() {
       if (!user) return
 
       const { data: profile } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('company_id')
         .eq('id', user.id)
         .single()

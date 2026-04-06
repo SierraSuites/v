@@ -409,33 +409,40 @@ export async function requireProjectAccess(
       }
     }
 
-    // Check if user has access to project via team membership
-    const accessibleProjects = await permissionService.getUserAccessibleProjects(user.id)
+    // Check if user owns the project
+    const { data: ownedProject } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('id', projectId)
+      .eq('user_id', user.id)
+      .single()
 
-    if (accessibleProjects && !accessibleProjects.includes(projectId)) {
-      return {
-        authorized: false,
-        userId: user.id,
-        error: NextResponse.json(
-          {
-            error: 'Forbidden',
-            message: 'You do not have access to this project'
-          },
-          { status: 403 }
-        )
-      }
+    if (ownedProject) {
+      return { authorized: true, userId: user.id, role: 'admin' }
     }
 
-    // Get user's role for this project
-    const role = await permissionService.getUserProjectRole(projectId, user.id)
+    // Check if user is a project member
+    const { data: membership } = await supabase
+      .from('project_members')
+      .select('role')
+      .eq('project_id', projectId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (membership) {
+      return { authorized: true, userId: user.id, role: membership.role }
+    }
 
     return {
-      authorized: true,
+      authorized: false,
       userId: user.id,
-      role
+      error: NextResponse.json(
+        { error: 'Forbidden', message: 'You do not have access to this project' },
+        { status: 403 }
+      )
     }
   } catch (error) {
-    console.error('Error checking project access:', error)
+    console.error('[requireProjectAccess] error:', error)
     return {
       authorized: false,
       error: NextResponse.json(

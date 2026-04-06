@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     // Get user's company_id
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     // Get presence for all users in the company
     const { data: companyUsers } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select(
         `
         id,

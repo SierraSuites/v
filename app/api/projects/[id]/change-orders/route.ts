@@ -24,15 +24,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .order('created_at', { ascending: false })
 
     if (error) {
-      // Table may not exist yet – return empty list gracefully
-      if (error.code === '42P01') {
+      if (error.code === '42P01' || error.code === 'PGRST205') {
         return NextResponse.json([])
       }
+      console.error('[change-orders] DB error:', error.code, error.message, error.details)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json(data || [])
   } catch (err) {
+    console.error('[change-orders GET]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -37,9 +37,26 @@ interface ProjectBudgetTabProps {
 export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudgetTabProps) {
   const projectId = project.id
   const { darkMode, colors } = useThemeColors()
-  const [budgetData, setBudgetData] = useState<BudgetData | null>(null)
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [loading, setLoading] = useState(true)
+  const [budgetData, setBudgetData] = useState<BudgetData | null>({
+    estimated_budget: project.estimated_budget,
+    total_expenses: project.spent,
+    remaining: project.budgetRemaining,
+    percentage_used: project.budgetPercentage,
+    currency: project.currency,
+  })
+  const [expenses, setExpenses] = useState<Expense[]>(
+    project.expenses.map(e => ({
+      id: e.id,
+      category: e.category,
+      description: e.description || '',
+      amount: e.amount,
+      date: e.date,
+      vendor: e.vendor,
+      payment_status: e.payment_status,
+      created_by: { name: 'Unknown', avatar: '' }
+    }))
+  )
+  const [loading, setLoading] = useState(false)
   const [showAddExpense, setShowAddExpense] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; description: string } | null>(null)
@@ -63,7 +80,6 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
 
   async function loadBudgetData() {
     try {
-      setLoading(true)
       const supabase = createClient()
 
       // Load project budget info
@@ -241,16 +257,16 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
 
   function getCategoryColor(category: string): string {
     const colors: Record<string, string> = {
-      materials: 'bg-blue-100 text-blue-800',
-      labor: 'bg-green-100 text-green-800',
-      equipment: 'bg-yellow-100 text-yellow-800',
-      permits: 'bg-purple-100 text-purple-800',
-      subcontractors: 'bg-orange-100 text-orange-800',
-      utilities: 'bg-cyan-100 text-cyan-800',
-      insurance: 'bg-pink-100 text-pink-800',
-      other: 'bg-gray-100 text-gray-800'
+      materials:      'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+      labor:          'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+      equipment:      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+      permits:        'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+      subcontractors: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+      utilities:      'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300',
+      insurance:      'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300',
+      other:          'bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300'
     }
-    return colors[category] || 'bg-gray-100 text-gray-800'
+    return colors[category] || 'bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300'
   }
 
   const categories = [

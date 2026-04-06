@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
     // Get user's company ID
     const { data: profile, error: profileError } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
@@ -44,17 +44,15 @@ export async function GET(req: NextRequest) {
 
     // Get all team members in the company
     let query = supabase
-      .from('profiles')
+      .from('user_profiles')
       .select(`
         id,
         email,
         full_name,
         avatar_url,
         phone,
-        job_title,
-        department,
+        role,
         created_at,
-        last_sign_in_at,
         is_active
       `)
       .eq('company_id', profile.company_id)
@@ -74,9 +72,9 @@ export async function GET(req: NextRequest) {
     const { data: teamMembers, error: membersError } = await query
 
     if (membersError) {
-      console.error('Error fetching team members:', membersError)
+      console.error('Error fetching team members:', JSON.stringify(membersError))
       return NextResponse.json(
-        { error: 'Failed to fetch team members' },
+        { error: 'Failed to fetch team members', detail: membersError },
         { status: 500 }
       )
     }
@@ -108,31 +106,18 @@ export async function GET(req: NextRequest) {
       `)
       .in('user_id', teamMembers.map(m => m.id))
       .eq('company_id', profile.company_id)
-      .is('deleted_at', null)
 
     if (rolesError) {
       console.error('Error fetching role assignments:', rolesError)
     }
 
-    // Get highest role for all members in parallel (one RPC call per member, all concurrent)
-    const memberRoles = await Promise.all(
-      teamMembers.map(async (member) => {
-        const { data: highestRole } = await supabase.rpc('get_user_highest_role', {
-          user_uuid: member.id,
-          p_company_id: profile.company_id
-        })
-        return { userId: member.id, highestRole: highestRole || 'viewer' }
-      })
-    )
-
-    // Combine data
+    // Combine data — derive role directly from user_profiles.role
     const enrichedMembers = teamMembers.map(member => {
-      const memberRoleData = memberRoles.find(r => r.userId === member.id)
       const memberAssignments = roleAssignments?.filter(ra => ra.user_id === member.id) || []
 
       return {
         ...member,
-        highestRole: memberRoleData?.highestRole || 'viewer',
+        highestRole: (member as any).role || 'viewer',
         roles: memberAssignments.map(ra => ({
           roleId: ra.role_id,
           roleName: (ra as any).custom_roles?.role_name || 'Unknown',
@@ -179,8 +164,8 @@ export async function GET(req: NextRequest) {
           compareB = new Date(b.created_at).getTime()
           break
         case 'lastActive':
-          compareA = a.last_sign_in_at ? new Date(a.last_sign_in_at).getTime() : 0
-          compareB = b.last_sign_in_at ? new Date(b.last_sign_in_at).getTime() : 0
+          compareA = new Date(a.created_at).getTime()
+          compareB = new Date(b.created_at).getTime()
           break
         default:
           compareA = a.full_name?.toLowerCase() || ''
@@ -239,12 +224,14 @@ export async function PATCH(req: NextRequest) {
       )
     }
 
-    // Check permissions
-    const { data: highestRole } = await supabase.rpc('get_user_highest_role', {
-      user_uuid: user.id
-    })
+    // Check permissions via user_profiles.role
+    const { data: requesterRoleProfile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
 
-    const userPermissions = ROLE_PERMISSIONS[highestRole as UserRole] || ROLE_PERMISSIONS.viewer
+    const userPermissions = ROLE_PERMISSIONS[(requesterRoleProfile?.role as UserRole)] || ROLE_PERMISSIONS.viewer
 
     if (!userPermissions.canManageTeam) {
       return NextResponse.json(
@@ -266,8 +253,8 @@ export async function PATCH(req: NextRequest) {
 
     // Get both profiles in parallel
     const [{ data: requesterProfile }, { data: targetProfile }] = await Promise.all([
-      supabase.from('profiles').select('company_id').eq('id', user.id).single(),
-      supabase.from('profiles').select('company_id, email, full_name').eq('id', userId).single(),
+      supabase.from('user_profiles').select('company_id').eq('id', user.id).single(),
+      supabase.from('user_profiles').select('company_id, email, full_name').eq('id', userId).single(),
     ])
 
     if (!requesterProfile || !targetProfile) {
@@ -295,7 +282,7 @@ export async function PATCH(req: NextRequest) {
 
     // Update user status
     const { error: updateError } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .update({ is_active: isActive })
       .eq('id', userId)
 

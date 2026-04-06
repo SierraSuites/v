@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()

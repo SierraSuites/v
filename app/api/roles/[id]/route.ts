@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { customRolesService } from '@/lib/custom-roles'
 import { ROLE_PERMISSIONS, UserRole } from '@/lib/permissions'
 import { z } from 'zod'
 
@@ -20,81 +19,81 @@ const updateRoleSchema = z.object({
     .optional(),
   icon: z.string().max(10, 'Icon must be 10 characters or less').optional(),
   permissions: z.object({
-    // Project Permissions
     canViewAllProjects: z.boolean(),
     canEditProjects: z.boolean(),
     canDeleteProjects: z.boolean(),
     canCreateProjects: z.boolean(),
-    // Team Permissions
     canManageTeam: z.boolean(),
     canInviteMembers: z.boolean(),
     canRemoveMembers: z.boolean(),
     canChangeRoles: z.boolean(),
-    // Photo Permissions
     canViewAllPhotos: z.boolean(),
     canUploadPhotos: z.boolean(),
     canDeletePhotos: z.boolean(),
     canSharePhotos: z.boolean(),
     canEditPhotoMetadata: z.boolean(),
-    // Analytics
     canViewAnalytics: z.boolean(),
     canExportData: z.boolean(),
     canViewReports: z.boolean(),
-    // AI Features
     canManageAI: z.boolean(),
     canRunAIAnalysis: z.boolean(),
     canViewAIInsights: z.boolean(),
-    // Tasks
     canManageTasks: z.boolean(),
     canAssignTasks: z.boolean(),
     canViewAllTasks: z.boolean(),
-    // Punch List
     canManagePunchList: z.boolean(),
     canResolvePunchItems: z.boolean(),
     canViewPunchList: z.boolean(),
-    // Financial
     canManageFinances: z.boolean(),
     canApproveExpenses: z.boolean(),
     canViewFinancials: z.boolean(),
-    // Documents
     canUploadDocuments: z.boolean(),
     canDeleteDocuments: z.boolean(),
     canShareDocuments: z.boolean(),
-    // Settings
     canManageCompanySettings: z.boolean(),
     canManageIntegrations: z.boolean()
   }).optional()
 })
 
 // ============================================
-// MIDDLEWARE: Check permissions
+// HELPERS
 // ============================================
 
-async function checkUserPermissions(userId: string) {
-  const supabase = await createClient()
+async function getAuthedUser(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error || !user) return null
+  return user
+}
 
-  const { data: highestRole } = await supabase.rpc('get_user_highest_role', {
-    user_uuid: userId
-  })
+async function getUserProfile(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
+  const { data } = await supabase
+    .from('user_profiles')
+    .select('company_id, role')
+    .eq('id', userId)
+    .single()
+  return data
+}
 
-  const userPermissions = ROLE_PERMISSIONS[highestRole as UserRole] || ROLE_PERMISSIONS.viewer
+async function getRole(supabase: Awaited<ReturnType<typeof createClient>>, id: string) {
+  const { data } = await supabase
+    .from('custom_roles')
+    .select('*')
+    .eq('id', id)
+    .eq('is_active', true)
+    .single()
+  return data
+}
 
-  if (!userPermissions.canManageTeam) {
-    return {
-      hasPermission: false,
-      error: NextResponse.json(
-        { error: 'Forbidden: You do not have permission to manage roles' },
-        { status: 403 }
-      )
-    }
-  }
-
-  return { hasPermission: true }
+async function getMemberCount(supabase: Awaited<ReturnType<typeof createClient>>, roleId: string) {
+  const { count } = await supabase
+    .from('user_role_assignments')
+    .select('*', { count: 'exact', head: true })
+    .eq('role_id', roleId)
+  return count ?? 0
 }
 
 // ============================================
 // GET /api/roles/[id]
-// Get a specific custom role
 // ============================================
 
 export async function GET(
@@ -105,58 +104,28 @@ export async function GET(
     const { id } = await params
     const supabase = await createClient()
 
-    // Authenticate user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    const user = await getAuthedUser(supabase)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const profile = await getUserProfile(supabase, user.id)
+    if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+
+    const role = await getRole(supabase, id)
+    if (!role || (role.company_id && role.company_id !== profile.company_id)) {
+      return NextResponse.json({ error: 'Role not found' }, { status: 404 })
     }
 
-    // Get the custom role
-    const role = await customRolesService.getCustomRole(id)
+    const memberCount = await getMemberCount(supabase, id)
 
-    if (!role) {
-      return NextResponse.json(
-        { error: 'Role not found' },
-        { status: 404 }
-      )
-    }
-
-    // Verify role belongs to user's company
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.company_id !== role.company_id) {
-      return NextResponse.json(
-        { error: 'Role not found' },
-        { status: 404 }
-      )
-    }
-
-    // Get member count
-    const memberCount = await customRolesService.getRoleMemberCount(id)
-
-    return NextResponse.json({
-      ...role,
-      member_count: memberCount
-    })
+    return NextResponse.json({ ...role, member_count: memberCount })
   } catch (error) {
     console.error('Error fetching role:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 // ============================================
 // PUT /api/roles/[id]
-// Update a custom role
 // ============================================
 
 export async function PUT(
@@ -167,95 +136,66 @@ export async function PUT(
     const { id } = await params
     const supabase = await createClient()
 
-    // Authenticate user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    const user = await getAuthedUser(supabase)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const profile = await getUserProfile(supabase, user.id)
+    if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+
+    const userPermissions = ROLE_PERMISSIONS[profile.role as UserRole] || ROLE_PERMISSIONS.viewer
+    if (!userPermissions.canManageTeam) {
+      return NextResponse.json({ error: 'Forbidden: insufficient permissions' }, { status: 403 })
     }
 
-    // Check permissions
-    const permissionCheck = await checkUserPermissions(user.id)
-    if (!permissionCheck.hasPermission) {
-      return permissionCheck.error
+    const role = await getRole(supabase, id)
+    if (!role || role.company_id !== profile.company_id) {
+      return NextResponse.json({ error: 'Role not found' }, { status: 404 })
     }
 
-    // Verify role exists and belongs to user's company
-    const role = await customRolesService.getCustomRole(id)
-    if (!role) {
-      return NextResponse.json(
-        { error: 'Role not found' },
-        { status: 404 }
-      )
+    if (role.is_system_role) {
+      return NextResponse.json({ error: 'Cannot modify system roles' }, { status: 403 })
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.company_id !== role.company_id) {
-      return NextResponse.json(
-        { error: 'Role not found' },
-        { status: 404 }
-      )
-    }
-
-    // Parse and validate request body
     const body = await req.json()
-    const validationResult = updateRoleSchema.safeParse(body)
-
-    if (!validationResult.success) {
+    const parsed = updateRoleSchema.safeParse(body)
+    if (!parsed.success) {
       return NextResponse.json(
-        {
-          error: 'Validation failed',
-          details: validationResult.error.issues.map(issue => ({
-            field: issue.path.join('.'),
-            message: issue.message
-          }))
-        },
+        { error: 'Validation failed', details: parsed.error.issues.map(i => ({ field: i.path.join('.'), message: i.message })) },
         { status: 400 }
       )
     }
 
-    const updates = validationResult.data
+    const { roleName, description, color, icon, permissions } = parsed.data
+    const updates: Record<string, any> = { updated_at: new Date().toISOString() }
+    if (roleName !== undefined) updates.role_name = roleName
+    if (description !== undefined) updates.description = description
+    if (color !== undefined) updates.color = color
+    if (icon !== undefined) updates.icon = icon
+    if (permissions !== undefined) updates.permissions = permissions
 
-    // Update the role
-    const updatedRole = await customRolesService.updateCustomRole(id, {
-      role_name: updates.roleName,
-      description: updates.description ?? undefined, // Convert null to undefined
-      color: updates.color,
-      icon: updates.icon,
-      permissions: updates.permissions
-    })
+    const { data: updatedRole, error: updateError } = await supabase
+      .from('custom_roles')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
 
-    return NextResponse.json({
-      message: 'Role updated successfully',
-      role: updatedRole
-    })
-  } catch (error: any) {
-    console.error('Error updating role:', error)
-
-    if (error.message?.includes('already exists')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 409 }
-      )
+    if (updateError) {
+      if (updateError.code === '23505') {
+        return NextResponse.json({ error: 'A role with that name already exists' }, { status: 409 })
+      }
+      throw updateError
     }
 
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ message: 'Role updated successfully', role: updatedRole })
+  } catch (error: any) {
+    console.error('Error updating role:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 // ============================================
 // DELETE /api/roles/[id]
-// Soft delete a custom role
 // ============================================
 
 export async function DELETE(
@@ -266,67 +206,39 @@ export async function DELETE(
     const { id } = await params
     const supabase = await createClient()
 
-    // Authenticate user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    const user = await getAuthedUser(supabase)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const profile = await getUserProfile(supabase, user.id)
+    if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+
+    const userPermissions = ROLE_PERMISSIONS[profile.role as UserRole] || ROLE_PERMISSIONS.viewer
+    if (!userPermissions.canManageTeam) {
+      return NextResponse.json({ error: 'Forbidden: insufficient permissions' }, { status: 403 })
     }
 
-    // Check permissions
-    const permissionCheck = await checkUserPermissions(user.id)
-    if (!permissionCheck.hasPermission) {
-      return permissionCheck.error
+    const role = await getRole(supabase, id)
+    if (!role || role.company_id !== profile.company_id) {
+      return NextResponse.json({ error: 'Role not found' }, { status: 404 })
     }
 
-    // Verify role exists and belongs to user's company
-    const role = await customRolesService.getCustomRole(id)
-    if (!role) {
-      return NextResponse.json(
-        { error: 'Role not found' },
-        { status: 404 }
-      )
+    if (role.is_system_role) {
+      return NextResponse.json({ error: 'Cannot delete system roles' }, { status: 403 })
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.company_id !== role.company_id) {
-      return NextResponse.json(
-        { error: 'Role not found' },
-        { status: 404 }
-      )
-    }
-
-    // Check if role is in use
-    const memberCount = await customRolesService.getRoleMemberCount(id)
-
+    const memberCount = await getMemberCount(supabase, id)
     if (memberCount > 0) {
       return NextResponse.json(
-        {
-          error: 'Cannot delete role that is assigned to team members',
-          memberCount
-        },
-        { status: 409 } // Conflict
+        { error: 'Cannot delete role that is assigned to team members', memberCount },
+        { status: 409 }
       )
     }
 
-    // Delete the role (soft delete)
-    await customRolesService.deleteCustomRole(id)
+    await supabase.from('custom_roles').update({ is_active: false }).eq('id', id)
 
-    return NextResponse.json({
-      message: 'Role deleted successfully'
-    })
+    return NextResponse.json({ message: 'Role deleted successfully' })
   } catch (error) {
     console.error('Error deleting role:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

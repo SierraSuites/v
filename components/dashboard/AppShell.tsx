@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, ReactNode } from 'react'
+import { useState, useEffect, ReactNode, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { createClient } from '@/lib/supabase/client'
+import { useNotifications } from '@/lib/hooks/useNotifications'
 
 interface NavItem {
   name: string
@@ -31,37 +32,67 @@ export default function AppShell({ children, user }: AppShellProps) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   const darkMode = mounted ? theme === 'dark' : false
-  const [notificationCount] = useState(3)
   const [expandedNav, setExpandedNav] = useState<string | null>(null)
+  const { notifications, unreadCount, markAsRead, deleteNotifications } = useNotifications()
+  const notificationsRef = useRef<HTMLDivElement>(null)
 
   // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false)
   }, [router])
 
-  const userData = user?.user_metadata || {}
-  const userName = userData.full_name?.split(' ')[0] || 'User'
-
-  // Fetch plan from session API (server-side auth) instead of direct DB query
-  const [userPlan, setUserPlan] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('userPlan') || 'starter'
+  // Close notifications panel on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target as Node)) {
+        setShowNotifications(false)
+      }
     }
-    return 'starter'
+    if (showNotifications) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showNotifications])
+
+  const userData = user?.user_metadata || {}
+
+  // Profile data from DB (source of truth for name, avatar, company)
+  const [profileData, setProfileData] = useState<{
+    full_name: string | null
+    avatar_url: string | null
+    company_name: string | null
+  }>({
+    full_name: userData.full_name ?? null,
+    avatar_url: null,
+    company_name: userData.company_name ?? null,
   })
 
+  const userName = (profileData.full_name ?? userData.full_name ?? 'User').split(' ')[0]
+
+  // Fetch plan + profile from session API
+  // Always start with 'starter' to match SSR — localStorage is read in useEffect after hydration
+  const [userPlan, setUserPlan] = useState<string>('starter')
+
   useEffect(() => {
-    const fetchPlan = async () => {
+    const cached = localStorage.getItem('userPlan')
+    if (cached) setUserPlan(cached)
+
+    const fetchSession = async () => {
       if (!user?.id) return
       const res = await fetch('/api/auth/session')
       if (!res.ok) return
       const data = await res.json()
-      if (data.profile?.plan) {
-        setUserPlan(data.profile.plan)
-        localStorage.setItem('userPlan', data.profile.plan)
+      if (data.profile) {
+        if (data.profile.plan) {
+          setUserPlan(data.profile.plan)
+          localStorage.setItem('userPlan', data.profile.plan)
+        }
+        setProfileData({
+          full_name: data.profile.full_name ?? null,
+          avatar_url: data.profile.avatar_url ?? null,
+          company_name: data.profile.company_name ?? null,
+        })
       }
     }
-    fetchPlan()
+    fetchSession()
   }, [user?.id])
 
   const planNames = {
@@ -183,6 +214,14 @@ export default function AppShell({ children, user }: AppShellProps) {
     setExpandedNav(expandedNav === name ? null : name)
   }
 
+  const formatTimeAgo = (dateString: string) => {
+    const diff = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000)
+    if (diff < 60) return 'Just now'
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+    return `${Math.floor(diff / 86400)}d ago`
+  }
+
   const getGreeting = () => {
     const hour = new Date().getHours()
     if (hour < 12) return 'Good morning'
@@ -273,18 +312,22 @@ export default function AppShell({ children, user }: AppShellProps) {
               } transition-all duration-200 ${sidebarCollapsed ? 'justify-center' : ''}`}
             >
               <div className="relative">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                  {userData.full_name?.charAt(0) || 'U'}
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-linear-to-br from-blue-600 via-blue-500 to-blue-400 flex items-center justify-center text-white font-bold text-sm shadow-lg shrink-0">
+                  {profileData.avatar_url ? (
+                    <img src={profileData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    (profileData.full_name ?? userData.full_name ?? 'U').charAt(0).toUpperCase()
+                  )}
                 </div>
                 <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
               </div>
               {!sidebarCollapsed && (
-                <div className="flex-1 text-left">
+                <div className="flex-1 text-left min-w-0">
                   <p className={`font-semibold text-sm truncate ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                    {userData.full_name || 'User'}
+                    {profileData.full_name || userData.full_name || 'User'}
                   </p>
                   <p className={`text-xs truncate ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                    {userData.company_name || 'Company'}
+                    {profileData.company_name || 'Company'}
                   </p>
                   <span
                     className={`inline-block mt-1.5 px-2 py-0.5 text-xs font-semibold text-white rounded-md ${planColors[userPlan as keyof typeof planColors]} shadow-sm`}
@@ -433,28 +476,123 @@ export default function AppShell({ children, user }: AppShellProps) {
         {/* Bottom Section */}
         <div className={`p-4 ${darkMode ? 'border-t border-gray-800' : 'border-t border-gray-200'} space-y-2`}>
           {/* Notifications */}
-          <button
-            onClick={() => setShowNotifications(!showNotifications)}
-            className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl ${
-              darkMode ? 'hover:bg-gray-800/70' : 'hover:bg-gray-100'
-            } transition-all duration-200 group ${sidebarCollapsed ? 'justify-center' : ''}`}
-          >
-            <span className="text-xl transition-transform group-hover:scale-110">🔔</span>
-            {!sidebarCollapsed && (
-              <span className={`font-medium text-sm flex-1 text-left ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Notifications
-              </span>
-            )}
-            {notificationCount > 0 && (
-              <span
-                className={`${
-                  sidebarCollapsed ? 'absolute -top-1 -right-1' : ''
-                } w-5 h-5 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg`}
+          <div className="relative" ref={notificationsRef}>
+            <button
+              onClick={() => {
+                setShowNotifications(!showNotifications)
+                if (!showNotifications && unreadCount > 0) markAsRead(undefined, true)
+              }}
+              className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl ${
+                darkMode ? 'hover:bg-gray-800/70' : 'hover:bg-gray-100'
+              } transition-all duration-200 group ${sidebarCollapsed ? 'justify-center' : ''}`}
+            >
+              <span className="text-xl transition-transform group-hover:scale-110">🔔</span>
+              {!sidebarCollapsed && (
+                <span className={`font-medium text-sm flex-1 text-left ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Notifications
+                </span>
+              )}
+              {unreadCount > 0 && (
+                <span className={`${sidebarCollapsed ? 'absolute -top-1 -right-1' : ''} w-5 h-5 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg`}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Notifications Panel */}
+            {showNotifications && (
+              <div
+                className={`absolute bottom-full left-0 mb-2 w-80 rounded-xl shadow-2xl border overflow-hidden z-50 ${
+                  darkMode ? 'bg-[#1a1d2e] border-gray-700' : 'bg-white border-gray-200'
+                }`}
+                style={{ maxHeight: '480px', display: 'flex', flexDirection: 'column' }}
               >
-                {notificationCount}
-              </span>
+                {/* Header */}
+                <div className={`flex items-center justify-between px-4 py-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                  <span className={`font-semibold text-sm ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Notifications</span>
+                  {notifications.some(n => !n.read_at) && (
+                    <button
+                      onClick={() => markAsRead(undefined, true)}
+                      className="text-xs text-blue-500 hover:text-blue-400 transition-colors"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+
+                {/* List */}
+                <div className="overflow-y-auto flex-1">
+                  {notifications.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                      <span className="text-3xl mb-2">🔔</span>
+                      <p className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>You're all caught up</p>
+                      <p className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>No notifications yet</p>
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className={`flex gap-3 px-4 py-3 border-b transition-colors cursor-pointer group ${
+                          darkMode
+                            ? `${!n.read_at ? 'bg-blue-500/5' : ''} border-gray-800 hover:bg-gray-800/60`
+                            : `${!n.read_at ? 'bg-blue-50/60' : ''} border-gray-50 hover:bg-gray-50`
+                        }`}
+                        onClick={() => {
+                          if (!n.read_at) markAsRead([n.id])
+                          if (n.action_url) window.location.href = n.action_url
+                        }}
+                      >
+                        {/* Priority dot */}
+                        <div className="shrink-0 mt-1">
+                          <div className={`w-2 h-2 rounded-full mt-1 ${
+                            !n.read_at
+                              ? n.priority === 'urgent' ? 'bg-red-500'
+                              : n.priority === 'high' ? 'bg-orange-500'
+                              : 'bg-blue-500'
+                              : darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                          }`} />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-xs font-semibold truncate ${darkMode ? 'text-gray-200' : 'text-gray-800'} ${!n.read_at ? '' : 'opacity-70'}`}>
+                            {n.title}
+                          </p>
+                          {n.content && (
+                            <p className={`text-xs mt-0.5 line-clamp-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {n.content}
+                            </p>
+                          )}
+                          <p className={`text-xs mt-1 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                            {formatTimeAgo(n.created_at)}
+                          </p>
+                        </div>
+
+                        {/* Delete */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteNotifications([n.id]) }}
+                          className={`shrink-0 opacity-0 group-hover:opacity-100 text-xs transition-opacity p-1 rounded ${darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-300 hover:text-gray-500'}`}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Footer */}
+                {notifications.length > 0 && (
+                  <div className={`px-4 py-2 border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                    <button
+                      onClick={() => deleteNotifications(notifications.map(n => n.id))}
+                      className={`text-xs w-full text-center ${darkMode ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-500'} transition-colors`}
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
-          </button>
+          </div>
 
           {/* Dark Mode Toggle */}
           <button

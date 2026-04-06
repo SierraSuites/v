@@ -45,6 +45,17 @@ export interface QuoteEmailData {
   viewUrl: string
 }
 
+export interface InvitationEmailData {
+  inviteeEmail: string
+  inviteeName: string | null
+  inviterName: string
+  companyName: string
+  roleName: string
+  invitationUrl: string
+  customMessage?: string | null
+  expiresInDays: number
+}
+
 export interface InvoiceEmailData {
   invoiceNumber: string
   clientName: string
@@ -77,6 +88,18 @@ export async function sendEmail(options: EmailOptions) {
     console.error('[Email Service] Send error:', error)
     return { success: false, error: error.message }
   }
+}
+
+/**
+ * Send a team invitation email
+ */
+export async function sendInvitationEmail(data: InvitationEmailData) {
+  const html = generateInvitationEmailHTML(data)
+  return sendEmail({
+    to: data.inviteeEmail,
+    subject: `${data.inviterName} invited you to join ${data.companyName} on Sierra Suites`,
+    html,
+  })
 }
 
 /**
@@ -292,6 +315,53 @@ function generateInvoiceEmailHTML(data: InvoiceEmailData): string {
     <p style="margin: 8px 0 0 0;">© ${new Date().getFullYear()} ${data.companyName}. All rights reserved.</p>
   </div>
 
+</body>
+</html>
+  `.trim()
+}
+
+/**
+ * Generate HTML for team invitation email
+ */
+function generateInvitationEmailHTML(data: InvitationEmailData): string {
+  const greeting = data.inviteeName ? `Hi ${data.inviteeName},` : 'Hi there,'
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>You've been invited to ${data.companyName}</title>
+</head>
+<body style="font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+  <div style="background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+    <div style="font-size: 40px; margin-bottom: 10px;">🏗️</div>
+    <h1 style="margin: 0; font-size: 24px; font-weight: bold;">You've been invited!</h1>
+    <p style="margin: 8px 0 0 0; font-size: 15px; opacity: 0.9;">Sierra Suites Construction Management</p>
+  </div>
+  <div style="background-color: white; padding: 40px 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+    <p style="font-size: 16px; margin-bottom: 20px;">${greeting}</p>
+    <p style="font-size: 15px; line-height: 1.8; color: #4B5563;">
+      <strong>${data.inviterName}</strong> has invited you to join <strong>${data.companyName}</strong>
+      on Sierra Suites as a <strong>${data.roleName}</strong>.
+    </p>
+    ${data.customMessage ? `<div style="background-color: #F3F4F6; border-left: 4px solid #3B82F6; padding: 16px 20px; margin: 24px 0; border-radius: 8px;"><p style="margin: 0; font-size: 14px; color: #374151; font-style: italic;">"${data.customMessage}"</p><p style="margin: 8px 0 0 0; font-size: 13px; color: #6B7280;">— ${data.inviterName}</p></div>` : ''}
+    <div style="text-align: center; margin: 35px 0;">
+      <a href="${data.invitationUrl}" style="display: inline-block; background-color: #1E40AF; color: white; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(30,64,175,0.3);">
+        Accept Invitation
+      </a>
+    </div>
+    <p style="font-size: 13px; color: #6B7280; text-align: center;">This invitation expires in <strong>${data.expiresInDays} days</strong>.</p>
+    <div style="border-top: 1px solid #E5E7EB; margin: 30px 0;"></div>
+    <p style="font-size: 12px; color: #9CA3AF; text-align: center;">
+      If you weren't expecting this, you can safely ignore this email.<br>
+      Or copy this link: <span style="color: #3B82F6;">${data.invitationUrl}</span>
+    </p>
+  </div>
+  <div style="text-align: center; padding: 25px 20px; color: #9CA3AF; font-size: 12px;">
+    <p style="margin: 0;">Sent via The Sierra Suites platform</p>
+    <p style="margin: 8px 0 0 0;">© ${new Date().getFullYear()} Sierra Suites. All rights reserved.</p>
+  </div>
 </body>
 </html>
   `.trim()

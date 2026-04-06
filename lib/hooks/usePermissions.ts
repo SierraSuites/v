@@ -165,7 +165,7 @@ export function useMergedPermissions() {
 
         // Get user's company
         const { data: profile } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('company_id')
           .eq('id', user.id)
           .single()
@@ -228,7 +228,7 @@ export function useRoleAssignments(userId?: string) {
 
         // Get user's company
         const { data: profile } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('company_id')
           .eq('id', targetUserId)
           .single()
@@ -347,7 +347,7 @@ export function useRealtimePermissions() {
 
         // Get user's company
         const { data: profile } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('company_id')
           .eq('id', user.id)
           .single()
