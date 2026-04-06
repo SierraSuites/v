@@ -30,12 +30,9 @@ export async function GET(request: NextRequest) {
       .is('revoked_at', null)
       .order('last_active_at', { ascending: false })
 
+    // Table may not exist yet — return empty list gracefully
     if (sessionsError) {
-      console.error('Error fetching sessions:', sessionsError)
-      return NextResponse.json(
-        { error: 'Failed to fetch sessions' },
-        { status: 500 }
-      )
+      return NextResponse.json({ sessions: [] })
     }
 
     return NextResponse.json({ sessions: sessions || [] })

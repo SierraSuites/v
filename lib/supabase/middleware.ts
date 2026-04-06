@@ -69,6 +69,7 @@ export async function updateSession(request: NextRequest) {
   const protectedPaths = [
     '/dashboard',
     '/projects',
+    '/settings',
     '/crm',
     '/financial',
     '/taskflow',
@@ -77,6 +78,8 @@ export async function updateSession(request: NextRequest) {
     '/quotes',
     '/fieldsnap',
     '/sustainability',
+    '/billing',
+    '/compliance',
   ]
 
   const pathname = request.nextUrl.pathname

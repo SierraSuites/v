@@ -1,59 +1,31 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import SettingsLayoutClient from './SettingsLayoutClient'
+import { SettingsProvider } from '@/lib/contexts/SettingsContext'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { Toaster } from 'react-hot-toast'
-import AppShell from '@/components/dashboard/AppShell'
-import SettingsSidebar from '@/components/settings/SettingsSidebar'
-import { useThemeColors } from '@/lib/hooks/useThemeColors'
+export default async function SettingsLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-export default function SettingsLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
-  const { colors, darkMode } = useThemeColors()
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  if (!user) redirect('/login')
 
-  useEffect(() => {
-    const loadUser = async () => {
-      const supabase = createClient()
-      const { data: { session }, error } = await supabase.auth.getSession()
+  // Fetch profile + company in one query — no waterfall
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('id, company_id, full_name, avatar_url, phone, role, companies(id, name, website, phone, email, industry, size, address)')
+    .eq('id', user.id)
+    .single()
 
-      if (error || !session) {
-        router.push('/login')
-        return
-      }
-
-      setUser(session.user)
-      setLoading(false)
-    }
-    loadUser()
-  }, [router])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.bgAlt }}>
-        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
-  }
-
-  if (!user) return null
+  const company = (profile?.companies as any) ?? null
+  const cleanProfile = profile
+    ? { id: profile.id, company_id: profile.company_id, full_name: profile.full_name, avatar_url: profile.avatar_url, phone: profile.phone, role: profile.role }
+    : null
 
   return (
-    <>
-      <AppShell user={user}>
-        <div className="flex min-h-full" style={{ backgroundColor: colors.bgAlt }}>
-          <SettingsSidebar />
-          {/* Vertical divider */}
-          <div className="w-px shrink-0" style={{ backgroundColor: colors.bgMuted }} />
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto" style={{ backgroundColor: colors.bgAlt }}>
-            {children}
-          </div>
-        </div>
-      </AppShell>
-      <Toaster position="top-right" />
-    </>
+    <SettingsProvider value={{ profile: cleanProfile, company, email: user.email ?? '' }}>
+      <SettingsLayoutClient user={user}>
+        {children}
+      </SettingsLayoutClient>
+    </SettingsProvider>
   )
 }

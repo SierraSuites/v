@@ -131,6 +131,35 @@ USING (
 );
 ```
 
+### `avatars` storage bucket — RLS policies (2026-04-05) ✅
+
+Created the `avatars` bucket (set to **Public**) and added RLS policies on `storage.objects`. Deleted pre-existing duplicate policies that used the `public` role for INSERT/UPDATE (security risk — allowed unauthenticated writes).
+
+```sql
+CREATE POLICY "Users can upload their own avatar"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'avatars'
+  AND name LIKE (auth.uid()::text || '-%')
+);
+
+CREATE POLICY "Users can update their own avatar"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (
+  bucket_id = 'avatars'
+  AND name LIKE (auth.uid()::text || '-%')
+);
+
+CREATE POLICY "Avatars are publicly readable"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'avatars');
+```
+
+Deleted old duplicate policies: "Anyone can view avatars" (SELECT, public), "Users can update own avatar" (UPDATE, public), "Users can upload own avatar" (INSERT, public).
+
 ### Removed `company_name` column from `user_profiles` (2026-04-05) ✅
 
 The `company_name` column was a legacy denormalized field leftover from before the `companies` table existed. Company name is now read from `companies.name` via the `company_id` FK.
@@ -139,10 +168,62 @@ The `company_name` column was a legacy denormalized field leftover from before t
 ALTER TABLE user_profiles DROP COLUMN company_name;
 ```
 
+### `user_role_assignments` — grant permissions (2026-04-05) ✅
+
+The `authenticated` role had no privileges on `user_role_assignments`, causing `42501 permission denied` when opening the role editor for a team member.
+
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_role_assignments TO authenticated;
+```
+
+### 2FA columns + `user_sessions` table (2026-04-05) ✅
+
+Added columns to `user_profiles` required for two-factor authentication, and created `user_sessions` for active session tracking on the Security settings page.
+
+```sql
+ALTER TABLE public.user_profiles
+  ADD COLUMN IF NOT EXISTS two_factor_enabled BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS two_factor_secret TEXT,
+  ADD COLUMN IF NOT EXISTS backup_codes TEXT[];
+
+CREATE TABLE IF NOT EXISTS public.user_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  device_name TEXT,
+  browser TEXT,
+  os TEXT,
+  ip_address TEXT,
+  is_current BOOLEAN DEFAULT FALSE,
+  last_active_at TIMESTAMPTZ DEFAULT NOW(),
+  revoked_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.user_sessions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage own sessions"
+ON public.user_sessions
+USING (user_id = auth.uid());
+```
+
 ---
 
-## Current `user_profiles` RLS Policies
+## Current Schema Notes
 
+### `user_profiles` columns (relevant)
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID | FK → `auth.users.id` |
+| `company_id` | UUID | FK → `companies.id` |
+| `full_name` | TEXT | |
+| `avatar_url` | TEXT | Supabase Storage public URL |
+| `phone` | TEXT | |
+| `role` | TEXT | `owner\|admin\|superintendent\|project_manager\|field_engineer\|viewer\|accountant\|subcontractor` |
+| `two_factor_enabled` | BOOLEAN | Default `false` |
+| `two_factor_secret` | TEXT | TOTP secret |
+| `backup_codes` | TEXT[] | Remaining 2FA backup codes |
+
+### `user_profiles` RLS Policies
 | Policy | Command | Rule |
 |--------|---------|------|
 | Users can insert own profile | INSERT | (no restriction) |

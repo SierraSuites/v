@@ -88,36 +88,28 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
 
-    // Get current user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
-
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get backup codes count
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('backup_codes, two_factor_enabled')
       .eq('id', user.id)
       .single()
 
-    if (!profile) {
-      return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
+    // Columns may not exist yet — return safe defaults
+    if (profileError || !profile) {
+      return NextResponse.json({ enabled: false, remainingCodes: 0 })
     }
 
     return NextResponse.json({
-      enabled: profile.two_factor_enabled || false,
-      remainingCodes: profile.backup_codes?.length || 0,
+      enabled: (profile as any).two_factor_enabled || false,
+      remainingCodes: (profile as any).backup_codes?.length || 0,
     })
   } catch (error) {
     console.error('Get backup codes status error:', error)
-    return NextResponse.json(
-      { error: 'Failed to get backup codes status' },
-      { status: 500 }
-    )
+    return NextResponse.json({ enabled: false, remainingCodes: 0 })
   }
 }

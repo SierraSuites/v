@@ -106,7 +106,6 @@ export async function GET(req: NextRequest) {
       `)
       .in('user_id', teamMembers.map(m => m.id))
       .eq('company_id', profile.company_id)
-      .is('deleted_at', null)
 
     if (rolesError) {
       console.error('Error fetching role assignments:', rolesError)

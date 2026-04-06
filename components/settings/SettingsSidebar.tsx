@@ -62,9 +62,9 @@ export default function SettingsSidebar() {
     router.push('/login')
   }
 
-  const sidebarBg = colors.bg
-  const activeBg = colors.bgMuted
-  const hoverBg = colors.bgMuted
+  const sidebarBg = darkMode ? '#10121b' : '#FFFFFF'
+  const activeBg = darkMode ? '#1e2333' : '#E8E8E8'
+  const hoverBg = darkMode ? '#1e2333' : '#F0F0F0'
   const textColor = colors.textMuted
   const activeTextColor = colors.text
   const dividerColor = darkMode ? '#2d3548' : '#E0E0E0'

@@ -1,11 +1,10 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
+import { useSettingsData } from '@/lib/contexts/SettingsContext'
 import toast, { Toaster } from 'react-hot-toast'
 
 interface CompanyData {
@@ -22,57 +21,55 @@ interface CompanyData {
 export default function CompanySettingsPage() {
   const { colors, darkMode } = useThemeColors()
   const { user } = useCurrentUser()
+  const seed = useSettingsData()
 
-  const [company, setCompany] = useState<CompanyData | null>(null)
-  const [loading, setLoading] = useState(true)
+  const seedCompany = seed.company as CompanyData | null
+  const seedAddr = seedCompany?.address || {}
+
+  // Seed immediately — no loading state
+  const [company, setCompany] = useState<CompanyData | null>(seedCompany)
   const [saving, setSaving] = useState(false)
 
-  const [name, setName] = useState('')
-  const [website, setWebsite] = useState('')
-  const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
-  const [industry, setIndustry] = useState('')
-  const [size, setSize] = useState('')
-  const [street, setStreet] = useState('')
-  const [city, setCity] = useState('')
-  const [state, setState] = useState('')
-  const [zip, setZip] = useState('')
+  const [name, setName] = useState(seedCompany?.name || '')
+  const [website, setWebsite] = useState(seedCompany?.website || '')
+  const [phone, setPhone] = useState(seedCompany?.phone || '')
+  const [email, setEmail] = useState(seedCompany?.email || '')
+  const [industry, setIndustry] = useState(seedCompany?.industry || '')
+  const [size, setSize] = useState(seedCompany?.size || '')
+  const [street, setStreet] = useState(seedAddr.street || '')
+  const [city, setCity] = useState(seedAddr.city || '')
+  const [state, setState] = useState(seedAddr.state || '')
+  const [zip, setZip] = useState(seedAddr.zip || '')
 
   const isAdmin = user?.highestRole === 'owner' || user?.highestRole === 'admin'
 
+  // Silent background refresh
   useEffect(() => {
-    if (user?.company_id) loadCompany(user.company_id)
-  }, [user?.company_id])
-
-  async function loadCompany(companyId: string) {
-    try {
+    async function refresh() {
+      if (!seedCompany?.id) return
       const supabase = createClient()
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('companies')
         .select('id, name, website, phone, email, industry, size, address')
-        .eq('id', companyId)
+        .eq('id', seedCompany.id)
         .single()
-
-      if (error) throw error
-      setCompany(data)
-      setName(data.name || '')
-      setWebsite(data.website || '')
-      setPhone(data.phone || '')
-      setEmail(data.email || '')
-      setIndustry(data.industry || '')
-      setSize(data.size || '')
-      const addr = data.address || {}
-      setStreet(addr.street || '')
-      setCity(addr.city || '')
-      setState(addr.state || '')
-      setZip(addr.zip || '')
-    } catch (err) {
-      console.error('Error loading company:', err)
-      toast.error('Failed to load company')
-    } finally {
-      setLoading(false)
+      if (data) {
+        setCompany(data)
+        setName(data.name || '')
+        setWebsite(data.website || '')
+        setPhone(data.phone || '')
+        setEmail(data.email || '')
+        setIndustry(data.industry || '')
+        setSize(data.size || '')
+        const addr = data.address || {}
+        setStreet(addr.street || '')
+        setCity(addr.city || '')
+        setState(addr.state || '')
+        setZip(addr.zip || '')
+      }
     }
-  }
+    refresh()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -130,17 +127,6 @@ export default function CompanySettingsPage() {
     borderRadius: '0.5rem',
     padding: '1.5rem',
     marginBottom: '1rem',
-  }
-
-  if (loading) {
-    return (
-      <div className="max-w-2xl mx-auto px-10 py-8">
-        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-40 mb-6 animate-pulse" />
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => <div key={i} className="h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />)}
-        </div>
-      </div>
-    )
   }
 
   if (!isAdmin) {

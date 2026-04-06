@@ -16,10 +16,10 @@ export async function GET() {
       )
     }
 
-    // Get user profile from database
+    // Get user profile + company name
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('*')
+      .select('*, companies(name)')
       .eq('id', user.id)
       .single()
 
@@ -33,7 +33,10 @@ export async function GET() {
 
     return NextResponse.json({
       user,
-      profile
+      profile: {
+        ...profile,
+        company_name: (profile.companies as any)?.name ?? null,
+      }
     })
   } catch (error) {
     console.error('Session error:', error)

@@ -118,7 +118,6 @@ export async function GET(
       `)
       .eq('user_id', targetUserId)
       .eq('company_id', targetProfile.company_id)
-      .is('deleted_at', null)
 
     if (rolesError) {
       console.error('Error fetching role assignments:', rolesError)
@@ -238,7 +237,6 @@ export async function POST(
       .from('custom_roles')
       .select('id, role_name, company_id, is_system_role')
       .eq('id', roleId)
-      .is('deleted_at', null)
       .single()
 
     if (roleError || !role) {
@@ -263,7 +261,6 @@ export async function POST(
       .eq('user_id', targetUserId)
       .eq('role_id', roleId)
       .eq('company_id', targetProfile.company_id)
-      .is('deleted_at', null)
       .single()
 
     if (existingAssignment) {
@@ -422,7 +419,6 @@ export async function DELETE(
       .eq('user_id', targetUserId)
       .eq('role_id', roleId)
       .eq('company_id', targetProfile.company_id)
-      .is('deleted_at', null)
       .single()
 
     if (findError || !assignment) {
@@ -432,13 +428,10 @@ export async function DELETE(
       )
     }
 
-    // Soft delete the assignment
+    // Hard delete the assignment
     const { error: deleteError } = await supabase
       .from('user_role_assignments')
-      .update({
-        deleted_at: new Date().toISOString(),
-        deleted_by: user.id
-      })
+      .delete()
       .eq('id', assignment.id)
 
     if (deleteError) {

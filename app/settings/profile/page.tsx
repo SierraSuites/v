@@ -1,14 +1,14 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
+import { useSettingsData } from '@/lib/contexts/SettingsContext'
 import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter'
 import toast, { Toaster } from 'react-hot-toast'
-import { CameraIcon, PencilIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline'
+import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import Cropper from 'react-easy-crop'
+import type { Area } from 'react-easy-crop'
 
 interface ProfileData {
   id: string
@@ -20,18 +20,18 @@ interface ProfileData {
 }
 
 export default function ProfilePage() {
-  const router = useRouter()
   const { colors, darkMode } = useThemeColors()
+  const seed = useSettingsData()
 
-  const [profile, setProfile] = useState<ProfileData | null>(null)
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(true)
+  // Seed immediately from layout — no loading state
+  const [profile, setProfile] = useState<ProfileData | null>(seed.profile)
+  const [email, setEmail] = useState(seed.email)
   const [saving, setSaving] = useState(false)
 
   // Inline edit state
   const [editingField, setEditingField] = useState<string | null>(null)
-  const [fullName, setFullName] = useState('')
-  const [phone, setPhone] = useState('')
+  const [fullName, setFullName] = useState(seed.profile?.full_name || '')
+  const [phone, setPhone] = useState(seed.profile?.phone || '')
 
   // Password change
   const [showPasswordSection, setShowPasswordSection] = useState(false)
@@ -42,42 +42,35 @@ export default function ProfilePage() {
   const [showEmailSection, setShowEmailSection] = useState(false)
   const [newEmail, setNewEmail] = useState('')
 
-  useEffect(() => {
-    loadProfile()
+  // Avatar crop
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
+  const onCropComplete = useCallback((_: Area, areaPixels: Area) => {
+    setCroppedAreaPixels(areaPixels)
   }, [])
 
-  async function loadProfile() {
-    try {
+  // Silent background refresh
+  useEffect(() => {
+    async function refresh() {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
-      const { data: profileData, error: profileError } = await supabase
+      const [{ data: { user } }, ] = await Promise.all([supabase.auth.getUser()])
+      if (!user) return
+      const { data: profileData } = await supabase
         .from('user_profiles')
         .select('id, company_id, full_name, avatar_url, phone, role')
         .eq('id', user.id)
         .single()
-
-      if (profileError) {
-        console.error('Profile fetch error:', JSON.stringify(profileError))
-        throw profileError
+      if (profileData) {
+        setProfile(profileData)
+        setEmail(user.email || '')
+        setFullName(prev => editingField === 'full_name' ? prev : (profileData.full_name || ''))
+        setPhone(prev => editingField === 'phone' ? prev : (profileData.phone || ''))
       }
-
-      setProfile(profileData)
-      setEmail(user.email || '')
-      setFullName(profileData.full_name || '')
-      setPhone(profileData.phone || '')
-    } catch (error: any) {
-      console.error('Error loading profile:', error)
-      toast.error('Error loading profile')
-    } finally {
-      setLoading(false)
     }
-  }
+    refresh()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function saveField(field: 'full_name' | 'phone', value: string) {
     if (!profile) return
@@ -144,21 +137,30 @@ export default function ProfilePage() {
     }
   }
 
-  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleAvatarSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
+    e.target.value = '' // reset so same file can be re-selected
     if (!file) return
     if (!file.type.startsWith('image/')) { toast.error('Please upload an image'); return }
-    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return }
+    if (file.size > 10 * 1024 * 1024) { toast.error('Image must be under 10MB'); return }
+    const objectUrl = URL.createObjectURL(file)
+    setCropSrc(objectUrl)
+    setCrop({ x: 0, y: 0 })
+    setZoom(1)
+  }
 
+  async function handleCropConfirm() {
+    if (!cropSrc || !croppedAreaPixels || !profile) return
+    setSaving(true)
     const t = toast.loading('Uploading photo...')
     try {
+      const blob = await getCroppedBlob(cropSrc, croppedAreaPixels)
+      const fileName = `${profile.id}-${Date.now()}.jpg`
       const supabase = createClient()
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${profile!.id}-${Date.now()}.${fileExt}`
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file, { cacheControl: '3600', upsert: true })
+        .upload(fileName, blob, { contentType: 'image/jpeg', cacheControl: '3600', upsert: true })
       if (uploadError) throw uploadError
 
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName)
@@ -166,43 +168,35 @@ export default function ProfilePage() {
       const { error: updateError } = await supabase
         .from('user_profiles')
         .update({ avatar_url: publicUrl })
-        .eq('id', profile!.id)
+        .eq('id', profile.id)
       if (updateError) throw updateError
 
       setProfile(p => p ? { ...p, avatar_url: publicUrl } : p)
       toast.success('Photo updated', { id: t })
+      setCropSrc(null)
     } catch (error: any) {
       toast.error(error?.message || 'Upload failed', { id: t })
+    } finally {
+      setSaving(false)
     }
   }
 
-  const bannerBg = darkMode ? '#1a1d2e' : '#e8eaf0'
-  const sectionBg = darkMode ? '#2b2d3d' : '#ffffff'
-  const sectionBorder = darkMode ? '#3a3d50' : '#e3e5e8'
-  const labelColor = darkMode ? '#b5bac1' : '#4e5058'
-  const valueColor = darkMode ? '#ffffff' : '#060607'
-  const editBtnColor = darkMode ? '#b5bac1' : '#6d6f78'
+  const bannerBg = darkMode ? '#252a3a' : '#e8eaf0'
+  const sectionBg = darkMode ? '#1a1d2e' : '#ffffff'
+  const sectionBorder = darkMode ? '#2d3548' : '#e3e5e8'
+  const labelColor = darkMode ? '#94a3b8' : '#4e5058'
+  const valueColor = darkMode ? '#e2e8f0' : '#060607'
+  const editBtnColor = darkMode ? '#94a3b8' : '#6d6f78'
 
   const inputStyle = {
-    backgroundColor: darkMode ? '#1e2130' : '#f2f3f5',
-    border: `1px solid ${darkMode ? '#4a4d60' : '#c4c9d4'}`,
+    backgroundColor: darkMode ? '#252a3a' : '#f2f3f5',
+    border: `1px solid ${darkMode ? '#2d3548' : '#c4c9d4'}`,
     color: valueColor,
     borderRadius: '0.375rem',
     padding: '0.5rem 0.75rem',
     fontSize: '0.875rem',
     outline: 'none',
     width: '100%',
-  }
-
-  if (loading) {
-    return (
-      <div className="max-w-2xl mx-auto px-10 py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-24 rounded-lg" style={{ backgroundColor: bannerBg }} />
-          <div className="h-40 rounded-lg" style={{ backgroundColor: sectionBg }} />
-        </div>
-      </div>
-    )
   }
 
   const initials = fullName
@@ -239,12 +233,12 @@ export default function ProfilePage() {
               <label
                 htmlFor="avatar-upload"
                 className="absolute bottom-0 right-0 w-6 h-6 rounded-full flex items-center justify-center cursor-pointer"
-                style={{ backgroundColor: darkMode ? '#4a4d60' : '#d4d7dc' }}
+                style={{ backgroundColor: darkMode ? '#252a3a' : '#d4d7dc' }}
                 title="Change avatar"
               >
                 <CameraIcon className="w-3.5 h-3.5" style={{ color: valueColor }} />
               </label>
-              <input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+              <input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarSelect} className="hidden" />
             </div>
           </div>
 
@@ -348,6 +342,69 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* Avatar Crop Modal */}
+      {cropSrc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}>
+          <div className="flex flex-col rounded-xl overflow-hidden w-full max-w-sm" style={{ backgroundColor: sectionBg, border: `1px solid ${sectionBorder}` }}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: `1px solid ${sectionBorder}` }}>
+              <span className="font-semibold text-sm" style={{ color: valueColor }}>Crop Photo</span>
+              <button onClick={() => setCropSrc(null)} style={{ color: labelColor }}>
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Cropper area */}
+            <div className="relative w-full" style={{ height: 300, backgroundColor: '#000' }}>
+              <Cropper
+                image={cropSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            </div>
+
+            {/* Zoom slider */}
+            <div className="px-5 py-3" style={{ borderTop: `1px solid ${sectionBorder}` }}>
+              <label className="block text-xs mb-2" style={{ color: labelColor }}>Zoom</label>
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.01}
+                value={zoom}
+                onChange={e => setZoom(Number(e.target.value))}
+                className="w-full accent-blue-500"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 px-5 pb-5">
+              <button
+                onClick={() => setCropSrc(null)}
+                className="flex-1 py-2 rounded-md text-sm font-medium"
+                style={{ backgroundColor: darkMode ? '#252a3a' : '#e3e5e8', color: valueColor }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCropConfirm}
+                disabled={saving}
+                className="flex-1 py-2 rounded-md text-sm font-medium text-white disabled:opacity-60"
+                style={{ backgroundColor: '#5865f2' }}
+              >
+                {saving ? 'Uploading…' : 'Apply'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Password & Authentication */}
       <div className="rounded-lg overflow-hidden mb-4" style={{ border: `1px solid ${sectionBorder}`, backgroundColor: sectionBg }}>
         <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: showPasswordSection ? `1px solid ${sectionBorder}` : 'none' }}>
@@ -359,8 +416,10 @@ export default function ProfilePage() {
           </div>
           <button
             onClick={() => { setShowPasswordSection(!showPasswordSection); setShowEmailSection(false) }}
-            className="px-3 py-1.5 text-xs font-medium rounded"
-            style={{ backgroundColor: darkMode ? '#4a4d60' : '#e3e5e8', color: valueColor }}
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            style={{ backgroundColor: 'transparent', border: `1px solid ${sectionBorder}`, color: valueColor, cursor: 'pointer' }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = darkMode ? 'rgba(255,255,255,0.1)' : '#f3f4f6')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
             {showPasswordSection ? 'Cancel' : 'Change Password'}
           </button>
@@ -474,4 +533,40 @@ function FieldRow({
       )}
     </div>
   )
+}
+
+// ─── Crop Helper ──────────────────────────────────────────────────────────────
+
+async function getCroppedBlob(imageSrc: string, pixelCrop: Area): Promise<Blob> {
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image()
+    img.addEventListener('load', () => resolve(img))
+    img.addEventListener('error', reject)
+    img.src = imageSrc
+  })
+
+  const canvas = document.createElement('canvas')
+  const size = 400 // output size in px
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')!
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    size,
+    size,
+  )
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if (blob) resolve(blob)
+      else reject(new Error('Canvas toBlob failed'))
+    }, 'image/jpeg', 0.92)
+  })
 }
