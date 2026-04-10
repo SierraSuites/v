@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { requireProjectAccess } from '@/lib/api-permissions'
+import { requireProjectPermission } from '@/lib/api-permissions'
 
 interface RouteParams {
   params: Promise<{ id: string; coId: string }>
@@ -13,7 +13,9 @@ interface RouteParams {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { id, coId } = await params
-    const authResult = await requireProjectAccess(id)
+    // Approving/executing requires approveChangeOrders; edits require manageChangeOrders.
+    // We use approveChangeOrders as the gate since it implies manage access too.
+    const authResult = await requireProjectPermission(id, 'approveChangeOrders')
     if (!authResult.authorized) return authResult.error
 
     const supabase = await createClient()
@@ -61,7 +63,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id, coId } = await params
-    const authResult = await requireProjectAccess(id)
+    const authResult = await requireProjectPermission(id, 'manageChangeOrders')
     if (!authResult.authorized) return authResult.error
 
     const supabase = await createClient()

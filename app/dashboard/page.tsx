@@ -5,8 +5,6 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useThemeColors } from "@/lib/hooks/useThemeColors"
-
 
 // Dashboard Components
 import DashboardStats from '@/components/dashboard/DashboardStats'
@@ -45,8 +43,8 @@ interface Project {
   name: string
   status: string
   progress: number
-  estimated_end_date: string
-  client_name?: string
+  end_date: string
+  client?: string
   updated_at: string
 }
 
@@ -78,7 +76,7 @@ interface Task {
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
-  const [companyId, setCompanyId] = useState<string | null>(null)
+  const [_companyId, setCompanyId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [dismissedWelcome, setDismissedWelcome] = useState(false)
 
@@ -89,8 +87,7 @@ export default function DashboardPage() {
   const [allProjects, setAllProjects] = useState<any[]>([])
   const [dashboardStats, setDashboardStats] = useState<DashboardStatsData | null>(null)
 
-  // Theme
-  const { colors, darkMode } = useThemeColors()
+  // Theme handled per child component via useThemeColors()
 
   // ============================================================================
   // LOAD ALL DATA VIA API

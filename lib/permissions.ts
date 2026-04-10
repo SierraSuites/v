@@ -2,6 +2,10 @@
 // TYPES
 // ============================================
 
+// ── Company-wide roles (user_profiles.role) ──────────────────────────────────
+// These govern app-wide access: settings, invites, company management.
+// Assigned at invite time via Settings → Team.
+// Company owner/admin bypass all project-level permission checks.
 export type UserRole =
   | 'owner'
   | 'admin'
@@ -550,15 +554,15 @@ export const permissionService = {
 
     if (ownedProject) return 'admin'
 
-    // Check project_members for their role
+    // Check project_team_members for their role
     const { data: membership } = await supabase
-      .from('project_members')
-      .select('role')
+      .from('project_team_members')
+      .select('project_role')
       .eq('project_id', projectId)
       .eq('user_id', targetUserId)
       .single()
 
-    return (membership?.role as UserRole) || 'viewer'
+    return (membership?.project_role as UserRole) || 'viewer'
   },
 
   /**
@@ -1052,4 +1056,190 @@ export function getPermissionLevelIcon(level: 'view' | 'comment' | 'edit'): stri
     edit: '✏️'
   }
   return icons[level]
+}
+
+// ============================================
+// PROJECT-SCOPED ROLE PERMISSIONS
+// ============================================
+//
+// These permissions apply ONLY within a specific project (project_team_members.project_role).
+// A user can have a different project role on every project they belong to.
+//
+// Company owner/admin (user_profiles.role) bypass all checks and receive full access
+// to every project regardless of whether they are in project_team_members.
+//
+// Permission matrix (matches supabase/MIGRATIONS.md § Permission Matrix):
+//
+// Permission          | owner | admin | pm  | super | fe  | sub | acct | viewer
+// --------------------|-------|-------|-----|-------|-----|-----|------|-------
+// viewProject         |  ✅   |  ✅   | ✅  |  ✅   | ✅  | ✅  |  ✅  |  ✅
+// editProject         |  ✅   |  ✅   | ✅  |  ❌   | ❌  | ❌  |  ❌  |  ❌
+// deleteProject       |  ✅   |  ❌   | ❌  |  ❌   | ❌  | ❌  |  ❌  |  ❌
+// viewTeam            |  ✅   |  ✅   | ✅  |  ✅   | ✅  | ❌  |  ❌  |  ✅
+// manageTeam          |  ✅   |  ✅   | ✅  |  ❌   | ❌  | ❌  |  ❌  |  ❌
+// changeRoles         |  ✅   |  ✅   | ❌  |  ❌   | ❌  | ❌  |  ❌  |  ❌
+// viewTasks           |  ✅   |  ✅   | ✅  |  ✅   | ✅  | ✅  |  ❌  |  ✅
+// createEditTasks     |  ✅   |  ✅   | ✅  |  ✅   | ✅  | ❌  |  ❌  |  ❌
+// deleteTasks         |  ✅   |  ✅   | ✅  |  ✅   | ❌  | ❌  |  ❌  |  ❌
+// assignTasks         |  ✅   |  ✅   | ✅  |  ✅   | ❌  | ❌  |  ❌  |  ❌
+// viewTimeline        |  ✅   |  ✅   | ✅  |  ✅   | ✅  | ❌  |  ❌  |  ✅
+// manageTimeline      |  ✅   |  ✅   | ✅  |  ✅   | ❌  | ❌  |  ❌  |  ❌
+// viewBudget          |  ✅   |  ✅   | ✅  |  ❌   | ❌  | ❌  |  ✅  |  ❌
+// manageBudget        |  ✅   |  ✅   | ✅  |  ❌   | ❌  | ❌  |  ✅  |  ❌
+// viewDocuments       |  ✅   |  ✅   | ✅  |  ✅   | ✅  | ✅  |  ✅  |  ✅
+// uploadDocuments     |  ✅   |  ✅   | ✅  |  ✅   | ✅  | ✅  |  ❌  |  ❌
+// deleteDocuments     |  ✅   |  ✅   | ✅  |  ❌   | ❌  | ❌  |  ❌  |  ❌
+// viewChangeOrders    |  ✅   |  ✅   | ✅  |  ✅   | ❌  | ❌  |  ✅  |  ✅
+// manageChangeOrders  |  ✅   |  ✅   | ✅  |  ❌   | ❌  | ❌  |  ❌  |  ❌
+// approveChangeOrders |  ✅   |  ✅   | ✅  |  ❌   | ❌  | ❌  |  ❌  |  ❌
+// viewRFIs            |  ✅   |  ✅   | ✅  |  ✅   | ✅  | ✅  |  ❌  |  ✅
+// createRFIs          |  ✅   |  ✅   | ✅  |  ✅   | ✅  | ✅  |  ❌  |  ❌
+// respondToRFIs       |  ✅   |  ✅   | ✅  |  ✅   | ❌  | ❌  |  ❌  |  ❌
+
+// ── Project role type (project_team_members.project_role) ─────────────────────
+export type ProjectRole =
+  | 'owner'
+  | 'admin'
+  | 'project_manager'
+  | 'superintendent'
+  | 'field_engineer'
+  | 'subcontractor'
+  | 'accountant'
+  | 'viewer'
+
+// ── Per-project permission set ────────────────────────────────────────────────
+export interface ProjectPermissionSet {
+  // Project details
+  viewProject: boolean
+  editProject: boolean
+  deleteProject: boolean
+  // Team
+  viewTeam: boolean
+  manageTeam: boolean       // add / remove members
+  changeRoles: boolean      // change member project roles
+  // Tasks
+  viewTasks: boolean
+  createEditTasks: boolean
+  deleteTasks: boolean
+  assignTasks: boolean
+  // Timeline (phases & milestones)
+  viewTimeline: boolean
+  manageTimeline: boolean
+  // Budget & expenses
+  viewBudget: boolean
+  manageBudget: boolean     // create / edit / delete expenses
+  // Documents
+  viewDocuments: boolean
+  uploadDocuments: boolean
+  deleteDocuments: boolean
+  // Change orders
+  viewChangeOrders: boolean
+  manageChangeOrders: boolean   // create / edit
+  approveChangeOrders: boolean  // status transitions to approved/executed
+  // RFIs
+  viewRFIs: boolean
+  createRFIs: boolean
+  respondToRFIs: boolean
+}
+
+// ── Full-access shorthand (owner row) ────────────────────────────────────────
+const FULL_ACCESS: ProjectPermissionSet = {
+  viewProject: true, editProject: true, deleteProject: true,
+  viewTeam: true, manageTeam: true, changeRoles: true,
+  viewTasks: true, createEditTasks: true, deleteTasks: true, assignTasks: true,
+  viewTimeline: true, manageTimeline: true,
+  viewBudget: true, manageBudget: true,
+  viewDocuments: true, uploadDocuments: true, deleteDocuments: true,
+  viewChangeOrders: true, manageChangeOrders: true, approveChangeOrders: true,
+  viewRFIs: true, createRFIs: true, respondToRFIs: true,
+}
+
+// ── No-access shorthand (viewer base) ────────────────────────────────────────
+const NO_ACCESS: ProjectPermissionSet = {
+  viewProject: false, editProject: false, deleteProject: false,
+  viewTeam: false, manageTeam: false, changeRoles: false,
+  viewTasks: false, createEditTasks: false, deleteTasks: false, assignTasks: false,
+  viewTimeline: false, manageTimeline: false,
+  viewBudget: false, manageBudget: false,
+  viewDocuments: false, uploadDocuments: false, deleteDocuments: false,
+  viewChangeOrders: false, manageChangeOrders: false, approveChangeOrders: false,
+  viewRFIs: false, createRFIs: false, respondToRFIs: false,
+}
+
+export const PROJECT_ROLE_PERMISSIONS: Record<ProjectRole, ProjectPermissionSet> = {
+  owner: { ...FULL_ACCESS },
+
+  admin: {
+    ...FULL_ACCESS,
+    deleteProject: false,   // only owner can delete
+  },
+
+  project_manager: {
+    ...NO_ACCESS,
+    viewProject: true, editProject: true,
+    viewTeam: true, manageTeam: true,
+    viewTasks: true, createEditTasks: true, deleteTasks: true, assignTasks: true,
+    viewTimeline: true, manageTimeline: true,
+    viewBudget: true, manageBudget: true,
+    viewDocuments: true, uploadDocuments: true, deleteDocuments: true,
+    viewChangeOrders: true, manageChangeOrders: true, approveChangeOrders: true,
+    viewRFIs: true, createRFIs: true, respondToRFIs: true,
+  },
+
+  superintendent: {
+    ...NO_ACCESS,
+    viewProject: true,
+    viewTeam: true,
+    viewTasks: true, createEditTasks: true, deleteTasks: true, assignTasks: true,
+    viewTimeline: true, manageTimeline: true,
+    viewDocuments: true, uploadDocuments: true,
+    viewChangeOrders: true,
+    viewRFIs: true, createRFIs: true, respondToRFIs: true,
+  },
+
+  field_engineer: {
+    ...NO_ACCESS,
+    viewProject: true,
+    viewTeam: true,
+    viewTasks: true, createEditTasks: true,
+    viewTimeline: true,
+    viewDocuments: true, uploadDocuments: true,
+    viewRFIs: true, createRFIs: true,
+  },
+
+  subcontractor: {
+    ...NO_ACCESS,
+    viewProject: true,
+    viewTasks: true,
+    viewDocuments: true, uploadDocuments: true,
+    viewRFIs: true, createRFIs: true,
+  },
+
+  accountant: {
+    ...NO_ACCESS,
+    viewProject: true,
+    viewBudget: true, manageBudget: true,
+    viewDocuments: true,
+    viewChangeOrders: true,
+  },
+
+  viewer: {
+    ...NO_ACCESS,
+    viewProject: true,
+    viewTeam: true,
+    viewTasks: true,
+    viewTimeline: true,
+    viewDocuments: true,
+    viewChangeOrders: true,
+    viewRFIs: true,
+  },
+}
+
+/**
+ * Get the project permission set for a given project role string.
+ * Falls back to viewer if the role is unrecognised.
+ */
+export function getProjectPermissions(projectRole: string | null | undefined): ProjectPermissionSet {
+  if (!projectRole) return PROJECT_ROLE_PERMISSIONS.viewer
+  return PROJECT_ROLE_PERMISSIONS[projectRole as ProjectRole] ?? PROJECT_ROLE_PERMISSIONS.viewer
 }

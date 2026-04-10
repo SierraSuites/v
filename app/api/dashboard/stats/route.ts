@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     // 2. GET USER'S PROFILE
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('id, full_name, subscription_tier')
+      .select('id, full_name, company_id, plan')
       .eq('id', user.id)
       .single()
 
@@ -46,7 +46,21 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const userId = user.id
+    const companyId = profile.company_id
+
+    if (!companyId) {
+      // No company yet — return all zeros
+      return NextResponse.json({
+        userId: user.id,
+        userName: profile.full_name || 'User',
+        projects: { total: 0, active: 0, onHold: 0, completed: 0 },
+        tasks: { total: 0, completed: 0, inProgress: 0, overdue: 0, completionRate: 0 },
+        quotes: { total: 0, totalValue: 0, pending: 0, accepted: 0 },
+        punchItems: { critical: 0, open: 0, resolved: 0, total: 0 },
+        storage: { used: 0, limit: 5, photoCount: 0, percentageUsed: 0 },
+        team: { members: 0 },
+      })
+    }
 
     // 3. FETCH ALL STATS IN PARALLEL
     const [
@@ -60,31 +74,31 @@ export async function GET(request: NextRequest) {
       supabase
         .from('projects')
         .select('status', { count: 'exact' })
-        .eq('user_id', userId),
+        .eq('company_id', companyId),
 
       // Tasks stats
       supabase
         .from('tasks')
         .select('status, due_date', { count: 'exact' })
-        .eq('user_id', userId),
+        .eq('company_id', companyId),
 
       // Quotes stats
       supabase
         .from('quotes')
-        .select('status, total_price', { count: 'exact' })
-        .eq('user_id', userId),
+        .select('status, total_amount', { count: 'exact' })
+        .eq('company_id', companyId),
 
       // Punch items stats
       supabase
         .from('punch_list_items')
         .select('priority, status', { count: 'exact' })
-        .eq('user_id', userId),
+        .eq('company_id', companyId),
 
       // Storage stats
       supabase
         .from('media_assets')
         .select('file_size', { count: 'exact' })
-        .eq('user_id', userId)
+        .eq('company_id', companyId)
     ])
 
     // 4. CALCULATE PROJECT STATS
@@ -98,7 +112,7 @@ export async function GET(request: NextRequest) {
     const tasks = tasksData.data || []
     const totalTasks = tasks.length
     const tasksCompleted = tasks.filter(t => t.status === 'completed').length
-    const tasksInProgress = tasks.filter(t => t.status === 'in_progress').length
+    const tasksInProgress = tasks.filter(t => t.status === 'in-progress').length
 
     // Calculate overdue tasks
     const today = new Date()
@@ -115,7 +129,7 @@ export async function GET(request: NextRequest) {
     const quotes = quotesData.data || []
     const totalQuoteValue = quotes
       .filter(q => q.status === 'accepted')
-      .reduce((sum, q) => sum + (q.total_price || 0), 0)
+      .reduce((sum, q) => sum + (q.total_amount || 0), 0)
     const pendingQuotes = quotes.filter(q => q.status === 'pending').length
     const acceptedQuotes = quotes.filter(q => q.status === 'accepted').length
 
@@ -133,12 +147,8 @@ export async function GET(request: NextRequest) {
     const storageUsed = mediaAssets.reduce((sum, p) => sum + (p.file_size || 0), 0) / (1024 * 1024 * 1024) // Convert to GB
 
     // Storage limits based on tier
-    const storageLimits = {
-      starter: 5,
-      professional: 50,
-      enterprise: 500
-    }
-    const storageLimit = storageLimits[profile.subscription_tier as keyof typeof storageLimits] || 5
+    const storageLimits = { starter: 5, professional: 50, enterprise: 500 }
+    const storageLimit = storageLimits[profile.plan as keyof typeof storageLimits] ?? 5
 
     // 9. TEAM COUNT (single user mode)
     const teamMembers = 1

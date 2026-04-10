@@ -8,8 +8,8 @@ interface Project {
   name: string
   status: string
   progress: number
-  estimated_end_date: string
-  client_name?: string
+  end_date?: string | null
+  client?: string
   updated_at: string
 }
 
@@ -30,7 +30,7 @@ export default function RecentProjects({ projects }: RecentProjectsProps) {
         return 'bg-gray-100 text-gray-800'
     }
   }
-  const { colors, darkMode } = useThemeColors()
+  const { colors } = useThemeColors()
 
 
   return (
@@ -70,7 +70,7 @@ export default function RecentProjects({ projects }: RecentProjectsProps) {
                   >
                     {project.name}
                   </Link>
-                  <p className="text-sm text-gray-500 mt-1">{project.client_name}</p>
+                  <p className="text-sm text-gray-500 mt-1">{project.client}</p>
                 </div>
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
@@ -97,7 +97,7 @@ export default function RecentProjects({ projects }: RecentProjectsProps) {
 
                 <div className="ml-4 text-right">
                   <p className="text-xs text-gray-500">Due Date</p>
-                  <p className="text-xs font-medium text-gray-900">{project.estimated_end_date}</p>
+                  <p className="text-xs font-medium text-gray-900">{project.end_date}</p>
                 </div>
               </div>
             </div>

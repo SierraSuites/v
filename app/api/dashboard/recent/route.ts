@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUser } from '@/lib/api-permissions'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // 1. AUTHENTICATION CHECK — all authenticated users can view their own dashboard
     const authResult = await getAuthenticatedUser()
@@ -20,56 +20,56 @@ export async function GET(request: NextRequest) {
       .single()
 
     const companyId = profile?.company_id
-    if (!companyId) {
-      return NextResponse.json({
-        user: { id: authResult.user.id },
-        companyId: null,
-        projects: [],
-        activities: [],
-        tasks: [],
-      })
-    }
+    const userId = authResult.user.id
 
     const today = new Date().toISOString().split('T')[0]
     const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
+    // Scope queries by company_id when available, fall back to user_id
+    const scopeFilter = (query: any) =>
+      companyId ? query.eq('company_id', companyId) : query.eq('user_id', userId)
+
     // Fetch all data in parallel
     const [projectsResult, activitiesResult, tasksResult, allProjectsResult] = await Promise.all([
-      supabase
-        .from('projects')
-        .select('id, name, status, progress, estimated_end_date, client_name, updated_at')
-        .eq('company_id', companyId)
+      scopeFilter(
+        supabase
+          .from('projects')
+          .select('id, name, status, progress, end_date, client, updated_at')
+      )
         .order('updated_at', { ascending: false })
         .limit(5),
 
-      supabase
-        .from('activities')
-        .select(`
-          id, action, entity_type, entity_id, metadata, created_at, user_id,
-          user_profiles (full_name)
-        `)
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false })
-        .limit(10),
+      companyId
+        ? supabase
+            .from('activities')
+            .select(`id, action, entity_type, entity_id, metadata, created_at, user_id, user_profiles (full_name)`)
+            .eq('company_id', companyId)
+            .order('created_at', { ascending: false })
+            .limit(10)
+        : supabase
+            .from('activities')
+            .select(`id, action, entity_type, entity_id, metadata, created_at, user_id, user_profiles (full_name)`)
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(10),
 
-      supabase
-        .from('tasks')
-        .select(`
-          id, title, due_date, priority, status, project_id,
-          projects (name)
-        `)
-        .eq('company_id', companyId)
-        .neq('status', 'completed')
-        .gte('due_date', today)
-        .lte('due_date', nextWeek)
+      scopeFilter(
+        supabase
+          .from('tasks')
+          .select(`id, title, due_date, priority, status, project_id, projects (name)`)
+          .neq('status', 'completed')
+          .gte('due_date', today)
+          .lte('due_date', nextWeek)
+      )
         .order('priority', { ascending: false })
         .order('due_date', { ascending: true })
         .limit(6),
 
-      supabase
-        .from('projects')
-        .select('id, name, status, type, estimated_budget, spent')
-        .eq('company_id', companyId),
+      scopeFilter(
+        supabase
+          .from('projects')
+          .select('id, name, status, type, estimated_budget, spent')
+      ),
     ])
 
     // Transform activities (user_profiles may be array)

@@ -26,6 +26,7 @@ function LoginForm() {
   const [requires2FA, setRequires2FA] = useState(false)
   const [userId2FA, setUserId2FA] = useState<string | null>(null)
   const [twoFactorCode, setTwoFactorCode] = useState("")
+  const [usingBackupCode, setUsingBackupCode] = useState(false)
 
   useEffect(() => {
     // Check if user was redirected after email verification
@@ -53,10 +54,18 @@ function LoginForm() {
     setError("")
     setIsLoading(true)
 
-    if (!twoFactorCode || (twoFactorCode.length !== 6 && twoFactorCode.length !== 9)) {
-      setError("Please enter a valid 6-digit code or backup code")
-      setIsLoading(false)
-      return
+    if (usingBackupCode) {
+      if (!/^[0-9A-F]{4}-[0-9A-F]{4}$/.test(twoFactorCode)) {
+        setError("Enter a backup code in the format XXXX-XXXX")
+        setIsLoading(false)
+        return
+      }
+    } else {
+      if (!/^\d{6}$/.test(twoFactorCode)) {
+        setError("Enter the 6-digit code from your authenticator app")
+        setIsLoading(false)
+        return
+      }
     }
 
     try {
@@ -154,6 +163,8 @@ function LoginForm() {
       if (data.requires2FA) {
         setRequires2FA(true)
         setUserId2FA(data.userId)
+        setUsingBackupCode(false)
+        setTwoFactorCode("")
         setIsLoading(false)
         return
       }
@@ -186,7 +197,9 @@ function LoginForm() {
           </h1>
           <p className="mt-2 text-muted-foreground">
             {requires2FA
-              ? "Enter the 6-digit code from your authenticator app"
+              ? usingBackupCode
+                ? "Enter one of your backup codes to sign in"
+                : "Enter the 6-digit code from your authenticator app"
               : "Sign in to your account to continue"}
           </p>
         </div>
@@ -221,41 +234,73 @@ function LoginForm() {
             <form onSubmit={handleVerify2FA} className="space-y-6">
               <div>
                 <label htmlFor="twoFactorCode" className="block text-sm font-medium mb-2">
-                  Verification Code
+                  {usingBackupCode ? "Backup Code" : "Authenticator Code"}
                 </label>
-                <input
-                  id="twoFactorCode"
-                  type="text"
-                  value={twoFactorCode}
-                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ""))}
-                  disabled={isLoading}
-                  required
-                  className="w-full px-4 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed text-center text-2xl tracking-widest"
-                  placeholder="000000"
-                  maxLength={6}
-                  autoFocus
-                />
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Or enter a backup code if you don't have access to your authenticator
-                </p>
+                {usingBackupCode ? (
+                  <input
+                    key="backup"
+                    id="twoFactorCode"
+                    type="text"
+                    value={twoFactorCode}
+                    onChange={(e) => {
+                      const raw = e.target.value.toUpperCase().replace(/[^0-9A-F-]/g, '').slice(0, 9)
+                      setTwoFactorCode(raw)
+                    }}
+                    disabled={isLoading}
+                    required
+                    className="w-full px-4 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed text-center text-2xl tracking-widest"
+                    placeholder="XXXX-XXXX"
+                    maxLength={9}
+                    autoFocus
+                  />
+                ) : (
+                  <input
+                    key="totp"
+                    id="twoFactorCode"
+                    type="text"
+                    inputMode="numeric"
+                    value={twoFactorCode}
+                    onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    disabled={isLoading}
+                    required
+                    className="w-full px-4 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed text-center text-2xl tracking-widest"
+                    placeholder="000000"
+                    maxLength={6}
+                    autoFocus
+                  />
+                )}
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Verifying..." : "Verify Code"}
+              <Button type="submit" className="w-full cursor-pointer" disabled={isLoading}>
+                {isLoading ? "Verifying..." : "Verify"}
               </Button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setRequires2FA(false)
-                  setUserId2FA(null)
-                  setTwoFactorCode("")
-                  setError("")
-                }}
-                className="w-full text-sm text-muted-foreground hover:text-foreground"
-              >
-                ← Back to login
-              </button>
+              <div className="flex flex-col items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUsingBackupCode(!usingBackupCode)
+                    setTwoFactorCode("")
+                    setError("")
+                  }}
+                  className="text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  {usingBackupCode ? "Use authenticator app instead" : "Use a backup code instead"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRequires2FA(false)
+                    setUserId2FA(null)
+                    setTwoFactorCode("")
+                    setUsingBackupCode(false)
+                    setError("")
+                  }}
+                  className="text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  ← Back to login
+                </button>
+              </div>
             </form>
           ) : (
             // Standard Login Form
