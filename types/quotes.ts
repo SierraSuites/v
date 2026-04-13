@@ -79,6 +79,7 @@ export interface Contact {
 export interface Quote {
   id: string
   user_id: string
+  company_id: string | null
   quote_number: string
 
   // ENHANCED: Quote type and numbering

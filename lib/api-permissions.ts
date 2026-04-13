@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { permissionService, type PermissionSet } from '@/lib/permissions'
+import { permissionService, type PermissionSet, type ProjectPermissionSet, getProjectPermissions } from '@/lib/permissions'
 
 // ============================================
 // API PERMISSION MIDDLEWARE
@@ -391,6 +391,9 @@ export async function requireTeamMembership(
 
 /**
  * Require project access
+ *
+ * Bypass: company owner/admin (user_profiles.role) have implicit access to all
+ * projects and are returned with role 'owner' regardless of project membership.
  */
 export async function requireProjectAccess(
   projectId: string
@@ -409,28 +412,27 @@ export async function requireProjectAccess(
       }
     }
 
-    // Check if user owns the project
-    const { data: ownedProject } = await supabase
-      .from('projects')
-      .select('id')
-      .eq('id', projectId)
-      .eq('user_id', user.id)
+    // Company owner/admin bypass — full access to all projects
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
       .single()
 
-    if (ownedProject) {
-      return { authorized: true, userId: user.id, role: 'admin' }
+    if (profile?.role === 'owner' || profile?.role === 'admin') {
+      return { authorized: true, userId: user.id, role: 'owner' }
     }
 
     // Check if user is a project member
     const { data: membership } = await supabase
-      .from('project_members')
-      .select('role')
+      .from('project_team_members')
+      .select('project_role')
       .eq('project_id', projectId)
       .eq('user_id', user.id)
       .single()
 
     if (membership) {
-      return { authorized: true, userId: user.id, role: membership.role }
+      return { authorized: true, userId: user.id, role: membership.project_role }
     }
 
     return {
@@ -447,6 +449,95 @@ export async function requireProjectAccess(
       authorized: false,
       error: NextResponse.json(
         { error: 'Internal server error', message: 'Failed to check project access' },
+        { status: 500 }
+      )
+    }
+  }
+}
+
+/**
+ * Require a specific project-scoped permission.
+ *
+ * Combines access check + permission check in one call.
+ * Company owner/admin bypass all permission checks (implicit full access).
+ *
+ * Usage:
+ *   const auth = await requireProjectPermission(projectId, 'manageBudget')
+ *   if (!auth.authorized) return auth.error
+ *
+ * Returns { authorized, userId, role } on success so callers can use userId for inserts.
+ */
+export async function requireProjectPermission(
+  projectId: string,
+  permission: keyof ProjectPermissionSet
+): Promise<{ authorized: boolean; userId?: string; role?: string; error?: NextResponse }> {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return {
+        authorized: false,
+        error: NextResponse.json(
+          { error: 'Unauthorized', message: 'Authentication required' },
+          { status: 401 }
+        )
+      }
+    }
+
+    // Company owner/admin bypass — full access to all projects
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role === 'owner' || profile?.role === 'admin') {
+      return { authorized: true, userId: user.id, role: 'owner' }
+    }
+
+    // Get user's project role
+    const { data: membership } = await supabase
+      .from('project_team_members')
+      .select('project_role')
+      .eq('project_id', projectId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (!membership) {
+      return {
+        authorized: false,
+        userId: user.id,
+        error: NextResponse.json(
+          { error: 'Forbidden', message: 'You do not have access to this project' },
+          { status: 403 }
+        )
+      }
+    }
+
+    // Check permission matrix
+    const permissions = getProjectPermissions(membership.project_role)
+    if (!permissions[permission]) {
+      return {
+        authorized: false,
+        userId: user.id,
+        error: NextResponse.json(
+          {
+            error: 'Forbidden',
+            message: `Your project role (${membership.project_role}) does not have permission to ${permission}`,
+          },
+          { status: 403 }
+        )
+      }
+    }
+
+    return { authorized: true, userId: user.id, role: membership.project_role }
+  } catch (error) {
+    console.error('[requireProjectPermission] error:', error)
+    return {
+      authorized: false,
+      error: NextResponse.json(
+        { error: 'Internal server error', message: 'Failed to check project permission' },
         { status: 500 }
       )
     }

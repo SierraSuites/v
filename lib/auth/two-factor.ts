@@ -158,7 +158,8 @@ export async function enable2FA(params: {
 
     // Generate backup codes
     const backupCodes = generateBackupCodes(8)
-    const hashedBackupCodes = backupCodes.map(hashBackupCode)
+    // Normalize before hashing (strip dashes) so verification hash matches
+    const hashedBackupCodes = backupCodes.map(code => hashBackupCode(code.replace(/-/g, '')))
 
     // Update user profile
     const { error: updateError } = await supabase
@@ -441,7 +442,8 @@ export async function regenerateBackupCodes(params: {
 
     // Generate new backup codes
     const backupCodes = generateBackupCodes(8)
-    const hashedBackupCodes = backupCodes.map(hashBackupCode)
+    // Normalize before hashing (strip dashes) so verification hash matches
+    const hashedBackupCodes = backupCodes.map(code => hashBackupCode(code.replace(/-/g, '')))
 
     // Update user profile
     const { error: updateError } = await supabase

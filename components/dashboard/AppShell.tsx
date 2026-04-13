@@ -52,20 +52,19 @@ export default function AppShell({ children, user }: AppShellProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showNotifications])
 
-  const userData = user?.user_metadata || {}
-
-  // Profile data from DB (source of truth for name, avatar, company)
+  // Profile data from DB (source of truth — never seed from user_metadata to avoid stale flash)
   const [profileData, setProfileData] = useState<{
     full_name: string | null
     avatar_url: string | null
     company_name: string | null
   }>({
-    full_name: userData.full_name ?? null,
+    full_name: null,
     avatar_url: null,
-    company_name: userData.company_name ?? null,
+    company_name: null,
   })
+  const [profileLoaded, setProfileLoaded] = useState(false)
 
-  const userName = (profileData.full_name ?? userData.full_name ?? 'User').split(' ')[0]
+  const userName = profileData.full_name?.split(' ')[0] ?? ''
 
   // Fetch plan + profile from session API
   // Always start with 'starter' to match SSR — localStorage is read in useEffect after hydration
@@ -77,19 +76,23 @@ export default function AppShell({ children, user }: AppShellProps) {
 
     const fetchSession = async () => {
       if (!user?.id) return
-      const res = await fetch('/api/auth/session')
-      if (!res.ok) return
-      const data = await res.json()
-      if (data.profile) {
-        if (data.profile.plan) {
-          setUserPlan(data.profile.plan)
-          localStorage.setItem('userPlan', data.profile.plan)
+      try {
+        const res = await fetch('/api/auth/session')
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.profile) {
+          if (data.profile.plan) {
+            setUserPlan(data.profile.plan)
+            localStorage.setItem('userPlan', data.profile.plan)
+          }
+          setProfileData({
+            full_name: data.profile.full_name ?? null,
+            avatar_url: data.profile.avatar_url ?? null,
+            company_name: data.profile.company_name ?? null,
+          })
         }
-        setProfileData({
-          full_name: data.profile.full_name ?? null,
-          avatar_url: data.profile.avatar_url ?? null,
-          company_name: data.profile.company_name ?? null,
-        })
+      } finally {
+        setProfileLoaded(true)
       }
     }
     fetchSession()
@@ -313,27 +316,38 @@ export default function AppShell({ children, user }: AppShellProps) {
             >
               <div className="relative">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-linear-to-br from-blue-600 via-blue-500 to-blue-400 flex items-center justify-center text-white font-bold text-sm shadow-lg shrink-0">
-                  {profileData.avatar_url ? (
+                  {!profileLoaded ? (
+                    <div className={`w-full h-full animate-pulse ${darkMode ? 'bg-gray-700' : 'bg-blue-300'}`} />
+                  ) : profileData.avatar_url ? (
                     <img src={profileData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
-                    (profileData.full_name ?? userData.full_name ?? 'U').charAt(0).toUpperCase()
+                    (profileData.full_name ?? 'U').charAt(0).toUpperCase()
                   )}
                 </div>
                 <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
               </div>
               {!sidebarCollapsed && (
                 <div className="flex-1 text-left min-w-0">
-                  <p className={`font-semibold text-sm truncate ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                    {profileData.full_name || userData.full_name || 'User'}
-                  </p>
-                  <p className={`text-xs truncate ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                    {profileData.company_name || 'Company'}
-                  </p>
-                  <span
-                    className={`inline-block mt-1.5 px-2 py-0.5 text-xs font-semibold text-white rounded-md ${planColors[userPlan as keyof typeof planColors]} shadow-sm`}
-                  >
-                    {planNames[userPlan as keyof typeof planNames]}
-                  </span>
+                  {!profileLoaded ? (
+                    <div className="space-y-1.5">
+                      <div className={`h-3.5 w-24 rounded animate-pulse ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
+                      <div className={`h-3 w-16 rounded animate-pulse ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
+                    </div>
+                  ) : (
+                    <>
+                      <p className={`font-semibold text-sm truncate ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                        {profileData.full_name || 'User'}
+                      </p>
+                      <p className={`text-xs truncate ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                        {profileData.company_name || ''}
+                      </p>
+                      <span
+                        className={`inline-block mt-1.5 px-2 py-0.5 text-xs font-semibold text-white rounded-md ${planColors[userPlan as keyof typeof planColors]} shadow-sm`}
+                      >
+                        {planNames[userPlan as keyof typeof planNames]}
+                      </span>
+                    </>
+                  )}
                 </div>
               )}
             </button>
@@ -669,7 +683,7 @@ export default function AppShell({ children, user }: AppShellProps) {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h2 className={`text-lg sm:text-2xl font-bold truncate ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                    {getGreeting()}, {userName}
+                    {getGreeting()}{profileLoaded && userName ? `, ${userName}` : ''}
                   </h2>
                   <span className="text-xl sm:text-2xl animate-wave inline-block shrink-0">👋</span>
                 </div>

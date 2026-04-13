@@ -293,6 +293,7 @@ export async function createQuote(quote: Partial<QuoteInsert>) {
 
     const quoteToInsert: QuoteInsert = {
       user_id: authContext.userId,
+      company_id: authContext.companyId,
       created_by: authContext.userId,
       quote_type: quote.quote_type || 'estimate',
       year: quote.year || new Date().getFullYear(),

@@ -6,7 +6,8 @@
 import { createClient } from '@/lib/supabase/server'
 
 export interface ProjectMember {
-  id: string
+  id: string          // user_id
+  membershipId: string // project_team_members.id (row id, used for DELETE)
   name: string
   email: string
   avatar: string | null
@@ -179,6 +180,10 @@ export interface ProjectDetails {
   created_at: string
   updated_at: string
 
+  // Current user context (used by useProjectPermissions hook)
+  currentUserRole: string        // project_team_members.project_role for this user, or 'owner' if company owner/admin
+  currentUserCompanyRole: string // user_profiles.role (company-wide role)
+
   // Related data
   teamMembers: ProjectMember[]
   phases: ProjectPhase[]
@@ -220,12 +225,11 @@ export async function getProjectDetails(
       .from('projects')
       .select(`
         *,
-        project_members (
+        project_team_members (
           id,
-          role,
-          permissions,
-          added_at,
-          user_id
+          user_id,
+          project_role,
+          added_at
         ),
         project_phases (*),
         project_documents (
@@ -264,24 +268,37 @@ export async function getProjectDetails(
       .eq('project_id', projectId)
       .order('created_at', { ascending: false })
 
-    // For each team member, fetch their user profile
-    const teamMemberIds = project.project_members?.map((pm: any) => pm.user_id) || []
+    // Fetch team members — only users explicitly assigned to this project
+    const teamMemberIds = project.project_team_members?.map((ptm: any) => ptm.user_id) || []
+
+    // Fetch profiles + current user's company role in one query
+    const profileIds = [...new Set([...teamMemberIds, user.id])]
     const { data: profiles } = await supabase
       .from('user_profiles')
-      .select('id, full_name, email, avatar_url')
-      .in('id', teamMemberIds)
+      .select('id, full_name, email, avatar_url, role')
+      .in('id', profileIds)
 
-    // Map team members with profile data
-    const teamMembers: ProjectMember[] = (project.project_members || []).map((pm: any) => {
-      const profile = profiles?.find(p => p.id === pm.user_id)
+    const currentUserProfile = profiles?.find((p: any) => p.id === user.id)
+    const currentUserCompanyRole = currentUserProfile?.role || 'member'
+
+    // Resolve current user's project role
+    const isCompanyOwnerOrAdmin = currentUserCompanyRole === 'owner' || currentUserCompanyRole === 'admin'
+    const currentUserPtm = project.project_team_members?.find((ptm: any) => ptm.user_id === user.id)
+    const currentUserRole = isCompanyOwnerOrAdmin
+      ? 'owner'
+      : (currentUserPtm?.project_role || 'viewer')
+
+    const teamMembers: ProjectMember[] = (project.project_team_members || []).map((ptm: any) => {
+      const profile = profiles?.find((p: any) => p.id === ptm.user_id)
       return {
-        id: pm.user_id,
-        name: profile?.full_name || 'Unknown User',
+        id: ptm.user_id,
+        membershipId: ptm.id,
+        name: profile?.full_name || profile?.email || 'Unknown User',
         email: profile?.email || '',
         avatar: profile?.avatar_url || null,
-        role: pm.role,
-        permissions: pm.permissions || ['view'],
-        addedAt: pm.added_at
+        role: ptm.project_role || 'member',
+        permissions: ['view'],
+        addedAt: ptm.added_at
       }
     })
 
@@ -360,6 +377,10 @@ export async function getProjectDetails(
       created_at: project.created_at,
       updated_at: project.updated_at,
 
+      // Current user context
+      currentUserRole,
+      currentUserCompanyRole,
+
       // Related data
       teamMembers,
       phases: project.project_phases || [],
@@ -415,7 +436,7 @@ export async function userHasProjectAccess(
 
     // Check if user is a project member
     const { data: member } = await supabase
-      .from('project_members')
+      .from('project_team_members')
       .select('id')
       .eq('project_id', projectId)
       .eq('user_id', userId)

@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { requirePermission, requireProjectAccess } from '@/lib/api-permissions'
+import { requireProjectAccess, requireProjectPermission } from '@/lib/api-permissions'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -60,13 +60,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params
 
-    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
-    const authResult = await requirePermission('canUploadDocuments')
+    const authResult = await requireProjectPermission(id, 'uploadDocuments')
     if (!authResult.authorized) return authResult.error
-
-    // 2. PROJECT ACCESS CHECK
-    const projectAccess = await requireProjectAccess(id)
-    if (!projectAccess.authorized) return projectAccess.error
 
     const supabase = await createClient()
     const body = await request.json()
@@ -110,13 +105,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params
 
-    // 1. AUTHENTICATION & RBAC PERMISSION CHECK
-    const authResult = await requirePermission('canDeleteDocuments')
+    const authResult = await requireProjectPermission(id, 'deleteDocuments')
     if (!authResult.authorized) return authResult.error
-
-    // 2. PROJECT ACCESS CHECK
-    const projectAccess = await requireProjectAccess(id)
-    if (!projectAccess.authorized) return projectAccess.error
 
     const supabase = await createClient()
     const { searchParams } = new URL(request.url)

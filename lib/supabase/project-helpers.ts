@@ -15,12 +15,7 @@ export interface TeamMember {
 }
 
 /**
- * Fetch team members for a project's company
- *
- * Since we don't have a project_members join table yet,
- * this returns all members of the project's company
- *
- * TODO: Create project_members table for per-project team assignments
+ * Fetch team members explicitly assigned to a project via project_team_members
  */
 export async function getProjectTeamMembers(projectId: string): Promise<TeamMember[]> {
   const supabase = createClient()
@@ -66,63 +61,41 @@ export async function getProjectTeamMembers(projectId: string): Promise<TeamMemb
 export async function getTeamMembersForProjects(
   projectIds: string[]
 ): Promise<Record<string, TeamMember[]>> {
-  // Nothing to fetch
   if (projectIds.length === 0) return {}
 
   const supabase = createClient()
 
-  // Get all projects with their company_ids
-  const { data: projects, error: projectsError } = await supabase
-    .from('projects')
-    .select('id, company_id')
-    .in('id', projectIds)
+  // Fetch project_team_members for all projects
+  const { data: assignments, error: assignmentsError } = await supabase
+    .from('project_team_members')
+    .select('project_id, user_id, project_role')
+    .in('project_id', projectIds)
 
-  if (projectsError || !projects) {
-    // Silently return empty — company_id column may not exist yet
-    return {}
-  }
+  if (assignmentsError || !assignments || assignments.length === 0) return {}
 
-  // Filter out projects without company_id (column may not exist yet)
-  const companyIds = [...new Set(
-    projects.map(p => p.company_id).filter((id): id is string => !!id)
-  )]
-
-  // No valid company IDs — skip the user_profiles query
-  if (companyIds.length === 0) return {}
-
-  // Get all users for these companies
-  const { data: allMembers, error: membersError } = await supabase
+  // Fetch user profiles for all assigned users
+  const userIds = [...new Set(assignments.map(a => a.user_id))]
+  const { data: profiles, error: profilesError } = await supabase
     .from('user_profiles')
-    .select('id, company_id, full_name, email, avatar_url, role')
-    .in('company_id', companyIds)
-    .order('full_name')
+    .select('id, full_name, email, avatar_url, role')
+    .in('id', userIds)
 
-  if (membersError) {
-    // Silently return empty — user_profiles may not have company_id yet
-    return {}
-  }
+  if (profilesError) return {}
 
-  // Group members by company_id
-  const membersByCompany: Record<string, TeamMember[]> = {}
+  const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]))
 
-  ;(allMembers || []).forEach(member => {
-    if (!membersByCompany[member.company_id]) {
-      membersByCompany[member.company_id] = []
-    }
-    membersByCompany[member.company_id].push({
-      id: member.id,
-      name: member.full_name || member.email,
-      avatar: getInitials(member.full_name || member.email),
-      role: formatRole(member.role),
-      email: member.email
-    })
-  })
-
-  // Map project IDs to their team members
+  // Group by project_id
   const result: Record<string, TeamMember[]> = {}
-
-  projects.forEach(project => {
-    result[project.id] = membersByCompany[project.company_id] || []
+  assignments.forEach(a => {
+    if (!result[a.project_id]) result[a.project_id] = []
+    const profile = profileMap[a.user_id]
+    result[a.project_id].push({
+      id: a.user_id,
+      name: profile?.full_name || profile?.email || 'Unknown',
+      avatar: getInitials(profile?.full_name || profile?.email || '?'),
+      role: formatRole(a.project_role || profile?.role || 'member'),
+      email: profile?.email
+    })
   })
 
   return result

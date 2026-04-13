@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import { useSettingsData } from '@/lib/contexts/SettingsContext'
-import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter'
+import { PasswordStrengthMeter, meetsPasswordRequirements } from '@/components/auth/PasswordStrengthMeter'
 import toast, { Toaster } from 'react-hot-toast'
 import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import Cropper from 'react-easy-crop'
@@ -96,7 +96,7 @@ export default function ProfilePage() {
   async function handlePasswordChange(e: React.FormEvent) {
     e.preventDefault()
     if (newPassword !== confirmPassword) { toast.error('Passwords do not match'); return }
-    if (newPassword.length < 8) { toast.error('Password must be at least 8 characters'); return }
+    if (!meetsPasswordRequirements(newPassword)) { toast.error('Password must be at least 8 characters and include uppercase, lowercase, and a number'); return }
     setSaving(true)
     const t = toast.loading('Changing password...')
     try {
@@ -439,7 +439,7 @@ export default function ProfilePage() {
             <div className="flex gap-2">
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || !meetsPasswordRequirements(newPassword) || newPassword !== confirmPassword}
                 className="px-4 py-1.5 rounded text-sm font-medium text-white disabled:opacity-60"
                 style={{ backgroundColor: '#5865f2' }}
               >

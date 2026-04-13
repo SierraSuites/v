@@ -170,9 +170,11 @@ export type ProjectMember = {
   id: string
   project_id: string
   user_id: string
-  role: string
-  permissions: string[]
+  company_id: string
+  project_role: string
+  custom_permissions: Record<string, unknown> | null
   added_at: string
+  added_by: string | null
 }
 
 export type ProjectDocument = {
@@ -407,6 +409,7 @@ export async function createProject(project: ProjectInsert) {
     .insert({
       ...project,
       user_id: authContext.userId,
+      company_id: authContext.companyId,
       progress: 0,
       spent: 0
     })
@@ -424,6 +427,15 @@ export async function createProject(project: ProjectInsert) {
     console.error("Project data being inserted:", project)
     return { data: null, error }
   }
+
+  // Auto-add creator as a project team member
+  await supabase.from('project_team_members').insert({
+    project_id: data.id,
+    user_id: authContext.userId,
+    company_id: authContext.companyId,
+    project_role: 'owner',
+    added_by: authContext.userId
+  })
 
   // Log the operation
   await permissionService.logPermissionCheck(
@@ -630,7 +642,7 @@ export async function getProjectMembers(projectId: string) {
   const supabase = createClient()
 
   const { data, error } = await supabase
-    .from("project_members")
+    .from("project_team_members")
     .select("*")
     .eq("project_id", projectId)
 
@@ -649,7 +661,7 @@ export async function addProjectMember(member: Omit<ProjectMember, "id" | "added
   const supabase = createClient()
 
   const { data, error } = await supabase
-    .from("project_members")
+    .from("project_team_members")
     .insert(member)
     .select()
     .single()
@@ -665,11 +677,11 @@ export async function addProjectMember(member: Omit<ProjectMember, "id" | "added
 /**
  * Update a member's role or permissions
  */
-export async function updateProjectMember(memberId: string, updates: Partial<Pick<ProjectMember, "role" | "permissions">>) {
+export async function updateProjectMember(memberId: string, updates: Partial<Pick<ProjectMember, "project_role" | "custom_permissions">>) {
   const supabase = createClient()
 
   const { data, error } = await supabase
-    .from("project_members")
+    .from("project_team_members")
     .update(updates)
     .eq("id", memberId)
     .select()
@@ -690,7 +702,7 @@ export async function removeProjectMember(memberId: string) {
   const supabase = createClient()
 
   const { error } = await supabase
-    .from("project_members")
+    .from("project_team_members")
     .delete()
     .eq("id", memberId)
 

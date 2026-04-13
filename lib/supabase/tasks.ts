@@ -77,6 +77,7 @@ async function checkTaskPermission(
 export type Task = {
   id: string
   user_id: string
+  company_id: string | null
   title: string
   description: string | null
   project_id: string | null
@@ -116,7 +117,7 @@ export type Task = {
   completed_at: string | null
 }
 
-export type TaskInsert = Omit<Task, "id" | "user_id" | "created_at" | "updated_at" | "completed_at">
+export type TaskInsert = Omit<Task, "id" | "user_id" | "company_id" | "created_at" | "updated_at" | "completed_at">
 export type TaskUpdate = Partial<TaskInsert>
 
 /**
@@ -400,7 +401,8 @@ export async function createTask(task: TaskInsert) {
 
   const taskToInsert = {
     ...task,
-    user_id: authContext.userId
+    user_id: authContext.userId,
+    company_id: authContext.companyId,
   }
   console.log('Inserting task into database:', taskToInsert)
 
