@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { getWeatherByCountry, isWeatherSuitable } from '@/lib/weather'
+import { getWeatherByCoords, getWeatherByCountry, isWeatherSuitable } from '@/lib/weather'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 interface Task {
@@ -25,9 +25,32 @@ export default function WeatherWidget({ tasks, countryCode = 'US' }: WeatherWidg
   useEffect(() => {
     async function fetchWeather() {
       setLoading(true)
-      const data = await getWeatherByCountry(countryCode)
-      setWeather(data)
-      setLoading(false)
+
+      // Try browser geolocation first for accurate local weather
+      if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            const data = await getWeatherByCoords(
+              pos.coords.latitude,
+              pos.coords.longitude,
+              'Your Location'
+            )
+            setWeather(data)
+            setLoading(false)
+          },
+          async () => {
+            // Geolocation denied or unavailable — fall back to country default
+            const data = await getWeatherByCountry(countryCode)
+            setWeather(data)
+            setLoading(false)
+          },
+          { timeout: 5000 }
+        )
+      } else {
+        const data = await getWeatherByCountry(countryCode)
+        setWeather(data)
+        setLoading(false)
+      }
     }
 
     fetchWeather()
@@ -79,7 +102,14 @@ export default function WeatherWidget({ tasks, countryCode = 'US' }: WeatherWidg
   return (
     <div className="rounded-xl p-6" style={cardStyle}>
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold" style={{ color: colors.text }}>Weather Conditions</h3>
+        <div>
+          <h3 className="text-lg font-bold" style={{ color: colors.text }}>Weather Conditions</h3>
+          {weather.locationName && (
+            <p className="text-xs mt-0.5" style={{ color: colors.textMuted }}>
+              📍 {weather.locationName}
+            </p>
+          )}
+        </div>
         <span className="text-4xl">{weather.icon}</span>
       </div>
 

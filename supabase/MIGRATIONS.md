@@ -26,6 +26,7 @@ Status tracker for all database migrations. Run these in order in **Supabase Das
 | `20260317_advanced_reporting.sql` | 2026-03-17 | ✅ Applied | Advanced reporting tables |
 | `20260321_fix_handle_new_user_trigger.sql` | 2026-03-21 | ✅ Applied | Restored working trigger, backfilled missing profiles/companies |
 | `20260405_invite_aware_trigger.sql` | 2026-04-05 | ✅ Applied | Invite-aware trigger — joins invited users to existing company instead of creating new one |
+| `20260414_design_selections.sql` | 2026-04-14 | ✅ Applied | design_selections table with RLS. Integrates with project_expenses (budget) and tasks (procurement automation) |
 
 ---
 
@@ -330,6 +331,25 @@ SET company_id = up.company_id
 FROM public.user_profiles up
 WHERE p.user_id = up.id
   AND p.company_id IS NULL;
+```
+
+### Tasks — add FK constraint to projects + clean orphans (2026-04-14) ✅
+
+`tasks.project_id` had no foreign key constraint, so deleting a project left orphaned tasks. Cleaned up orphaned rows first, then added the constraint with `ON DELETE SET NULL` (tasks are company-scoped and can exist without a project).
+
+`project_change_orders` and `project_rfis` were investigated — confirmed they do not exist as tables in the database yet (queries in `get-project-details.ts` silently return empty arrays). No constraint needed.
+
+```sql
+-- Clean up orphaned tasks from previously deleted projects
+UPDATE public.tasks
+SET project_id = NULL, project_name = NULL
+WHERE project_id IS NOT NULL
+  AND project_id NOT IN (SELECT id FROM public.projects);
+
+-- Add FK so future project deletes null out task references
+ALTER TABLE public.tasks
+  ADD CONSTRAINT tasks_project_id_fkey
+  FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE SET NULL;
 ```
 
 ---

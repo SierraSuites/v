@@ -9,19 +9,42 @@ import { useState, useEffect } from 'react'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { Calendar, DollarSign, TrendingUp, MapPin, AlertCircle } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
+import Link from 'next/link'
 import EditProjectModal from './EditProjectModal'
 import TaskCreationModal from '@/components/dashboard/TaskCreationModal'
 import { createTask } from '@/lib/supabase/tasks'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
+
+const SEGMENT_LABELS: Record<string, string> = {
+  dashboard: 'Dashboard',
+  projects: 'Projects',
+}
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 interface Props {
   project: ProjectDetails
 }
 
 export default function ProjectHeader({ project }: Props) {
   const router = useRouter()
+  const pathname = usePathname()
+  const { colors } = useThemeColors()
   const [showEdit, setShowEdit] = useState(false)
   const [showAddTask, setShowAddTask] = useState(false)
   const [liveProgress, setLiveProgress] = useState(project.progress ?? 0)
+
+  // Build breadcrumb crumbs from pathname
+  const rawSegs = pathname.split('/').filter(Boolean)
+  const crumbs = [
+    { href: '/dashboard', label: 'Dashboard', isLast: false },
+    ...rawSegs.map((seg, i) => ({
+      href: '/' + rawSegs.slice(0, i + 1).join('/'),
+      label: UUID_RE.test(seg)
+        ? project.name
+        : (SEGMENT_LABELS[seg] ?? seg.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())),
+      isLast: i === rawSegs.length - 1,
+    })),
+  ]
 
   useEffect(() => {
     const handler = (e: Event) => setLiveProgress((e as CustomEvent).detail.progress)
@@ -48,6 +71,19 @@ export default function ProjectHeader({ project }: Props) {
   return (
     <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm mb-4">
+          {crumbs.map((crumb, i) => (
+            <span key={crumb.href} className="flex items-center gap-1.5">
+              {i > 0 && <span style={{ color: colors.textMuted }}>/</span>}
+              {crumb.isLast
+                ? <span className="font-medium" style={{ color: colors.text }}>{crumb.label}</span>
+                : <Link href={crumb.href} className="hover:underline" style={{ color: colors.textMuted }}>{crumb.label}</Link>
+              }
+            </span>
+          ))}
+        </nav>
+
         {/* Title Row */}
         <div className="flex items-start justify-between mb-4">
           <div>

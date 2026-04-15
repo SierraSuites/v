@@ -22,48 +22,43 @@ export async function GET(_request: NextRequest) {
     const companyId = profile?.company_id
     const userId = authResult.user.id
 
-    const today = new Date().toISOString().split('T')[0]
-    const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const twoWeeksOut = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
     // Scope queries by company_id when available, fall back to user_id
     const scopeFilter = (query: any) =>
       companyId ? query.eq('company_id', companyId) : query.eq('user_id', userId)
 
     // Fetch all data in parallel
-    const [projectsResult, activitiesResult, tasksResult, allProjectsResult] = await Promise.all([
+    const [projectsResult, recentTasksActivityResult, tasksResult, allProjectsResult] = await Promise.all([
       scopeFilter(
         supabase
           .from('projects')
-          .select('id, name, status, progress, end_date, client, updated_at')
+          .select('id, name, status, progress, end_date, client, updated_at, created_at')
       )
         .order('updated_at', { ascending: false })
         .limit(5),
 
-      companyId
-        ? supabase
-            .from('activities')
-            .select(`id, action, entity_type, entity_id, metadata, created_at, user_id, user_profiles (full_name)`)
-            .eq('company_id', companyId)
-            .order('created_at', { ascending: false })
-            .limit(10)
-        : supabase
-            .from('activities')
-            .select(`id, action, entity_type, entity_id, metadata, created_at, user_id, user_profiles (full_name)`)
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(10),
-
+      // Recently updated tasks for activity feed (separate from upcoming tasks)
       scopeFilter(
         supabase
           .from('tasks')
-          .select(`id, title, due_date, priority, status, project_id, projects (name)`)
-          .neq('status', 'completed')
-          .gte('due_date', today)
-          .lte('due_date', nextWeek)
+          .select('id, title, status, updated_at, created_at')
       )
-        .order('priority', { ascending: false })
+        .order('updated_at', { ascending: false })
+        .limit(5),
+
+      // tasks has no registered PostgREST FK to projects — fetch without join
+      scopeFilter(
+        supabase
+          .from('tasks')
+          .select(`id, title, due_date, priority, status, progress, trade, project_id`)
+          .neq('status', 'completed')
+          .gte('due_date', thirtyDaysAgo)
+          .lte('due_date', twoWeeksOut)
+      )
         .order('due_date', { ascending: true })
-        .limit(6),
+        .limit(8),
 
       scopeFilter(
         supabase
@@ -72,22 +67,50 @@ export async function GET(_request: NextRequest) {
       ),
     ])
 
-    // Transform activities (user_profiles may be array)
-    const activities = (activitiesResult.data || []).map((item: any) => ({
-      ...item,
-      user_profiles: Array.isArray(item.user_profiles) ? item.user_profiles[0] : item.user_profiles,
-    }))
+    // Build synthetic activity feed from recent project + task changes
+    // (The activities table schema doesn't match what the API queries; nothing writes to it)
+    const activityItems = [
+      ...(projectsResult.data || []).map((p: any) => ({
+        id: `project-${p.id}`,
+        action: p.created_at && p.updated_at && p.created_at === p.updated_at ? 'created' : 'updated',
+        entity_type: 'project' as const,
+        entity_id: p.id,
+        entity_name: p.name,
+        metadata: { status: p.status },
+        created_at: p.updated_at,
+        user_id: null,
+        user_profiles: null,
+      })),
+      ...(recentTasksActivityResult.data || []).map((t: any) => ({
+        id: `task-${t.id}`,
+        action: t.status === 'completed' ? 'completed' : (t.created_at && t.updated_at && t.created_at === t.updated_at ? 'created' : 'updated'),
+        entity_type: 'task' as const,
+        entity_id: t.id,
+        entity_name: t.title,
+        metadata: { status: t.status },
+        created_at: t.updated_at,
+        user_id: null,
+        user_profiles: null,
+      })),
+    ]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 10)
 
-    // Transform tasks (projects may be array)
-    const tasks = (tasksResult.data || []).map((item: any) => ({
-      ...item,
-      projects: Array.isArray(item.projects) ? item.projects[0] : item.projects,
-    }))
+    const activities = activityItems
 
     // Map estimated_budget -> budget for BudgetTrackingWidget
     const allProjects = (allProjectsResult.data || []).map((p: any) => ({
       ...p,
       budget: p.estimated_budget ?? 0,
+    }))
+
+    // Enrich tasks with project name from allProjects (tasks has no PostgREST FK join)
+    const projectMap = new Map<string, string>(
+      (allProjectsResult.data || []).map((p: any) => [p.id, p.name])
+    )
+    const tasks = (tasksResult.data || []).map((item: any) => ({
+      ...item,
+      projects: item.project_id ? { name: projectMap.get(item.project_id) || null } : null,
     }))
 
     return NextResponse.json({

@@ -362,26 +362,28 @@ export default function ProjectsPage() {
   }
 
   // Handle delete project
-  const handleDeleteProject = async (projectId: string, projectName: string) => {
-    if (!confirm(`Are you sure you want to delete "${projectName}"? This action cannot be undone.`)) {
-      return
-    }
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDeleteProject = async () => {
+    if (!deleteConfirm) return
+    setDeleting(true)
 
     // Optimistic update
-    setProjects(prev => prev.filter(p => p.id !== projectId))
+    setProjects(prev => prev.filter(p => p.id !== deleteConfirm.id))
+    const { id, name } = deleteConfirm
+    setDeleteConfirm(null)
 
-    const { error } = await deleteProject(projectId)
+    const { error } = await deleteProject(id)
 
     if (error) {
-      // Revert on error - need to reload since we removed it
       const { data } = await getProjects()
-      if (data) {
-        setProjects(data.map(convertSupabaseProject))
-      }
+      if (data) setProjects(data.map(convertSupabaseProject))
       toast.error("Failed to delete project")
     } else {
-      toast.success(`Project "${projectName}" deleted successfully`)
+      toast.success(`Project "${name}" deleted successfully`)
     }
+    setDeleting(false)
   }
 
   // Project limits by tier
@@ -551,6 +553,11 @@ export default function ProjectsPage() {
         {/* Header */}
         <header className="sticky top-0 z-40" style={{ backgroundColor: colors.bg, borderBottom: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <nav className="flex items-center gap-1.5 text-sm mb-3">
+            <Link href="/dashboard" className="hover:underline" style={{ color: colors.textMuted }}>Dashboard</Link>
+            <span style={{ color: colors.textMuted }}>/</span>
+            <span className="font-medium" style={{ color: colors.text }}>Projects</span>
+          </nav>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold" style={{ color: colors.text }}>Projects</h1>
@@ -825,14 +832,13 @@ export default function ProjectsPage() {
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map((project) => (
-              <Link
+              <div
                 key={project.id}
-                href={`/projects/${project.id}`}
                 className="group rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
                 style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}
               >
                 {/* Project Thumbnail */}
-                <div className="relative h-48 overflow-hidden" style={{ backgroundColor: colors.bgAlt }}>
+                <Link href={`/projects/${project.id}`} className="block relative h-48 overflow-hidden" style={{ backgroundColor: colors.bgAlt }}>
                   <img
                     src={project.thumbnail}
                     alt={project.name}
@@ -843,9 +849,9 @@ export default function ProjectsPage() {
                       {project.status.replace('-', ' ').toUpperCase()}
                     </span>
                     {project.isFavorite && (
-                      <button className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-amber-500 hover:bg-white transition-colors">
+                      <span className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-amber-500">
                         ⭐
-                      </button>
+                      </span>
                     )}
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
@@ -854,13 +860,27 @@ export default function ProjectsPage() {
                       <span className="truncate">{project.address}</span>
                     </div>
                   </div>
-                </div>
+                </Link>
 
                 {/* Project Info */}
                 <div className="p-5">
-                  <h3 className="font-bold text-lg mb-1 transition-colors" style={{ color: colors.text }}>
-                    {project.name}
-                  </h3>
+                  <div className="flex items-start justify-between mb-1">
+                    <Link href={`/projects/${project.id}`} className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg transition-colors truncate" style={{ color: colors.text }}>
+                        {project.name}
+                      </h3>
+                    </Link>
+                    <button
+                      onClick={() => setDeleteConfirm({ id: project.id, name: project.name })}
+                      className="ml-2 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                      style={{ color: '#EF4444' }}
+                      title="Delete project"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                   <p className="text-sm mb-4" style={{ color: colors.textMuted }}>{project.client}</p>
 
                   {/* Progress Bar */}
@@ -924,7 +944,7 @@ export default function ProjectsPage() {
                     <span className="text-xs" style={{ color: colors.textMuted }}>{project.lastActivity}</span>
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         ) : (
@@ -1007,9 +1027,14 @@ export default function ProjectsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="p-2 rounded-lg transition-colors" style={{ color: colors.textMuted }}>
+                        <button
+                          onClick={() => setDeleteConfirm({ id: project.id, name: project.name })}
+                          className="p-2 rounded-lg transition-colors hover:bg-red-50"
+                          style={{ color: '#EF4444' }}
+                          title="Delete project"
+                        >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
                       </td>
@@ -1033,6 +1058,46 @@ export default function ProjectsPage() {
         editingProject={editingProject as any}
         mode={editingProject ? 'edit' : 'create'}
       />
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="rounded-xl p-6 w-full max-w-md shadow-xl" style={{ backgroundColor: colors.bg, border: colors.border }}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(239,68,68,0.1)' }}>
+                <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg" style={{ color: colors.text }}>Delete Project</h3>
+                <p className="text-sm" style={{ color: colors.textMuted }}>This action cannot be undone.</p>
+              </div>
+            </div>
+            <p className="mb-6 text-sm" style={{ color: colors.text }}>
+              Are you sure you want to delete <span className="font-semibold">"{deleteConfirm.name}"</span>? All associated data will be permanently removed.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleting}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                style={{ border: colors.border, color: colors.text }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProject}
+                disabled={deleting}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-60"
+                style={{ backgroundColor: '#EF4444' }}
+              >
+                {deleting ? 'Deleting...' : 'Delete Project'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
