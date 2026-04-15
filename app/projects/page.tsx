@@ -549,40 +549,106 @@ export default function ProjectsPage() {
   }
 
   return (
-    <>
+    <div className="min-h-screen" style={{ backgroundColor: darkMode ? '#0d0f17' : '#F8F9FA' }}>
         {/* Header */}
-        <header className="sticky top-0 z-40" style={{ backgroundColor: colors.bg, borderBottom: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <nav className="flex items-center gap-1.5 text-sm mb-3">
-            <Link href="/dashboard" className="hover:underline" style={{ color: colors.textMuted }}>Dashboard</Link>
-            <span style={{ color: colors.textMuted }}>/</span>
-            <span className="font-medium" style={{ color: colors.text }}>Projects</span>
-          </nav>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold" style={{ color: colors.text }}>Projects</h1>
-              <p className="text-sm mt-0.5" style={{ color: colors.textMuted }}>Manage and track all your construction projects</p>
+        <div style={{ backgroundColor: colors.bg, borderBottom: colors.border }}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {/* Breadcrumb */}
+            <nav className="flex items-center gap-1.5 text-sm mb-4">
+              <Link href="/dashboard" className="hover:underline" style={{ color: colors.textMuted }}>Dashboard</Link>
+              <span style={{ color: colors.textMuted }}>/</span>
+              <span className="font-medium" style={{ color: colors.text }}>Projects</span>
+            </nav>
+
+            {/* Title Row */}
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold" style={{ color: colors.text }}>Projects</h1>
+                <p className="text-sm mt-1" style={{ color: colors.textMuted }}>Manage and track all your construction projects</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  disabled={!canCreateProject}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    canCreateProject
+                      ? "text-white"
+                      : "cursor-not-allowed"
+                  }`}
+                  style={canCreateProject ? { background: 'linear-gradient(to bottom, #FF6B6B 0%, #FF5252 100%)', boxShadow: '0 2px 4px rgba(255,107,107,0.2), 0 1px 2px rgba(255,107,107,0.3)' } : { backgroundColor: colors.bgMuted, color: colors.textMuted }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Create Project
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowCreateModal(true)}
-                disabled={!canCreateProject}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                  canCreateProject
-                    ? "text-white"
-                    : "cursor-not-allowed"
-                }`}
-                style={canCreateProject ? { background: 'linear-gradient(to bottom, #FF6B6B 0%, #FF5252 100%)', boxShadow: '0 2px 4px rgba(255,107,107,0.2), 0 1px 2px rgba(255,107,107,0.3)' } : { backgroundColor: colors.bgMuted, color: colors.textMuted }}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Create Project
-              </button>
+
+            {/* Stat Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: darkMode ? 'rgba(37,99,235,0.15)' : '#E0F2FF' }}>
+                    <span className="text-xl">🏗️</span>
+                  </div>
+                  <div>
+                    <div className="text-xs" style={{ color: colors.textMuted }}>Total</div>
+                    <div className="text-lg font-bold" style={{ color: colors.text }}>{stats.total}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: darkMode ? 'rgba(34,197,94,0.15)' : '#E6F9EA' }}>
+                    <span className="text-xl">🚀</span>
+                  </div>
+                  <div>
+                    <div className="text-xs" style={{ color: colors.textMuted }}>Active</div>
+                    <div className="text-lg font-bold" style={{ color: '#22C55E' }}>{stats.active}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: darkMode ? 'rgba(59,130,246,0.15)' : '#E5F4FF' }}>
+                    <span className="text-xl">📋</span>
+                  </div>
+                  <div>
+                    <div className="text-xs" style={{ color: colors.textMuted }}>Planning</div>
+                    <div className="text-lg font-bold" style={{ color: '#3B82F6' }}>{stats.planning}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: darkMode ? 'rgba(245,158,11,0.15)' : '#FFF9E6' }}>
+                    <span className="text-xl">⏸️</span>
+                  </div>
+                  <div>
+                    <div className="text-xs" style={{ color: colors.textMuted }}>On Hold</div>
+                    <div className="text-lg font-bold" style={{ color: '#F59E0B' }}>{stats.onHold}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: colors.bgMuted }}>
+                    <span className="text-xl">✅</span>
+                  </div>
+                  <div>
+                    <div className="text-xs" style={{ color: colors.textMuted }}>Completed</div>
+                    <div className="text-lg font-bold" style={{ color: colors.textMuted }}>{stats.completed}</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </header>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tier limit warning */}
@@ -614,59 +680,6 @@ export default function ProjectsPage() {
             </div>
           </div>
         )}
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E0F2FF' }}>
-                <span className="text-xl">🏗️</span>
-              </div>
-              <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Total</p>
-            </div>
-            <p className="text-3xl font-bold" style={{ color: colors.text }}>{stats.total}</p>
-          </div>
-
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E6F9EA' }}>
-                <span className="text-xl">🚀</span>
-              </div>
-              <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Active</p>
-            </div>
-            <p className="text-3xl font-bold" style={{ color: '#6BCB77' }}>{stats.active}</p>
-          </div>
-
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E5F4FF' }}>
-                <span className="text-xl">📋</span>
-              </div>
-              <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Planning</p>
-            </div>
-            <p className="text-3xl font-bold" style={{ color: '#6A9BFD' }}>{stats.planning}</p>
-          </div>
-
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFF9E6' }}>
-                <span className="text-xl">⏸️</span>
-              </div>
-              <p className="text-sm font-medium" style={{ color: colors.textMuted }}>On Hold</p>
-            </div>
-            <p className="text-3xl font-bold" style={{ color: '#FFD93D' }}>{stats.onHold}</p>
-          </div>
-
-          <div className="rounded-xl p-4 transition-shadow" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.bgAlt }}>
-                <span className="text-xl">✅</span>
-              </div>
-              <p className="text-sm font-medium" style={{ color: colors.textMuted }}>Completed</p>
-            </div>
-            <p className="text-3xl font-bold" style={{ color: colors.textMuted }}>{stats.completed}</p>
-          </div>
-        </div>
 
         {/* Project Sub-Pages */}
         <div className="flex items-center gap-3 mb-6">
@@ -1098,6 +1111,6 @@ export default function ProjectsPage() {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

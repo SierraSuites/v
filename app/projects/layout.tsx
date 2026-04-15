@@ -67,8 +67,8 @@ function ProjectsBreadcrumb() {
 function ProjectsBreadcrumbConditional() {
   const pathname = usePathname()
   const isDetailPage = pathname.split('/').some(s => UUID_RE.test(s))
-  const isListPage = pathname === '/projects'
-  if (isDetailPage || isListPage) return null
+  const selfManaged = ['/projects', '/projects/design-selections', '/projects/approvals', '/projects/turnover']
+  if (isDetailPage || selfManaged.includes(pathname)) return null
   return <ProjectsBreadcrumb />
 }
 

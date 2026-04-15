@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import toast from 'react-hot-toast'
@@ -333,134 +334,163 @@ function DesignSelectionsContent() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: darkMode ? '#0d0f17' : '#F8F9FA' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        <div className="flex items-start justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold mb-1" style={{ color: colors.text }}>Design Selection Manager</h1>
-            <p className="text-sm" style={{ color: muted }}>Track material selections and client approvals</p>
-          </div>
-          <div className="flex gap-2">
-            {compareItems.length > 0 && (
-              <button
-                onClick={() => setShowCompare(true)}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
-                style={{ backgroundColor: '#7C3AED' }}
-              >
-                Compare ({compareItems.length})
-              </button>
-            )}
-            {selectedProject && (
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
-                style={{ backgroundColor: '#2563EB' }}
-              >
-                + Add Selection
-              </button>
-            )}
-            <button
-              onClick={() => setShowPackageModal(true)}
-              className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
-              style={{ backgroundColor: '#16A34A' }}
-            >
-              Generate Package
-            </button>
-          </div>
-        </div>
+      {/* ── Page Header ── */}
+      <div style={{ backgroundColor: colors.bg, borderBottom: colors.border }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-        {/* Project picker */}
-        <div className="p-4 rounded-xl mb-6 flex items-center gap-4" style={card}>
-          <label className="text-sm font-semibold shrink-0" style={{ color: colors.text }}>Project</label>
-          <select value={selectedProject} onChange={e => setSelectedProject(e.target.value)} style={inputStyle}>
-            <option value="">Choose a project…</option>
-            {projects.map(p => (
-              <option key={p.id} value={p.id}>{p.name}{p.client ? ` — ${p.client}` : ''}</option>
-            ))}
-          </select>
-        </div>
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-1.5 text-sm mb-4">
+            <Link href="/dashboard" className="hover:underline" style={{ color: colors.textMuted }}>Dashboard</Link>
+            <span style={{ color: colors.textMuted }}>/</span>
+            <Link href="/projects" className="hover:underline" style={{ color: colors.textMuted }}>Projects</Link>
+            <span style={{ color: colors.textMuted }}>/</span>
+            <span className="font-medium" style={{ color: colors.text }}>Design Selections</span>
+          </nav>
 
-        {/* Stats — mirrors project header metric cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          {/* Selections progress */}
-          <div className="p-4 rounded-xl" style={card}>
-            <div className="flex items-center gap-2 mb-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#2563EB' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: muted }}>Selections</span>
+          {/* Title + actions */}
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-1" style={{ color: colors.text }}>Design Selection Manager</h1>
+              <p className="text-sm" style={{ color: colors.textMuted }}>Track material selections and client approvals</p>
             </div>
-            <div className="text-2xl font-bold mb-2" style={{ color: '#2563EB' }}>
-              {stats.approved} / {stats.total}
+            <div className="flex items-center gap-2">
+              {compareItems.length > 0 && (
+                <button
+                  onClick={() => setShowCompare(true)}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                  style={{ backgroundColor: '#7C3AED' }}
+                >
+                  Compare ({compareItems.length})
+                </button>
+              )}
+              {selectedProject && (
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                  style={{ backgroundColor: '#2563EB' }}
+                >
+                  + Add Selection
+                </button>
+              )}
+              <button
+                onClick={() => setShowPackageModal(true)}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                style={{ backgroundColor: '#16A34A' }}
+              >
+                Generate Package
+              </button>
+            </div>
+          </div>
+
+          {/* Project picker */}
+          <div className="mb-5">
+            <select
+              value={selectedProject}
+              onChange={e => setSelectedProject(e.target.value)}
+              className="rounded-lg text-sm focus:outline-none"
+              style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text, padding: '0.5rem 0.75rem' }}
+            >
+              <option value="">Choose a project…</option>
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>{p.name}{p.client ? ` — ${p.client}` : ''}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Metric cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Selections */}
+          <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#2563EB' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-xs" style={{ color: colors.textMuted }}>Selections</div>
+                <div className="text-lg font-bold" style={{ color: colors.text }}>{stats.approved} / {stats.total}</div>
+              </div>
             </div>
             <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
               <div className="h-full rounded-full transition-all" style={{ width: `${stats.total ? (stats.approved / stats.total) * 100 : 0}%`, backgroundColor: '#2563EB' }} />
             </div>
-            <div className="flex justify-between text-xs mt-1" style={{ color: muted }}>
+            <div className="flex justify-between text-xs mt-1" style={{ color: colors.textMuted }}>
               <span>{stats.total ? Math.round((stats.approved / stats.total) * 100) : 0}% approved</span>
               <span>{stats.total} total</span>
             </div>
           </div>
 
           {/* Pending */}
-          <div className="p-4 rounded-xl" style={card}>
-            <div className="flex items-center gap-2 mb-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#D97706' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: muted }}>Pending</span>
-            </div>
-            <div className="text-2xl font-bold mb-2" style={{ color: stats.pending > 0 ? '#D97706' : '#16A34A' }}>
-              {stats.pending} awaiting
+          <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: stats.pending > 0 ? 'rgba(217,119,6,0.1)' : 'rgba(22,163,74,0.1)' }}>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: stats.pending > 0 ? '#D97706' : '#16A34A' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-xs" style={{ color: colors.textMuted }}>Pending</div>
+                <div className="text-lg font-bold" style={{ color: stats.pending > 0 ? '#D97706' : '#16A34A' }}>{stats.pending} awaiting</div>
+              </div>
             </div>
             <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
               <div className="h-full rounded-full transition-all" style={{ width: `${stats.total ? (stats.pending / stats.total) * 100 : 0}%`, backgroundColor: stats.pending > 0 ? '#D97706' : '#16A34A' }} />
             </div>
-            <div className="text-xs mt-1" style={{ color: muted }}>
+            <div className="text-xs mt-1" style={{ color: colors.textMuted }}>
               {stats.pending > 0 ? `${stats.pending} need client sign-off` : 'All selections resolved'}
             </div>
           </div>
 
-          {/* Ordered / On-site */}
-          <div className="p-4 rounded-xl" style={card}>
-            <div className="flex items-center gap-2 mb-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#7C3AED' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" />
-              </svg>
-              <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: muted }}>Ordered</span>
-            </div>
-            <div className="text-2xl font-bold mb-2" style={{ color: '#7C3AED' }}>
-              {stats.ordered} on order
+          {/* Ordered */}
+          <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(124,58,237,0.1)' }}>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#7C3AED' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-xs" style={{ color: colors.textMuted }}>Ordered</div>
+                <div className="text-lg font-bold" style={{ color: '#7C3AED' }}>{stats.ordered} on order</div>
+              </div>
             </div>
             <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
               <div className="h-full rounded-full transition-all" style={{ width: `${stats.total ? (stats.ordered / stats.total) * 100 : 0}%`, backgroundColor: '#7C3AED' }} />
             </div>
-            <div className="text-xs mt-1" style={{ color: muted }}>
+            <div className="text-xs mt-1" style={{ color: colors.textMuted }}>
               {stats.total ? Math.round((stats.ordered / stats.total) * 100) : 0}% ordered or on-site
             </div>
           </div>
 
           {/* Investment */}
-          <div className="p-4 rounded-xl" style={card}>
-            <div className="flex items-center gap-2 mb-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#DB2777' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: muted }}>Investment</span>
-            </div>
-            <div className="text-2xl font-bold mb-2" style={{ color: colors.text }}>
-              {formatCurrency(stats.totalCost)}
+          <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(219,39,119,0.1)' }}>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#DB2777' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-xs" style={{ color: colors.textMuted }}>Investment</div>
+                <div className="text-lg font-bold" style={{ color: colors.text }}>{formatCurrency(stats.totalCost)}</div>
+              </div>
             </div>
             <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
               <div className="h-full rounded-full transition-all" style={{ width: `${stats.totalCost ? Math.min(100, (stats.upgradeCost / stats.totalCost) * 100) : 0}%`, backgroundColor: '#DB2777' }} />
             </div>
-            <div className="flex justify-between text-xs mt-1" style={{ color: muted }}>
+            <div className="flex justify-between text-xs mt-1" style={{ color: colors.textMuted }}>
               <span>{formatCurrency(stats.upgradeCost)} upgrades</span>
               <span>{stats.totalCost ? Math.round((stats.upgradeCost / stats.totalCost) * 100) : 0}% of total</span>
             </div>
           </div>
         </div>
+        </div>
+      </div>
 
+      {/* ── Body ── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filters */}
         <div className="p-4 rounded-xl mb-6 grid grid-cols-2 gap-4" style={card}>
           <div>
@@ -674,9 +704,10 @@ function DesignSelectionsContent() {
             })
           )}
         </div>
+      </div>
 
-        {/* Compare modal */}
-        {showCompare && compareItems.length > 0 && (
+      {/* Compare modal */}
+      {showCompare && compareItems.length > 0 && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
             <div className="rounded-xl shadow-xl w-full max-w-4xl max-h-[85vh] overflow-auto" style={{ backgroundColor: colors.bg }}>
               <div className="p-6">
@@ -717,8 +748,8 @@ function DesignSelectionsContent() {
           </div>
         )}
 
-        {/* Package modal */}
-        {showPackageModal && (
+      {/* Package modal */}
+      {showPackageModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
             <div className="rounded-xl shadow-xl w-full max-w-lg" style={{ backgroundColor: colors.bg }}>
               <div className="p-6">
@@ -760,7 +791,7 @@ function DesignSelectionsContent() {
           </div>
         )}
 
-      {/* ── Add Selection Modal ──────────────────────────────────────────────── */}
+      {/* ── Add Selection Modal ── */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
           <div className="rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={{ backgroundColor: colors.bg, border: colors.border }}>
@@ -868,7 +899,6 @@ function DesignSelectionsContent() {
         </div>
       )}
 
-      </div>
     </div>
   )
 }
