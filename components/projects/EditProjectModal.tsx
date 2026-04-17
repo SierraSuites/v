@@ -25,7 +25,6 @@ type FormData = {
   start_date: string
   end_date: string
   estimated_budget: string
-  progress: string
 }
 
 export default function EditProjectModal({ project, onClose }: Props) {
@@ -47,7 +46,6 @@ export default function EditProjectModal({ project, onClose }: Props) {
     start_date: project.start_date?.slice(0, 10) ?? '',
     end_date: project.end_date?.slice(0, 10) ?? '',
     estimated_budget: String(project.estimated_budget ?? 0),
-    progress: String(project.progress ?? 0),
   })
 
   function set(field: keyof FormData, value: string) {
@@ -80,7 +78,6 @@ export default function EditProjectModal({ project, onClose }: Props) {
         start_date: form.start_date || null,
         end_date: form.end_date || null,
         estimated_budget: parseFloat(form.estimated_budget) || 0,
-        progress: Math.min(100, Math.max(0, parseInt(form.progress) || 0)),
         updated_at: new Date().toISOString(),
       })
       .eq('id', project.id)
@@ -244,30 +241,17 @@ export default function EditProjectModal({ project, onClose }: Props) {
             </div>
           </div>
 
-          {/* Budget + Progress */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Estimated Budget ($)</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={form.estimated_budget}
-                onChange={e => set('estimated_budget', e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Progress ({form.progress}%)</label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                className="w-full mt-2"
-                value={form.progress}
-                onChange={e => set('progress', e.target.value)}
-              />
-            </div>
+          {/* Budget */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Estimated Budget ($)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={form.estimated_budget}
+              onChange={e => set('estimated_budget', e.target.value)}
+            />
           </div>
         </form>
 

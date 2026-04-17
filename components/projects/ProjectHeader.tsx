@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
-import { Calendar, DollarSign, TrendingUp, MapPin, AlertCircle } from 'lucide-react'
+import { Calendar, DollarSign, TrendingUp, MapPin, AlertCircle, Palette } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
@@ -117,6 +117,13 @@ export default function ProjectHeader({ project }: Props) {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            <Link
+              href={`/projects/${project.id}/design-selections`}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+            >
+              <Palette className="h-4 w-4" />
+              Design Selections
+            </Link>
             <button
               onClick={() => setShowEdit(true)}
               className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"

@@ -200,6 +200,9 @@ export interface ProjectDetails {
   isOverBudget: boolean
   daysRemaining: number
   isOverdue: boolean
+
+  // Design selections summary (price + status only — for budget projection seeding)
+  designSelectionsSummary: { price: number; status: string }[]
 }
 
 /**
@@ -255,10 +258,11 @@ export async function getProjectDetails(
       return { data: null, error: new Error('Project not found') }
     }
 
-    // Fetch change orders and RFIs separately
-    const [changeOrdersRes, rfisRes] = await Promise.all([
+    // Fetch change orders, RFIs, and design selections summary separately
+    const [changeOrdersRes, rfisRes, designSelectionsRes] = await Promise.all([
       supabase.from('project_change_orders').select('*').eq('project_id', projectId).order('created_at', { ascending: false }),
-      supabase.from('project_rfis').select('*').eq('project_id', projectId).order('created_at', { ascending: false })
+      supabase.from('project_rfis').select('*').eq('project_id', projectId).order('created_at', { ascending: false }),
+      supabase.from('design_selections').select('price, status').eq('project_id', projectId),
     ])
 
     // Fetch tasks separately (no FK relationship registered with PostgREST)
@@ -320,10 +324,14 @@ export async function getProjectDetails(
       } : null
     }))
 
-    // Calculate budget metrics
-    const budgetRemaining = project.estimated_budget - project.spent
+    // Calculate budget metrics from actual expenses (not the stale `spent` column)
+    const actualSpent = (project.project_expenses || []).reduce(
+      (sum: number, e: any) => sum + (e.amount || 0),
+      0
+    )
+    const budgetRemaining = project.estimated_budget - actualSpent
     const budgetPercentage = project.estimated_budget > 0
-      ? (project.spent / project.estimated_budget) * 100
+      ? (actualSpent / project.estimated_budget) * 100
       : 0
     const isOverBudget = budgetPercentage > 100
 
@@ -348,17 +356,22 @@ export async function getProjectDetails(
       type: project.type,
       description: project.description,
 
-      // Status & Progress
+      // Status & Progress — computed from tasks, not the manual DB column
       status: project.status,
-      progress: project.progress,
+      progress: (() => {
+        const allTasks = (tasksData || []) as ProjectTask[]
+        if (allTasks.length === 0) return 0
+        const completed = allTasks.filter(t => t.status === 'completed').length
+        return Math.round((completed / allTasks.length) * 100)
+      })(),
 
       // Timeline
       start_date: project.start_date,
       end_date: project.end_date,
 
-      // Budget
+      // Budget — computed from actual expenses, not the stale `spent` column
       estimated_budget: project.estimated_budget,
-      spent: project.spent,
+      spent: actualSpent,
       currency: project.currency,
 
       // Team
@@ -396,7 +409,10 @@ export async function getProjectDetails(
       budgetPercentage,
       isOverBudget,
       daysRemaining,
-      isOverdue
+      isOverdue,
+
+      // Design selections summary for budget projection seeding
+      designSelectionsSummary: (designSelectionsRes.data || []) as { price: number; status: string }[],
     }
 
     return { data: projectDetails, error: null }

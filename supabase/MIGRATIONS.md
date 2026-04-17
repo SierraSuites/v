@@ -177,6 +177,24 @@ The `authenticated` role had no privileges on `user_role_assignments`, causing `
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_role_assignments TO authenticated;
 ```
 
+### `project_expenses` — design_selection_id FK (2026-04-16) ✅
+
+Links a payment expense back to the specific design selection it was recorded for. Enables paid status display on selection cards without a separate column.
+
+```sql
+ALTER TABLE project_expenses ADD COLUMN IF NOT EXISTS design_selection_id uuid REFERENCES design_selections(id) ON DELETE SET NULL;
+```
+
+### `design_selections` — client approval signature columns (2026-04-16) ✅
+
+Added `approved_by_name` and `approved_by_email` to support typed-name electronic signature on client approvals. Entering a client's full name now constitutes a legally binding e-signature (E-SIGN Act / UETA) and is stored alongside the existing `client_approved` boolean and `approved_date` timestamp.
+
+```sql
+ALTER TABLE design_selections
+  ADD COLUMN IF NOT EXISTS approved_by_name text,
+  ADD COLUMN IF NOT EXISTS approved_by_email text;
+```
+
 ### 2FA columns + `user_sessions` table (2026-04-05) ✅
 
 Added columns to `user_profiles` required for two-factor authentication, and created `user_sessions` for active session tracking on the Security settings page.

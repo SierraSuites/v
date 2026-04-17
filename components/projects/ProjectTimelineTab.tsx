@@ -73,6 +73,7 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
   const [editingDetail, setEditingDetail] = useState(false)
   const [editForm, setEditForm] = useState({ name: '', description: '', due_date: '', status: 'pending' as ProjectMilestone['status'] })
   const [confirmDeleteDetailId, setConfirmDeleteDetailId] = useState<string | null>(null)
+  const [confirmDeleteListId, setConfirmDeleteListId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   // Sort milestones by due_date
@@ -203,7 +204,6 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
   }
 
   async function deleteMilestone(milestoneId: string) {
-    if (!confirm('Delete this milestone?')) return
     const supabase = (await import('@/lib/supabase/client')).createClient()
     await supabase.from('project_milestones').delete().eq('id', milestoneId)
     setMilestones(prev => {
@@ -212,6 +212,7 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
       return next
     })
     setSelectedIds(prev => { const next = new Set(prev); next.delete(milestoneId); return next })
+    setConfirmDeleteListId(null)
   }
 
   return (
@@ -488,7 +489,7 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
 
                 {/* Delete */}
                 <button
-                  onClick={e => { e.stopPropagation(); deleteMilestone(milestone.id) }}
+                  onClick={e => { e.stopPropagation(); setConfirmDeleteListId(milestone.id) }}
                   className="shrink-0 p-1 text-gray-300 hover:text-red-500 rounded"
                 >
                   <TrashIcon className="h-4 w-4" />
@@ -772,6 +773,37 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
           </div>
         )
       })()}
+
+      {/* Confirm Delete Modal (list) */}
+      {confirmDeleteListId && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDeleteListId(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+            <div className="pointer-events-auto rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
+              <p className="text-sm font-medium text-center mb-1" style={{ color: colors.text }}>Delete this milestone?</p>
+              <p className="text-xs text-center mb-5" style={{ color: colors.textMuted }}>
+                {milestones.find(m => m.id === confirmDeleteListId)?.name}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => deleteMilestone(confirmDeleteListId)}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white"
+                  style={{ backgroundColor: '#DC2626' }}
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => setConfirmDeleteListId(null)}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

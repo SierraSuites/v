@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { createClient } from '@/lib/supabase/client'
 import { updateTask, createTask } from '@/lib/supabase/tasks'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import {
   ClockIcon,
   XMarkIcon,
@@ -77,6 +78,7 @@ function isOverdue(task: Task) {
 }
 
 export default function ProjectTasksTab({ project }: Props) {
+  const { colors } = useThemeColors()
   const [tasks, setTasks] = useState<Task[]>(project.tasks as Task[])
   const [loading, setLoading] = useState(false)
   const [filterStatus, setFilterStatus] = useState<string>('all')
@@ -748,23 +750,27 @@ export default function ProjectTasksTab({ project }: Props) {
       {/* Confirm Delete Modal */}
       {confirmDeleteId && (
         <>
-          <div className="fixed inset-0 bg-black/30 z-50" onClick={() => setConfirmDeleteId(null)} />
+          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDeleteId(null)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-80 pointer-events-auto">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Delete Task</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">This action cannot be undone.</p>
+            <div className="pointer-events-auto rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
+              <p className="text-sm font-medium text-center mb-1" style={{ color: colors.text }}>Delete this task?</p>
+              <p className="text-xs text-center mb-5" style={{ color: colors.textMuted }}>
+                {tasks.find(t => t.id === confirmDeleteId)?.title}
+              </p>
               <div className="flex gap-3">
                 <button
-                  onClick={() => setConfirmDeleteId(null)}
-                  className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  Cancel
-                </button>
-                <button
                   onClick={() => deleteTask(confirmDeleteId)}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white"
+                  style={{ backgroundColor: '#DC2626' }}
                 >
                   Delete
+                </button>
+                <button
+                  onClick={() => setConfirmDeleteId(null)}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
+                >
+                  Cancel
                 </button>
               </div>
             </div>
