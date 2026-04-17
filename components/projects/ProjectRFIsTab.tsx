@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import {
   PlusIcon,
   QuestionMarkCircleIcon,
@@ -58,6 +59,7 @@ function isOverdue(dueDate: string | null, status: RFI['status']) {
 }
 
 export default function ProjectRFIsTab({ project }: Props) {
+  const { colors } = useThemeColors()
   const [rfis, setRFIs] = useState<RFI[]>(project.rfis as RFI[])
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
@@ -66,6 +68,7 @@ export default function ProjectRFIsTab({ project }: Props) {
   const [respondingId, setRespondingId] = useState<string | null>(null)
   const [responseText, setResponseText] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const [form, setForm] = useState({
     subject: '',
@@ -155,9 +158,9 @@ export default function ProjectRFIsTab({ project }: Props) {
   }
 
   async function deleteRFI(rfiId: string) {
-    if (!confirm('Delete this RFI?')) return
     const res = await fetch(`/api/projects/${project.id}/rfis/${rfiId}`, { method: 'DELETE' })
     if (res.ok) setRFIs(prev => prev.filter(r => r.id !== rfiId))
+    setConfirmDeleteId(null)
   }
 
   const filtered = filterStatus === 'all' ? rfis : rfis.filter(r => r.status === filterStatus)
@@ -471,7 +474,7 @@ export default function ProjectRFIsTab({ project }: Props) {
                       )}
                       {rfi.status === 'open' && (
                         <button
-                          onClick={() => deleteRFI(rfi.id)}
+                          onClick={() => setConfirmDeleteId(rfi.id)}
                           className="text-xs px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg font-medium ml-auto"
                         >
                           <TrashIcon className="h-3.5 w-3.5 inline mr-1" />
@@ -485,6 +488,37 @@ export default function ProjectRFIsTab({ project }: Props) {
             )
           })}
         </div>
+      )}
+
+      {/* Confirm Delete Modal */}
+      {confirmDeleteId && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDeleteId(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+            <div className="pointer-events-auto rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
+              <p className="text-sm font-medium text-center mb-1" style={{ color: colors.text }}>Delete this RFI?</p>
+              <p className="text-xs text-center mb-5" style={{ color: colors.textMuted }}>
+                {rfis.find(r => r.id === confirmDeleteId)?.subject}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => deleteRFI(confirmDeleteId)}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white"
+                  style={{ backgroundColor: '#DC2626' }}
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => setConfirmDeleteId(null)}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )

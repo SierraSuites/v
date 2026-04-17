@@ -7,6 +7,14 @@ import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import toast from 'react-hot-toast'
 
+interface SelectionCosts {
+  committed: number   // ordered or received — money is essentially spent
+  approved: number    // client approved, not yet ordered
+  unconfirmed: number // still pending approval
+  total: number       // all selections combined
+  count: { committed: number; approved: number; unconfirmed: number }
+}
+
 interface Expense {
   id: string
   category: string
@@ -56,7 +64,20 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
       created_by: { name: 'Unknown', avatar: '' }
     }))
   )
-  const [loading, setLoading] = useState(false)
+  const [selectionCosts, setSelectionCosts] = useState<SelectionCosts>(() => {
+    const sels = project.designSelectionsSummary || []
+    const committed   = sels.filter(s => s.status === 'ordered' || s.status === 'received')
+    const approved    = sels.filter(s => s.status === 'approved')
+    const unconfirmed = sels.filter(s => s.status === 'pending' || s.status === 'rejected')
+    const sum = (arr: { price: number }[]) => arr.reduce((n, s) => n + (s.price || 0), 0)
+    return {
+      committed:   sum(committed),
+      approved:    sum(approved),
+      unconfirmed: sum(unconfirmed),
+      total:       sum(sels),
+      count: { committed: committed.length, approved: approved.length, unconfirmed: unconfirmed.length },
+    }
+  })
   const [showAddExpense, setShowAddExpense] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; description: string } | null>(null)
@@ -82,26 +103,20 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
     try {
       const supabase = createClient()
 
-      // Load project budget info
-      const { data: project, error: projectError } = await supabase
-        .from('projects')
-        .select('estimated_budget, currency')
-        .eq('id', projectId)
-        .single()
+      // Load project budget info, expenses, and design selections in parallel
+      const [projectRes, expensesRes, selectionsRes] = await Promise.all([
+        supabase.from('projects').select('estimated_budget, currency').eq('id', projectId).single(),
+        supabase.from('project_expenses').select('id, category, description, amount, date, vendor, payment_status, created_by').eq('project_id', projectId).order('date', { ascending: false }),
+        supabase.from('design_selections').select('price, status').eq('project_id', projectId),
+      ])
 
-      if (projectError) throw projectError
+      if (projectRes.error) throw projectRes.error
+      if (expensesRes.error) throw expensesRes.error
 
-      // Load all expenses for this project
-      const { data: expensesData, error: expensesError } = await supabase
-        .from('project_expenses')
-        .select('id, category, description, amount, date, vendor, payment_status, created_by')
-        .eq('project_id', projectId)
-        .order('date', { ascending: false })
-
-      if (expensesError) throw expensesError
+      const expensesData = expensesRes.data || []
 
       // Fetch names for all unique creators in one query
-      const creatorIds = [...new Set((expensesData || []).map((e: any) => e.created_by).filter(Boolean))]
+      const creatorIds = [...new Set(expensesData.map((e: any) => e.created_by).filter(Boolean))]
       const creatorMap: Record<string, { full_name: string | null, avatar_url: string | null }> = {}
       if (creatorIds.length > 0) {
         const { data: profiles } = await supabase
@@ -111,7 +126,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
         profiles?.forEach((p: any) => { creatorMap[p.id] = p })
       }
 
-      const formattedExpenses: Expense[] = (expensesData || []).map((exp: any) => ({
+      const formattedExpenses: Expense[] = expensesData.map((exp: any) => ({
         id: exp.id,
         category: exp.category,
         description: exp.description,
@@ -126,24 +141,39 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
       }))
 
       const totalExpenses = formattedExpenses.reduce((sum, exp) => sum + exp.amount, 0)
-      const estimatedBudget = project.estimated_budget || 0
+      const estimatedBudget = projectRes.data.estimated_budget || 0
       const remaining = estimatedBudget - totalExpenses
       const percentageUsed = estimatedBudget > 0 ? (totalExpenses / estimatedBudget) * 100 : 0
-
 
       setBudgetData({
         estimated_budget: estimatedBudget,
         total_expenses: totalExpenses,
         remaining,
         percentage_used: percentageUsed,
-        currency: project.currency || 'USD'
+        currency: projectRes.data.currency || 'USD'
       })
 
       setExpenses(formattedExpenses)
+
+      // Compute design selection cost breakdown
+      const sels = selectionsRes.data || []
+      const committedSels = sels.filter((s: any) => s.status === 'ordered' || s.status === 'received')
+      const approvedSels  = sels.filter((s: any) => s.status === 'approved')
+      const unconfirmedSels = sels.filter((s: any) => s.status === 'pending' || s.status === 'rejected')
+      const sum = (arr: any[]) => arr.reduce((n, s) => n + (s.price || 0), 0)
+      setSelectionCosts({
+        committed:   sum(committedSels),
+        approved:    sum(approvedSels),
+        unconfirmed: sum(unconfirmedSels),
+        total:       sum(sels),
+        count: {
+          committed:   committedSels.length,
+          approved:    approvedSels.length,
+          unconfirmed: unconfirmedSels.length,
+        },
+      })
     } catch (error: any) {
-      console.error('Failed to load budget data:', error?.message, error?.code, error?.details, error)
-    } finally {
-      setLoading(false)
+      console.error('Failed to refresh budget data:', error?.message, error?.code, error?.details)
     }
   }
 
@@ -199,7 +229,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
 
       // Reset form
       setNewExpense({
-        category: 'materials',
+        category: 'labor',
         description: '',
         amount: '',
         date: new Date().toISOString().split('T')[0],
@@ -271,7 +301,6 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
 
   const categories = [
     { value: 'all', label: 'All Expenses' },
-    { value: 'materials', label: 'Materials' },
     { value: 'labor', label: 'Labor' },
     { value: 'equipment', label: 'Equipment' },
     { value: 'permits', label: 'Permits' },
@@ -299,13 +328,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
     }
   }).filter(item => item.amount > 0)
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    )
-  }
+
 
   if (!budgetData) {
     return (
@@ -393,10 +416,122 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
     <>
     <div className="space-y-6">
       {/* Header */}
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900">Budget</h2>
+        <p className="text-sm text-gray-500 mt-1">Track project expenses and budget allocation</p>
+      </div>
+
+      {/* Unified Budget Overview */}
+      {(() => {
+        const hasSelections = selectionCosts.total > 0
+        const projected = budgetData.total_expenses + selectionCosts.committed + selectionCosts.approved
+        const projectedPct = budgetData.estimated_budget > 0 ? (projected / budgetData.estimated_budget) * 100 : 0
+        const displayPct = hasSelections ? projectedPct : budgetData.percentage_used
+        const displayStatus = displayPct > 100 ? 'over' : displayPct > 90 ? 'warning' : 'healthy'
+        const remaining = budgetData.estimated_budget - (hasSelections ? projected : budgetData.total_expenses)
+
+        return (
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            {/* Header row */}
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-gray-900">
+                    {formatCurrency(hasSelections ? projected : budgetData.total_expenses, budgetData.currency)}
+                  </span>
+                  <span className="text-sm text-gray-400">
+                    of {formatCurrency(budgetData.estimated_budget, budgetData.currency)}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {hasSelections ? 'Projected total (actual + committed + approved)' : 'Actual expenses'}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className={`text-lg font-bold ${displayStatus === 'over' ? 'text-red-600' : displayStatus === 'warning' ? 'text-yellow-600' : 'text-green-600'}`}>
+                  {displayStatus === 'over' ? '+' : ''}{formatCurrency(Math.abs(remaining), budgetData.currency)}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">{displayStatus === 'over' ? 'over budget' : 'remaining'}</p>
+              </div>
+            </div>
+
+            {/* Stacked bar */}
+            <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden flex mb-1.5">
+              {budgetData.total_expenses > 0 && (
+                <div className="h-full bg-blue-500 transition-all" style={{ width: `${Math.min((budgetData.total_expenses / budgetData.estimated_budget) * 100, 100)}%` }} />
+              )}
+              {selectionCosts.committed > 0 && (
+                <div className="h-full bg-purple-500 transition-all" style={{ width: `${Math.min((selectionCosts.committed / budgetData.estimated_budget) * 100, Math.max(0, 100 - (budgetData.total_expenses / budgetData.estimated_budget) * 100))}%` }} />
+              )}
+              {selectionCosts.approved > 0 && (
+                <div className="h-full bg-yellow-400 transition-all" style={{ width: `${Math.min((selectionCosts.approved / budgetData.estimated_budget) * 100, Math.max(0, 100 - ((budgetData.total_expenses + selectionCosts.committed) / budgetData.estimated_budget) * 100))}%` }} />
+              )}
+              {!hasSelections && budgetData.total_expenses === 0 && (
+                <div className="h-full bg-green-400 transition-all" style={{ width: '0%' }} />
+              )}
+            </div>
+            <p className={`text-xs ${displayStatus === 'over' ? 'text-red-500' : 'text-gray-400'}`}>
+              {displayPct.toFixed(1)}% of budget {hasSelections ? 'projected' : 'used'}
+            </p>
+
+            {/* Breakdown rows — only shown when design selections exist */}
+            {hasSelections && (
+              <div className="mt-5 pt-4 border-t border-gray-100 divide-y divide-gray-100">
+                <div className="flex items-center justify-between py-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                    <span className="text-gray-600">Actual expenses</span>
+                  </div>
+                  <span className="font-medium text-gray-900">{formatCurrency(budgetData.total_expenses, budgetData.currency)}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                    <span className="text-gray-600">Committed</span>
+                    <span className="text-gray-400 text-xs">({selectionCosts.count.committed} ordered/received)</span>
+                  </div>
+                  <span className="font-medium text-gray-900">{formatCurrency(selectionCosts.committed, budgetData.currency)}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-yellow-400 shrink-0" />
+                    <span className="text-gray-600">Approved, not ordered</span>
+                    <span className="text-gray-400 text-xs">({selectionCosts.count.approved})</span>
+                  </div>
+                  <span className="font-medium text-gray-900">{formatCurrency(selectionCosts.approved, budgetData.currency)}</span>
+                </div>
+                {selectionCosts.unconfirmed > 0 && (
+                  <div className="flex items-center justify-between py-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-gray-300 shrink-0" />
+                      <span className="text-gray-400">Unconfirmed</span>
+                      <span className="text-gray-400 text-xs">({selectionCosts.count.unconfirmed} pending approval)</span>
+                    </div>
+                    <span className="font-medium text-gray-400">{formatCurrency(selectionCosts.unconfirmed, budgetData.currency)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-2.5 pb-0.5">
+                  <div />
+                  <div className="text-right">
+                    <span className={`text-sm font-semibold ${displayStatus === 'over' ? 'text-red-600' : displayStatus === 'warning' ? 'text-yellow-600' : 'text-gray-900'}`}>
+                      {formatCurrency(projected, budgetData.currency)}
+                    </span>
+                    <span className="text-xs text-gray-400 ml-1.5">projected ({projectedPct.toFixed(1)}%)</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* Expenses Section */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">Budget</h2>
-          <p className="text-sm text-gray-500 mt-1">Track project expenses and budget allocation</p>
+        <div className="flex items-baseline gap-2">
+          <h3 className="text-lg font-semibold text-gray-900">Expenses</h3>
+          {expenses.length > 0 && (
+            <span className="text-sm text-gray-400">{expenses.length} {expenses.length === 1 ? 'entry' : 'entries'}</span>
+          )}
         </div>
         <button
           onClick={() => setShowAddExpense(true)}
@@ -408,126 +543,6 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
           Add Expense
         </button>
       </div>
-
-      {/* Budget Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-600">Total Budget</p>
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: darkMode ? 'rgba(37,99,235,0.2)' : '#dbeafe' }}>
-              <svg className="w-5 h-5" style={{ color: darkMode ? '#60a5fa' : '#2563eb' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">
-            {formatCurrency(budgetData.estimated_budget, budgetData.currency)}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">Estimated budget</p>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-600">Spent</p>
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: darkMode ? 'rgba(234,88,12,0.2)' : '#ffedd5' }}>
-              <svg className="w-5 h-5" style={{ color: darkMode ? '#fb923c' : '#ea580c' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-              </svg>
-            </div>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">
-            {formatCurrency(budgetData.total_expenses, budgetData.currency)}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">
-            {budgetData.percentage_used.toFixed(1)}% of budget
-          </p>
-        </div>
-
-        <div className={`bg-white border rounded-lg p-6 ${
-          budgetStatus === 'over' ? 'border-red-300 bg-red-50' :
-          budgetStatus === 'warning' ? 'border-yellow-300 bg-yellow-50' :
-          'border-gray-200'
-        }`}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-600">Remaining</p>
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{
-              backgroundColor: darkMode
-                ? budgetStatus === 'over' ? 'rgba(220,38,38,0.2)' : budgetStatus === 'warning' ? 'rgba(202,138,4,0.2)' : 'rgba(22,163,74,0.2)'
-                : budgetStatus === 'over' ? '#fee2e2' : budgetStatus === 'warning' ? '#fef9c3' : '#dcfce7'
-            }}>
-              <svg className="w-5 h-5" style={{
-                color: darkMode
-                  ? budgetStatus === 'over' ? '#f87171' : budgetStatus === 'warning' ? '#facc15' : '#4ade80'
-                  : budgetStatus === 'over' ? '#dc2626' : budgetStatus === 'warning' ? '#ca8a04' : '#16a34a'
-              }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <p className={`text-3xl font-bold ${
-            budgetStatus === 'over' ? 'text-red-600' :
-            budgetStatus === 'warning' ? 'text-yellow-600' :
-            'text-green-600'
-          }`}>
-            {formatCurrency(Math.abs(budgetData.remaining), budgetData.currency)}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">
-            {budgetStatus === 'over' ? 'Over budget' : 'Remaining'}
-          </p>
-        </div>
-      </div>
-
-      {/* Budget Progress Bar */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-gray-900">Budget Usage</h3>
-          <span className={`text-sm font-medium ${
-            budgetStatus === 'over' ? 'text-red-600' :
-            budgetStatus === 'warning' ? 'text-yellow-600' :
-            'text-green-600'
-          }`}>
-            {budgetData.percentage_used.toFixed(1)}%
-          </span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-4">
-          <div
-            className={`h-4 rounded-full transition-all ${
-              budgetStatus === 'over' ? 'bg-red-600' :
-              budgetStatus === 'warning' ? 'bg-yellow-500' :
-              'bg-green-600'
-            }`}
-            style={{ width: `${Math.min(budgetData.percentage_used, 100)}%` }}
-          ></div>
-        </div>
-      </div>
-
-      {/* Expenses by Category */}
-      {expensesByCategory.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Expenses by Category</h3>
-          <div className="space-y-3">
-            {expensesByCategory.map((item, index) => (
-              <div key={index}>
-                <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="font-medium text-gray-700">{item.category}</span>
-                  <span className="text-gray-900 font-semibold">
-                    {formatCurrency(item.amount, budgetData.currency)} ({item.percentage.toFixed(1)}%)
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full"
-                    style={{ width: `${item.percentage}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Expense History Header */}
-      <h3 className="text-lg font-semibold text-gray-900">Expense History</h3>
 
       {/* Add Expense Modal */}
       {showAddExpense && (
@@ -908,7 +923,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
                   className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
                   style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text, colorScheme: darkMode ? 'dark' : 'light' }}
                 >
-                  {['materials','labor','equipment','permits','subcontractors','utilities','insurance','other'].map(c => (
+                  {['labor','equipment','permits','subcontractors','utilities','insurance','other'].map(c => (
                     <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
                   ))}
                 </select>
@@ -974,27 +989,31 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
 
     {/* Delete confirmation modal */}
     {confirmDelete && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
-          <p className="text-sm text-gray-800 text-center">
-            Are you sure you want to delete expense &ldquo;{confirmDelete.description}&rdquo;?
-          </p>
-          <div className="mt-5 flex justify-center gap-3">
-            <button
-              onClick={confirmDeleteExpense}
-              className="px-5 py-2 rounded-full bg-white border border-gray-300 text-sm font-medium text-gray-800 hover:bg-gray-50"
-            >
-              OK
-            </button>
-            <button
-              onClick={() => setConfirmDelete(null)}
-              className="px-5 py-2 rounded-full bg-white border border-gray-300 text-sm font-medium text-gray-800 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
+      <>
+        <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDelete(null)} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="pointer-events-auto rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
+            <p className="text-sm font-medium text-center mb-1" style={{ color: colors.text }}>Delete this expense?</p>
+            <p className="text-xs text-center mb-5" style={{ color: colors.textMuted }}>{confirmDelete.description}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={confirmDeleteExpense}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white"
+                style={{ backgroundColor: '#DC2626' }}
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     )}
     </>
   )

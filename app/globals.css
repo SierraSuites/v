@@ -162,6 +162,9 @@
   * {
     @apply border-border outline-ring/50;
   }
+  button, [role="button"], select {
+    cursor: pointer;
+  }
   body {
     @apply bg-background text-foreground;
     /* Added generous line-height for body text */

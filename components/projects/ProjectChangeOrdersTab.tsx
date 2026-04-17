@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import {
   PlusIcon,
   DocumentTextIcon,
@@ -61,11 +62,13 @@ function formatDate(dateStr: string) {
 }
 
 export default function ProjectChangeOrdersTab({ project }: Props) {
+  const { colors } = useThemeColors()
   const [changeOrders, setChangeOrders] = useState<ChangeOrder[]>(project.changeOrders as ChangeOrder[])
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -134,11 +137,11 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
   }
 
   async function deleteCO(coId: string) {
-    if (!confirm('Delete this change order?')) return
     const res = await fetch(`/api/projects/${project.id}/change-orders/${coId}`, { method: 'DELETE' })
     if (res.ok) {
       setChangeOrders(prev => prev.filter(co => co.id !== coId))
     }
+    setConfirmDeleteId(null)
   }
 
   // Summary stats
@@ -410,7 +413,7 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
                     )}
                     {co.status === 'draft' && (
                       <button
-                        onClick={() => deleteCO(co.id)}
+                        onClick={() => setConfirmDeleteId(co.id)}
                         className="text-xs px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg font-medium ml-auto"
                       >
                         <TrashIcon className="h-3.5 w-3.5 inline mr-1" />
@@ -423,6 +426,37 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Confirm Delete Modal */}
+      {confirmDeleteId && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDeleteId(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+            <div className="pointer-events-auto rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
+              <p className="text-sm font-medium text-center mb-1" style={{ color: colors.text }}>Delete this change order?</p>
+              <p className="text-xs text-center mb-5" style={{ color: colors.textMuted }}>
+                {changeOrders.find(co => co.id === confirmDeleteId)?.title}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => deleteCO(confirmDeleteId)}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white"
+                  style={{ backgroundColor: '#DC2626' }}
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => setConfirmDeleteId(null)}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )

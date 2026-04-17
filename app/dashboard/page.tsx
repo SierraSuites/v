@@ -53,12 +53,13 @@ interface Activity {
   action: string
   entity_type: string
   entity_id: string
+  entity_name?: string
   metadata: any
   created_at: string
-  user_id: string
+  user_id: string | null
   user_profiles?: {
     full_name: string
-  }
+  } | null
 }
 
 interface Task {
@@ -67,6 +68,8 @@ interface Task {
   due_date: string
   priority: string
   status: string
+  progress: number
+  trade?: string | null
   project_id: string
   projects?: {
     name: string

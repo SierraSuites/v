@@ -3,13 +3,14 @@
 import Link from 'next/link'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
-
 interface Task {
   id: string
   title: string
   due_date: string
   priority: string
   status: string
+  progress: number
+  trade?: string | null
   project_id: string
   projects?: {
     name: string
@@ -20,37 +21,34 @@ interface UpcomingTasksProps {
   tasks: Task[]
 }
 
-// Spec line 235: Priority icons
-function getPriorityIcon(priority: string) {
-  switch (priority) {
-    case 'critical':
-      return (
-        <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
-        </svg>
-      )
-    case 'high':
-      return (
-        <svg className="w-4 h-4 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-      )
-    case 'medium':
-      return (
-        <svg className="w-4 h-4 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-        </svg>
-      )
-    default:
-      return (
-        <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
-        </svg>
-      )
-  }
+const TRADE_COLORS: Record<string, { light: string; dark: string; border: string }> = {
+  electrical: { light: '#FFF9E6', dark: 'rgba(255,217,61,0.15)', border: '#FFD93D' },
+  plumbing:   { light: '#E5F4FF', dark: 'rgba(106,155,253,0.15)', border: '#6A9BFD' },
+  hvac:       { light: '#F0F9FF', dark: 'rgba(56,189,248,0.15)',  border: '#38BDF8' },
+  concrete:   { light: '#F3F4F6', dark: 'rgba(107,114,128,0.15)', border: '#6B7280' },
+  carpentry:  { light: '#FFF5EB', dark: 'rgba(217,119,6,0.15)',   border: '#D97706' },
+  framing:    { light: '#FFF5EB', dark: 'rgba(217,119,6,0.15)',   border: '#D97706' },
+  masonry:    { light: '#F3F4F6', dark: 'rgba(107,114,128,0.15)', border: '#6B7280' },
+  roofing:    { light: '#EFF6FF', dark: 'rgba(59,130,246,0.15)',  border: '#3B82F6' },
+  finishing:  { light: '#F9FAFB', dark: 'rgba(156,163,175,0.15)', border: '#9CA3AF' },
+  general:    { light: '#F9FAFB', dark: 'rgba(156,163,175,0.15)', border: '#9CA3AF' },
 }
 
-// Spec line 238: Due time formatting - "Today", "Tomorrow", or date
+const PRIORITY_CONFIG: Record<string, { color: string; label: string; barColor: string }> = {
+  urgent:   { color: '#DC2626', label: 'Urgent',  barColor: '#DC2626' },
+  high:     { color: '#F59E0B', label: 'High',    barColor: '#F59E0B' },
+  medium:   { color: '#3B82F6', label: 'Medium',  barColor: '#3B82F6' },
+  low:      { color: '#6B7280', label: 'Low',     barColor: '#6B7280' },
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  'todo':         'To Do',
+  'in-progress':  'In Progress',
+  'blocked':      'Blocked',
+  'under-review': 'Under Review',
+  'pending':      'Pending',
+}
+
 function formatDueDate(dateString: string) {
   const date = new Date(dateString + 'T00:00:00')
   const today = new Date()
@@ -60,11 +58,13 @@ function formatDueDate(dateString: string) {
 
   if (date.getTime() === today.getTime()) return 'Today'
   if (date.getTime() === tomorrow.getTime()) return 'Tomorrow'
-  if (date < today) return 'Overdue'
+  if (date < today) {
+    const diffDays = Math.ceil((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+    return `${diffDays}d overdue`
+  }
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-// Spec line 865 + Quality line 795: Check if task is overdue
 function isOverdue(dateString: string, status: string) {
   if (status === 'completed') return false
   const date = new Date(dateString + 'T00:00:00')
@@ -74,91 +74,168 @@ function isOverdue(dateString: string, status: string) {
 }
 
 export default function UpcomingTasks({ tasks }: UpcomingTasksProps) {
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'critical':
-        return 'bg-red-100 text-red-800'
-      case 'high':
-        return 'bg-orange-100 text-orange-800'
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'low':
-        return 'bg-green-100 text-green-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
   const { colors, darkMode } = useThemeColors()
 
+  const overdueTasks = tasks.filter(t => isOverdue(t.due_date, t.status))
+  const upcomingTasks = tasks.filter(t => !isOverdue(t.due_date, t.status))
+
+  const renderTask = (task: Task) => {
+    const overdue = isOverdue(task.due_date, task.status)
+    const blocked = task.status === 'blocked'
+    const priority = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.medium
+    const trade = task.trade ? TRADE_COLORS[task.trade] ?? TRADE_COLORS.general : null
+    const progress = task.progress ?? 0
+
+    const cardBg = overdue
+      ? (darkMode ? 'rgba(220,38,38,0.08)' : '#FFF5F5')
+      : colors.bgAlt
+    // Store border color separately so we can apply each side individually.
+    // Mixing `border` shorthand and `borderLeft` in the same style object causes
+    // a React rerender warning when switching themes.
+    const borderColor = overdue
+      ? (darkMode ? 'rgba(220,38,38,0.35)' : '#FCA5A5')
+      : (darkMode ? '#2d3548' : '#E0E0E0')
+    const accentColor = blocked
+      ? '#DC2626'
+      : trade ? trade.border : priority.color
+    const tradeBg = trade
+      ? (darkMode ? trade.dark : trade.light)
+      : (darkMode ? 'rgba(107,114,128,0.15)' : '#F3F4F6')
+
+    return (
+      <div
+        key={task.id}
+        className="rounded-lg p-3 transition-colors"
+        style={{
+          backgroundColor: cardBg,
+          borderTop: `1px solid ${borderColor}`,
+          borderRight: `1px solid ${borderColor}`,
+          borderBottom: `1px solid ${borderColor}`,
+          borderLeft: `4px solid ${accentColor}`,
+        }}
+      >
+        {/* Header row */}
+        <div className="flex items-start gap-2 mb-1.5">
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm truncate" style={{ color: overdue ? '#DC2626' : colors.text }}>
+              {task.title}
+            </p>
+            <p className="text-xs mt-0.5 truncate" style={{ color: colors.textMuted }}>
+              {task.projects?.name || 'No project'}
+            </p>
+          </div>
+          {/* Priority badge */}
+          <span
+            className="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded"
+            style={{
+              backgroundColor: darkMode ? `${priority.color}22` : `${priority.color}18`,
+              color: priority.color,
+            }}
+          >
+            {priority.label}
+          </span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="mb-2">
+          <div
+            className="w-full rounded-full h-1"
+            style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}
+          >
+            <div
+              className="h-1 rounded-full transition-all"
+              style={{
+                width: `${progress}%`,
+                backgroundColor: blocked ? '#DC2626' : priority.barColor,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Footer row */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Due date */}
+          <span
+            className="flex items-center gap-1 text-xs"
+            style={{ color: overdue ? '#DC2626' : colors.textMuted, fontWeight: overdue ? 600 : 400 }}
+          >
+            <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {formatDueDate(task.due_date)}
+          </span>
+
+          {/* Status badge */}
+          <span className="text-xs capitalize" style={{ color: colors.textMuted }}>
+            {blocked && <span style={{ color: '#DC2626' }}>Blocked · </span>}
+            {STATUS_LABEL[task.status] ?? task.status.replace(/-|_/g, ' ')}
+          </span>
+
+          {/* Trade badge */}
+          {task.trade && (
+            <span
+              className="ml-auto text-xs px-1.5 py-0.5 rounded capitalize"
+              style={{ backgroundColor: tradeBg, color: colors.textMuted }}
+            >
+              {task.trade}
+            </span>
+          )}
+
+          {/* Progress % */}
+          {progress > 0 && (
+            <span
+              className="text-xs font-semibold"
+              style={{ color: blocked ? '#DC2626' : priority.color, marginLeft: task.trade ? undefined : 'auto' }}
+            >
+              {progress}%
+            </span>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className=" rounded-lg shadow p-6" style={{ backgroundColor: colors.bg, border: colors.border, boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)' }}>
+    <div
+      className="rounded-lg shadow p-6"
+      style={{
+        backgroundColor: colors.bg,
+        border: colors.border,
+        boxShadow: '0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)',
+      }}
+    >
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold" style={{ color: colors.text }}>Upcoming Tasks</h2>
-        <Link
-          href="/taskflow"
-          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-        >
+        <Link href="/taskflow" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
           View All →
         </Link>
       </div>
 
-      <div className="space-y-3">
-        {tasks.length === 0 ? (
-          <div className="text-center py-8" style={{ color: colors.textMuted }}>
-            <p className="mb-2">No upcoming tasks</p>
-            <Link
-              href="/taskflow"
-              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-            >
-              Create a task →
-            </Link>
-          </div>
-        ) : (
-          tasks.map((task) => {
-            const overdue = isOverdue(task.due_date, task.status)
-            return (
-              <div
-                key={task.id}
-                className={`border rounded-lg p-3 transition-colors ${
-                  overdue
-                    ? 'border-red-300 bg-red-50 hover:border-red-400'
-                    : 'border-gray-200 hover:border-blue-300'
-                }`}
-              >
-                <div className="flex items-start gap-2">
-                  {/* Spec line 235: Priority icon */}
-                  <div className="flex-shrink-0 mt-0.5">
-                    {getPriorityIcon(task.priority)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-medium text-sm truncate ${overdue ? 'text-red-900' : 'text-gray-900'}`}>
-                      {task.title}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">{task.projects?.name || 'No project'}</p>
-                  </div>
-                  <span
-                    className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}
-                  >
-                    {task.priority}
-                  </span>
-                </div>
-                <div className="mt-2 flex items-center gap-3 text-xs">
-                  {/* Spec line 238: Due date formatting */}
-                  <span className={`flex items-center gap-1 ${overdue ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    {formatDueDate(task.due_date)}
-                  </span>
-                  {/* Spec line 240: Status badge */}
-                  <span className="text-gray-400 capitalize">{task.status.replace('_', ' ')}</span>
-                </div>
-              </div>
-            )
-          })
-        )}
-      </div>
+      {tasks.length === 0 ? (
+        <div className="text-center py-8" style={{ color: colors.textMuted }}>
+          <p className="mb-2">No upcoming tasks</p>
+          <Link href="/taskflow" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+            Create a task →
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {overdueTasks.length > 0 && (
+            <>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: '#DC2626' }}>
+                Overdue ({overdueTasks.length})
+              </p>
+              {overdueTasks.map(renderTask)}
+              {upcomingTasks.length > 0 && (
+                <p className="text-xs font-semibold uppercase tracking-wide mt-3 mb-1" style={{ color: colors.textMuted }}>
+                  Upcoming
+                </p>
+              )}
+            </>
+          )}
+          {upcomingTasks.map(renderTask)}
+        </div>
+      )}
     </div>
   )
 }
-

@@ -319,6 +319,7 @@ function LoginForm() {
                     required
                     className="w-full px-4 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="you@company.com"
+                    suppressHydrationWarning
                   />
                 </div>
 
@@ -343,6 +344,7 @@ function LoginForm() {
                     required
                     className="w-full px-4 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="Enter your password"
+                    suppressHydrationWarning
                   />
                 </div>
 
@@ -376,6 +378,7 @@ function LoginForm() {
             </>
           )}
         </div>
+
       </div>
     </div>
   )

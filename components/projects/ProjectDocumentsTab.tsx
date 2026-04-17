@@ -51,6 +51,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
   const [dragActive, setDragActive] = useState(false)
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null)
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null)
+  const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<{ id: string; name: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -193,11 +194,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
     }
   }
 
-  async function handleDelete(documentId: string, fileName: string) {
-    if (!confirm(`Are you sure you want to delete "${fileName}"? This action cannot be undone.`)) {
-      return
-    }
-
+  async function handleDelete(documentId: string) {
     try {
       const supabase = createClient()
 
@@ -211,6 +208,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
 
       // Remove from local state
       setDocuments(prev => prev.filter(d => d.id !== documentId))
+      setConfirmDeleteDoc(null)
     } catch (error) {
       console.error('Failed to delete document:', error)
       toast.error('Failed to delete document. Please try again.')
@@ -466,7 +464,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
                   </svg>
                 </button>
                 <button
-                  onClick={() => handleDelete(doc.id, doc.name)}
+                  onClick={() => setConfirmDeleteDoc({ id: doc.id, name: doc.name })}
                   className="p-2 rounded-lg transition-colors text-red-500"
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = darkMode ? 'rgba(239,68,68,0.15)' : '#FEF2F2')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
@@ -594,6 +592,35 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
           </div>
         )
       })()}
+
+      {/* Confirm Delete Modal */}
+      {confirmDeleteDoc && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDeleteDoc(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+            <div className="pointer-events-auto rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
+              <p className="text-sm font-medium text-center mb-1" style={{ color: colors.text }}>Delete this document?</p>
+              <p className="text-xs text-center mb-5" style={{ color: colors.textMuted }}>{confirmDeleteDoc.name}</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleDelete(confirmDeleteDoc.id)}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white"
+                  style={{ backgroundColor: '#DC2626' }}
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => setConfirmDeleteDoc(null)}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
