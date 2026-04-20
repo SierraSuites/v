@@ -10,12 +10,14 @@ import { createClient } from '@/lib/supabase/client'
 import { ProjectDetails, ProjectMilestone } from '@/lib/projects/get-project-details'
 import { Calendar, TrendingUp, FileText, Users, AlertTriangle } from 'lucide-react'
 import { format } from 'date-fns'
+import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 interface Props {
   project: ProjectDetails
 }
 
 export default function ProjectOverviewTab({ project }: Props) {
+  const { colors, darkMode } = useThemeColors()
   const [milestones, setMilestones] = useState<ProjectMilestone[]>(project.milestones)
   const [expenses, setExpenses] = useState(project.expenses)
 
@@ -74,73 +76,76 @@ export default function ProjectOverviewTab({ project }: Props) {
       )}
 
       {/* Key Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Milestones Progress */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(124,58,237,0.1)' }}>
+              <TrendingUp className="w-5 h-5" style={{ color: '#7C3AED' }} />
             </div>
             <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Milestones</div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {completedMilestones} / {totalMilestones}
+              <div className="text-xs" style={{ color: colors.textMuted }}>Milestones</div>
+              <div className="text-lg font-bold" style={{ color: colors.text }}>
+                {completedMilestones} <span className="text-sm font-normal" style={{ color: colors.textMuted }}>/ {totalMilestones}</span>
               </div>
             </div>
           </div>
-          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-purple-600 rounded-full transition-all"
-              style={{ width: `${milestoneProgress}%` }}
-            />
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${milestoneProgress}%`, backgroundColor: '#7C3AED' }} />
           </div>
-          <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">{milestoneProgress.toFixed(0)}% complete</div>
+          <div className="text-xs mt-1" style={{ color: colors.textMuted }}>{milestoneProgress.toFixed(0)}% complete</div>
         </div>
 
         {/* Documents */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-              <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
+              <FileText className="w-5 h-5" style={{ color: '#2563EB' }} />
             </div>
             <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Documents</div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{project.documents.length}</div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Documents</div>
+              <div className="text-lg font-bold" style={{ color: colors.text }}>{project.documents.length}</div>
             </div>
           </div>
-          <div className="text-xs text-gray-600 dark:text-gray-400">
-            {project.documents.filter(d => d.category === 'blueprint').length} blueprints,{' '}
-            {project.documents.filter(d => d.category === 'contract').length} contracts
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: project.documents.length > 0 ? '100%' : '0%', backgroundColor: '#2563EB' }} />
+          </div>
+          <div className="text-xs mt-1" style={{ color: colors.textMuted }}>
+            {project.documents.filter(d => d.category === 'blueprint').length} blueprints · {project.documents.filter(d => d.category === 'contract').length} contracts
           </div>
         </div>
 
         {/* Team Size */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-              <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
+              <Users className="w-5 h-5" style={{ color: '#16A34A' }} />
             </div>
             <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Team Members</div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{project.teamMembers.length}</div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Team Members</div>
+              <div className="text-lg font-bold" style={{ color: colors.text }}>{project.teamMembers.length}</div>
             </div>
           </div>
-          <div className="flex -space-x-2">
+          <div className="flex -space-x-2 mt-1">
             {project.teamMembers.slice(0, 5).map((member, i) => (
               <div
                 key={i}
-                className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 border-2 border-white dark:border-gray-800 flex items-center justify-center text-xs font-medium text-gray-700 dark:text-gray-200"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium text-white overflow-hidden"
+                style={{ backgroundColor: '#6B7280', border: `2px solid ${colors.bgAlt}` }}
                 title={member.name}
               >
                 {member.avatar ? (
-                  <img src={member.avatar} className="w-full h-full rounded-full object-cover" alt={member.name} />
+                  <img src={member.avatar} className="w-full h-full object-cover" alt={member.name} />
                 ) : (
-                  <span>{member.name.charAt(0)}</span>
+                  member.name.charAt(0)
                 )}
               </div>
             ))}
             {project.teamMembers.length > 5 && (
-              <div className="w-8 h-8 rounded-full bg-gray-400 dark:bg-gray-600 border-2 border-white dark:border-gray-800 flex items-center justify-center text-xs font-medium text-white">
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium"
+                style={{ backgroundColor: colors.bgMuted, border: `2px solid ${colors.bgAlt}`, color: colors.textMuted }}
+              >
                 +{project.teamMembers.length - 5}
               </div>
             )}
@@ -212,58 +217,72 @@ export default function ProjectOverviewTab({ project }: Props) {
         </div>
 
         {/* Budget Breakdown */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Budget Breakdown</h2>
+        <div className="rounded-lg" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="p-5" style={{ borderBottom: colors.borderBottom }}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold" style={{ color: colors.text }}>Budget Breakdown</h2>
+              {project.designSelectionsSummary.length > 0 && (
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: darkMode ? 'rgba(37,99,235,0.15)' : '#DBEAFE', color: '#2563EB' }}>
+                  Projected
+                </span>
+              )}
+            </div>
           </div>
-          <div className="p-6">
-            {topCategories.length > 0 ? (
-              <div className="space-y-4">
-                {topCategories.map(([category, amount]) => {
-                  const percentage = totalSpent > 0 ? (amount / totalSpent) * 100 : 0
-                  return (
-                    <div key={category}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
-                          {category}
-                        </span>
-                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                          ${(amount / 1000).toFixed(1)}k ({percentage.toFixed(0)}%)
-                        </span>
+          <div className="p-5">
+            {(() => {
+              const hasSelections = project.designSelectionsSummary.length > 0
+              const displaySpend = hasSelections ? project.projectedSpend : totalSpent
+              const remaining = project.estimated_budget - displaySpend
+              const trackBg = darkMode ? '#374151' : '#E5E7EB'
+              return topCategories.length > 0 ? (
+                <div className="space-y-4">
+                  {topCategories.map(([category, amount]) => {
+                    const percentage = displaySpend > 0 ? (amount / displaySpend) * 100 : 0
+                    return (
+                      <div key={category}>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-sm font-medium capitalize" style={{ color: colors.text }}>{category}</span>
+                          <span className="text-sm font-semibold" style={{ color: colors.text }}>
+                            ${(amount / 1000).toFixed(1)}k <span style={{ color: colors.textMuted }}>({percentage.toFixed(0)}%)</span>
+                          </span>
+                        </div>
+                        <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: trackBg }}>
+                          <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${percentage}%` }} />
+                        </div>
                       </div>
-                      <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-blue-600 rounded-full transition-all"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
 
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Total Spent:</span>
-                    <span className="font-bold text-gray-900 dark:text-gray-100">${(totalSpent / 1000).toFixed(1)}k</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-2">
-                    <span className="text-gray-600 dark:text-gray-400">Estimated Budget:</span>
-                    <span className="font-semibold text-gray-700 dark:text-gray-300">${(project.estimated_budget / 1000).toFixed(1)}k</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-2">
-                    <span className="text-gray-600 dark:text-gray-400">Remaining:</span>
-                    <span className={`font-semibold ${project.estimated_budget - totalSpent < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                      ${(Math.abs(project.estimated_budget - totalSpent) / 1000).toFixed(1)}k {project.estimated_budget - totalSpent < 0 ? 'over' : ''}
-                    </span>
+                  <div className="pt-4 mt-2 space-y-2" style={{ borderTop: colors.borderBottom }}>
+                    <div className="flex items-center justify-between text-sm">
+                      <span style={{ color: colors.textMuted }}>Actual Expenses</span>
+                      <span className="font-semibold" style={{ color: colors.text }}>${(totalSpent / 1000).toFixed(1)}k</span>
+                    </div>
+                    {hasSelections && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span style={{ color: colors.textMuted }}>+ Committed &amp; Approved</span>
+                        <span className="font-semibold" style={{ color: colors.text }}>${((project.projectedSpend - totalSpent) / 1000).toFixed(1)}k</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between text-sm">
+                      <span style={{ color: colors.textMuted }}>Budget</span>
+                      <span className="font-semibold" style={{ color: colors.text }}>${(project.estimated_budget / 1000).toFixed(1)}k</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm pt-1" style={{ borderTop: colors.borderBottom }}>
+                      <span className="font-medium" style={{ color: colors.text }}>Remaining</span>
+                      <span className="font-bold" style={{ color: remaining < 0 ? '#DC2626' : '#16A34A' }}>
+                        ${(Math.abs(remaining) / 1000).toFixed(1)}k {remaining < 0 ? 'over' : 'left'}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                <TrendingUp className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-                <p>No expenses recorded yet</p>
-              </div>
-            )}
+              ) : (
+                <div className="text-center py-8">
+                  <TrendingUp className="h-10 w-10 mx-auto mb-3" style={{ color: darkMode ? '#374151' : '#D1D5DB' }} />
+                  <p className="text-sm" style={{ color: colors.textMuted }}>No expenses recorded yet</p>
+                </div>
+              )
+            })()}
           </div>
         </div>
       </div>

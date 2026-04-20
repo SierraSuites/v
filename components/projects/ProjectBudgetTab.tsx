@@ -8,11 +8,15 @@ import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import toast from 'react-hot-toast'
 
 interface SelectionCosts {
-  committed: number   // ordered or received — money is essentially spent
-  approved: number    // client approved, not yet ordered
-  unconfirmed: number // still pending approval
-  total: number       // all selections combined
-  count: { committed: number; approved: number; unconfirmed: number }
+  ordered: number
+  received: number
+  installed: number    // installed but no payment recorded yet
+  committed: number    // ordered + received + installed (all "in progress or done" material costs not yet in expenses)
+  approved: number     // client approved, not yet ordered
+  unconfirmed: number  // still pending approval
+  installation: number // installation labor costs across all selections
+  total: number        // all selections combined
+  count: { ordered: number; received: number; installed: number; approved: number; unconfirmed: number }
 }
 
 interface Expense {
@@ -23,6 +27,7 @@ interface Expense {
   date: string
   vendor: string | null
   payment_status: 'pending' | 'paid' | 'overdue'
+  design_selection_id: string | null
   created_by: {
     name: string
     avatar: string
@@ -35,6 +40,13 @@ interface BudgetData {
   remaining: number
   percentage_used: number
   currency: string
+}
+
+interface InstallationLaborItem {
+  id: string
+  name: string
+  location: string | null
+  cost: number
 }
 
 interface ProjectBudgetTabProps {
@@ -61,21 +73,29 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
       date: e.date,
       vendor: e.vendor,
       payment_status: e.payment_status,
+      design_selection_id: e.design_selection_id ?? null,
       created_by: { name: 'Unknown', avatar: '' }
     }))
   )
   const [selectionCosts, setSelectionCosts] = useState<SelectionCosts>(() => {
     const sels = project.designSelectionsSummary || []
-    const committed   = sels.filter(s => s.status === 'ordered' || s.status === 'received')
+    const ordered     = sels.filter(s => s.status === 'ordered')
+    const received    = sels.filter(s => s.status === 'received')
+    const installed   = sels.filter(s => s.status === 'installed')
     const approved    = sels.filter(s => s.status === 'approved')
     const unconfirmed = sels.filter(s => s.status === 'pending' || s.status === 'rejected')
     const sum = (arr: { price: number }[]) => arr.reduce((n, s) => n + (s.price || 0), 0)
+    const sumInstall = (arr: { installation_cost: number }[]) => arr.reduce((n, s) => n + (s.installation_cost || 0), 0)
     return {
-      committed:   sum(committed),
-      approved:    sum(approved),
-      unconfirmed: sum(unconfirmed),
-      total:       sum(sels),
-      count: { committed: committed.length, approved: approved.length, unconfirmed: unconfirmed.length },
+      ordered:      sum(ordered),
+      received:     sum(received),
+      installed:    sum(installed),
+      committed:    sum(ordered) + sum(received) + sum(installed),
+      approved:     sum(approved),
+      unconfirmed:  sum(unconfirmed),
+      installation: sumInstall(installed),
+      total:        sum(sels),
+      count: { ordered: ordered.length, received: received.length, installed: installed.length, approved: approved.length, unconfirmed: unconfirmed.length },
     }
   })
   const [showAddExpense, setShowAddExpense] = useState(false)
@@ -84,10 +104,11 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [editForm, setEditForm] = useState({ category: '', description: '', amount: '', date: '', vendor: '', payment_status: 'pending' as 'pending' | 'paid' | 'overdue' })
+  const [installationItems, setInstallationItems] = useState<InstallationLaborItem[]>([])
 
   // New expense form state
   const [newExpense, setNewExpense] = useState({
-    category: 'materials',
+    category: 'equipment',
     description: '',
     amount: '',
     date: new Date().toISOString().split('T')[0],
@@ -106,8 +127,8 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
       // Load project budget info, expenses, and design selections in parallel
       const [projectRes, expensesRes, selectionsRes] = await Promise.all([
         supabase.from('projects').select('estimated_budget, currency').eq('id', projectId).single(),
-        supabase.from('project_expenses').select('id, category, description, amount, date, vendor, payment_status, created_by').eq('project_id', projectId).order('date', { ascending: false }),
-        supabase.from('design_selections').select('price, status').eq('project_id', projectId),
+        supabase.from('project_expenses').select('id, category, description, amount, date, vendor, payment_status, created_by, design_selection_id').eq('project_id', projectId).order('date', { ascending: false }),
+        supabase.from('design_selections').select('id, price, status, installation_cost, option_name, room_location').eq('project_id', projectId),
       ])
 
       if (projectRes.error) throw projectRes.error
@@ -134,6 +155,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
         date: exp.date,
         vendor: exp.vendor,
         payment_status: exp.payment_status || 'pending',
+        design_selection_id: exp.design_selection_id ?? null,
         created_by: {
           name: creatorMap[exp.created_by]?.full_name || 'Unknown',
           avatar: creatorMap[exp.created_by]?.avatar_url || ''
@@ -155,29 +177,62 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
 
       setExpenses(formattedExpenses)
 
-      // Compute design selection cost breakdown
+      // Compute design selection cost breakdown.
+      // Exclude selections that already have a recorded payment expense — their cost is
+      // already in total_expenses, so including them in committed would double-count.
+      const paidSelIds = new Set(
+        expensesData.map((e: any) => e.design_selection_id).filter(Boolean)
+      )
+
       const sels = selectionsRes.data || []
-      const committedSels = sels.filter((s: any) => s.status === 'ordered' || s.status === 'received')
-      const approvedSels  = sels.filter((s: any) => s.status === 'approved')
-      const unconfirmedSels = sels.filter((s: any) => s.status === 'pending' || s.status === 'rejected')
+      // Items whose installation labor has already been recorded as a project_expense
+      // (auto-created when the install task completes) — exclude from projected labor
+      const paidInstallIds = new Set(
+        expensesData.filter((e: any) => e.category === 'labor' && e.design_selection_id).map((e: any) => e.design_selection_id)
+      )
+      const orderedSels        = sels.filter((s: any) => s.status === 'ordered'   && !paidSelIds.has(s.id))
+      const receivedSels       = sels.filter((s: any) => s.status === 'received'  && !paidSelIds.has(s.id))
+      const installedSels      = sels.filter((s: any) => s.status === 'installed' && !paidSelIds.has(s.id))
+      const approvedSels       = sels.filter((s: any) => s.status === 'approved'  && !paidSelIds.has(s.id))
+      const unconfirmedSels    = sels.filter((s: any) => s.status === 'pending' || s.status === 'rejected')
+      const unpaidInstallLabor = sels.filter((s: any) => s.status === 'installed' && !paidInstallIds.has(s.id))
       const sum = (arr: any[]) => arr.reduce((n, s) => n + (s.price || 0), 0)
+      const sumInstall = (arr: any[]) => arr.reduce((n, s) => n + (s.installation_cost || 0), 0)
       setSelectionCosts({
-        committed:   sum(committedSels),
-        approved:    sum(approvedSels),
-        unconfirmed: sum(unconfirmedSels),
-        total:       sum(sels),
+        ordered:      sum(orderedSels),
+        received:     sum(receivedSels),
+        installed:    sum(installedSels),
+        committed:    sum(orderedSels) + sum(receivedSels) + sum(installedSels),
+        approved:     sum(approvedSels),
+        unconfirmed:  sum(unconfirmedSels),
+        installation: sumInstall(unpaidInstallLabor),
+        total:        sum(sels),
         count: {
-          committed:   committedSels.length,
+          ordered:     orderedSels.length,
+          received:    receivedSels.length,
+          installed:   installedSels.length,
           approved:    approvedSels.length,
           unconfirmed: unconfirmedSels.length,
         },
       })
+
+      // Only show installation items that haven't been recorded as an expense yet
+      setInstallationItems(
+        unpaidInstallLabor
+          .filter((s: any) => (s.installation_cost || 0) > 0)
+          .map((s: any) => ({
+            id: s.id,
+            name: s.option_name || 'Design Selection',
+            location: s.room_location || null,
+            cost: s.installation_cost,
+          }))
+      )
     } catch (error: any) {
       console.error('Failed to refresh budget data:', error?.message, error?.code, error?.details)
     }
   }
 
-  async function handleAddExpense(e: React.FormEvent) {
+  async function handleAddExpense(e: React.SyntheticEvent) {
     e.preventDefault()
 
     try {
@@ -188,7 +243,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
         throw new Error('Not authenticated')
       }
 
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('project_expenses')
         .insert({
           project_id: projectId,
@@ -200,6 +255,8 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
           payment_status: newExpense.payment_status,
           created_by: profile.id
         })
+        .select('id')
+        .single()
 
       if (error) throw error
 
@@ -207,13 +264,14 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
 
       // Update expenses list instantly
       setExpenses(prev => [{
-        id: crypto.randomUUID(),
+        id: inserted.id,
         category: newExpense.category,
         description: newExpense.description,
         amount: addedAmount,
         date: newExpense.date,
         vendor: newExpense.vendor || null,
         payment_status: newExpense.payment_status,
+        design_selection_id: null,
         created_by: { name: profile.full_name ?? 'You', avatar: profile.avatar_url ?? '' }
       }, ...prev])
 
@@ -229,7 +287,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
 
       // Reset form
       setNewExpense({
-        category: 'labor',
+        category: 'equipment',
         description: '',
         amount: '',
         date: new Date().toISOString().split('T')[0],
@@ -247,20 +305,13 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
     setConfirmDelete({ id: expenseId, description })
   }
 
-  function getInitials(name: string): string {
-    if (!name) return '?'
-    const parts = name.trim().split(' ')
-    if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
-    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
-  }
-
   function formatCurrency(amount: number, currency: string = 'USD'): string {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(amount)
+    }).format(amount ?? 0)
   }
 
   function formatDate(dateString: string): string {
@@ -302,6 +353,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
   const categories = [
     { value: 'all', label: 'All Expenses' },
     { value: 'labor', label: 'Labor' },
+    { value: 'materials', label: 'Materials' },
     { value: 'equipment', label: 'Equipment' },
     { value: 'permits', label: 'Permits' },
     { value: 'subcontractors', label: 'Subcontractors' },
@@ -310,25 +362,22 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
     { value: 'other', label: 'Other' }
   ]
 
-  const filteredExpenses = categoryFilter === 'all'
-    ? expenses
-    : expenses.filter(exp => exp.category === categoryFilter)
+  // Labor and materials come from design selections — exclude from manual entry
+  const addableCategories = [
+    { value: 'equipment', label: 'Equipment Rental' },
+    { value: 'permits', label: 'Permits & Fees' },
+    { value: 'subcontractors', label: 'Subcontractors' },
+    { value: 'utilities', label: 'Utilities' },
+    { value: 'insurance', label: 'Insurance' },
+    { value: 'other', label: 'Other' }
+  ]
 
-  // Calculate expenses by category for the chart
-  const expensesByCategory = categories.slice(1).map(cat => {
-    const total = expenses
-      .filter(exp => exp.category === cat.value)
-      .reduce((sum, exp) => sum + exp.amount, 0)
-    return {
-      category: cat.label,
-      amount: total,
-      percentage: budgetData && budgetData.total_expenses > 0
-        ? (total / budgetData.total_expenses) * 100
-        : 0
-    }
-  }).filter(item => item.amount > 0)
+  const designSelectionExpenses = expenses.filter(exp => exp.design_selection_id != null)
+  const otherExpenses = expenses.filter(exp => exp.design_selection_id == null)
 
-
+  const filteredOtherExpenses = categoryFilter === 'all'
+    ? otherExpenses
+    : otherExpenses.filter(exp => exp.category === categoryFilter)
 
   if (!budgetData) {
     return (
@@ -337,12 +386,6 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
       </div>
     )
   }
-
-  const budgetStatus = budgetData.percentage_used > 100
-    ? 'over'
-    : budgetData.percentage_used > 90
-    ? 'warning'
-    : 'healthy'
 
   function openEditExpense(expense: Expense) {
     setEditingExpense(expense)
@@ -357,7 +400,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
     setDetailExpense(null)
   }
 
-  async function handleSaveExpense(e: React.FormEvent) {
+  async function handleSaveExpense(e: React.SyntheticEvent) {
     e.preventDefault()
     if (!editingExpense) return
     const supabase = createClient()
@@ -423,8 +466,8 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
 
       {/* Unified Budget Overview */}
       {(() => {
-        const hasSelections = selectionCosts.total > 0
-        const projected = budgetData.total_expenses + selectionCosts.committed + selectionCosts.approved
+        const hasSelections = selectionCosts.total > 0 || selectionCosts.installation > 0
+        const projected = budgetData.total_expenses + selectionCosts.committed + selectionCosts.approved + selectionCosts.installation
         const projectedPct = budgetData.estimated_budget > 0 ? (projected / budgetData.estimated_budget) * 100 : 0
         const displayPct = hasSelections ? projectedPct : budgetData.percentage_used
         const displayStatus = displayPct > 100 ? 'over' : displayPct > 90 ? 'warning' : 'healthy'
@@ -444,7 +487,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
                   </span>
                 </div>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {hasSelections ? 'Projected total (actual + committed + approved)' : 'Actual expenses'}
+                  {hasSelections ? 'Projected total (actual + committed + approved + installation)' : 'Actual expenses'}
                 </p>
               </div>
               <div className="text-right">
@@ -484,21 +527,48 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
                   </div>
                   <span className="font-medium text-gray-900">{formatCurrency(budgetData.total_expenses, budgetData.currency)}</span>
                 </div>
+                {selectionCosts.installation > 0 && (
+                  <div className="flex items-center justify-between py-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+                      <span className="text-gray-600">Installation labor</span>
+                    </div>
+                    <span className="font-medium text-gray-900">{formatCurrency(selectionCosts.installation, budgetData.currency)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between py-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+                    <span className="text-gray-600">Received</span>
+                    <span className="text-gray-400 text-xs">({selectionCosts.count.received ?? 0})</span>
+                  </div>
+                  <span className="font-medium text-gray-900">{formatCurrency(selectionCosts.received ?? 0, budgetData.currency)}</span>
+                </div>
+                {selectionCosts.installed > 0 && (
+                  <div className="flex items-center justify-between py-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-gray-400 shrink-0" />
+                      <span className="text-gray-600">Installed (unpaid)</span>
+                      <span className="text-gray-400 text-xs">({selectionCosts.count.installed ?? 0})</span>
+                    </div>
+                    <span className="font-medium text-gray-900">{formatCurrency(selectionCosts.installed ?? 0, budgetData.currency)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between py-2 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
-                    <span className="text-gray-600">Committed</span>
-                    <span className="text-gray-400 text-xs">({selectionCosts.count.committed} ordered/received)</span>
+                    <span className="text-gray-600">Ordered</span>
+                    <span className="text-gray-400 text-xs">({selectionCosts.count.ordered ?? 0})</span>
                   </div>
-                  <span className="font-medium text-gray-900">{formatCurrency(selectionCosts.committed, budgetData.currency)}</span>
+                  <span className="font-medium text-gray-900">{formatCurrency(selectionCosts.ordered ?? 0, budgetData.currency)}</span>
                 </div>
                 <div className="flex items-center justify-between py-2 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-yellow-400 shrink-0" />
-                    <span className="text-gray-600">Approved, not ordered</span>
-                    <span className="text-gray-400 text-xs">({selectionCosts.count.approved})</span>
+                    <span className="text-gray-600">Approved</span>
+                    <span className="text-gray-400 text-xs">({selectionCosts.count.approved ?? 0})</span>
                   </div>
-                  <span className="font-medium text-gray-900">{formatCurrency(selectionCosts.approved, budgetData.currency)}</span>
+                  <span className="font-medium text-gray-900">{formatCurrency(selectionCosts.approved ?? 0, budgetData.currency)}</span>
                 </div>
                 {selectionCosts.unconfirmed > 0 && (
                   <div className="flex items-center justify-between py-2 text-sm">
@@ -510,39 +580,119 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
                     <span className="font-medium text-gray-400">{formatCurrency(selectionCosts.unconfirmed, budgetData.currency)}</span>
                   </div>
                 )}
-                <div className="flex items-center justify-between pt-2.5 pb-0.5">
-                  <div />
-                  <div className="text-right">
-                    <span className={`text-sm font-semibold ${displayStatus === 'over' ? 'text-red-600' : displayStatus === 'warning' ? 'text-yellow-600' : 'text-gray-900'}`}>
-                      {formatCurrency(projected, budgetData.currency)}
-                    </span>
-                    <span className="text-xs text-gray-400 ml-1.5">projected ({projectedPct.toFixed(1)}%)</span>
-                  </div>
-                </div>
               </div>
             )}
           </div>
         )
       })()}
 
-      {/* Expenses Section */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-baseline gap-2">
-          <h3 className="text-lg font-semibold text-gray-900">Expenses</h3>
-          {expenses.length > 0 && (
-            <span className="text-sm text-gray-400">{expenses.length} {expenses.length === 1 ? 'entry' : 'entries'}</span>
-          )}
+      {/* ── Design Selection Costs ── */}
+      {(() => {
+        const dsCount = designSelectionExpenses.length + installationItems.length
+        return (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-baseline gap-2">
+                <h3 className="text-lg font-semibold text-gray-900">Design Selection Costs</h3>
+                {dsCount > 0 && (
+                  <span className="text-sm text-gray-400">{dsCount} {dsCount === 1 ? 'item' : 'items'}</span>
+                )}
+              </div>
+              <span className="text-xs" style={{ color: colors.textMuted }}>Manage in Design Selections tab</span>
+            </div>
+
+            <div className="space-y-3">
+              {/* Material payments recorded against a design selection */}
+              {designSelectionExpenses.map(expense => (
+                <div
+                  key={expense.id}
+                  onClick={() => setDetailExpense(expense)}
+                  className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+                >
+                  <div className="text-3xl shrink-0">{getCategoryIcon(expense.category)}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-4 mb-1">
+                      <h4 className="font-medium text-gray-900">{expense.description}</h4>
+                      <span className="text-lg font-bold text-gray-900 shrink-0">
+                        {formatCurrency(expense.amount, budgetData.currency)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-gray-500 flex-wrap">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(expense.category)}`}>
+                        {expense.category}
+                      </span>
+                      <span>{formatDate(expense.date)}</span>
+                      {expense.vendor && <><span>•</span><span>{expense.vendor}</span></>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Installation labor (unpaid, from installed design selections) */}
+              {installationItems.map(item => (
+                <div
+                  key={`install-${item.id}`}
+                  className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg"
+                >
+                  <div className="text-3xl shrink-0">👷</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-4 mb-1">
+                      <h4 className="font-medium text-gray-900">Installation — {item.name}</h4>
+                      <span className="text-lg font-bold text-gray-900 shrink-0">
+                        {formatCurrency(item.cost, budgetData.currency)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-gray-500 flex-wrap">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">labor</span>
+                      {item.location && <span>{item.location}</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {dsCount === 0 && (
+                <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                  <p className="text-sm text-gray-500">No design selection costs yet.</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Material payments and installation labor from design selections appear here automatically.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* ── Other Expenses ── */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-lg font-semibold text-gray-900">Other Expenses</h3>
+            {otherExpenses.length > 0 && (
+              <span className="text-sm text-gray-400">{otherExpenses.length} {otherExpenses.length === 1 ? 'entry' : 'entries'}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={categoryFilter}
+              onChange={e => setCategoryFilter(e.target.value)}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {categories.map(cat => (
+                <option key={cat.value} value={cat.value}>{cat.label}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowAddExpense(true)}
+              className="inline-flex items-center cursor-pointer gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Expense
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => setShowAddExpense(true)}
-          className="inline-flex items-center cursor-pointer gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Expense
-        </button>
-      </div>
 
       {/* Add Expense Modal */}
       {showAddExpense && (
@@ -603,7 +753,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
                       style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text, colorScheme: darkMode ? 'dark' : 'light' }}
                       required
                     >
-                      {categories.slice(1).map(cat => (
+                      {addableCategories.map(cat => (
                         <option key={cat.value} value={cat.value}>{cat.label}</option>
                       ))}
                     </select>
@@ -701,27 +851,10 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
         </div>
       )}
 
-      {/* Category Filter */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {categories.map(cat => (
-          <button
-            key={cat.value}
-            onClick={() => setCategoryFilter(cat.value)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-              categoryFilter === cat.value
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Expenses List */}
+      {/* Other Expenses List */}
       <div className="space-y-3">
-        {filteredExpenses.length > 0 ? (
-          filteredExpenses.map(expense => (
+        {filteredOtherExpenses.length > 0 ? (
+          filteredOtherExpenses.map(expense => (
             <div
               key={expense.id}
               onClick={() => setDetailExpense(expense)}
@@ -766,30 +899,42 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
               </div>
 
               {/* Actions */}
-              <button
-                onClick={e => { e.stopPropagation(); handleDeleteExpense(expense.id, expense.description) }}
-                className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors shrink-0"
-                title="Delete"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={e => { e.stopPropagation(); openEditExpense(expense) }}
+                  className="p-2 hover:bg-blue-50 text-blue-500 rounded-lg transition-colors"
+                  title="Edit"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); handleDeleteExpense(expense.id, expense.description) }}
+                  className="p-2 hover:bg-red-50 text-red-500 rounded-lg transition-colors"
+                  title="Delete"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
             </div>
           ))
         ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-200">
             <div className="text-6xl mb-4">💰</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               No {categoryFilter === 'all' ? '' : categoryFilter} expenses yet
             </h3>
-            <p className="text-gray-600">
+            <p className="text-gray-600 text-sm">
               {categoryFilter === 'all'
-                ? 'Add your first expense to track project costs'
-                : `Add ${categoryFilter} expenses to see them here`}
+                ? 'Add permits, equipment, subcontractors, and other project costs here'
+                : `No ${categoryFilter} expenses recorded yet`}
             </p>
           </div>
         )}
+      </div>
       </div>
     </div>
 
@@ -923,8 +1068,8 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
                   className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
                   style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text, colorScheme: darkMode ? 'dark' : 'light' }}
                 >
-                  {['labor','equipment','permits','subcontractors','utilities','insurance','other'].map(c => (
-                    <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                  {categories.slice(1).map(cat => (
+                    <option key={cat.value} value={cat.value}>{cat.label}</option>
                   ))}
                 </select>
               </div>

@@ -112,6 +112,8 @@ export type Task = {
   documentation: string[]
   notify_inspector: boolean
   client_visibility: boolean
+  design_selection_id?: string | null
+  selection_task_type?: 'order' | 'delivery' | 'installation' | null
   created_at: string
   updated_at: string
   completed_at: string | null

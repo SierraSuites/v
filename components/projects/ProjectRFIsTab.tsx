@@ -59,7 +59,7 @@ function isOverdue(dueDate: string | null, status: RFI['status']) {
 }
 
 export default function ProjectRFIsTab({ project }: Props) {
-  const { colors } = useThemeColors()
+  const { colors, darkMode } = useThemeColors()
   const [rfis, setRFIs] = useState<RFI[]>(project.rfis as RFI[])
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
@@ -187,20 +187,55 @@ export default function ProjectRFIsTab({ project }: Props) {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Open</div>
-          <div className="text-2xl font-bold text-yellow-600">{openCount}</div>
-          <div className="text-xs text-gray-400 mt-1">awaiting response</div>
+        {/* Open */}
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: openCount > 0 ? 'rgba(217,119,6,0.1)' : (darkMode ? 'rgba(75,85,99,0.2)' : '#F3F4F6') }}>
+              <QuestionMarkCircleIcon className="w-5 h-5" style={{ color: openCount > 0 ? '#D97706' : (darkMode ? '#6B7280' : '#9CA3AF') }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Open</div>
+              <div className="text-lg font-bold" style={{ color: openCount > 0 ? '#D97706' : colors.textMuted }}>{openCount}</div>
+            </div>
+          </div>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${rfis.length ? (openCount / rfis.length) * 100 : 0}%`, backgroundColor: '#D97706' }} />
+          </div>
+          <div className="text-xs mt-1" style={{ color: colors.textMuted }}>awaiting response</div>
         </div>
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Overdue</div>
-          <div className={`text-2xl font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>{overdueCount}</div>
-          <div className="text-xs text-gray-400 mt-1">past due date</div>
+
+        {/* Overdue */}
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: overdueCount > 0 ? 'rgba(220,38,38,0.1)' : (darkMode ? 'rgba(75,85,99,0.2)' : '#F3F4F6') }}>
+              <ExclamationTriangleIcon className="w-5 h-5" style={{ color: overdueCount > 0 ? '#DC2626' : (darkMode ? '#6B7280' : '#9CA3AF') }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Overdue</div>
+              <div className="text-lg font-bold" style={{ color: overdueCount > 0 ? '#DC2626' : colors.textMuted }}>{overdueCount}</div>
+            </div>
+          </div>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${rfis.length ? (overdueCount / rfis.length) * 100 : 0}%`, backgroundColor: overdueCount > 0 ? '#DC2626' : '#9CA3AF' }} />
+          </div>
+          <div className="text-xs mt-1" style={{ color: colors.textMuted }}>past due date</div>
         </div>
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Resolved</div>
-          <div className="text-2xl font-bold text-green-600">{answeredCount}</div>
-          <div className="text-xs text-gray-400 mt-1">answered + closed</div>
+
+        {/* Resolved */}
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
+              <CheckCircleIcon className="w-5 h-5" style={{ color: '#16A34A' }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Resolved</div>
+              <div className="text-lg font-bold" style={{ color: '#16A34A' }}>{answeredCount}</div>
+            </div>
+          </div>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${rfis.length ? (answeredCount / rfis.length) * 100 : 0}%`, backgroundColor: '#16A34A' }} />
+          </div>
+          <div className="text-xs mt-1" style={{ color: colors.textMuted }}>answered + closed</div>
         </div>
       </div>
 

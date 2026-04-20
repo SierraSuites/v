@@ -7,7 +7,7 @@
 
 import { useState } from 'react'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
-import { Users, FileText, DollarSign, Calendar, CheckSquare, BarChart3, GitMerge, HelpCircle } from 'lucide-react'
+import { Users, FileText, DollarSign, Calendar, CheckSquare, BarChart3, GitMerge, HelpCircle, Palette } from 'lucide-react'
 import ProjectTeamTab from './ProjectTeamTab'
 import ProjectDocumentsTab from './ProjectDocumentsTab'
 import ProjectBudgetTab from './ProjectBudgetTab'
@@ -16,13 +16,14 @@ import ProjectChangeOrdersTab from './ProjectChangeOrdersTab'
 import ProjectRFIsTab from './ProjectRFIsTab'
 import ProjectTimelineTab from './ProjectTimelineTab'
 import ProjectTasksTab from './ProjectTasksTab'
+import ProjectDesignSelectionsTab from './ProjectDesignSelectionsTab'
 
 interface Props {
   project: ProjectDetails
   onSpentChange?: (spent: number) => void
 }
 
-type TabId = 'overview' | 'team' | 'documents' | 'budget' | 'timeline' | 'tasks' | 'change-orders' | 'rfis'
+type TabId = 'overview' | 'tasks' | 'design-selections' | 'timeline' | 'budget' | 'documents' | 'team' | 'change-orders' | 'rfis'
 
 export default function ProjectTabs({ project, onSpentChange }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('overview')
@@ -40,6 +41,12 @@ export default function ProjectTabs({ project, onSpentChange }: Props) {
       label: 'Tasks',
       icon: <CheckSquare className="h-4 w-4" />,
       count: null
+    },
+    {
+      id: 'design-selections' as TabId,
+      label: 'Design Selections',
+      icon: <Palette className="h-4 w-4" />,
+      count: project.designSelections?.filter(s => s.status === 'pending').length || null
     },
     {
       id: 'timeline' as TabId,
@@ -127,6 +134,7 @@ export default function ProjectTabs({ project, onSpentChange }: Props) {
         {activeTab === 'budget' && <ProjectBudgetTab project={project} onSpentChange={onSpentChange} />}
         {activeTab === 'timeline' && <ProjectTimelineTab project={project} onMilestoneCountChange={setMilestoneCount} />}
         {activeTab === 'tasks' && <ProjectTasksTab project={project} />}
+        {activeTab === 'design-selections' && <ProjectDesignSelectionsTab project={project} />}
         {activeTab === 'change-orders' && <ProjectChangeOrdersTab project={project} />}
         {activeTab === 'rfis' && <ProjectRFIsTab project={project} />}
       </div>

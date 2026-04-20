@@ -58,7 +58,10 @@ export default function SettingsSidebar() {
 
   async function handleLogout() {
     const supabase = createClient()
-    await supabase.auth.signOut()
+    await Promise.all([
+      supabase.auth.signOut(),
+      fetch('/api/auth/logout', { method: 'POST' }),
+    ])
     router.push('/login')
   }
 
