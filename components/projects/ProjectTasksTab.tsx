@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { createClient } from '@/lib/supabase/client'
 import { updateTask, createTask } from '@/lib/supabase/tasks'
+import toast from 'react-hot-toast'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import {
   ClockIcon,
@@ -25,7 +26,7 @@ interface Task {
   title: string
   description: string | null
   status: 'not-started' | 'in-progress' | 'completed' | 'blocked' | 'review'
-  priority: 'low' | 'medium' | 'high' | 'critical'
+  priority: 'low' | 'medium' | 'high' | 'critical' | null
   trade: string | null
   phase: string | null
   start_date: string | null
@@ -38,6 +39,7 @@ interface Task {
   assignee_name: string | null
   design_selection_id: string | null
   selection_task_type: 'order' | 'delivery' | 'installation' | null
+  blocking_rfi_id: string | null
   crew_size: number | null
   equipment: string[] | null
   materials: string[] | null
@@ -61,7 +63,17 @@ interface Props {
   project: ProjectDetails
 }
 
-const PRIORITY_COLORS: Record<Task['priority'], string> = {
+function PriorityBadge({ priority }: { priority: Task['priority'] }) {
+  if (!priority) return null
+  const isUrgent = priority === 'critical' || priority === 'high'
+  return (
+    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${isUrgent ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>
+      {isUrgent ? 'Urgent' : 'Not Urgent'}
+    </span>
+  )
+}
+
+const PRIORITY_COLORS: Record<string, string> = {
   low:      'bg-slate-100 text-slate-600',
   medium:   'bg-blue-100 text-blue-700',
   high:     'bg-amber-100 text-amber-700',
@@ -113,7 +125,7 @@ function avatarColor(name: string) {
 
 export default function ProjectTasksTab({ project }: Props) {
   const { colors, darkMode } = useThemeColors()
-  const [tasks, setTasks] = useState<Task[]>(project.tasks as Task[])
+  const [tasks, setTasks] = useState<Task[] | null>(null)
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'done'>('all')
   const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(new Set())
   const [detailTask, setDetailTask] = useState<Task | null>(null)
@@ -166,6 +178,27 @@ export default function ProjectTasksTab({ project }: Props) {
   }
 
   async function updateTaskStatus(taskId: string, status: Task['status']) {
+    // Enforce procurement pipeline sequence
+    if (status !== 'not-started') {
+      const task = tasks?.find(t => t.id === taskId)
+      if (task?.design_selection_id && task.selection_task_type) {
+        const linked = (tasks ?? []).filter(t => t.design_selection_id === task.design_selection_id)
+        const prereq =
+          task.selection_task_type === 'delivery'     ? linked.find(t => t.selection_task_type === 'order')    :
+          task.selection_task_type === 'installation' ? linked.find(t => t.selection_task_type === 'delivery') :
+          null
+        if (prereq && prereq.status !== 'completed') {
+          toast.error(`Complete "${prereq.title}" first`)
+          setStatusDropdownId(null)
+          return
+        }
+      }
+    }
+
+    const prevTask = tasks?.find(t => t.id === taskId)
+    const wasCompleted = prevTask?.status === 'completed'
+    const becomingIncomplete = wasCompleted && status !== 'completed'
+
     const supabase = createClient()
     const { data } = await supabase
       .from('tasks')
@@ -175,17 +208,47 @@ export default function ProjectTasksTab({ project }: Props) {
       .single()
     if (data) {
       const updatedTask = data as Task
-      const updated = tasks.map(t => t.id === taskId ? updatedTask : t)
+      const updated = (tasks ?? []).map(t => t.id === taskId ? updatedTask : t)
       setTasks(updated)
       syncProgress(updated)
       if (detailTask?.id === taskId) setDetailTask(updatedTask)
 
-      // Sync design selection status + auto-create expense when relevant task is completed
       if (status === 'completed' && updatedTask.design_selection_id && updatedTask.selection_task_type) {
         await syncSelectionOnTaskComplete(updatedTask)
+      } else if (becomingIncomplete && prevTask?.design_selection_id && prevTask?.selection_task_type) {
+        await revertSelectionOnTaskUncomplete(prevTask)
       }
     }
     setStatusDropdownId(null)
+  }
+
+  async function revertSelectionOnTaskUncomplete(task: Task) {
+    const supabase = createClient()
+
+    const revertStatusMap: Record<string, string> = {
+      order:        'approved',
+      delivery:     'ordered',
+      installation: 'received',
+    }
+    const revertStatus = revertStatusMap[task.selection_task_type!]
+    if (!revertStatus) return
+
+    await supabase.from('design_selections')
+      .update({ status: revertStatus })
+      .eq('id', task.design_selection_id)
+
+    // Delete the auto-created expense for this task type
+    if (task.selection_task_type === 'order') {
+      await supabase.from('project_expenses')
+        .delete()
+        .eq('design_selection_id', task.design_selection_id)
+        .eq('category', 'materials')
+    } else if (task.selection_task_type === 'installation') {
+      await supabase.from('project_expenses')
+        .delete()
+        .eq('design_selection_id', task.design_selection_id)
+        .eq('category', 'labor')
+    }
   }
 
   async function syncSelectionOnTaskComplete(task: Task) {
@@ -258,7 +321,7 @@ export default function ProjectTasksTab({ project }: Props) {
   async function deleteTask(id: string) {
     const supabase = createClient()
     await supabase.from('tasks').delete().eq('id', id)
-    const updated = tasks.filter(t => t.id !== id)
+    const updated = (tasks ?? []).filter(t => t.id !== id)
     setTasks(updated)
     setConfirmDeleteId(null)
     setDetailTask(null)
@@ -273,7 +336,7 @@ export default function ProjectTasksTab({ project }: Props) {
       project_name:       project.name,
       trade:              taskData.trade || 'general',
       phase:              taskData.phase || 'pre-construction',
-      priority:           taskData.priority || 'medium',
+      priority:           taskData.priority || null,
       status:             taskData.status || 'not-started',
       assignee_id:        taskData.assigneeId || null,
       assignee_name:      taskData.assignee || null,
@@ -355,7 +418,7 @@ export default function ProjectTasksTab({ project }: Props) {
       projectId: project.id,
       trade: (t.trade ?? 'general') as any,
       phase: (t.phase ?? 'pre-construction') as any,
-      priority: t.priority,
+      priority: (t.priority ?? 'medium') as any,
       status: t.status,
       assignee: t.assignee_name ?? '',
       assigneeId: t.assignee_id ?? '',
@@ -392,6 +455,14 @@ export default function ProjectTasksTab({ project }: Props) {
       next.has(phase) ? next.delete(phase) : next.add(phase)
       return next
     })
+  }
+
+  if (tasks === null) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-6 h-6 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+      </div>
+    )
   }
 
   // Apply status filter
@@ -702,11 +773,14 @@ export default function ProjectTasksTab({ project }: Props) {
                                   Inspection
                                 </span>
                               )}
+                              {task.blocking_rfi_id && task.status === 'blocked' && (
+                                <span className="shrink-0 text-xs px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: darkMode ? 'rgba(220,38,38,0.2)' : '#FEF2F2', color: '#DC2626' }}>
+                                  Blocked · RFI
+                                </span>
+                              )}
                             </div>
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${PRIORITY_COLORS[task.priority]}`}>
-                                {task.priority}
-                              </span>
+                              <PriorityBadge priority={task.priority} />
                               {task.trade && (
                                 <span className="text-xs" style={{ color: colors.textMuted }}>{task.trade}</span>
                               )}
@@ -832,7 +906,7 @@ export default function ProjectTasksTab({ project }: Props) {
                   </div>
                   <div>
                     <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Priority</p>
-                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${PRIORITY_COLORS[detailTask.priority]}`}>{detailTask.priority}</span>
+                    <PriorityBadge priority={detailTask.priority} />
                   </div>
                   {detailTask.trade && (
                     <div>
@@ -1028,7 +1102,7 @@ export default function ProjectTasksTab({ project }: Props) {
             role: m.role,
             trades: [],
           }))}
-          existingTasks={tasks.map(toModalTask)}
+          existingTasks={(tasks ?? []).map(toModalTask)}
         />
       )}
 
@@ -1047,7 +1121,7 @@ export default function ProjectTasksTab({ project }: Props) {
             role: m.role,
             trades: [],
           }))}
-          existingTasks={tasks.map(toModalTask)}
+          existingTasks={(tasks ?? []).map(toModalTask)}
         />
       )}
 

@@ -52,12 +52,14 @@ export default function ProjectTeamTab({ project }: Props) {
       added_at: m.addedAt,
     }))
 
-  const [members, setMembers] = useState<Member[]>(seedMembers)
+  const [members, setMembers] = useState<Member[] | null>(null)
   const [available, setAvailable] = useState<AvailableUser[]>([])
   const [loading, setLoading] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  // user_id → { open, overdue } task counts
+  const [taskStats, setTaskStats] = useState<Record<string, { open: number; overdue: number }>>({})
   const [removing, setRemoving] = useState<string | null>(null)
 
   // Add modal state
@@ -81,6 +83,30 @@ export default function ProjectTeamTab({ project }: Props) {
   useEffect(() => {
     fetchMembers()
   }, [fetchMembers])
+
+  useEffect(() => {
+    async function fetchTaskStats() {
+      const supabase = (await import('@/lib/supabase/client')).createClient()
+      const { data } = await supabase
+        .from('tasks')
+        .select('assignee_id, status, due_date')
+        .eq('project_id', project.id)
+        .not('assignee_id', 'is', null)
+      if (!data) return
+      const today = new Date().toISOString().split('T')[0]
+      const stats: Record<string, { open: number; overdue: number }> = {}
+      for (const t of data) {
+        if (!t.assignee_id) continue
+        if (!stats[t.assignee_id]) stats[t.assignee_id] = { open: 0, overdue: 0 }
+        if (t.status !== 'completed') {
+          stats[t.assignee_id].open++
+          if (t.due_date && t.due_date < today) stats[t.assignee_id].overdue++
+        }
+      }
+      setTaskStats(stats)
+    }
+    fetchTaskStats()
+  }, [project.id])
 
   const handleAdd = async () => {
     if (!selectedUser) return
@@ -117,6 +143,8 @@ export default function ProjectTeamTab({ project }: Props) {
     }
     setRemoving(null)
   }
+
+  if (members === null) return <div className="flex items-center justify-center py-20"><div className="w-6 h-6 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" /></div>
 
   const filteredMembers = members
     .filter(m =>
@@ -290,8 +318,25 @@ export default function ProjectTeamTab({ project }: Props) {
                   </div>
                 </div>
 
-                {/* Role badge */}
+                {/* Role badge + task stats */}
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {taskStats[member.user_id] && (() => {
+                    const { open, overdue } = taskStats[member.user_id]
+                    return (
+                      <div className="flex items-center gap-1">
+                        {overdue > 0 && (
+                          <span className="px-1.5 py-0.5 text-xs rounded font-medium" style={{ backgroundColor: 'rgba(220,38,38,0.1)', color: '#DC2626' }}>
+                            {overdue} overdue
+                          </span>
+                        )}
+                        {open > 0 && (
+                          <span className="px-1.5 py-0.5 text-xs rounded font-medium" style={{ backgroundColor: darkMode ? 'rgba(107,114,128,0.2)' : '#F3F4F6', color: colors.textMuted }}>
+                            {open} open
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })()}
                   <span className="px-2 py-1 text-xs rounded-full font-medium capitalize" style={{ backgroundColor: darkMode ? 'rgba(37,99,235,0.2)' : '#dbeafe', color: darkMode ? '#93c5fd' : '#1e40af' }}>
                     {member.project_role.replace(/_/g, ' ')}
                   </span>

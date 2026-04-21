@@ -75,6 +75,8 @@ export interface DesignSelection {
   availability_status: string
   client_approved: boolean
   approved_date: string | null
+  approved_by_name: string | null
+  approved_by_email: string | null
   status: 'pending' | 'approved' | 'rejected' | 'ordered' | 'received' | 'installed'
   notes: string
   linked_expense_id: string | null
@@ -384,7 +386,9 @@ export async function getProjectDetails(
     const unpaidReceived     = selSummary.filter(s => s.status === 'received'  && !paidSelIds.has(s.id))
     const unpaidInstalled    = selSummary.filter(s => s.status === 'installed' && !paidSelIds.has(s.id))
     const unpaidApproved     = selSummary.filter(s => s.status === 'approved'  && !paidSelIds.has(s.id))
-    const unpaidInstallLabor = selSummary.filter(s => s.status === 'installed' && !paidInstallIds.has(s.id))
+    const unpaidInstallLabor = selSummary.filter(s =>
+      ['approved', 'ordered', 'received', 'installed'].includes(s.status) && !paidInstallIds.has(s.id)
+    )
     const projectedSpend = actualSpent
       + sumPrice(unpaidOrdered) + sumPrice(unpaidReceived) + sumPrice(unpaidInstalled)
       + sumPrice(unpaidApproved)

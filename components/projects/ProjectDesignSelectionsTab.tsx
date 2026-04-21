@@ -61,6 +61,7 @@ const EMPTY_FORM = {
   installation_cost: '',
   lead_time_days: '0',
   notes: '',
+  status: 'pending' as DesignSelection['status'],
 }
 
 function fmt(n: number) {
@@ -96,8 +97,8 @@ function PipelineStep({
 
 export default function ProjectDesignSelectionsTab({ project }: Props) {
   const { colors, darkMode } = useThemeColors()
-  const [selections, setSelections] = useState<DesignSelection[]>(project.designSelections ?? [])
-  const [tasks, setTasks] = useState(project.tasks)
+  const [selections, setSelections] = useState<DesignSelection[] | null>(null)
+  const [tasks, setTasks] = useState<any[] | null>(null)
   const [filter, setFilter] = useState<FilterStatus>('all')
   const [showPanel, setShowPanel] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -105,6 +106,8 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [approvingId, setApprovingId] = useState<string | null>(null)
+  const [signatureTarget, setSignatureTarget] = useState<DesignSelection | null>(null)
+  const [signatureForm, setSignatureForm] = useState({ name: '', email: '' })
 
   useEffect(() => {
     fetchSelections()
@@ -152,6 +155,7 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
       installation_cost: sel.installation_cost.toString(),
       lead_time_days:    sel.lead_time_days.toString(),
       notes:             sel.notes,
+      status:            sel.status,
     })
     setShowPanel(true)
   }
@@ -164,7 +168,7 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
       const profile = await getUserCompany()
       if (!profile) throw new Error('Not authenticated')
 
-      const payload = {
+      const basePayload = {
         project_id:        project.id,
         company_id:        profile.company_id,
         category:          form.category,
@@ -183,9 +187,39 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
       }
 
       if (editingId) {
+        const original = (selections ?? []).find(s => s.id === editingId)
+        const statusChanged = original?.status !== form.status
+
+        if (statusChanged && form.status === 'approved') {
+          // Save all other fields first, then trigger signature modal
+          await supabase.from('design_selections').update(basePayload).eq('id', editingId)
+          await fetchSelections()
+          setShowPanel(false)
+          setSaving(false)
+          // Open signature modal for the updated selection
+          const updated = { ...original!, ...basePayload } as DesignSelection
+          openSignatureModal(updated)
+          return
+        }
+
+        const payload: any = { ...basePayload, status: form.status }
+
+        // Clear approval data when moving away from approved
+        if (statusChanged && original?.status === 'approved' && form.status !== 'approved') {
+          payload.client_approved = false
+          payload.approved_date = null
+          payload.approved_by_name = null
+          payload.approved_by_email = null
+        }
+
+        // Delete linked tasks when resetting to pending
+        if (statusChanged && form.status === 'pending') {
+          await deleteLinkedTasks(editingId)
+        }
+
         await supabase.from('design_selections').update(payload).eq('id', editingId)
       } else {
-        await supabase.from('design_selections').insert({ ...payload, created_by: profile.id })
+        await supabase.from('design_selections').insert({ ...basePayload, created_by: profile.id })
       }
 
       await fetchSelections()
@@ -200,20 +234,36 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
   async function handleDelete(id: string) {
     const supabase = createClient()
     await supabase.from('design_selections').delete().eq('id', id)
-    setSelections(prev => prev.filter(s => s.id !== id))
+    setSelections(prev => (prev ?? []).filter(s => s.id !== id))
     setConfirmDeleteId(null)
   }
 
-  async function handleApprove(sel: DesignSelection) {
+  function openSignatureModal(sel: DesignSelection) {
+    setSignatureTarget(sel)
+    setSignatureForm({ name: '', email: '' })
+  }
+
+  async function handleClientApproval(e: React.FormEvent) {
+    e.preventDefault()
+    if (!signatureTarget) return
+    if (!signatureForm.name.trim()) { toast.error('Client name is required'); return }
+    const sel = signatureTarget
+    setSignatureTarget(null)
+    await handleApprove(sel, signatureForm.name.trim(), signatureForm.email.trim() || null)
+  }
+
+  async function handleApprove(sel: DesignSelection, clientName: string, clientEmail: string | null) {
     setApprovingId(sel.id)
     try {
       const supabase = createClient()
 
-      // 1. Approve the selection
+      // 1. Approve the selection with client e-signature
       await supabase.from('design_selections').update({
         status: 'approved',
         client_approved: true,
         approved_date: new Date().toISOString(),
+        approved_by_name: clientName,
+        approved_by_email: clientEmail,
       }).eq('id', sel.id)
 
       // 2. Check if tasks already exist for this selection
@@ -238,34 +288,32 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
             title: `Place order — ${sel.option_name}`,
             selection_task_type: 'order' as const,
             phase: 'pre-construction' as const,
-            priority: 'high' as const,
             due_date: toDate(orderDue),
           },
           {
             title: `Receive delivery — ${sel.option_name}`,
             selection_task_type: 'delivery' as const,
             phase: 'pre-construction' as const,
-            priority: 'medium' as const,
             due_date: toDate(deliveryDue),
           },
           {
             title: `Install — ${sel.option_name}`,
             selection_task_type: 'installation' as const,
             phase: 'finishing' as const,
-            priority: 'medium' as const,
             due_date: toDate(installDue),
           },
         ]
 
+        let prevTaskId: string | null = null
         for (const def of taskDefs) {
-          await createTask({
+          const { data: created } = await createTask({
             title:             def.title,
             description:       `${sel.category}${sel.room_location ? ` — ${sel.room_location}` : ''}`,
             project_id:        project.id,
             project_name:      project.name,
             trade:             'general',
             phase:             def.phase,
-            priority:          def.priority,
+            priority:          null,
             status:            'not-started',
             assignee_id:       null,
             assignee_name:     null,
@@ -276,7 +324,7 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
             progress:          0,
             estimated_hours:   4,
             actual_hours:      0,
-            dependencies:      [],
+            dependencies:      prevTaskId ? [prevTaskId] : [],
             attachments:       0,
             comments:          0,
             location:          sel.room_location || null,
@@ -296,11 +344,12 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
             design_selection_id:  sel.id,
             selection_task_type:  def.selection_task_type,
           } as any)
+          if (created?.id) prevTaskId = created.id
         }
 
-        toast.success(`Approved — 3 tasks created for ${sel.option_name}`)
+        toast.success(`Approved by ${clientName} — 3 tasks created for ${sel.option_name}`)
       } else {
-        toast.success(`${sel.option_name} approved`)
+        toast.success(`${sel.option_name} approved by ${clientName}`)
       }
 
       await fetchSelections()
@@ -312,20 +361,37 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
     }
   }
 
+  async function deleteLinkedTasks(selId: string) {
+    const supabase = createClient()
+    await Promise.all([
+      supabase.from('tasks').delete().eq('design_selection_id', selId),
+      supabase.from('project_expenses').delete().eq('design_selection_id', selId),
+    ])
+    setTasks(prev => prev ? prev.filter((t: any) => t.design_selection_id !== selId) : prev)
+  }
+
   async function handleReject(sel: DesignSelection) {
     const supabase = createClient()
     await supabase.from('design_selections').update({ status: 'rejected' }).eq('id', sel.id)
-    setSelections(prev => prev.map(s => s.id === sel.id ? { ...s, status: 'rejected' } : s))
+    setSelections(prev => (prev ?? []).map(s => s.id === sel.id ? { ...s, status: 'rejected' } : s))
   }
 
   // Derive linked task statuses for a selection's pipeline
   function getLinkedTasks(selId: string) {
-    const linked = (tasks as any[]).filter((t: any) => t.design_selection_id === selId)
+    const linked = (tasks ?? []).filter((t: any) => t.design_selection_id === selId)
     return {
       order:    linked.find((t: any) => t.selection_task_type === 'order'),
       delivery: linked.find((t: any) => t.selection_task_type === 'delivery'),
       install:  linked.find((t: any) => t.selection_task_type === 'installation'),
     }
+  }
+
+  if (selections === null || tasks === null) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-6 h-6 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+      </div>
+    )
   }
 
   const filtered = filter === 'all' ? selections : selections.filter(s => s.status === filter)
@@ -486,11 +552,11 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
                     {sel.status === 'pending' && (
                       <>
                         <button
-                          onClick={() => handleApprove(sel)}
+                          onClick={() => openSignatureModal(sel)}
                           disabled={approvingId === sel.id}
                           className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
                         >
-                          {approvingId === sel.id ? 'Approving…' : 'Approve'}
+                          {approvingId === sel.id ? 'Approving…' : 'Get Approval'}
                         </button>
                         <button
                           onClick={() => handleReject(sel)}
@@ -503,13 +569,18 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
                     )}
                     {sel.status === 'rejected' && (
                       <button
-                        onClick={() => handleApprove(sel)}
+                        onClick={() => openSignatureModal(sel)}
                         disabled={approvingId === sel.id}
                         className="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer"
                         style={{ border: colors.border, color: '#2563EB' }}
                       >
                         Re-approve
                       </button>
+                    )}
+                    {sel.status !== 'pending' && sel.status !== 'rejected' && sel.approved_by_name && (
+                      <span className="text-xs" style={{ color: colors.textMuted }}>
+                        Signed: {sel.approved_by_name}
+                      </span>
                     )}
                     <button
                       onClick={() => openEdit(sel)}
@@ -541,7 +612,7 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
       {showPanel && (
         <>
           <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setShowPanel(false)} />
-          <div className="fixed right-0 top-0 h-full w-[420px] shadow-xl z-50 flex flex-col" style={{ backgroundColor: colors.bg }}>
+          <div className="fixed right-0 top-0 h-full w-105 shadow-xl z-50 flex flex-col" style={{ backgroundColor: colors.bg }}>
             <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: colors.borderBottom }}>
               <h3 className="text-base font-semibold" style={{ color: colors.text }}>
                 {editingId ? 'Edit Selection' : 'Add Selection'}
@@ -704,6 +775,31 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
                   style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                 />
               </div>
+
+              {/* Approval Status — edit only */}
+              {editingId && (
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Approval Status</label>
+                  <select
+                    value={form.status}
+                    onChange={e => setForm(f => ({ ...f, status: e.target.value as DesignSelection['status'] }))}
+                    className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                    style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
+                  >
+                    <option value="pending">Pending Approval</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="ordered">Ordered</option>
+                    <option value="received">Received</option>
+                    <option value="installed">Installed</option>
+                  </select>
+                  {form.status === 'approved' && selections.find(s => s.id === editingId)?.status !== 'approved' && (
+                    <p className="text-xs mt-1" style={{ color: '#D97706' }}>
+                      Saving will open the client signature modal.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="px-5 py-4 flex gap-3" style={{ borderTop: colors.borderBottom }}>
@@ -721,6 +817,81 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Client Signature Modal */}
+      {signatureTarget && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-50" onClick={() => setSignatureTarget(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none px-4">
+            <div className="pointer-events-auto rounded-xl shadow-xl w-full max-w-md" style={{ backgroundColor: colors.bg, border: colors.border }}>
+              <div className="px-6 py-4" style={{ borderBottom: colors.borderBottom }}>
+                <h2 className="text-base font-semibold" style={{ color: colors.text }}>Client Approval</h2>
+                <p className="text-xs mt-0.5" style={{ color: colors.textMuted }}>
+                  The client's typed name serves as an electronic signature under the E-SIGN Act.
+                </p>
+              </div>
+
+              {/* Selection summary */}
+              <div className="mx-6 mt-4 p-3 rounded-lg" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+                <p className="text-sm font-semibold truncate" style={{ color: colors.text }}>{signatureTarget.option_name}</p>
+                <p className="text-xs mt-0.5" style={{ color: colors.textMuted }}>
+                  {signatureTarget.category}{signatureTarget.room_location ? ` · ${signatureTarget.room_location}` : ''}
+                  {signatureTarget.price > 0 ? ` · ${fmt(signatureTarget.price)}` : ''}
+                  {signatureTarget.installation_cost > 0 ? ` + ${fmt(signatureTarget.installation_cost)} install` : ''}
+                </p>
+              </div>
+
+              <form onSubmit={handleClientApproval} className="px-6 py-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5" style={{ color: colors.textMuted }}>
+                    Client full name <span style={{ color: '#DC2626' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    placeholder="e.g. James Harmon"
+                    value={signatureForm.name}
+                    onChange={e => setSignatureForm(f => ({ ...f, name: e.target.value }))}
+                    className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                    style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5" style={{ color: colors.textMuted }}>
+                    Client email <span className="font-normal" style={{ color: colors.textMuted }}>(optional)</span>
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="e.g. james@example.com"
+                    value={signatureForm.email}
+                    onChange={e => setSignatureForm(f => ({ ...f, email: e.target.value }))}
+                    className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                    style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
+                  />
+                </div>
+                <div className="flex gap-3 pt-1">
+                  <button
+                    type="submit"
+                    disabled={!signatureForm.name.trim() || approvingId === signatureTarget.id}
+                    className="flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+                  >
+                    {approvingId === signatureTarget.id ? 'Approving…' : 'Confirm Approval'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSignatureTarget(null)}
+                    className="px-4 py-2.5 rounded-lg text-sm font-semibold cursor-pointer"
+                    style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </>

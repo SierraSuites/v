@@ -63,7 +63,7 @@ function formatDate(dateStr: string) {
 
 export default function ProjectChangeOrdersTab({ project }: Props) {
   const { colors, darkMode } = useThemeColors()
-  const [changeOrders, setChangeOrders] = useState<ChangeOrder[]>(project.changeOrders as ChangeOrder[])
+  const [changeOrders, setChangeOrders] = useState<ChangeOrder[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -115,7 +115,7 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
 
       if (res.ok) {
         const newCO = await res.json()
-        setChangeOrders(prev => [newCO, ...prev])
+        setChangeOrders(prev => [newCO, ...(prev ?? [])])
         setForm({ title: '', description: '', reason: '', change_amount: '', days_added: '0' })
         setShowForm(false)
       }
@@ -132,17 +132,19 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
     })
     if (res.ok) {
       const updated = await res.json()
-      setChangeOrders(prev => prev.map(co => co.id === coId ? updated : co))
+      setChangeOrders(prev => (prev ?? []).map(co => co.id === coId ? updated : co))
     }
   }
 
   async function deleteCO(coId: string) {
     const res = await fetch(`/api/projects/${project.id}/change-orders/${coId}`, { method: 'DELETE' })
     if (res.ok) {
-      setChangeOrders(prev => prev.filter(co => co.id !== coId))
+      setChangeOrders(prev => (prev ?? []).filter(co => co.id !== coId))
     }
     setConfirmDeleteId(null)
   }
+
+  if (changeOrders === null) return <div className="flex items-center justify-center py-20"><div className="w-6 h-6 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" /></div>
 
   // Summary stats
   const totalValue = changeOrders

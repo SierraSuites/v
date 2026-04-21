@@ -15,6 +15,8 @@ interface Document {
   file_size: number
   category: string
   uploaded_at: string
+  linked_entity_type: 'change_order' | 'rfi' | 'design_selection' | null
+  linked_entity_id: string | null
   uploaded_by: {
     id: string
     name: string
@@ -29,22 +31,7 @@ interface ProjectDocumentsTabProps {
 export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProps) {
   const { colors, darkMode } = useThemeColors()
   const projectId = project.id
-  const [documents, setDocuments] = useState<Document[]>(
-    project.documents.map(d => ({
-      id: d.id,
-      name: d.name,
-      file_path: d.file_path,
-      file_type: d.file_type || '',
-      file_size: d.file_size || 0,
-      category: d.category,
-      uploaded_at: d.uploaded_at,
-      uploaded_by: {
-        id: d.uploaded_by?.id || '',
-        name: d.uploaded_by?.name || 'Unknown',
-        avatar: d.uploaded_by?.name ? getInitials(d.uploaded_by.name) : '?'
-      }
-    }))
-  )
+  const [documents, setDocuments] = useState<Document[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [filter, setFilter] = useState<string>('all')
@@ -53,9 +40,26 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null)
   const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<{ id: string; name: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [linkingDocId, setLinkingDocId] = useState<string | null>(null)
+  const [entityOptions, setEntityOptions] = useState<{ type: string; id: string; label: string }[]>([])
 
   useEffect(() => {
     loadDocuments()
+  }, [projectId])
+
+  useEffect(() => {
+    async function loadEntityOptions() {
+      const supabase = createClient()
+      const [cosRes, rfisRes] = await Promise.all([
+        supabase.from('project_change_orders').select('id, co_number, title').eq('project_id', projectId).order('created_at'),
+        supabase.from('project_rfis').select('id, rfi_number, subject').eq('project_id', projectId).order('created_at'),
+      ])
+      const opts: { type: string; id: string; label: string }[] = []
+      for (const co of cosRes.data || []) opts.push({ type: 'change_order', id: co.id, label: `CO ${co.co_number}: ${co.title}` })
+      for (const rfi of rfisRes.data || []) opts.push({ type: 'rfi', id: rfi.id, label: `RFI ${rfi.rfi_number}: ${rfi.subject}` })
+      setEntityOptions(opts)
+    }
+    loadEntityOptions()
   }, [projectId])
 
   useEffect(() => {
@@ -87,6 +91,8 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
           file_size,
           category,
           uploaded_at,
+          linked_entity_type,
+          linked_entity_id,
           uploaded_by:user_profiles!project_documents_uploaded_by_fkey (
             id,
             full_name,
@@ -106,6 +112,8 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
         file_size: doc.file_size,
         category: doc.category,
         uploaded_at: doc.uploaded_at,
+        linked_entity_type: (doc as any).linked_entity_type || null,
+        linked_entity_id: (doc as any).linked_entity_id || null,
         uploaded_by: {
           id: (doc.uploaded_by as any)?.id || '',
           name: (doc.uploaded_by as any)?.full_name || 'Unknown',
@@ -207,12 +215,25 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
       if (error) throw error
 
       // Remove from local state
-      setDocuments(prev => prev.filter(d => d.id !== documentId))
+      setDocuments(prev => (prev ?? []).filter(d => d.id !== documentId))
       setConfirmDeleteDoc(null)
     } catch (error) {
       console.error('Failed to delete document:', error)
       toast.error('Failed to delete document. Please try again.')
     }
+  }
+
+  async function linkDocument(docId: string, entityType: string | null, entityId: string | null) {
+    const supabase = createClient()
+    await supabase
+      .from('project_documents')
+      .update({ linked_entity_type: entityType, linked_entity_id: entityId })
+      .eq('id', docId)
+    setDocuments(prev => prev
+      ? prev.map(d => d.id === docId ? { ...d, linked_entity_type: entityType as Document['linked_entity_type'], linked_entity_id: entityId } : d)
+      : prev
+    )
+    setLinkingDocId(null)
   }
 
   function getPublicUrl(filePath: string) {
@@ -289,6 +310,8 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
     if (fileType.includes('image')) return '🖼️'
     return '📎'
   }
+
+  if (documents === null) return <div className="flex items-center justify-center py-20"><div className="w-6 h-6 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" /></div>
 
   const categories = [
     { value: 'all', label: 'All Documents', count: documents.length },
@@ -497,7 +520,21 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
 
               {/* File Info */}
               <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-gray-900 truncate">{doc.name}</h4>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-medium text-gray-900 truncate">{doc.name}</h4>
+                  {doc.linked_entity_type && (() => {
+                    const opt = entityOptions.find(o => o.id === doc.linked_entity_id)
+                    const label = doc.linked_entity_type === 'change_order' ? 'CO' : doc.linked_entity_type === 'rfi' ? 'RFI' : 'DS'
+                    const color = doc.linked_entity_type === 'change_order' ? { bg: 'rgba(37,99,235,0.1)', text: '#2563EB' }
+                                : doc.linked_entity_type === 'rfi'          ? { bg: 'rgba(245,158,11,0.1)', text: '#D97706' }
+                                : { bg: 'rgba(22,163,74,0.1)', text: '#16A34A' }
+                    return (
+                      <span className="shrink-0 text-xs px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: color.bg, color: color.text }} title={opt?.label}>
+                        {label}
+                      </span>
+                    )
+                  })()}
+                </div>
                 <div className="flex items-center gap-3 text-sm text-gray-500 mt-1 flex-wrap">
                   <span>{formatFileSize(doc.file_size)}</span>
                   <span className="hidden sm:inline">•</span>
@@ -510,10 +547,42 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
                     <span className="hidden md:inline">{doc.uploaded_by.name}</span>
                   </span>
                 </div>
+                {linkingDocId === doc.id && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <select
+                      className="text-xs border rounded px-2 py-1 focus:outline-none"
+                      style={{ borderColor: '#d1d5db', backgroundColor: darkMode ? colors.bgAlt : '#fff', color: colors.text }}
+                      defaultValue=""
+                      onChange={e => {
+                        if (e.target.value === '') linkDocument(doc.id, null, null)
+                        else {
+                          const opt = entityOptions.find(o => o.id === e.target.value)
+                          if (opt) linkDocument(doc.id, opt.type, opt.id)
+                        }
+                      }}
+                    >
+                      <option value="">— None —</option>
+                      {entityOptions.map(o => (
+                        <option key={o.id} value={o.id}>{o.label}</option>
+                      ))}
+                    </select>
+                    <button onClick={() => setLinkingDocId(null)} className="text-xs text-gray-400 hover:text-gray-600">✕</button>
+                  </div>
+                )}
               </div>
 
               {/* Actions */}
               <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => setLinkingDocId(linkingDocId === doc.id ? null : doc.id)}
+                  className="p-2 rounded-lg transition-colors"
+                  style={{ color: doc.linked_entity_type ? '#2563EB' : colors.textMuted }}
+                  title={doc.linked_entity_type ? 'Change entity link' : 'Link to CO/RFI'}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                </button>
                 <button
                   onClick={() => setPreviewDoc(doc)}
                   className="p-2 rounded-lg transition-colors"

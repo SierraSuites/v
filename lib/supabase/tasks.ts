@@ -85,7 +85,7 @@ export type Task = {
   trade: "electrical" | "plumbing" | "hvac" | "concrete" | "framing" | "finishing" | "general"
   phase: "pre-construction" | "foundation" | "framing" | "mep" | "finishing" | "closeout"
   status: "not-started" | "in-progress" | "review" | "completed" | "blocked"
-  priority: "critical" | "high" | "medium" | "low"
+  priority: "critical" | "high" | "medium" | "low" | null
   assignee_id: string | null
   assignee_name: string | null
   assignee_avatar: string | null
@@ -114,6 +114,7 @@ export type Task = {
   client_visibility: boolean
   design_selection_id?: string | null
   selection_task_type?: 'order' | 'delivery' | 'installation' | null
+  blocking_rfi_id?: string | null
   created_at: string
   updated_at: string
   completed_at: string | null

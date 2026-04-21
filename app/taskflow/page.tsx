@@ -39,7 +39,7 @@ type Task = {
   projectId: string
   trade: "electrical" | "plumbing" | "hvac" | "concrete" | "framing" | "finishing" | "general"
   phase: "pre-construction" | "foundation" | "framing" | "mep" | "finishing" | "closeout"
-  priority: "critical" | "high" | "medium" | "low"
+  priority: "critical" | "high" | "medium" | "low" | null
   status: "not-started" | "in-progress" | "review" | "completed" | "blocked"
   assignee: string
   assigneeId: string
@@ -781,7 +781,7 @@ export default function TaskFlowPage() {
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-lg">{priorityStyles[task.priority].icon}</span>
+                              {task.priority && <span className="text-lg">{priorityStyles[task.priority].icon}</span>}
                               <h4 className="font-semibold text-sm" style={{ color: colors.text }}>{task.title}</h4>
                               {task.weatherDependent && <span className="text-sm">🌤️</span>}
                               {task.inspectionRequired && <span className="text-sm">🔍</span>}
@@ -907,9 +907,11 @@ export default function TaskFlowPage() {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold" style={{ backgroundColor: priorityStyles[task.priority].bg, color: priorityStyles[task.priority].color }}>
-                              {priorityStyles[task.priority].icon} {task.priority}
-                            </span>
+                            {task.priority && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold" style={{ backgroundColor: priorityStyles[task.priority].bg, color: priorityStyles[task.priority].color }}>
+                                {priorityStyles[task.priority].icon} {task.priority}
+                              </span>
+                            )}
                           </td>
                           <td className="px-6 py-4">
                             <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: statusStyles[task.status].bg, color: statusStyles[task.status].color }}>
