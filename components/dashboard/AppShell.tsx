@@ -209,7 +209,10 @@ export default function AppShell({ children, user }: AppShellProps) {
 
   const handleLogout = async () => {
     const supabase = createClient()
-    await supabase.auth.signOut()
+    await Promise.all([
+      supabase.auth.signOut(),
+      fetch('/api/auth/logout', { method: 'POST' }),
+    ])
     router.push('/login')
   }
 

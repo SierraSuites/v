@@ -62,8 +62,8 @@ function formatDate(dateStr: string) {
 }
 
 export default function ProjectChangeOrdersTab({ project }: Props) {
-  const { colors } = useThemeColors()
-  const [changeOrders, setChangeOrders] = useState<ChangeOrder[]>(project.changeOrders as ChangeOrder[])
+  const { colors, darkMode } = useThemeColors()
+  const [changeOrders, setChangeOrders] = useState<ChangeOrder[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -115,7 +115,7 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
 
       if (res.ok) {
         const newCO = await res.json()
-        setChangeOrders(prev => [newCO, ...prev])
+        setChangeOrders(prev => [newCO, ...(prev ?? [])])
         setForm({ title: '', description: '', reason: '', change_amount: '', days_added: '0' })
         setShowForm(false)
       }
@@ -132,17 +132,19 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
     })
     if (res.ok) {
       const updated = await res.json()
-      setChangeOrders(prev => prev.map(co => co.id === coId ? updated : co))
+      setChangeOrders(prev => (prev ?? []).map(co => co.id === coId ? updated : co))
     }
   }
 
   async function deleteCO(coId: string) {
     const res = await fetch(`/api/projects/${project.id}/change-orders/${coId}`, { method: 'DELETE' })
     if (res.ok) {
-      setChangeOrders(prev => prev.filter(co => co.id !== coId))
+      setChangeOrders(prev => (prev ?? []).filter(co => co.id !== coId))
     }
     setConfirmDeleteId(null)
   }
+
+  if (changeOrders === null) return <div className="flex items-center justify-center py-20"><div className="w-6 h-6 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" /></div>
 
   // Summary stats
   const totalValue = changeOrders
@@ -172,22 +174,55 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Total CO Value</div>
-          <div className={`text-2xl font-bold ${totalValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {formatCurrency(totalValue, project.currency)}
+        {/* Total CO Value */}
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: totalValue >= 0 ? 'rgba(22,163,74,0.1)' : 'rgba(220,38,38,0.1)' }}>
+              <DocumentTextIcon className="w-5 h-5" style={{ color: totalValue >= 0 ? '#16A34A' : '#DC2626' }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Total CO Value</div>
+              <div className="text-lg font-bold" style={{ color: totalValue >= 0 ? '#16A34A' : '#DC2626' }}>{formatCurrency(totalValue, project.currency)}</div>
+            </div>
           </div>
-          <div className="text-xs text-gray-400 mt-1">{executedCount} executed</div>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${changeOrders.length ? (executedCount / changeOrders.length) * 100 : 0}%`, backgroundColor: '#16A34A' }} />
+          </div>
+          <div className="text-xs mt-1" style={{ color: colors.textMuted }}>{executedCount} executed</div>
         </div>
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Pending Approval</div>
-          <div className="text-2xl font-bold text-yellow-600">{pendingCount}</div>
-          <div className="text-xs text-gray-400 mt-1">awaiting client</div>
+
+        {/* Pending Approval */}
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: pendingCount > 0 ? 'rgba(217,119,6,0.1)' : (darkMode ? 'rgba(75,85,99,0.2)' : '#F3F4F6') }}>
+              <ClockIcon className="w-5 h-5" style={{ color: pendingCount > 0 ? '#D97706' : (darkMode ? '#6B7280' : '#9CA3AF') }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Pending Approval</div>
+              <div className="text-lg font-bold" style={{ color: pendingCount > 0 ? '#D97706' : colors.textMuted }}>{pendingCount}</div>
+            </div>
+          </div>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${changeOrders.length ? (pendingCount / changeOrders.length) * 100 : 0}%`, backgroundColor: '#D97706' }} />
+          </div>
+          <div className="text-xs mt-1" style={{ color: colors.textMuted }}>awaiting client decision</div>
         </div>
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Total COs</div>
-          <div className="text-2xl font-bold text-gray-900">{changeOrders.length}</div>
-          <div className="text-xs text-gray-400 mt-1">all time</div>
+
+        {/* Total COs */}
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
+              <CheckCircleIcon className="w-5 h-5" style={{ color: '#2563EB' }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Total COs</div>
+              <div className="text-lg font-bold" style={{ color: colors.text }}>{changeOrders.length}</div>
+            </div>
+          </div>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${changeOrders.length ? (executedCount / changeOrders.length) * 100 : 0}%`, backgroundColor: '#2563EB' }} />
+          </div>
+          <div className="text-xs mt-1" style={{ color: colors.textMuted }}>{executedCount} of {changeOrders.length} executed</div>
         </div>
       </div>
 

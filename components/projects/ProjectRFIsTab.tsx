@@ -59,8 +59,8 @@ function isOverdue(dueDate: string | null, status: RFI['status']) {
 }
 
 export default function ProjectRFIsTab({ project }: Props) {
-  const { colors } = useThemeColors()
-  const [rfis, setRFIs] = useState<RFI[]>(project.rfis as RFI[])
+  const { colors, darkMode } = useThemeColors()
+  const [rfis, setRFIs] = useState<RFI[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -69,6 +69,9 @@ export default function ProjectRFIsTab({ project }: Props) {
   const [responseText, setResponseText] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [coFromRfi, setCoFromRfi] = useState<RFI | null>(null)
+  const [coForm, setCoForm] = useState({ title: '', change_amount: '', days_added: '0' })
+  const [creatingCo, setCreatingCo] = useState(false)
 
   const [form, setForm] = useState({
     subject: '',
@@ -121,7 +124,7 @@ export default function ProjectRFIsTab({ project }: Props) {
       })
       if (res.ok) {
         const newRFI = await res.json()
-        setRFIs(prev => [newRFI, ...prev])
+        setRFIs(prev => [newRFI, ...(prev ?? [])])
         setForm({ subject: '', question: '', priority: 'medium', due_date: '', drawing_references: '', spec_references: '' })
         setShowForm(false)
       }
@@ -139,7 +142,7 @@ export default function ProjectRFIsTab({ project }: Props) {
     })
     if (res.ok) {
       const updated = await res.json()
-      setRFIs(prev => prev.map(r => r.id === rfiId ? updated : r))
+      setRFIs(prev => (prev ?? []).map(r => r.id === rfiId ? updated : r))
       setRespondingId(null)
       setResponseText('')
     }
@@ -153,15 +156,55 @@ export default function ProjectRFIsTab({ project }: Props) {
     })
     if (res.ok) {
       const updated = await res.json()
-      setRFIs(prev => prev.map(r => r.id === rfiId ? updated : r))
+      setRFIs(prev => (prev ?? []).map(r => r.id === rfiId ? updated : r))
+      // Auto-unblock tasks blocked by this RFI
+      const supabase = (await import('@/lib/supabase/client')).createClient()
+      await supabase
+        .from('tasks')
+        .update({ status: 'not-started', blocking_rfi_id: null })
+        .eq('blocking_rfi_id', rfiId)
+        .eq('status', 'blocked')
     }
   }
 
   async function deleteRFI(rfiId: string) {
     const res = await fetch(`/api/projects/${project.id}/rfis/${rfiId}`, { method: 'DELETE' })
-    if (res.ok) setRFIs(prev => prev.filter(r => r.id !== rfiId))
+    if (res.ok) setRFIs(prev => (prev ?? []).filter(r => r.id !== rfiId))
     setConfirmDeleteId(null)
   }
+
+  function openCoForm(rfi: RFI) {
+    setCoFromRfi(rfi)
+    setCoForm({ title: `CO from RFI ${rfi.rfi_number}: ${rfi.subject}`, change_amount: '', days_added: '0' })
+  }
+
+  async function submitCoFromRfi(e: React.FormEvent) {
+    e.preventDefault()
+    if (!coFromRfi || !coForm.title || !coForm.change_amount) return
+    setCreatingCo(true)
+    try {
+      const res = await fetch(`/api/projects/${project.id}/change-orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: coForm.title,
+          description: coFromRfi.response
+            ? `From RFI ${coFromRfi.rfi_number}: ${coFromRfi.response}`
+            : `From RFI ${coFromRfi.rfi_number}: ${coFromRfi.subject}`,
+          reason: 'rfi',
+          change_amount: parseFloat(coForm.change_amount),
+          days_added: parseInt(coForm.days_added) || 0,
+        }),
+      })
+      if (res.ok) {
+        setCoFromRfi(null)
+      }
+    } finally {
+      setCreatingCo(false)
+    }
+  }
+
+  if (rfis === null) return <div className="flex items-center justify-center py-20"><div className="w-6 h-6 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" /></div>
 
   const filtered = filterStatus === 'all' ? rfis : rfis.filter(r => r.status === filterStatus)
   const openCount = rfis.filter(r => r.status === 'open').length
@@ -187,20 +230,55 @@ export default function ProjectRFIsTab({ project }: Props) {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Open</div>
-          <div className="text-2xl font-bold text-yellow-600">{openCount}</div>
-          <div className="text-xs text-gray-400 mt-1">awaiting response</div>
+        {/* Open */}
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: openCount > 0 ? 'rgba(217,119,6,0.1)' : (darkMode ? 'rgba(75,85,99,0.2)' : '#F3F4F6') }}>
+              <QuestionMarkCircleIcon className="w-5 h-5" style={{ color: openCount > 0 ? '#D97706' : (darkMode ? '#6B7280' : '#9CA3AF') }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Open</div>
+              <div className="text-lg font-bold" style={{ color: openCount > 0 ? '#D97706' : colors.textMuted }}>{openCount}</div>
+            </div>
+          </div>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${rfis.length ? (openCount / rfis.length) * 100 : 0}%`, backgroundColor: '#D97706' }} />
+          </div>
+          <div className="text-xs mt-1" style={{ color: colors.textMuted }}>awaiting response</div>
         </div>
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Overdue</div>
-          <div className={`text-2xl font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>{overdueCount}</div>
-          <div className="text-xs text-gray-400 mt-1">past due date</div>
+
+        {/* Overdue */}
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: overdueCount > 0 ? 'rgba(220,38,38,0.1)' : (darkMode ? 'rgba(75,85,99,0.2)' : '#F3F4F6') }}>
+              <ExclamationTriangleIcon className="w-5 h-5" style={{ color: overdueCount > 0 ? '#DC2626' : (darkMode ? '#6B7280' : '#9CA3AF') }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Overdue</div>
+              <div className="text-lg font-bold" style={{ color: overdueCount > 0 ? '#DC2626' : colors.textMuted }}>{overdueCount}</div>
+            </div>
+          </div>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${rfis.length ? (overdueCount / rfis.length) * 100 : 0}%`, backgroundColor: overdueCount > 0 ? '#DC2626' : '#9CA3AF' }} />
+          </div>
+          <div className="text-xs mt-1" style={{ color: colors.textMuted }}>past due date</div>
         </div>
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Resolved</div>
-          <div className="text-2xl font-bold text-green-600">{answeredCount}</div>
-          <div className="text-xs text-gray-400 mt-1">answered + closed</div>
+
+        {/* Resolved */}
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
+              <CheckCircleIcon className="w-5 h-5" style={{ color: '#16A34A' }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Resolved</div>
+              <div className="text-lg font-bold" style={{ color: '#16A34A' }}>{answeredCount}</div>
+            </div>
+          </div>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${rfis.length ? (answeredCount / rfis.length) * 100 : 0}%`, backgroundColor: '#16A34A' }} />
+          </div>
+          <div className="text-xs mt-1" style={{ color: colors.textMuted }}>answered + closed</div>
         </div>
       </div>
 
@@ -455,7 +533,7 @@ export default function ProjectRFIsTab({ project }: Props) {
                       </div>
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       {rfi.status === 'open' && respondingId !== rfi.id && (
                         <button
                           onClick={() => setRespondingId(rfi.id)}
@@ -472,6 +550,14 @@ export default function ProjectRFIsTab({ project }: Props) {
                           Close RFI
                         </button>
                       )}
+                      {(rfi.status === 'answered' || rfi.status === 'closed') && (
+                        <button
+                          onClick={() => openCoForm(rfi)}
+                          className="text-xs px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 font-medium"
+                        >
+                          + Create Change Order
+                        </button>
+                      )}
                       {rfi.status === 'open' && (
                         <button
                           onClick={() => setConfirmDeleteId(rfi.id)}
@@ -482,6 +568,49 @@ export default function ProjectRFIsTab({ project }: Props) {
                         </button>
                       )}
                     </div>
+                    {coFromRfi?.id === rfi.id && (
+                      <form onSubmit={submitCoFromRfi} className="mt-3 p-3 rounded-lg space-y-3" style={{ backgroundColor: darkMode ? 'rgba(124,58,237,0.1)' : '#f5f3ff', border: '1px solid #ddd6fe' }}>
+                        <p className="text-xs font-semibold" style={{ color: '#7C3AED' }}>New Change Order from this RFI</p>
+                        <input
+                          type="text"
+                          value={coForm.title}
+                          onChange={e => setCoForm(p => ({ ...p, title: e.target.value }))}
+                          placeholder="Change order title"
+                          required
+                          className="w-full border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-purple-400"
+                          style={{ backgroundColor: darkMode ? colors.bgAlt : '#fff', borderColor: '#ddd6fe', color: colors.text }}
+                        />
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={coForm.change_amount}
+                            onChange={e => setCoForm(p => ({ ...p, change_amount: e.target.value }))}
+                            placeholder="Cost change ($)"
+                            required
+                            step="0.01"
+                            className="flex-1 border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-purple-400"
+                            style={{ backgroundColor: darkMode ? colors.bgAlt : '#fff', borderColor: '#ddd6fe', color: colors.text }}
+                          />
+                          <input
+                            type="number"
+                            value={coForm.days_added}
+                            onChange={e => setCoForm(p => ({ ...p, days_added: e.target.value }))}
+                            placeholder="Days added"
+                            min="0"
+                            className="w-24 border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-purple-400"
+                            style={{ backgroundColor: darkMode ? colors.bgAlt : '#fff', borderColor: '#ddd6fe', color: colors.text }}
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button type="submit" disabled={creatingCo} className="text-xs px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 font-medium disabled:opacity-50">
+                            {creatingCo ? 'Creating...' : 'Create CO'}
+                          </button>
+                          <button type="button" onClick={() => setCoFromRfi(null)} className="text-xs px-3 py-1.5 border rounded text-gray-600 hover:bg-gray-50 font-medium">
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    )}
                   </div>
                 )}
               </div>

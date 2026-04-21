@@ -185,6 +185,105 @@ Links a payment expense back to the specific design selection it was recorded fo
 ALTER TABLE project_expenses ADD COLUMN IF NOT EXISTS design_selection_id uuid REFERENCES design_selections(id) ON DELETE SET NULL;
 ```
 
+### Cross-tab integration schema (2026-04-20) ✅
+
+Created `project_change_orders` and `project_rfis` tables (previously referenced in code but never created). Added cross-tab linking columns to milestones, tasks, and documents to support the coherent tab integration plan: COs affect budget and timeline, RFIs can block tasks and spawn COs, documents can be attached to COs/RFIs/design selections.
+
+```sql
+-- Create project_change_orders
+CREATE TABLE IF NOT EXISTS public.project_change_orders (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id        UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+  co_number         TEXT NOT NULL,
+  title             TEXT NOT NULL,
+  description       TEXT NOT NULL,
+  reason            TEXT,
+  original_amount   NUMERIC DEFAULT 0,
+  change_amount     NUMERIC NOT NULL,
+  days_added        INT DEFAULT 0,
+  original_end_date DATE,
+  status            TEXT DEFAULT 'draft'
+                    CHECK (status IN ('draft','pending_client','client_approved','client_rejected','executed','cancelled')),
+  source_rfi_id     UUID,
+  created_by        UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at        TIMESTAMPTZ DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.project_change_orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Project members can manage change orders"
+ON public.project_change_orders
+USING (project_id IN (SELECT project_id FROM public.project_team_members WHERE user_id = auth.uid()));
+
+-- Create project_rfis
+CREATE TABLE IF NOT EXISTS public.project_rfis (
+  id                  UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  project_id          UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+  rfi_number          TEXT NOT NULL,
+  subject             TEXT NOT NULL,
+  question            TEXT NOT NULL,
+  response            TEXT,
+  priority            TEXT DEFAULT 'medium'
+                      CHECK (priority IN ('low','medium','high','urgent')),
+  status              TEXT DEFAULT 'open'
+                      CHECK (status IN ('draft','open','answered','closed','cancelled')),
+  due_date            DATE,
+  responded_at        TIMESTAMPTZ,
+  drawing_references  TEXT[] DEFAULT '{}',
+  spec_references     TEXT[] DEFAULT '{}',
+  assigned_to         UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  requested_by        UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at          TIMESTAMPTZ DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.project_rfis ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Project members can manage RFIs"
+ON public.project_rfis
+USING (project_id IN (SELECT project_id FROM public.project_team_members WHERE user_id = auth.uid()));
+
+-- source_rfi_id FK on change orders
+ALTER TABLE public.project_change_orders
+  ADD CONSTRAINT fk_co_source_rfi
+  FOREIGN KEY (source_rfi_id) REFERENCES public.project_rfis(id) ON DELETE SET NULL;
+
+-- project_milestones: phase + CO schedule impact
+ALTER TABLE public.project_milestones
+  ADD COLUMN IF NOT EXISTS phase TEXT
+    CHECK (phase IN ('pre-construction','foundation','framing','mep','finishing','closeout')),
+  ADD COLUMN IF NOT EXISTS days_extended INT DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS schedule_impact_co_id UUID
+    REFERENCES public.project_change_orders(id) ON DELETE SET NULL;
+
+-- tasks: blocking RFI link
+ALTER TABLE public.tasks
+  ADD COLUMN IF NOT EXISTS blocking_rfi_id UUID
+    REFERENCES public.project_rfis(id) ON DELETE SET NULL;
+
+-- project_documents: entity linking
+ALTER TABLE public.project_documents
+  ADD COLUMN IF NOT EXISTS linked_entity_type TEXT
+    CHECK (linked_entity_type IN ('change_order','rfi','design_selection')),
+  ADD COLUMN IF NOT EXISTS linked_entity_id UUID;
+```
+
+### `tasks` — nullable priority (2026-04-20) ✅
+
+Made `priority` optional. Tasks now default to no priority; PMs set it explicitly to Urgent or Not Urgent only when needed. The UI maps `critical`/`high` → "Urgent" and `medium`/`low` → "Not Urgent", with `null` showing no badge.
+
+```sql
+ALTER TABLE tasks ALTER COLUMN priority DROP NOT NULL;
+```
+
+### `tasks` — design selection linking columns (2026-04-19) ✅
+
+Links tasks back to the design selection they were auto-generated for. Enables the procurement pipeline (order → delivery → installation) where completing a task advances the selection status and auto-creates expenses in the Budget tab.
+
+```sql
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS design_selection_id UUID;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS selection_task_type TEXT
+  CHECK (selection_task_type IN ('order', 'delivery', 'installation'));
+CREATE INDEX IF NOT EXISTS idx_tasks_design_selection ON tasks(design_selection_id);
+```
+
 ### `design_selections` — client approval signature columns (2026-04-16) ✅
 
 Added `approved_by_name` and `approved_by_email` to support typed-name electronic signature on client approvals. Entering a client's full name now constitutes a legally binding e-signature (E-SIGN Act / UETA) and is stored alongside the existing `client_approved` boolean and `approved_date` timestamp.

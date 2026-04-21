@@ -1,6 +1,9 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const REMEMBER_ME_COOKIE = 'sb-remember-me'
+const REMEMBER_ME_MAX_AGE = 60 * 60 * 24 * 30 // 30 days in seconds
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -17,6 +20,10 @@ export async function updateSession(request: NextRequest) {
     return response
   }
 
+  // When the user chose "remember me", preserve the 30-day maxAge on every
+  // token refresh so the session cookie doesn't silently shorten to 1 hour.
+  const rememberMe = request.cookies.get(REMEMBER_ME_COOKIE)?.value === '1'
+
   const supabase = createServerClient(
     supabaseUrl,
     supabaseKey,
@@ -30,9 +37,17 @@ export async function updateSession(request: NextRequest) {
             request.cookies.set(name, value)
           )
           response = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          )
+          cookiesToSet.forEach(({ name, value, options }) => {
+            const cookieOptions: CookieOptions = { ...options }
+            if (rememberMe) {
+              cookieOptions.maxAge = REMEMBER_ME_MAX_AGE
+              delete cookieOptions.expires
+            } else {
+              delete cookieOptions.maxAge
+              delete cookieOptions.expires
+            }
+            response.cookies.set(name, value, cookieOptions)
+          })
         },
       },
     }

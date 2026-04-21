@@ -9,6 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, getIdentifier, resetRateLimit } from '@/lib/auth/rate-limiting'
 import {
@@ -18,13 +19,16 @@ import {
 } from '@/lib/auth/brute-force-protection'
 import { logAuthEvent } from '@/lib/auth/audit-logging'
 
+const REMEMBER_ME_MAX_AGE = 60 * 60 * 24 * 30 // 30 days in seconds
+const REMEMBER_ME_COOKIE = 'sb-remember-me'
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
 
   try {
     // Parse request body
     const body = await request.json()
-    const { email, password } = body
+    const { email, password, rememberMe = false } = body
 
     if (!email || !password) {
       return NextResponse.json(
@@ -117,7 +121,22 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. ATTEMPT LOGIN
-    const supabase = await createClient()
+    // Collect cookies Supabase wants to set so we can apply the correct maxAge
+    // before writing them to the response.
+    const pendingCookies: { name: string; value: string; options: CookieOptions }[] = []
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll: () => request.cookies.getAll(),
+          setAll: (cookiesToSet: { name: string; value: string; options: CookieOptions }[]) => {
+            pendingCookies.push(...cookiesToSet)
+          },
+        },
+      }
+    )
 
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email,
@@ -175,7 +194,7 @@ export async function POST(request: NextRequest) {
 
     const responseTime = Date.now() - startTime
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: true,
         user: {
@@ -194,6 +213,45 @@ export async function POST(request: NextRequest) {
       },
       { status: 200 }
     )
+
+    // Apply Supabase session cookies with maxAge controlled by rememberMe.
+    // rememberMe=true  → persistent 30-day cookie
+    // rememberMe=false → session cookie (browser clears on close)
+    for (const { name, value, options } of pendingCookies) {
+      const cookieOptions: CookieOptions = { ...options }
+      if (rememberMe) {
+        cookieOptions.maxAge = REMEMBER_ME_MAX_AGE
+        delete cookieOptions.expires
+      } else {
+        // Explicitly remove any expiry so the browser treats it as a session cookie
+        delete cookieOptions.maxAge
+        delete cookieOptions.expires
+      }
+      response.cookies.set(name, value, cookieOptions)
+    }
+
+    // Store the user's remember-me preference so middleware can maintain
+    // the correct maxAge across automatic token refreshes.
+    const prefCookieOptions: CookieOptions = {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+    }
+    if (rememberMe) {
+      response.cookies.set(REMEMBER_ME_COOKIE, '1', {
+        ...prefCookieOptions,
+        maxAge: REMEMBER_ME_MAX_AGE,
+      })
+    } else {
+      // Clear any stale preference from a previous "remember me" session
+      response.cookies.set(REMEMBER_ME_COOKIE, '', {
+        ...prefCookieOptions,
+        maxAge: 0,
+      })
+    }
+
+    return response
   } catch (error: any) {
     console.error('Login error:', error)
 
