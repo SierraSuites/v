@@ -20,7 +20,26 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const supabase = await createClient()
 
-    const body = await request.json()
+    const raw = await request.json()
+
+    // Whitelist permitted fields — never let callers overwrite co_number, project_id, created_by, etc.
+    const body: Record<string, unknown> = {}
+    if (raw.title       !== undefined) body.title        = String(raw.title)
+    if (raw.description !== undefined) body.description  = String(raw.description)
+    if (raw.reason      !== undefined) body.reason       = raw.reason ? String(raw.reason) : null
+    if (raw.change_amount !== undefined) body.change_amount = Number(raw.change_amount)
+    if (raw.days_added  !== undefined) body.days_added   = Number(raw.days_added)
+    if (raw.status      !== undefined) {
+      const VALID_STATUSES = ['draft','pending_client','client_approved','client_rejected','executed','cancelled']
+      if (!VALID_STATUSES.includes(raw.status)) {
+        return NextResponse.json({ error: 'Invalid status value' }, { status: 400 })
+      }
+      body.status = raw.status
+    }
+
+    if (Object.keys(body).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+    }
 
     // Fetch current CO state before updating (needed for reversal logic)
     const { data: currentCO } = await supabase

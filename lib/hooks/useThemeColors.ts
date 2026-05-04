@@ -13,6 +13,7 @@ export function useThemeColors() {
     bg: darkMode ? '#1a1d2e' : '#FFFFFF',
     bgAlt: darkMode ? '#252a3a' : '#F8F9FA',
     bgMuted: darkMode ? '#374151' : '#E0E0E0',
+    card: darkMode ? '#252a3a' : '#FFFFFF',
     border: darkMode ? '1px solid #2d3548' : '1px solid #E0E0E0',
     borderBottom: darkMode ? '1px solid #2d3548' : '1px solid #E0E0E0',
     text: darkMode ? '#e2e8f0' : '#1A1A1A',

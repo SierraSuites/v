@@ -239,7 +239,7 @@ export interface ProjectDetails {
   projectedPercentage: number
 
   // Design selections summary (price + status only — for budget projection seeding)
-  designSelectionsSummary: { price: number; status: string; installation_cost: number }[]
+  designSelectionsSummary: { id: string; price: number; status: string; installation_cost: number }[]
 }
 
 /**
@@ -479,7 +479,7 @@ export async function getProjectDetails(
       designSelections: (designSelectionsRes.data || []) as DesignSelection[],
 
       // Design selections summary for budget projection seeding (derived from full data)
-      designSelectionsSummary: (designSelectionsRes.data || []) as { price: number; status: string; installation_cost: number }[],
+      designSelectionsSummary: (designSelectionsRes.data || []) as { id: string; price: number; status: string; installation_cost: number }[],
     }
 
     return { data: projectDetails, error: null }

@@ -852,11 +852,10 @@ export default function ProjectsPage() {
               >
                 {/* Project Thumbnail */}
                 <Link href={`/projects/${project.id}`} className="block relative h-48 overflow-hidden" style={{ backgroundColor: colors.bgAlt }}>
-                  <img
-                    src={project.thumbnail}
-                    alt={project.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
+                  {project.thumbnail
+                    ? <img src={project.thumbnail} alt={project.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                    : <div className="w-full h-full flex items-center justify-center text-4xl font-bold opacity-20" style={{ color: colors.text }}>{project.name.charAt(0)}</div>
+                  }
                   <div className="absolute top-3 right-3 flex gap-2">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusTextColor(project.status)}`}>
                       {project.status.replace('-', ' ').toUpperCase()}
@@ -980,11 +979,10 @@ export default function ProjectsPage() {
                     <tr key={project.id} className="transition-colors" style={{ borderBottom: colors.border }}>
                       <td className="px-6 py-4">
                         <Link href={`/projects/${project.id}`} className="flex items-center gap-3 group">
-                          <img
-                            src={project.thumbnail}
-                            alt={project.name}
-                            className="w-12 h-12 rounded-lg object-cover"
-                          />
+                          {project.thumbnail
+                            ? <img src={project.thumbnail} alt={project.name} className="w-12 h-12 rounded-lg object-cover" />
+                            : <div className="w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold" style={{ backgroundColor: colors.bgMuted, color: colors.textMuted }}>{project.name.charAt(0)}</div>
+                          }
                           <div className="min-w-0">
                             <p className="font-semibold transition-colors truncate" style={{ color: colors.text }}>
                               {project.name}

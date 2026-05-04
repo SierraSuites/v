@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import {
@@ -32,6 +33,8 @@ interface RFI {
 
 interface Props {
   project: ProjectDetails
+  refreshKey?: number
+  onMutate?: () => void
 }
 
 const PRIORITY_COLORS: Record<RFI['priority'], string> = {
@@ -58,7 +61,7 @@ function isOverdue(dueDate: string | null, status: RFI['status']) {
   return new Date(dueDate) < new Date()
 }
 
-export default function ProjectRFIsTab({ project }: Props) {
+export default function ProjectRFIsTab({ project, refreshKey = 0, onMutate }: Props) {
   const { colors, darkMode } = useThemeColors()
   const [rfis, setRFIs] = useState<RFI[] | null>(null)
   const [loading, setLoading] = useState(false)
@@ -84,7 +87,7 @@ export default function ProjectRFIsTab({ project }: Props) {
 
   useEffect(() => {
     fetchRFIs()
-  }, [project.id])
+  }, [project.id, refreshKey])
 
   async function fetchRFIs() {
     try {
@@ -127,6 +130,7 @@ export default function ProjectRFIsTab({ project }: Props) {
         setRFIs(prev => [newRFI, ...(prev ?? [])])
         setForm({ subject: '', question: '', priority: 'medium', due_date: '', drawing_references: '', spec_references: '' })
         setShowForm(false)
+        onMutate?.()
       }
     } finally {
       setSubmitting(false)
@@ -145,6 +149,7 @@ export default function ProjectRFIsTab({ project }: Props) {
       setRFIs(prev => (prev ?? []).map(r => r.id === rfiId ? updated : r))
       setRespondingId(null)
       setResponseText('')
+      onMutate?.()
     }
   }
 
@@ -164,12 +169,16 @@ export default function ProjectRFIsTab({ project }: Props) {
         .update({ status: 'not-started', blocking_rfi_id: null })
         .eq('blocking_rfi_id', rfiId)
         .eq('status', 'blocked')
+      onMutate?.()
     }
   }
 
   async function deleteRFI(rfiId: string) {
     const res = await fetch(`/api/projects/${project.id}/rfis/${rfiId}`, { method: 'DELETE' })
-    if (res.ok) setRFIs(prev => (prev ?? []).filter(r => r.id !== rfiId))
+    if (res.ok) {
+      setRFIs(prev => (prev ?? []).filter(r => r.id !== rfiId))
+      onMutate?.()
+    }
     setConfirmDeleteId(null)
   }
 
@@ -198,6 +207,7 @@ export default function ProjectRFIsTab({ project }: Props) {
       })
       if (res.ok) {
         setCoFromRfi(null)
+        onMutate?.()
       }
     } finally {
       setCreatingCo(false)
@@ -216,8 +226,8 @@ export default function ProjectRFIsTab({ project }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">RFIs</h2>
-          <p className="text-sm text-gray-500 mt-1">Requests for Information from architects and engineers</p>
+          <h2 className="text-xl font-semibold" style={{ color: colors.text }}>RFIs</h2>
+          <p className="text-sm mt-1" style={{ color: colors.textMuted }}>Requests for Information from architects and engineers</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
@@ -231,7 +241,7 @@ export default function ProjectRFIsTab({ project }: Props) {
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
         {/* Open */}
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: openCount > 0 ? 'rgba(217,119,6,0.1)' : (darkMode ? 'rgba(75,85,99,0.2)' : '#F3F4F6') }}>
               <QuestionMarkCircleIcon className="w-5 h-5" style={{ color: openCount > 0 ? '#D97706' : (darkMode ? '#6B7280' : '#9CA3AF') }} />
@@ -248,7 +258,7 @@ export default function ProjectRFIsTab({ project }: Props) {
         </div>
 
         {/* Overdue */}
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: overdueCount > 0 ? 'rgba(220,38,38,0.1)' : (darkMode ? 'rgba(75,85,99,0.2)' : '#F3F4F6') }}>
               <ExclamationTriangleIcon className="w-5 h-5" style={{ color: overdueCount > 0 ? '#DC2626' : (darkMode ? '#6B7280' : '#9CA3AF') }} />
@@ -265,7 +275,7 @@ export default function ProjectRFIsTab({ project }: Props) {
         </div>
 
         {/* Resolved */}
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
               <CheckCircleIcon className="w-5 h-5" style={{ color: '#16A34A' }} />
@@ -288,11 +298,11 @@ export default function ProjectRFIsTab({ project }: Props) {
           <button
             key={s}
             onClick={() => setFilterStatus(s)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize ${
-              filterStatus === s
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium capitalize"
+            style={filterStatus === s
+              ? { backgroundColor: 'rgba(37,99,235,0.1)', color: '#2563EB' }
+              : { backgroundColor: colors.bgAlt, color: colors.textMuted }
+            }
           >
             {s}
           </button>
@@ -301,38 +311,41 @@ export default function ProjectRFIsTab({ project }: Props) {
 
       {/* Create Form */}
       {showForm && (
-        <div className="bg-white border rounded-lg p-6">
-          <h3 className="text-base font-semibold text-gray-900 mb-4">New RFI</h3>
+        <div className="rounded-lg p-6" style={{ backgroundColor: colors.bg, border: colors.border }}>
+          <h3 className="text-base font-semibold mb-4" style={{ color: colors.text }}>New RFI</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: colors.textMuted }}>Subject *</label>
               <input
                 type="text"
                 value={form.subject}
                 onChange={e => setForm(p => ({ ...p, subject: e.target.value }))}
                 placeholder="e.g., Clarification on structural beam specifications"
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Question *</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: colors.textMuted }}>Question *</label>
               <textarea
                 value={form.question}
                 onChange={e => setForm(p => ({ ...p, question: e.target.value }))}
                 placeholder="Describe the information needed in detail..."
                 rows={4}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                 required
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: colors.textMuted }}>Priority</label>
                 <select
                   value={form.priority}
                   onChange={e => setForm(p => ({ ...p, priority: e.target.value as RFI['priority'] }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                 >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
@@ -341,32 +354,35 @@ export default function ProjectRFIsTab({ project }: Props) {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Response Due Date</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: colors.textMuted }}>Response Due Date</label>
                 <input
                   type="date"
                   value={form.due_date}
                   onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Drawing References</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: colors.textMuted }}>Drawing References</label>
                 <input
                   type="text"
                   value={form.drawing_references}
                   onChange={e => setForm(p => ({ ...p, drawing_references: e.target.value }))}
                   placeholder="A-101, S-201 (comma separated)"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Spec References</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: colors.textMuted }}>Spec References</label>
                 <input
                   type="text"
                   value={form.spec_references}
                   onChange={e => setForm(p => ({ ...p, spec_references: e.target.value }))}
                   placeholder="03 30 00, 05 12 00 (comma separated)"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                 />
               </div>
             </div>
@@ -381,7 +397,8 @@ export default function ProjectRFIsTab({ project }: Props) {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ border: colors.border, color: colors.text, backgroundColor: colors.bgAlt }}
               >
                 Cancel
               </button>
@@ -401,12 +418,12 @@ export default function ProjectRFIsTab({ project }: Props) {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white border rounded-lg p-12 text-center">
-          <QuestionMarkCircleIcon className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-          <h3 className="text-base font-medium text-gray-900 mb-1">
+        <div className="rounded-lg p-12 text-center" style={{ backgroundColor: colors.bg, border: colors.border }}>
+          <QuestionMarkCircleIcon className="h-12 w-12 mx-auto mb-4" style={{ color: colors.textMuted }} />
+          <h3 className="text-base font-medium mb-1" style={{ color: colors.text }}>
             {filterStatus === 'all' ? 'No RFIs yet' : `No ${filterStatus} RFIs`}
           </h3>
-          <p className="text-sm text-gray-500 mb-4">Submit requests for information from architects and engineers</p>
+          <p className="text-sm mb-4" style={{ color: colors.textMuted }}>Submit requests for information from architects and engineers</p>
           {filterStatus === 'all' && (
             <button
               onClick={() => setShowForm(true)}
@@ -422,27 +439,27 @@ export default function ProjectRFIsTab({ project }: Props) {
           {filtered.map(rfi => {
             const overdue = isOverdue(rfi.due_date, rfi.status)
             return (
-              <div key={rfi.id} className={`bg-white border rounded-lg overflow-hidden ${overdue ? 'border-red-200' : ''}`}>
+              <div key={rfi.id} className="rounded-lg overflow-hidden" style={{ backgroundColor: colors.bg, border: overdue ? '1px solid #FCA5A5' : colors.border }}>
                 <div
-                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
+                  className={`flex items-center justify-between p-4 cursor-pointer ${darkMode ? 'hover:bg-white/5' : 'hover:bg-gray-50'}`}
                   onClick={() => setExpandedId(expandedId === rfi.id ? null : rfi.id)}
                 >
                   <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <span className="text-xs font-mono font-semibold text-gray-500 whitespace-nowrap">
+                    <span className="text-xs font-mono font-semibold whitespace-nowrap" style={{ color: colors.textMuted }}>
                       {rfi.rfi_number}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{rfi.subject}</p>
+                      <p className="font-medium truncate" style={{ color: colors.text }}>{rfi.subject}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-gray-400">{formatDate(rfi.created_at)}</span>
+                        <span className="text-xs" style={{ color: colors.textMuted }}>{formatDate(rfi.created_at)}</span>
                         {overdue && (
-                          <span className="text-xs text-red-600 font-medium flex items-center gap-0.5">
+                          <span className="text-xs text-red-500 font-medium flex items-center gap-0.5">
                             <ExclamationTriangleIcon className="h-3 w-3" />
                             Overdue
                           </span>
                         )}
                         {rfi.due_date && !overdue && (
-                          <span className="text-xs text-gray-400">Due {formatDate(rfi.due_date)}</span>
+                          <span className="text-xs" style={{ color: colors.textMuted }}>Due {formatDate(rfi.due_date)}</span>
                         )}
                       </div>
                     </div>
@@ -455,37 +472,37 @@ export default function ProjectRFIsTab({ project }: Props) {
                       {rfi.status}
                     </span>
                     {expandedId === rfi.id
-                      ? <ChevronUpIcon className="h-4 w-4 text-gray-400" />
-                      : <ChevronDownIcon className="h-4 w-4 text-gray-400" />
+                      ? <ChevronUpIcon className="h-4 w-4" style={{ color: colors.textMuted }} />
+                      : <ChevronDownIcon className="h-4 w-4" style={{ color: colors.textMuted }} />
                     }
                   </div>
                 </div>
 
                 {expandedId === rfi.id && (
-                  <div className="border-t px-4 pb-4 pt-3 bg-gray-50 space-y-4">
+                  <div className="px-4 pb-4 pt-3 space-y-4" style={{ backgroundColor: colors.bgAlt, borderTop: colors.border }}>
                     <div>
-                      <p className="text-xs text-gray-500 font-medium mb-1">Question</p>
-                      <p className="text-sm text-gray-700 whitespace-pre-line">{rfi.question}</p>
+                      <p className="text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Question</p>
+                      <p className="text-sm whitespace-pre-line" style={{ color: colors.text }}>{rfi.question}</p>
                     </div>
 
                     {(rfi.drawing_references?.length > 0 || rfi.spec_references?.length > 0) && (
                       <div className="flex gap-6">
                         {rfi.drawing_references?.length > 0 && (
                           <div>
-                            <p className="text-xs text-gray-500 font-medium mb-1">Drawing References</p>
+                            <p className="text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Drawing References</p>
                             <div className="flex gap-1 flex-wrap">
                               {rfi.drawing_references.map(ref => (
-                                <span key={ref} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{ref}</span>
+                                <span key={ref} className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: darkMode ? 'rgba(37,99,235,0.15)' : '#EFF6FF', color: '#2563EB' }}>{ref}</span>
                               ))}
                             </div>
                           </div>
                         )}
                         {rfi.spec_references?.length > 0 && (
                           <div>
-                            <p className="text-xs text-gray-500 font-medium mb-1">Spec References</p>
+                            <p className="text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Spec References</p>
                             <div className="flex gap-1 flex-wrap">
                               {rfi.spec_references.map(ref => (
-                                <span key={ref} className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded">{ref}</span>
+                                <span key={ref} className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: darkMode ? 'rgba(124,58,237,0.15)' : '#F5F3FF', color: '#7C3AED' }}>{ref}</span>
                               ))}
                             </div>
                           </div>
@@ -494,27 +511,28 @@ export default function ProjectRFIsTab({ project }: Props) {
                     )}
 
                     {rfi.response && (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="rounded-lg p-3" style={{ backgroundColor: darkMode ? 'rgba(22,163,74,0.1)' : '#F0FDF4', border: `1px solid ${darkMode ? 'rgba(22,163,74,0.3)' : '#BBF7D0'}` }}>
                         <div className="flex items-center gap-1 mb-1">
                           <CheckCircleIcon className="h-4 w-4 text-green-600" />
-                          <p className="text-xs text-green-700 font-medium">
+                          <p className="text-xs font-medium text-green-600">
                             Response {rfi.responded_at ? `• ${formatDate(rfi.responded_at)}` : ''}
                           </p>
                         </div>
-                        <p className="text-sm text-gray-700 whitespace-pre-line">{rfi.response}</p>
+                        <p className="text-sm whitespace-pre-line" style={{ color: colors.text }}>{rfi.response}</p>
                       </div>
                     )}
 
                     {/* Response form */}
                     {rfi.status === 'open' && respondingId === rfi.id && (
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Your Response</label>
+                        <label className="block text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Your Response</label>
                         <textarea
                           value={responseText}
                           onChange={e => setResponseText(e.target.value)}
                           placeholder="Provide the requested information..."
                           rows={3}
-                          className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          style={{ backgroundColor: colors.bg, border: colors.border, color: colors.text }}
                         />
                         <div className="flex gap-2 mt-2">
                           <button
@@ -525,7 +543,8 @@ export default function ProjectRFIsTab({ project }: Props) {
                           </button>
                           <button
                             onClick={() => { setRespondingId(null); setResponseText('') }}
-                            className="text-xs px-3 py-1.5 border rounded-lg text-gray-600 hover:bg-gray-50 font-medium"
+                            className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                            style={{ border: colors.border, color: colors.textMuted, backgroundColor: colors.bg }}
                           >
                             Cancel
                           </button>
@@ -605,7 +624,7 @@ export default function ProjectRFIsTab({ project }: Props) {
                           <button type="submit" disabled={creatingCo} className="text-xs px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 font-medium disabled:opacity-50">
                             {creatingCo ? 'Creating...' : 'Create CO'}
                           </button>
-                          <button type="button" onClick={() => setCoFromRfi(null)} className="text-xs px-3 py-1.5 border rounded text-gray-600 hover:bg-gray-50 font-medium">
+                          <button type="button" onClick={() => setCoFromRfi(null)} className="text-xs px-3 py-1.5 rounded font-medium" style={{ border: colors.border, color: colors.textMuted, backgroundColor: colors.bg }}>
                             Cancel
                           </button>
                         </div>
@@ -620,10 +639,10 @@ export default function ProjectRFIsTab({ project }: Props) {
       )}
 
       {/* Confirm Delete Modal */}
-      {confirmDeleteId && (
+      {confirmDeleteId && createPortal(
         <>
-          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDeleteId(null)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="fixed inset-0 bg-black/40 z-9999" onClick={() => setConfirmDeleteId(null)} />
+          <div className="fixed inset-0 z-9999 flex items-center justify-center pointer-events-none">
             <div className="pointer-events-auto rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
               <p className="text-sm font-medium text-center mb-1" style={{ color: colors.text }}>Delete this RFI?</p>
               <p className="text-xs text-center mb-5" style={{ color: colors.textMuted }}>
@@ -647,7 +666,8 @@ export default function ProjectRFIsTab({ project }: Props) {
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.getElementById('modal-portal-root') ?? document.body
       )}
     </div>
   )

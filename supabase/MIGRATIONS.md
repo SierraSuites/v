@@ -185,6 +185,15 @@ Links a payment expense back to the specific design selection it was recorded fo
 ALTER TABLE project_expenses ADD COLUMN IF NOT EXISTS design_selection_id uuid REFERENCES design_selections(id) ON DELETE SET NULL;
 ```
 
+### `project_change_orders` + `project_rfis` — grant permissions (2026-04-22) ✅
+
+Both tables were created with RLS policies but without granting privileges to the `authenticated` role, causing `42501 permission denied` on all queries.
+
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_change_orders TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_rfis TO authenticated;
+```
+
 ### Cross-tab integration schema (2026-04-20) ✅
 
 Created `project_change_orders` and `project_rfis` tables (previously referenced in code but never created). Added cross-tab linking columns to milestones, tasks, and documents to support the coherent tab integration plan: COs affect budget and timeline, RFIs can block tasks and spawn COs, documents can be attached to COs/RFIs/design selections.

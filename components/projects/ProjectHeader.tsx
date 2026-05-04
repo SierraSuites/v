@@ -9,11 +9,9 @@ import { useState, useEffect } from 'react'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { Calendar, DollarSign, TrendingUp, MapPin, AlertCircle } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import EditProjectModal from './EditProjectModal'
-import TaskCreationModal from '@/components/dashboard/TaskCreationModal'
-import { createTask } from '@/lib/supabase/tasks'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 const SEGMENT_LABELS: Record<string, string> = {
@@ -26,11 +24,9 @@ interface Props {
 }
 
 export default function ProjectHeader({ project }: Props) {
-  const router = useRouter()
   const pathname = usePathname()
   const { colors } = useThemeColors()
   const [showEdit, setShowEdit] = useState(false)
-  const [showAddTask, setShowAddTask] = useState(false)
   const [liveProgress, setLiveProgress] = useState(project.progress ?? 0)
 
   // Build breadcrumb crumbs from pathname
@@ -136,7 +132,7 @@ export default function ProjectHeader({ project }: Props) {
             color="blue"
           >
             <div className="mt-2">
-              <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-[#E5E7EB] dark:bg-[#374151] rounded-full overflow-hidden">
                 <div
                   className="h-full bg-blue-600 rounded-full transition-all"
                   style={{ width: `${liveProgress}%` }}
@@ -153,7 +149,7 @@ export default function ProjectHeader({ project }: Props) {
             color={project.daysRemaining < 0 ? 'red' : project.daysRemaining < 7 ? 'yellow' : 'green'}
           >
             <div className="mt-2">
-              <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-[#E5E7EB] dark:bg-[#374151] rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${
                     project.daysRemaining < 0 ? 'bg-red-600' :
@@ -184,7 +180,7 @@ export default function ProjectHeader({ project }: Props) {
                 color={isOver ? 'red' : displayPct > 90 ? 'yellow' : 'green'}
               >
                 <div className="mt-2">
-                  <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-[#E5E7EB] dark:bg-[#374151] rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${
                         isOver ? 'bg-red-600' : displayPct > 90 ? 'bg-yellow-500' : 'bg-green-600'
@@ -209,7 +205,7 @@ export default function ProjectHeader({ project }: Props) {
               {project.teamMembers.slice(0, 3).map((member, i) => (
                 <div
                   key={i}
-                  className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 border-2 border-white flex items-center justify-center text-xs font-medium"
+                  className="w-8 h-8 rounded-full bg-[#D1D5DB] dark:bg-[#4B5563] border-2 border-white flex items-center justify-center text-xs font-medium"
                 >
                   {member.avatar ? (
                     <img src={member.avatar} className="w-full h-full rounded-full object-cover" alt={member.name} />
@@ -219,7 +215,7 @@ export default function ProjectHeader({ project }: Props) {
                 </div>
               ))}
               {project.teamMembers.length > 3 && (
-                <div className="w-8 h-8 rounded-full bg-gray-400 border-2 border-white flex items-center justify-center text-xs font-medium text-white">
+                <div className="w-8 h-8 rounded-full bg-[#9CA3AF] dark:bg-[#6B7280] border-2 border-white flex items-center justify-center text-xs font-medium text-white">
                   +{project.teamMembers.length - 3}
                 </div>
               )}
@@ -231,15 +227,20 @@ export default function ProjectHeader({ project }: Props) {
         </div>
 
         {/* Alerts */}
-        {(project.isOverBudget || project.isOverdue) && (
+        {(() => {
+          const hasSelections = project.designSelectionsSummary.length > 0
+          const effectiveSpend = hasSelections ? project.projectedSpend : project.spent
+          const isEffectivelyOverBudget = effectiveSpend > project.estimated_budget
+          const overAmount = effectiveSpend - project.estimated_budget
+          return (isEffectivelyOverBudget || project.isOverdue) && (
           <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
               <div>
                 <h3 className="text-sm font-semibold text-red-900 dark:text-red-300 mb-1">Action Required</h3>
                 <ul className="text-sm text-red-800 dark:text-red-400 space-y-1">
-                  {project.isOverBudget && (
-                    <li>• Project is over budget by ${(Math.abs(project.budgetRemaining) / 1000).toFixed(1)}k</li>
+                  {isEffectivelyOverBudget && (
+                    <li>• Project is {hasSelections ? 'projected to be' : ''} over budget by ${(Math.abs(overAmount) / 1000).toFixed(1)}k</li>
                   )}
                   {project.isOverdue && (
                     <li>• Project is {Math.abs(project.daysRemaining)} days overdue</li>
@@ -248,68 +249,14 @@ export default function ProjectHeader({ project }: Props) {
               </div>
             </div>
           </div>
-        )}
+        )
+        })()}
       </div>
 
       {showEdit && (
         <EditProjectModal project={project} onClose={() => setShowEdit(false)} />
       )}
 
-      {showAddTask && (
-        <TaskCreationModal
-          isOpen={showAddTask}
-          onClose={() => setShowAddTask(false)}
-          onSave={async (taskData) => {
-            const { error } = await createTask({
-              title: taskData.title!,
-              description: taskData.description || null,
-              project_id: project.id,
-              project_name: project.name,
-              trade: taskData.trade || 'general',
-              phase: taskData.phase || 'pre-construction',
-              priority: taskData.priority || 'medium',
-              status: taskData.status || 'not-started',
-              assignee_id: taskData.assigneeId || null,
-              assignee_name: taskData.assignee || null,
-              assignee_avatar: taskData.assigneeAvatar || null,
-              start_date: taskData.startDate || null,
-              due_date: taskData.dueDate || new Date().toISOString().split('T')[0],
-              duration: taskData.duration || 1,
-              progress: taskData.progress || 0,
-              estimated_hours: taskData.estimatedHours || 8,
-              actual_hours: taskData.actualHours || 0,
-              dependencies: taskData.dependencies || [],
-              attachments: taskData.attachments || 0,
-              comments: taskData.comments || 0,
-              location: taskData.location || null,
-              weather_dependent: taskData.weatherDependent || false,
-              weather_buffer: taskData.weatherBuffer || 0,
-              inspection_required: taskData.inspectionRequired || false,
-              inspection_type: taskData.inspectionType || null,
-              crew_size: taskData.crewSize || 1,
-              equipment: taskData.equipment || [],
-              materials: taskData.materials || [],
-              certifications: taskData.certifications || [],
-              safety_protocols: taskData.safetyProtocols || [],
-              quality_standards: taskData.qualityStandards || [],
-              documentation: taskData.documentation || [],
-              notify_inspector: taskData.notifyInspector || false,
-              client_visibility: taskData.clientVisibility || false,
-            })
-            if (!error) router.refresh()
-          }}
-          editingTask={null}
-          projects={[{ id: project.id, name: project.name }]}
-          teamMembers={project.teamMembers.map(m => ({
-            id: m.id,
-            name: m.name,
-            avatar: m.avatar || '',
-            role: m.role,
-            trades: []
-          }))}
-          existingTasks={[]}
-        />
-      )}
     </div>
   )
 }
@@ -332,7 +279,7 @@ function MetricCard({ icon, label, value, color, children }: MetricCardProps) {
   }
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-[#252a3a] rounded-lg p-4 border border-gray-200 dark:border-gray-700">
       <div className="flex items-center gap-3 mb-2">
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconColors[color]}`}>
           {icon}

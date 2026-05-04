@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { ProjectDetails, ProjectMilestone } from '@/lib/projects/get-project-details'
 import {
   PlusIcon,
@@ -13,6 +14,8 @@ import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 interface Props {
   project: ProjectDetails
+  refreshKey?: number
+  onMutate?: () => void
   onMilestoneCountChange?: (count: number) => void
 }
 
@@ -39,7 +42,7 @@ function isOverdue(milestone: ProjectMilestone) {
     && new Date(milestone.due_date) < new Date()
 }
 
-export default function ProjectTimelineTab({ project, onMilestoneCountChange }: Props) {
+export default function ProjectTimelineTab({ project, refreshKey = 0, onMutate, onMilestoneCountChange }: Props) {
   const [milestones, setMilestones] = useState<ProjectMilestone[] | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   // phaseTaskProgress: phase_id → { total, completed }
@@ -47,21 +50,24 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
 
   useEffect(() => {
     async function fetchData() {
-      const supabase = (await import('@/lib/supabase/client')).createClient()
       const [milestonesRes, tasksRes] = await Promise.all([
-        supabase.from('project_milestones').select('*').eq('project_id', project.id).order('due_date', { ascending: true }),
-        supabase.from('tasks').select('phase, status').eq('project_id', project.id),
+        fetch(`/api/projects/${project.id}/milestones`),
+        fetch(`/api/projects/${project.id}/tasks`),
       ])
-      if (milestonesRes.data) {
-        setMilestones(milestonesRes.data as ProjectMilestone[])
-        onMilestoneCountChange?.(milestonesRes.data.length)
+      if (milestonesRes.ok) {
+        const { milestones: data } = await milestonesRes.json()
+        setMilestones(data as ProjectMilestone[])
+        onMilestoneCountChange?.(data.length)
       }
-      // Build phase → task progress map using project.phases for name→id resolution
-      if (tasksRes.data && project.phases.length > 0) {
+      if (tasksRes.ok && project.phases.length > 0) {
+        const { tasks: taskData } = await tasksRes.json()
+        // task.phase is a hyphenated enum ("pre-construction"); phase.name is user text ("Pre-Construction")
+        // Normalize both to alphanumeric-only lowercase so "Pre-Construction" matches "pre-construction"
+        const norm = (s: string) => s.toLowerCase().replace(/[\s\-_]+/g, '')
         const progress: Record<string, { total: number; completed: number }> = {}
-        for (const task of tasksRes.data) {
+        for (const task of taskData ?? []) {
           if (!task.phase) continue
-          const phase = project.phases.find(p => p.name.toLowerCase() === task.phase.toLowerCase())
+          const phase = project.phases.find((p: any) => norm(p.name) === norm(task.phase))
           if (!phase) continue
           if (!progress[phase.id]) progress[phase.id] = { total: 0, completed: 0 }
           progress[phase.id].total++
@@ -71,21 +77,22 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
       }
     }
     fetchData()
-  }, [project.id])
+  }, [project.id, refreshKey])
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState({
     name: '',
     description: '',
     due_date: '',
-    status: 'pending' as ProjectMilestone['status']
+    status: 'pending' as ProjectMilestone['status'],
+    phase_id: '',
   })
   const { darkMode, colors } = useThemeColors()
 
   // Detail sidebar state
   const [detailMilestone, setDetailMilestone] = useState<ProjectMilestone | null>(null)
   const [editingDetail, setEditingDetail] = useState(false)
-  const [editForm, setEditForm] = useState({ name: '', description: '', due_date: '', status: 'pending' as ProjectMilestone['status'] })
+  const [editForm, setEditForm] = useState({ name: '', description: '', due_date: '', status: 'pending' as ProjectMilestone['status'], phase_id: '' })
   const [confirmDeleteDetailId, setConfirmDeleteDetailId] = useState<string | null>(null)
   const [confirmDeleteListId, setConfirmDeleteListId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -99,6 +106,15 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
   const completedCount = milestones.filter(m => m.status === 'completed').length
   const overdueCount = milestones.filter(isOverdue).length
   const upcomingCount = milestones.filter(m => m.status === 'pending' || m.status === 'in-progress').length
+
+  function isAtRisk(milestone: ProjectMilestone): boolean {
+    if (milestone.status === 'completed' || milestone.status === 'cancelled') return false
+    if (!milestone.phase_id) return false
+    const prog = phaseTaskProgress[milestone.phase_id]
+    if (!prog || prog.total === 0 || prog.completed === prog.total) return false
+    const daysUntil = (new Date(milestone.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    return daysUntil <= 14
+  }
 
   // Project timeline span
   const start = new Date(project.start_date)
@@ -121,6 +137,7 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
       description: detailMilestone.description ?? '',
       due_date: detailMilestone.due_date.slice(0, 10),
       status: detailMilestone.status,
+      phase_id: detailMilestone.phase_id ?? '',
     })
     setEditingDetail(true)
   }
@@ -130,24 +147,24 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
     if (!detailMilestone || !editForm.name || !editForm.due_date) return
     setSaving(true)
     try {
-      const supabase = (await import('@/lib/supabase/client')).createClient()
-      const { data, error } = await supabase
-        .from('project_milestones')
-        .update({
-          name: editForm.name,
+      const res = await fetch(`/api/projects/${project.id}/milestones/${detailMilestone.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name:        editForm.name,
           description: editForm.description || null,
-          due_date: editForm.due_date,
-          status: editForm.status,
-        })
-        .eq('id', detailMilestone.id)
-        .select()
-        .single()
-
-      if (!error && data) {
-        const updated = data as ProjectMilestone
+          due_date:    editForm.due_date,
+          status:      editForm.status,
+          phase_id:    editForm.phase_id || null,
+          ...(editForm.status !== 'completed' ? { completed_at: null } : {}),
+        }),
+      })
+      if (res.ok) {
+        const { milestone: updated } = await res.json()
         setMilestones(prev => (prev ?? []).map(m => m.id === updated.id ? updated : m))
         setDetailMilestone(updated)
         setEditingDetail(false)
+        onMutate?.()
       }
     } finally {
       setSaving(false)
@@ -156,12 +173,14 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
 
   async function handleDetailDelete() {
     if (!confirmDeleteDetailId) return
-    const supabase = (await import('@/lib/supabase/client')).createClient()
-    await supabase.from('project_milestones').delete().eq('id', confirmDeleteDetailId)
-    setMilestones(prev => (prev ?? []).filter(m => m.id !== confirmDeleteDetailId))
-    setSelectedIds(prev => { const next = new Set(prev); next.delete(confirmDeleteDetailId); return next })
-    setDetailMilestone(null)
-    setConfirmDeleteDetailId(null)
+    const res = await fetch(`/api/projects/${project.id}/milestones/${confirmDeleteDetailId}`, { method: 'DELETE' })
+    if (res.ok) {
+      setMilestones(prev => (prev ?? []).filter(m => m.id !== confirmDeleteDetailId))
+      setSelectedIds(prev => { const next = new Set(prev); next.delete(confirmDeleteDetailId); return next })
+      setDetailMilestone(null)
+      setConfirmDeleteDetailId(null)
+      onMutate?.()
+    }
   }
 
   function toggleSelect(id: string) {
@@ -175,17 +194,28 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
   async function bulkMarkComplete() {
     const ids = Array.from(selectedIds).filter(id => (milestones ?? []).find(m => m.id === id)?.status !== 'completed')
     if (!ids.length) return
-    const supabase = (await import('@/lib/supabase/client')).createClient()
-    await supabase.from('project_milestones').update({ status: 'completed', completed_at: new Date().toISOString() }).in('id', ids)
-    setMilestones(prev => (prev ?? []).map(m => ids.includes(m.id) ? { ...m, status: 'completed' as ProjectMilestone['status'], completed_at: new Date().toISOString() } : m))
+    const completedAt = new Date().toISOString()
+    await Promise.all(ids.map(id =>
+      fetch(`/api/projects/${project.id}/milestones/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'completed', completed_at: completedAt }),
+      })
+    ))
+    setMilestones(prev => (prev ?? []).map(m => ids.includes(m.id) ? { ...m, status: 'completed' as ProjectMilestone['status'], completed_at: completedAt } : m))
     setSelectedIds(new Set())
   }
 
   async function bulkMarkActive() {
     const ids = Array.from(selectedIds).filter(id => (milestones ?? []).find(m => m.id === id)?.status === 'completed')
     if (!ids.length) return
-    const supabase = (await import('@/lib/supabase/client')).createClient()
-    await supabase.from('project_milestones').update({ status: 'in-progress', completed_at: null }).in('id', ids)
+    await Promise.all(ids.map(id =>
+      fetch(`/api/projects/${project.id}/milestones/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'in-progress', completed_at: null }),
+      })
+    ))
     setMilestones(prev => (prev ?? []).map(m => ids.includes(m.id) ? { ...m, status: 'in-progress' as ProjectMilestone['status'], completed_at: null } : m))
     setSelectedIds(new Set())
   }
@@ -195,24 +225,24 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
     if (!form.name || !form.due_date) return
     setSubmitting(true)
     try {
-      const supabase = (await import('@/lib/supabase/client')).createClient()
-      const { data, error } = await supabase
-        .from('project_milestones')
-        .insert({
-          project_id: project.id,
-          name: form.name,
+      const res = await fetch(`/api/projects/${project.id}/milestones`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name:        form.name,
           description: form.description || null,
-          due_date: form.due_date,
-          status: form.status
-        })
-        .select()
-        .single()
-
-      if (!error && data) {
+          due_date:    form.due_date,
+          status:      form.status,
+          phase_id:    form.phase_id || null,
+        }),
+      })
+      if (res.ok) {
+        const { milestone: data } = await res.json()
         setMilestones(prev => [...(prev ?? []), data as ProjectMilestone])
         onMilestoneCountChange?.((milestones ?? []).length + 1)
-        setForm({ name: '', description: '', due_date: '', status: 'pending' })
+        setForm({ name: '', description: '', due_date: '', status: 'pending', phase_id: '' })
         setShowForm(false)
+        onMutate?.()
       }
     } finally {
       setSubmitting(false)
@@ -220,15 +250,17 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
   }
 
   async function deleteMilestone(milestoneId: string) {
-    const supabase = (await import('@/lib/supabase/client')).createClient()
-    await supabase.from('project_milestones').delete().eq('id', milestoneId)
-    setMilestones(prev => {
-      const next = (prev ?? []).filter(m => m.id !== milestoneId)
-      onMilestoneCountChange?.(next.length)
-      return next
-    })
-    setSelectedIds(prev => { const next = new Set(prev); next.delete(milestoneId); return next })
-    setConfirmDeleteListId(null)
+    const res = await fetch(`/api/projects/${project.id}/milestones/${milestoneId}`, { method: 'DELETE' })
+    if (res.ok) {
+      setMilestones(prev => {
+        const next = (prev ?? []).filter(m => m.id !== milestoneId)
+        onMilestoneCountChange?.(next.length)
+        return next
+      })
+      setSelectedIds(prev => { const next = new Set(prev); next.delete(milestoneId); return next })
+      setConfirmDeleteListId(null)
+      onMutate?.()
+    }
   }
 
   return (
@@ -251,7 +283,7 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
         {/* Completed */}
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
               <FlagIcon className="w-5 h-5" style={{ color: '#16A34A' }} />
@@ -268,7 +300,7 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
         </div>
 
         {/* Upcoming */}
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
               <PlusIcon className="w-5 h-5" style={{ color: '#2563EB' }} />
@@ -285,7 +317,7 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
         </div>
 
         {/* Overdue */}
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: overdueCount > 0 ? 'rgba(220,38,38,0.1)' : (darkMode ? 'rgba(75,85,99,0.2)' : '#F3F4F6') }}>
               <TrashIcon className="w-5 h-5" style={{ color: overdueCount > 0 ? '#DC2626' : (darkMode ? '#6B7280' : '#9CA3AF') }} />
@@ -303,7 +335,7 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
       </div>
 
       {/* Project Timeline Bar */}
-      <div className="rounded-lg p-5" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+      <div className="rounded-lg p-5" style={{ backgroundColor: colors.card, border: colors.border }}>
         <div className="flex justify-between text-sm mb-2" style={{ color: colors.textMuted }}>
           <span>{formatDate(project.start_date)}</span>
           <span className="font-medium text-gray-900">
@@ -349,8 +381,8 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
       </div>
 
       {/* Add Milestone Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      {showForm && createPortal(
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-9999 p-4">
           <div
             className="rounded-xl w-full max-w-lg flex flex-col"
             style={{ backgroundColor: colors.bg, boxShadow: "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)" }}
@@ -409,6 +441,25 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
                   />
                 </div>
 
+                {/* Link to Phase */}
+                {project.phases.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                      Link to Phase
+                    </label>
+                    <select
+                      value={form.phase_id}
+                      onChange={e => setForm(p => ({ ...p, phase_id: e.target.value }))}
+                      className="w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+                      style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text, colorScheme: darkMode ? 'dark' : 'light' }}
+                    >
+                      <option value="">No phase</option>
+                      {project.phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                    <p className="text-xs mt-1" style={{ color: colors.textMuted }}>Links this milestone to a project phase so task progress is tracked automatically.</p>
+                  </div>
+                )}
+
                 {/* Due Date */}
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
@@ -449,7 +500,7 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
               >
                 <button
                   type="button"
-                  onClick={() => { setShowForm(false); setForm({ name: '', description: '', due_date: '', status: 'pending' }) }}
+                  onClick={() => { setShowForm(false); setForm({ name: '', description: '', due_date: '', status: 'pending', phase_id: '' }) }}
                   className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
                   style={{ border: colors.border, color: colors.text }}
                 >
@@ -466,7 +517,8 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.getElementById('modal-portal-root') ?? document.body
       )}
 
       {/* Milestones List */}
@@ -550,6 +602,12 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${STATUS_COLORS[milestone.status]}`}>
                   {milestone.status.replace('-', ' ')}
                 </span>
+                {isAtRisk(milestone) && (
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full border"
+                    style={{ backgroundColor: darkMode ? 'rgba(245,158,11,0.15)' : '#FFFBEB', color: '#D97706', borderColor: darkMode ? '#92400E' : '#FDE68A' }}>
+                    At Risk
+                  </span>
+                )}
 
                 {/* Delete */}
                 <button
@@ -626,6 +684,27 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
                       }}
                     />
                   </div>
+                  {project.phases.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-medium mb-1" style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>
+                        Phase
+                      </label>
+                      <select
+                        value={editForm.phase_id}
+                        onChange={e => setEditForm(p => ({ ...p, phase_id: e.target.value }))}
+                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        style={{
+                          backgroundColor: darkMode ? colors.bgAlt : '#ffffff',
+                          borderColor: darkMode ? colors.border : '#d1d5db',
+                          color: darkMode ? colors.text : '#111827',
+                          colorScheme: darkMode ? 'dark' : 'light',
+                        }}
+                      >
+                        <option value="">No phase</option>
+                        {project.phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                    </div>
+                  )}
                   <div>
                     <label className="block text-xs font-medium mb-1" style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>
                       Due Date *
@@ -706,6 +785,43 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
                       )}
                     </div>
                   </section>
+
+                  {/* Phase task progress */}
+                  {detailMilestone.phase_id && phaseTaskProgress[detailMilestone.phase_id] && (() => {
+                    const { total, completed } = phaseTaskProgress[detailMilestone.phase_id]
+                    if (total === 0) return null
+                    const pct = Math.round((completed / total) * 100)
+                    const atRisk = isAtRisk(detailMilestone)
+                    const phaseLabel = project.phases.find(p => p.id === detailMilestone.phase_id)?.name
+                    return (
+                      <section>
+                        <p className="text-xs font-bold uppercase tracking-widest mb-3 pb-1.5"
+                          style={{ color: darkMode ? '#6b7280' : '#9ca3af', borderBottom: `1px solid ${darkMode ? colors.border : '#f3f4f6'}` }}>
+                          Phase Progress{phaseLabel ? ` — ${phaseLabel}` : ''}
+                        </p>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs" style={{ color: darkMode ? colors.text : '#374151' }}>
+                            <span>{completed} of {total} tasks complete</span>
+                            <span className="font-semibold">{pct}%</span>
+                          </div>
+                          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: pct === 100 ? '#16A34A' : '#2563EB' }} />
+                          </div>
+                          {atRisk && (
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full border"
+                                style={{ backgroundColor: darkMode ? 'rgba(245,158,11,0.15)' : '#FFFBEB', color: '#D97706', borderColor: darkMode ? '#92400E' : '#FDE68A' }}>
+                                At Risk
+                              </span>
+                              <span className="text-xs" style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>
+                                {total - completed} task{total - completed !== 1 ? 's' : ''} still open, due within 14 days
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </section>
+                    )
+                  })()}
 
                   {/* Completion */}
                   {detailMilestone.completed_at && (
@@ -839,10 +955,10 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
       })()}
 
       {/* Confirm Delete Modal (list) */}
-      {confirmDeleteListId && (
+      {confirmDeleteListId && createPortal(
         <>
-          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDeleteListId(null)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="fixed inset-0 bg-black/40 z-9999" onClick={() => setConfirmDeleteListId(null)} />
+          <div className="fixed inset-0 z-9999 flex items-center justify-center pointer-events-none">
             <div className="pointer-events-auto rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
               <p className="text-sm font-medium text-center mb-1" style={{ color: colors.text }}>Delete this milestone?</p>
               <p className="text-xs text-center mb-5" style={{ color: colors.textMuted }}>
@@ -866,7 +982,8 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.getElementById('modal-portal-root') ?? document.body
       )}
     </div>
   )
