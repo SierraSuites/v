@@ -22,6 +22,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const body = await request.json()
 
+    // Fetch current CO state before updating (needed for reversal logic)
+    const { data: currentCO } = await supabase
+      .from('project_change_orders')
+      .select('status, change_amount, days_added')
+      .eq('id', coId)
+      .eq('project_id', id)
+      .single()
+
     const { data, error } = await supabase
       .from('project_change_orders')
       .update({ ...body, updated_at: new Date().toISOString() })
@@ -34,19 +42,32 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // If CO is being executed, increment project budget by the change amount
-    if (body.status === 'executed' && data) {
+    const wasExecuted = currentCO?.status === 'executed'
+    const isNowExecuted = body.status === 'executed'
+    const changeAmount = data?.change_amount || 0
+    const daysAdded = data?.days_added || 0
+
+    // Apply or reverse budget + timeline adjustments when execution status changes
+    if ((isNowExecuted && !wasExecuted) || (!isNowExecuted && wasExecuted && body.status)) {
       const { data: project } = await supabase
         .from('projects')
-        .select('estimated_budget')
+        .select('estimated_budget, end_date')
         .eq('id', id)
         .single()
 
       if (project) {
+        const budgetDelta = isNowExecuted ? changeAmount : -changeAmount
+        const daysDelta   = isNowExecuted ? daysAdded    : -daysAdded
+
+        const newEndDate = daysDelta !== 0
+          ? new Date(new Date(project.end_date).getTime() + daysDelta * 86400000).toISOString().split('T')[0]
+          : project.end_date
+
         await supabase
           .from('projects')
           .update({
-            estimated_budget: project.estimated_budget + (data.change_amount || 0),
+            estimated_budget: project.estimated_budget + budgetDelta,
+            end_date: newEndDate,
             updated_at: new Date().toISOString()
           })
           .eq('id', id)

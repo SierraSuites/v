@@ -117,6 +117,7 @@ function LoginForm() {
         body: JSON.stringify({
           email: validated.email,
           password: validated.password,
+          rememberMe: validated.rememberMe ?? false,
         }),
       })
 

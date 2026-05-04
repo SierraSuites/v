@@ -56,6 +56,35 @@ export interface ProjectMilestone {
   updated_at: string
 }
 
+export interface DesignSelection {
+  id: string
+  category: string
+  room_location: string
+  option_name: string
+  manufacturer: string
+  model: string
+  sku: string
+  color: string
+  finish: string
+  description: string
+  image_urls: string[]
+  price: number
+  upgrade_cost: number
+  installation_cost: number
+  lead_time_days: number
+  availability_status: string
+  client_approved: boolean
+  approved_date: string | null
+  approved_by_name: string | null
+  approved_by_email: string | null
+  status: 'pending' | 'approved' | 'rejected' | 'ordered' | 'received' | 'installed'
+  notes: string
+  linked_expense_id: string | null
+  linked_task_id: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface ProjectExpense {
   id: string
   category: string
@@ -66,6 +95,7 @@ export interface ProjectExpense {
   vendor: string | null
   invoice_number: string | null
   payment_status: 'pending' | 'paid' | 'overdue'
+  design_selection_id: string | null
   created_by: string | null
   created_at: string
 }
@@ -118,6 +148,8 @@ export interface ProjectTask {
   progress: number | null
   assignee_id: string | null
   assignee_name: string | null
+  design_selection_id: string | null
+  selection_task_type: 'order' | 'delivery' | 'installation' | null
   crew_size: number | null
   equipment: string[] | null
   materials: string[] | null
@@ -193,6 +225,7 @@ export interface ProjectDetails {
   tasks: ProjectTask[]
   changeOrders: ProjectChangeOrder[]
   rfis: ProjectRFI[]
+  designSelections: DesignSelection[]
 
   // Computed fields
   budgetRemaining: number
@@ -201,8 +234,12 @@ export interface ProjectDetails {
   daysRemaining: number
   isOverdue: boolean
 
+  // Projected spend = actual + committed design selections + approved + installation labor
+  projectedSpend: number
+  projectedPercentage: number
+
   // Design selections summary (price + status only — for budget projection seeding)
-  designSelectionsSummary: { price: number; status: string }[]
+  designSelectionsSummary: { price: number; status: string; installation_cost: number }[]
 }
 
 /**
@@ -262,7 +299,7 @@ export async function getProjectDetails(
     const [changeOrdersRes, rfisRes, designSelectionsRes] = await Promise.all([
       supabase.from('project_change_orders').select('*').eq('project_id', projectId).order('created_at', { ascending: false }),
       supabase.from('project_rfis').select('*').eq('project_id', projectId).order('created_at', { ascending: false }),
-      supabase.from('design_selections').select('price, status').eq('project_id', projectId),
+      supabase.from('design_selections').select('*').eq('project_id', projectId).order('created_at', { ascending: true }),
     ])
 
     // Fetch tasks separately (no FK relationship registered with PostgREST)
@@ -325,15 +362,40 @@ export async function getProjectDetails(
     }))
 
     // Calculate budget metrics from actual expenses (not the stale `spent` column)
-    const actualSpent = (project.project_expenses || []).reduce(
-      (sum: number, e: any) => sum + (e.amount || 0),
-      0
-    )
+    const allExpenses = project.project_expenses || []
+    const actualSpent = allExpenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
     const budgetRemaining = project.estimated_budget - actualSpent
     const budgetPercentage = project.estimated_budget > 0
       ? (actualSpent / project.estimated_budget) * 100
       : 0
     const isOverBudget = budgetPercentage > 100
+
+    // Compute projected spend = actual + committed design selections (excluding paid) + approved + installation
+    const paidSelIds = new Set(
+      allExpenses.map((e: any) => e.design_selection_id).filter(Boolean)
+    )
+    const selSummary = (designSelectionsRes.data || []) as { price: number; status: string; installation_cost: number; id: string }[]
+    const sumPrice = (arr: typeof selSummary) => arr.reduce((n, s) => n + (s.price || 0), 0)
+    const sumInstall = (arr: typeof selSummary) => arr.reduce((n, s) => n + (s.installation_cost || 0), 0)
+    // Track which installed items already have a recorded labor expense — their
+    // installation_cost is already in actualSpent, so don't project it again
+    const paidInstallIds = new Set(
+      allExpenses.filter((e: any) => e.category === 'labor' && e.design_selection_id).map((e: any) => e.design_selection_id)
+    )
+    const unpaidOrdered      = selSummary.filter(s => s.status === 'ordered'   && !paidSelIds.has(s.id))
+    const unpaidReceived     = selSummary.filter(s => s.status === 'received'  && !paidSelIds.has(s.id))
+    const unpaidInstalled    = selSummary.filter(s => s.status === 'installed' && !paidSelIds.has(s.id))
+    const unpaidApproved     = selSummary.filter(s => s.status === 'approved'  && !paidSelIds.has(s.id))
+    const unpaidInstallLabor = selSummary.filter(s =>
+      ['approved', 'ordered', 'received', 'installed'].includes(s.status) && !paidInstallIds.has(s.id)
+    )
+    const projectedSpend = actualSpent
+      + sumPrice(unpaidOrdered) + sumPrice(unpaidReceived) + sumPrice(unpaidInstalled)
+      + sumPrice(unpaidApproved)
+      + sumInstall(unpaidInstallLabor)
+    const projectedPercentage = project.estimated_budget > 0
+      ? (projectedSpend / project.estimated_budget) * 100
+      : 0
 
     // Calculate time metrics
     const today = new Date()
@@ -410,9 +472,14 @@ export async function getProjectDetails(
       isOverBudget,
       daysRemaining,
       isOverdue,
+      projectedSpend,
+      projectedPercentage,
 
-      // Design selections summary for budget projection seeding
-      designSelectionsSummary: (designSelectionsRes.data || []) as { price: number; status: string }[],
+      // Full design selections for the Design Selections tab
+      designSelections: (designSelectionsRes.data || []) as DesignSelection[],
+
+      // Design selections summary for budget projection seeding (derived from full data)
+      designSelectionsSummary: (designSelectionsRes.data || []) as { price: number; status: string; installation_cost: number }[],
     }
 
     return { data: projectDetails, error: null }

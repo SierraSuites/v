@@ -40,23 +40,37 @@ function isOverdue(milestone: ProjectMilestone) {
 }
 
 export default function ProjectTimelineTab({ project, onMilestoneCountChange }: Props) {
-  const [milestones, setMilestones] = useState<ProjectMilestone[]>(project.milestones)
+  const [milestones, setMilestones] = useState<ProjectMilestone[] | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  // phaseTaskProgress: phase_id → { total, completed }
+  const [phaseTaskProgress, setPhaseTaskProgress] = useState<Record<string, { total: number; completed: number }>>({})
 
   useEffect(() => {
-    async function fetchMilestones() {
+    async function fetchData() {
       const supabase = (await import('@/lib/supabase/client')).createClient()
-      const { data } = await supabase
-        .from('project_milestones')
-        .select('*')
-        .eq('project_id', project.id)
-        .order('due_date', { ascending: true })
-      if (data) {
-        setMilestones(data as ProjectMilestone[])
-        onMilestoneCountChange?.(data.length)
+      const [milestonesRes, tasksRes] = await Promise.all([
+        supabase.from('project_milestones').select('*').eq('project_id', project.id).order('due_date', { ascending: true }),
+        supabase.from('tasks').select('phase, status').eq('project_id', project.id),
+      ])
+      if (milestonesRes.data) {
+        setMilestones(milestonesRes.data as ProjectMilestone[])
+        onMilestoneCountChange?.(milestonesRes.data.length)
+      }
+      // Build phase → task progress map using project.phases for name→id resolution
+      if (tasksRes.data && project.phases.length > 0) {
+        const progress: Record<string, { total: number; completed: number }> = {}
+        for (const task of tasksRes.data) {
+          if (!task.phase) continue
+          const phase = project.phases.find(p => p.name.toLowerCase() === task.phase.toLowerCase())
+          if (!phase) continue
+          if (!progress[phase.id]) progress[phase.id] = { total: 0, completed: 0 }
+          progress[phase.id].total++
+          if (task.status === 'completed') progress[phase.id].completed++
+        }
+        setPhaseTaskProgress(progress)
       }
     }
-    fetchMilestones()
+    fetchData()
   }, [project.id])
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -75,6 +89,8 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
   const [confirmDeleteDetailId, setConfirmDeleteDetailId] = useState<string | null>(null)
   const [confirmDeleteListId, setConfirmDeleteListId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+
+  if (milestones === null) return <div className="flex items-center justify-center py-20"><div className="w-6 h-6 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" /></div>
 
   // Sort milestones by due_date
   const sorted = [...milestones].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
@@ -129,7 +145,7 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
 
       if (!error && data) {
         const updated = data as ProjectMilestone
-        setMilestones(prev => prev.map(m => m.id === updated.id ? updated : m))
+        setMilestones(prev => (prev ?? []).map(m => m.id === updated.id ? updated : m))
         setDetailMilestone(updated)
         setEditingDetail(false)
       }
@@ -142,7 +158,7 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
     if (!confirmDeleteDetailId) return
     const supabase = (await import('@/lib/supabase/client')).createClient()
     await supabase.from('project_milestones').delete().eq('id', confirmDeleteDetailId)
-    setMilestones(prev => prev.filter(m => m.id !== confirmDeleteDetailId))
+    setMilestones(prev => (prev ?? []).filter(m => m.id !== confirmDeleteDetailId))
     setSelectedIds(prev => { const next = new Set(prev); next.delete(confirmDeleteDetailId); return next })
     setDetailMilestone(null)
     setConfirmDeleteDetailId(null)
@@ -157,20 +173,20 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
   }
 
   async function bulkMarkComplete() {
-    const ids = Array.from(selectedIds).filter(id => milestones.find(m => m.id === id)?.status !== 'completed')
+    const ids = Array.from(selectedIds).filter(id => (milestones ?? []).find(m => m.id === id)?.status !== 'completed')
     if (!ids.length) return
     const supabase = (await import('@/lib/supabase/client')).createClient()
     await supabase.from('project_milestones').update({ status: 'completed', completed_at: new Date().toISOString() }).in('id', ids)
-    setMilestones(prev => prev.map(m => ids.includes(m.id) ? { ...m, status: 'completed' as ProjectMilestone['status'], completed_at: new Date().toISOString() } : m))
+    setMilestones(prev => (prev ?? []).map(m => ids.includes(m.id) ? { ...m, status: 'completed' as ProjectMilestone['status'], completed_at: new Date().toISOString() } : m))
     setSelectedIds(new Set())
   }
 
   async function bulkMarkActive() {
-    const ids = Array.from(selectedIds).filter(id => milestones.find(m => m.id === id)?.status === 'completed')
+    const ids = Array.from(selectedIds).filter(id => (milestones ?? []).find(m => m.id === id)?.status === 'completed')
     if (!ids.length) return
     const supabase = (await import('@/lib/supabase/client')).createClient()
     await supabase.from('project_milestones').update({ status: 'in-progress', completed_at: null }).in('id', ids)
-    setMilestones(prev => prev.map(m => ids.includes(m.id) ? { ...m, status: 'in-progress' as ProjectMilestone['status'], completed_at: null } : m))
+    setMilestones(prev => (prev ?? []).map(m => ids.includes(m.id) ? { ...m, status: 'in-progress' as ProjectMilestone['status'], completed_at: null } : m))
     setSelectedIds(new Set())
   }
 
@@ -193,8 +209,8 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
         .single()
 
       if (!error && data) {
-        setMilestones(prev => [...prev, data as ProjectMilestone])
-        onMilestoneCountChange?.(milestones.length + 1)
+        setMilestones(prev => [...(prev ?? []), data as ProjectMilestone])
+        onMilestoneCountChange?.((milestones ?? []).length + 1)
         setForm({ name: '', description: '', due_date: '', status: 'pending' })
         setShowForm(false)
       }
@@ -207,7 +223,7 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
     const supabase = (await import('@/lib/supabase/client')).createClient()
     await supabase.from('project_milestones').delete().eq('id', milestoneId)
     setMilestones(prev => {
-      const next = prev.filter(m => m.id !== milestoneId)
+      const next = (prev ?? []).filter(m => m.id !== milestoneId)
       onMilestoneCountChange?.(next.length)
       return next
     })
@@ -234,26 +250,61 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Completed</div>
-          <div className="text-2xl font-bold text-green-600">{completedCount}</div>
-          <div className="text-xs text-gray-400 mt-1">of {milestones.length} total</div>
+        {/* Completed */}
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
+              <FlagIcon className="w-5 h-5" style={{ color: '#16A34A' }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Completed</div>
+              <div className="text-lg font-bold" style={{ color: '#16A34A' }}>{completedCount} <span className="text-sm font-normal" style={{ color: colors.textMuted }}>/ {milestones.length}</span></div>
+            </div>
+          </div>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${milestones.length ? (completedCount / milestones.length) * 100 : 0}%`, backgroundColor: '#16A34A' }} />
+          </div>
+          <div className="text-xs mt-1" style={{ color: colors.textMuted }}>{milestones.length ? Math.round((completedCount / milestones.length) * 100) : 0}% complete</div>
         </div>
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Upcoming</div>
-          <div className="text-2xl font-bold text-blue-600">{upcomingCount}</div>
-          <div className="text-xs text-gray-400 mt-1">pending / in progress</div>
+
+        {/* Upcoming */}
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
+              <PlusIcon className="w-5 h-5" style={{ color: '#2563EB' }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Upcoming</div>
+              <div className="text-lg font-bold" style={{ color: '#2563EB' }}>{upcomingCount}</div>
+            </div>
+          </div>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${milestones.length ? (upcomingCount / milestones.length) * 100 : 0}%`, backgroundColor: '#2563EB' }} />
+          </div>
+          <div className="text-xs mt-1" style={{ color: colors.textMuted }}>pending &amp; in progress</div>
         </div>
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Overdue</div>
-          <div className={`text-2xl font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>{overdueCount}</div>
-          <div className="text-xs text-gray-400 mt-1">past due date</div>
+
+        {/* Overdue */}
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: overdueCount > 0 ? 'rgba(220,38,38,0.1)' : (darkMode ? 'rgba(75,85,99,0.2)' : '#F3F4F6') }}>
+              <TrashIcon className="w-5 h-5" style={{ color: overdueCount > 0 ? '#DC2626' : (darkMode ? '#6B7280' : '#9CA3AF') }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Overdue</div>
+              <div className="text-lg font-bold" style={{ color: overdueCount > 0 ? '#DC2626' : colors.textMuted }}>{overdueCount}</div>
+            </div>
+          </div>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${milestones.length ? (overdueCount / milestones.length) * 100 : 0}%`, backgroundColor: overdueCount > 0 ? '#DC2626' : '#9CA3AF' }} />
+          </div>
+          <div className="text-xs mt-1" style={{ color: colors.textMuted }}>past due date</div>
         </div>
       </div>
 
       {/* Project Timeline Bar */}
-      <div className="bg-white border rounded-lg p-5">
-        <div className="flex justify-between text-sm text-gray-600 mb-2">
+      <div className="rounded-lg p-5" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="flex justify-between text-sm mb-2" style={{ color: colors.textMuted }}>
           <span>{formatDate(project.start_date)}</span>
           <span className="font-medium text-gray-900">
             {project.daysRemaining > 0
@@ -469,6 +520,19 @@ export default function ProjectTimelineTab({ project, onMilestoneCountChange }: 
                   {milestone.description && (
                     <p className="text-xs text-gray-500 mt-0.5">{milestone.description}</p>
                   )}
+                  {milestone.phase_id && phaseTaskProgress[milestone.phase_id] && (() => {
+                    const { total, completed } = phaseTaskProgress[milestone.phase_id]
+                    if (total === 0) return null
+                    const pct = Math.round((completed / total) * 100)
+                    return (
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB', maxWidth: '80px' }}>
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: pct === 100 ? '#16A34A' : '#2563EB' }} />
+                        </div>
+                        <span className="text-xs" style={{ color: colors.textMuted }}>{completed}/{total} tasks</span>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 {/* Due date */}

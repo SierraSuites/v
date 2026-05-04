@@ -52,13 +52,14 @@ export default function ProjectTeamTab({ project }: Props) {
       added_at: m.addedAt,
     }))
 
-  const [members, setMembers] = useState<Member[]>(seedMembers)
+  const [members, setMembers] = useState<Member[] | null>(null)
   const [available, setAvailable] = useState<AvailableUser[]>([])
   const [loading, setLoading] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [roleFilter, setRoleFilter] = useState('all')
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  // user_id → { open, overdue } task counts
+  const [taskStats, setTaskStats] = useState<Record<string, { open: number; overdue: number }>>({})
   const [removing, setRemoving] = useState<string | null>(null)
 
   // Add modal state
@@ -82,6 +83,30 @@ export default function ProjectTeamTab({ project }: Props) {
   useEffect(() => {
     fetchMembers()
   }, [fetchMembers])
+
+  useEffect(() => {
+    async function fetchTaskStats() {
+      const supabase = (await import('@/lib/supabase/client')).createClient()
+      const { data } = await supabase
+        .from('tasks')
+        .select('assignee_id, status, due_date')
+        .eq('project_id', project.id)
+        .not('assignee_id', 'is', null)
+      if (!data) return
+      const today = new Date().toISOString().split('T')[0]
+      const stats: Record<string, { open: number; overdue: number }> = {}
+      for (const t of data) {
+        if (!t.assignee_id) continue
+        if (!stats[t.assignee_id]) stats[t.assignee_id] = { open: 0, overdue: 0 }
+        if (t.status !== 'completed') {
+          stats[t.assignee_id].open++
+          if (t.due_date && t.due_date < today) stats[t.assignee_id].overdue++
+        }
+      }
+      setTaskStats(stats)
+    }
+    fetchTaskStats()
+  }, [project.id])
 
   const handleAdd = async () => {
     if (!selectedUser) return
@@ -119,12 +144,14 @@ export default function ProjectTeamTab({ project }: Props) {
     setRemoving(null)
   }
 
-  const filteredMembers = members.filter(m => {
-    const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  if (members === null) return <div className="flex items-center justify-center py-20"><div className="w-6 h-6 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" /></div>
+
+  const filteredMembers = members
+    .filter(m =>
+      m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.email.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesRole = roleFilter === 'all' || m.project_role === roleFilter
-    return matchesSearch && matchesRole
-  })
+    )
+    .sort((a, b) => (a.project_role === 'owner' ? -1 : b.project_role === 'owner' ? 1 : 0))
 
   const allRoles = Array.from(new Set(members.map(m => m.project_role)))
 
@@ -156,11 +183,8 @@ export default function ProjectTeamTab({ project }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold" style={{ color: colors.text }}>Team Members</h2>
-          <p className="mt-1 text-sm" style={{ color: colors.textMuted }}>
-            {loading ? '...' : `${members.length} member${members.length !== 1 ? 's' : ''}`}
-            {!loading && allRoles.length > 0 && ` · ${allRoles.length} role${allRoles.length !== 1 ? 's' : ''}`}
-          </p>
+          <h2 className="text-xl font-semibold" style={{ color: colors.text }}>Team Members</h2>
+          <p className="text-sm mt-1" style={{ color: colors.textMuted }}>Manage who has access to this project</p>
         </div>
         <button
           onClick={() => { setShowAddModal(true); setAddError('') }}
@@ -171,6 +195,65 @@ export default function ProjectTeamTab({ project }: Props) {
           Add Member
         </button>
       </div>
+
+      {/* Stats */}
+      {members.length > 0 && (() => {
+        const editAccessCount = members.filter(m => ['owner', 'admin', 'project_manager'].includes(m.project_role)).length
+        return (
+          <div className="grid grid-cols-3 gap-4">
+            {/* Total Members */}
+            <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
+                  <Users className="w-5 h-5" style={{ color: '#2563EB' }} />
+                </div>
+                <div>
+                  <div className="text-xs" style={{ color: colors.textMuted }}>Total Members</div>
+                  <div className="text-lg font-bold" style={{ color: colors.text }}>{members.length}</div>
+                </div>
+              </div>
+              <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+                <div className="h-full rounded-full transition-all" style={{ width: '100%', backgroundColor: '#2563EB' }} />
+              </div>
+              <div className="text-xs mt-1" style={{ color: colors.textMuted }}>{allRoles.length} unique role{allRoles.length !== 1 ? 's' : ''}</div>
+            </div>
+
+            {/* Unique Roles */}
+            <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(124,58,237,0.1)' }}>
+                  <Shield className="w-5 h-5" style={{ color: '#7C3AED' }} />
+                </div>
+                <div>
+                  <div className="text-xs" style={{ color: colors.textMuted }}>Unique Roles</div>
+                  <div className="text-lg font-bold" style={{ color: colors.text }}>{allRoles.length}</div>
+                </div>
+              </div>
+              <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+                <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(allRoles.length * 20, 100)}%`, backgroundColor: '#7C3AED' }} />
+              </div>
+              <div className="text-xs mt-1" style={{ color: colors.textMuted }}>across the team</div>
+            </div>
+
+            {/* Edit Access */}
+            <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
+                  <Crown className="w-5 h-5" style={{ color: '#16A34A' }} />
+                </div>
+                <div>
+                  <div className="text-xs" style={{ color: colors.textMuted }}>With Edit Access</div>
+                  <div className="text-lg font-bold" style={{ color: colors.text }}>{editAccessCount}</div>
+                </div>
+              </div>
+              <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+                <div className="h-full rounded-full transition-all" style={{ width: `${members.length ? (editAccessCount / members.length) * 100 : 0}%`, backgroundColor: '#16A34A' }} />
+              </div>
+              <div className="text-xs mt-1" style={{ color: colors.textMuted }}>{members.length ? Math.round((editAccessCount / members.length) * 100) : 0}% of team</div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Filters */}
       {members.length > 0 && (
@@ -184,21 +267,6 @@ export default function ProjectTeamTab({ project }: Props) {
               onChange={e => setSearchQuery(e.target.value)}
               style={{ ...inputStyle, paddingLeft: '2.25rem' }}
             />
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {['all', ...allRoles].map(role => (
-              <button
-                key={role}
-                onClick={() => setRoleFilter(role)}
-                className="px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors"
-                style={roleFilter === role
-                  ? { backgroundColor: '#2563EB', color: '#fff' }
-                  : { backgroundColor: colors.bgAlt, color: colors.textMuted, border: colors.border }
-                }
-              >
-                {role === 'all' ? 'All' : role.replace(/_/g, ' ')}
-              </button>
-            ))}
           </div>
         </div>
       )}
@@ -250,8 +318,25 @@ export default function ProjectTeamTab({ project }: Props) {
                   </div>
                 </div>
 
-                {/* Role badge */}
+                {/* Role badge + task stats */}
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {taskStats[member.user_id] && (() => {
+                    const { open, overdue } = taskStats[member.user_id]
+                    return (
+                      <div className="flex items-center gap-1">
+                        {overdue > 0 && (
+                          <span className="px-1.5 py-0.5 text-xs rounded font-medium" style={{ backgroundColor: 'rgba(220,38,38,0.1)', color: '#DC2626' }}>
+                            {overdue} overdue
+                          </span>
+                        )}
+                        {open > 0 && (
+                          <span className="px-1.5 py-0.5 text-xs rounded font-medium" style={{ backgroundColor: darkMode ? 'rgba(107,114,128,0.2)' : '#F3F4F6', color: colors.textMuted }}>
+                            {open} open
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })()}
                   <span className="px-2 py-1 text-xs rounded-full font-medium capitalize" style={{ backgroundColor: darkMode ? 'rgba(37,99,235,0.2)' : '#dbeafe', color: darkMode ? '#93c5fd' : '#1e40af' }}>
                     {member.project_role.replace(/_/g, ' ')}
                   </span>
@@ -290,12 +375,12 @@ export default function ProjectTeamTab({ project }: Props) {
         <div style={cardStyle} className="p-12 text-center">
           <Users className="h-12 w-12 mx-auto mb-4" style={{ color: colors.textMuted }} />
           <h3 className="text-lg font-semibold mb-1" style={{ color: colors.text }}>
-            {searchQuery || roleFilter !== 'all' ? 'No members found' : 'No team members yet'}
+            {searchQuery ? 'No members found' : 'No team members yet'}
           </h3>
           <p className="text-sm mb-6" style={{ color: colors.textMuted }}>
-            {searchQuery || roleFilter !== 'all' ? 'Try adjusting your search or filters' : 'Add team members to collaborate on this project'}
+            {searchQuery ? 'Try adjusting your search' : 'Add team members to collaborate on this project'}
           </p>
-          {!searchQuery && roleFilter === 'all' && (
+          {!searchQuery && (
             <button
               onClick={() => setShowAddModal(true)}
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
@@ -304,22 +389,6 @@ export default function ProjectTeamTab({ project }: Props) {
               Add First Member
             </button>
           )}
-        </div>
-      )}
-
-      {/* Stats */}
-      {members.length > 0 && (
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: 'Total Members', value: members.length },
-            { label: 'Unique Roles', value: allRoles.length },
-            { label: 'With Edit Access', value: members.filter(m => ['owner', 'admin', 'project_manager'].includes(m.project_role)).length },
-          ].map(stat => (
-            <div key={stat.label} style={cardStyle} className="p-4">
-              <div className="text-sm mb-1" style={{ color: colors.textMuted }}>{stat.label}</div>
-              <div className="text-2xl font-bold" style={{ color: colors.text }}>{stat.value}</div>
-            </div>
-          ))}
         </div>
       )}
 

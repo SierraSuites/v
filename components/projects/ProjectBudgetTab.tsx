@@ -5,15 +5,18 @@ import { createClient } from '@/lib/supabase/client'
 import { getUserCompany } from '@/lib/auth/get-user-company'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
+import {
+  PlusIcon,
+  XMarkIcon,
+  PencilSquareIcon,
+  TrashIcon,
+  ChevronRightIcon,
+  CheckCircleIcon,
+} from '@heroicons/react/24/outline'
+import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
 import toast from 'react-hot-toast'
 
-interface SelectionCosts {
-  committed: number   // ordered or received — money is essentially spent
-  approved: number    // client approved, not yet ordered
-  unconfirmed: number // still pending approval
-  total: number       // all selections combined
-  count: { committed: number; approved: number; unconfirmed: number }
-}
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Expense {
   id: string
@@ -23,871 +26,999 @@ interface Expense {
   date: string
   vendor: string | null
   payment_status: 'pending' | 'paid' | 'overdue'
-  created_by: {
-    name: string
-    avatar: string
-  }
+  design_selection_id: string | null
+  created_by: { name: string; avatar: string }
+}
+
+interface DSItem {
+  id: string
+  option_name: string
+  category: string
+  room_location: string | null
+  status: 'pending' | 'approved' | 'rejected' | 'ordered' | 'received' | 'installed'
+  price: number
+  installation_cost: number
+  materialExpense: { id: string; amount: number; payment_status: string; date: string } | null
+  laborExpense:    { id: string; amount: number; payment_status: string; date: string } | null
+  orderTask:    { status: string } | null
+  deliveryTask: { status: string } | null
+  installTask:  { status: string } | null
 }
 
 interface BudgetData {
   estimated_budget: number
   total_expenses: number
-  remaining: number
-  percentage_used: number
   currency: string
 }
 
-interface ProjectBudgetTabProps {
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function fmt(n: number, currency = 'USD') {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n ?? 0)
+}
+
+function fmtDate(s: string) {
+  return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  materials: 'Materials', labor: 'Labor', equipment: 'Equipment',
+  permits: 'Permits', subcontractors: 'Subcontractors',
+  utilities: 'Utilities', insurance: 'Insurance', other: 'Other',
+}
+
+const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
+  materials:      { bg: 'rgba(37,99,235,0.1)',   text: '#2563EB' },
+  labor:          { bg: 'rgba(22,163,74,0.1)',    text: '#16A34A' },
+  equipment:      { bg: 'rgba(245,158,11,0.1)',   text: '#D97706' },
+  permits:        { bg: 'rgba(124,58,237,0.1)',   text: '#7C3AED' },
+  subcontractors: { bg: 'rgba(234,88,12,0.1)',    text: '#EA580C' },
+  utilities:      { bg: 'rgba(6,182,212,0.1)',    text: '#0891B2' },
+  insurance:      { bg: 'rgba(219,39,119,0.1)',   text: '#DB2777' },
+  other:          { bg: 'rgba(107,114,128,0.1)',  text: '#6B7280' },
+}
+
+const DS_STATUS_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  pending:   { bg: 'rgba(245,158,11,0.1)',  text: '#D97706', border: '#FDE68A' },
+  approved:  { bg: 'rgba(37,99,235,0.1)',   text: '#2563EB', border: '#BFDBFE' },
+  rejected:  { bg: 'rgba(220,38,38,0.1)',   text: '#DC2626', border: '#FECACA' },
+  ordered:   { bg: 'rgba(124,58,237,0.1)',  text: '#7C3AED', border: '#DDD6FE' },
+  received:  { bg: 'rgba(14,165,233,0.1)',  text: '#0EA5E9', border: '#BAE6FD' },
+  installed: { bg: 'rgba(22,163,74,0.1)',   text: '#16A34A', border: '#BBF7D0' },
+}
+
+const DS_STATUS_LABELS: Record<string, string> = {
+  pending: 'Pending', approved: 'Approved', rejected: 'Rejected',
+  ordered: 'Ordered', received: 'Received', installed: 'Installed',
+}
+
+const ALL_CATEGORIES = [
+  { value: 'materials',      label: 'Materials' },
+  { value: 'labor',          label: 'Labor' },
+  { value: 'equipment',      label: 'Equipment' },
+  { value: 'permits',        label: 'Permits & Fees' },
+  { value: 'subcontractors', label: 'Subcontractors' },
+  { value: 'utilities',      label: 'Utilities' },
+  { value: 'insurance',      label: 'Insurance' },
+  { value: 'other',          label: 'Other' },
+]
+
+const FILTER_CATEGORIES = [{ value: 'all', label: 'All' }, ...ALL_CATEGORIES]
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function PipelineDot({ label, status, darkMode }: { label: string; status: string | null; darkMode: boolean }) {
+  const done    = status === 'completed'
+  const active  = status === 'in-progress' || status === 'review'
+  const blocked = status === 'blocked'
+  const color   = done ? '#16A34A' : active ? '#2563EB' : blocked ? '#DC2626' : '#9CA3AF'
+  const bg      = done    ? (darkMode ? 'rgba(22,163,74,0.2)'  : '#F0FDF4') :
+                  active  ? (darkMode ? 'rgba(37,99,235,0.2)'  : '#EFF6FF') :
+                  blocked ? (darkMode ? 'rgba(220,38,38,0.2)'  : '#FEF2F2') :
+                             (darkMode ? '#374151' : '#F3F4F6')
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: bg }}>
+        {done
+          ? <CheckCircleSolid className="w-3.5 h-3.5" style={{ color: '#16A34A' }} />
+          : <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+        }
+      </div>
+      <span className="text-xs" style={{ color }}>{label}</span>
+    </div>
+  )
+}
+
+function PaymentBadge({ status, date, amount, currency }: { status: string; date: string; amount: number; currency: string }) {
+  if (status === 'paid') {
+    return (
+      <span className="text-xs flex items-center gap-1" style={{ color: '#16A34A' }}>
+        <CheckCircleSolid className="w-3 h-3" />
+        Paid {fmtDate(date)} · {fmt(amount, currency)}
+      </span>
+    )
+  }
+  if (status === 'overdue') {
+    return <span className="text-xs font-medium" style={{ color: '#DC2626' }}>Overdue · {fmt(amount, currency)}</span>
+  }
+  return <span className="text-xs" style={{ color: '#D97706' }}>Pending · {fmt(amount, currency)}</span>
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
+
+interface Props {
   project: ProjectDetails
   onSpentChange?: (spent: number) => void
 }
 
-export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudgetTabProps) {
-  const projectId = project.id
-  const { darkMode, colors } = useThemeColors()
-  const [budgetData, setBudgetData] = useState<BudgetData | null>({
-    estimated_budget: project.estimated_budget,
-    total_expenses: project.spent,
-    remaining: project.budgetRemaining,
-    percentage_used: project.budgetPercentage,
-    currency: project.currency,
-  })
-  const [expenses, setExpenses] = useState<Expense[]>(
-    project.expenses.map(e => ({
-      id: e.id,
-      category: e.category,
-      description: e.description || '',
-      amount: e.amount,
-      date: e.date,
-      vendor: e.vendor,
-      payment_status: e.payment_status,
-      created_by: { name: 'Unknown', avatar: '' }
-    }))
-  )
-  const [selectionCosts, setSelectionCosts] = useState<SelectionCosts>(() => {
-    const sels = project.designSelectionsSummary || []
-    const committed   = sels.filter(s => s.status === 'ordered' || s.status === 'received')
-    const approved    = sels.filter(s => s.status === 'approved')
-    const unconfirmed = sels.filter(s => s.status === 'pending' || s.status === 'rejected')
-    const sum = (arr: { price: number }[]) => arr.reduce((n, s) => n + (s.price || 0), 0)
-    return {
-      committed:   sum(committed),
-      approved:    sum(approved),
-      unconfirmed: sum(unconfirmed),
-      total:       sum(sels),
-      count: { committed: committed.length, approved: approved.length, unconfirmed: unconfirmed.length },
-    }
-  })
-  const [showAddExpense, setShowAddExpense] = useState(false)
-  const [categoryFilter, setCategoryFilter] = useState<string>('all')
-  const [confirmDelete, setConfirmDelete] = useState<{ id: string; description: string } | null>(null)
-  const [detailExpense, setDetailExpense] = useState<Expense | null>(null)
-  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
-  const [editForm, setEditForm] = useState({ category: '', description: '', amount: '', date: '', vendor: '', payment_status: 'pending' as 'pending' | 'paid' | 'overdue' })
+const EMPTY_EXPENSE_FORM = {
+  category: 'equipment',
+  description: '',
+  amount: '',
+  date: new Date().toISOString().split('T')[0],
+  vendor: '',
+  payment_status: 'pending' as 'pending' | 'paid' | 'overdue',
+}
 
-  // New expense form state
-  const [newExpense, setNewExpense] = useState({
-    category: 'materials',
-    description: '',
-    amount: '',
-    date: new Date().toISOString().split('T')[0],
-    vendor: '',
-    payment_status: 'pending' as 'pending' | 'paid' | 'overdue'
-  })
+export default function ProjectBudgetTab({ project, onSpentChange }: Props) {
+  const { colors, darkMode } = useThemeColors()
+  const [budgetData,  setBudgetData]  = useState<BudgetData | null>(null)
+  const [expenses,    setExpenses]    = useState<Expense[] | null>(null)
+  const [dsItems,     setDsItems]     = useState<DSItem[]>([])
+  const [showAdd,     setShowAdd]     = useState(false)
+  const [catFilter,   setCatFilter]   = useState('all')
+  const [payFilter,   setPayFilter]   = useState<'all' | 'paid' | 'unpaid'>('all')
+  const [newExp,      setNewExp]      = useState(EMPTY_EXPENSE_FORM)
+  const [editingExp,  setEditingExp]  = useState<Expense | null>(null)
+  const [editForm,    setEditForm]    = useState(EMPTY_EXPENSE_FORM)
+  const [confirmDel,  setConfirmDel]  = useState<{ id: string; description: string } | null>(null)
+  const [detailExp,   setDetailExp]   = useState<Expense | null>(null)
+  const [saving,      setSaving]      = useState(false)
 
-  useEffect(() => {
-    loadBudgetData()
-  }, [projectId])
+  useEffect(() => { loadData() }, [project.id])
 
-  async function loadBudgetData() {
+  async function loadData() {
     try {
       const supabase = createClient()
 
-      // Load project budget info, expenses, and design selections in parallel
-      const [projectRes, expensesRes, selectionsRes] = await Promise.all([
-        supabase.from('projects').select('estimated_budget, currency').eq('id', projectId).single(),
-        supabase.from('project_expenses').select('id, category, description, amount, date, vendor, payment_status, created_by').eq('project_id', projectId).order('date', { ascending: false }),
-        supabase.from('design_selections').select('price, status').eq('project_id', projectId),
+      const [projectRes, expensesRes, selectionsRes, tasksRes] = await Promise.all([
+        supabase.from('projects').select('estimated_budget, currency').eq('id', project.id).single(),
+        supabase.from('project_expenses')
+          .select('id, category, description, amount, date, vendor, payment_status, created_by, design_selection_id')
+          .eq('project_id', project.id)
+          .order('date', { ascending: false }),
+        supabase.from('design_selections')
+          .select('id, option_name, category, room_location, status, price, installation_cost')
+          .eq('project_id', project.id)
+          .order('created_at', { ascending: true }),
+        supabase.from('tasks')
+          .select('id, status, selection_task_type, design_selection_id')
+          .eq('project_id', project.id)
+          .not('design_selection_id', 'is', null),
       ])
 
       if (projectRes.error) throw projectRes.error
       if (expensesRes.error) throw expensesRes.error
 
-      const expensesData = expensesRes.data || []
+      const expensesRaw = expensesRes.data || []
 
-      // Fetch names for all unique creators in one query
-      const creatorIds = [...new Set(expensesData.map((e: any) => e.created_by).filter(Boolean))]
-      const creatorMap: Record<string, { full_name: string | null, avatar_url: string | null }> = {}
+      // Resolve creator names
+      const creatorIds = [...new Set(expensesRaw.map((e: any) => e.created_by).filter(Boolean))]
+      const creatorMap: Record<string, { full_name: string | null; avatar_url: string | null }> = {}
       if (creatorIds.length > 0) {
         const { data: profiles } = await supabase
-          .from('user_profiles')
-          .select('id, full_name, avatar_url')
-          .in('id', creatorIds)
+          .from('user_profiles').select('id, full_name, avatar_url').in('id', creatorIds)
         profiles?.forEach((p: any) => { creatorMap[p.id] = p })
       }
 
-      const formattedExpenses: Expense[] = expensesData.map((exp: any) => ({
-        id: exp.id,
-        category: exp.category,
-        description: exp.description,
-        amount: exp.amount,
-        date: exp.date,
-        vendor: exp.vendor,
-        payment_status: exp.payment_status || 'pending',
+      const formattedExpenses: Expense[] = expensesRaw.map((e: any) => ({
+        id: e.id,
+        category: e.category,
+        description: e.description,
+        amount: e.amount,
+        date: e.date,
+        vendor: e.vendor,
+        payment_status: e.payment_status || 'pending',
+        design_selection_id: e.design_selection_id ?? null,
         created_by: {
-          name: creatorMap[exp.created_by]?.full_name || 'Unknown',
-          avatar: creatorMap[exp.created_by]?.avatar_url || ''
-        }
+          name:   creatorMap[e.created_by]?.full_name  || 'Unknown',
+          avatar: creatorMap[e.created_by]?.avatar_url || '',
+        },
       }))
 
-      const totalExpenses = formattedExpenses.reduce((sum, exp) => sum + exp.amount, 0)
-      const estimatedBudget = projectRes.data.estimated_budget || 0
-      const remaining = estimatedBudget - totalExpenses
-      const percentageUsed = estimatedBudget > 0 ? (totalExpenses / estimatedBudget) * 100 : 0
+      const totalExpenses = formattedExpenses.reduce((s, e) => s + e.amount, 0)
+      const estimated     = projectRes.data.estimated_budget || 0
 
       setBudgetData({
-        estimated_budget: estimatedBudget,
-        total_expenses: totalExpenses,
-        remaining,
-        percentage_used: percentageUsed,
-        currency: projectRes.data.currency || 'USD'
+        estimated_budget: estimated,
+        total_expenses:   totalExpenses,
+        currency:         projectRes.data.currency || 'USD',
       })
-
       setExpenses(formattedExpenses)
 
-      // Compute design selection cost breakdown
-      const sels = selectionsRes.data || []
-      const committedSels = sels.filter((s: any) => s.status === 'ordered' || s.status === 'received')
-      const approvedSels  = sels.filter((s: any) => s.status === 'approved')
-      const unconfirmedSels = sels.filter((s: any) => s.status === 'pending' || s.status === 'rejected')
-      const sum = (arr: any[]) => arr.reduce((n, s) => n + (s.price || 0), 0)
-      setSelectionCosts({
-        committed:   sum(committedSels),
-        approved:    sum(approvedSels),
-        unconfirmed: sum(unconfirmedSels),
-        total:       sum(sels),
-        count: {
-          committed:   committedSels.length,
-          approved:    approvedSels.length,
-          unconfirmed: unconfirmedSels.length,
-        },
-      })
-    } catch (error: any) {
-      console.error('Failed to refresh budget data:', error?.message, error?.code, error?.details)
+      // Build per-selection items
+      const tasksBySelId: Record<string, any[]> = {}
+      for (const t of (tasksRes.data || [])) {
+        if (!tasksBySelId[t.design_selection_id]) tasksBySelId[t.design_selection_id] = []
+        tasksBySelId[t.design_selection_id].push(t)
+      }
+
+      const expBySelId: Record<string, Expense[]> = {}
+      for (const e of formattedExpenses) {
+        if (e.design_selection_id) {
+          if (!expBySelId[e.design_selection_id]) expBySelId[e.design_selection_id] = []
+          expBySelId[e.design_selection_id].push(e)
+        }
+      }
+
+      const items: DSItem[] = (selectionsRes.data || [])
+        .filter((s: any) => ['approved','ordered','received','installed'].includes(s.status))
+        .map((s: any) => {
+          const linked    = tasksBySelId[s.id] || []
+          const linkedExp = expBySelId[s.id]   || []
+          const matExp    = linkedExp.find(e => e.category === 'materials') ?? null
+          const labExp    = linkedExp.find(e => e.category === 'labor')     ?? null
+          return {
+            id:               s.id,
+            option_name:      s.option_name,
+            category:         s.category,
+            room_location:    s.room_location,
+            status:           s.status,
+            price:            s.price || 0,
+            installation_cost: s.installation_cost || 0,
+            materialExpense:  matExp ? { id: matExp.id, amount: matExp.amount, payment_status: matExp.payment_status, date: matExp.date } : null,
+            laborExpense:     labExp ? { id: labExp.id, amount: labExp.amount, payment_status: labExp.payment_status, date: labExp.date } : null,
+            orderTask:    linked.find(t => t.selection_task_type === 'order')        ?? null,
+            deliveryTask: linked.find(t => t.selection_task_type === 'delivery')     ?? null,
+            installTask:  linked.find(t => t.selection_task_type === 'installation') ?? null,
+          }
+        })
+
+      setDsItems(items)
+    } catch (err: any) {
+      console.error('Failed to load budget data:', err?.message)
     }
   }
 
   async function handleAddExpense(e: React.FormEvent) {
     e.preventDefault()
-
+    setSaving(true)
     try {
       const supabase = createClient()
-      const profile = await getUserCompany()
+      const profile  = await getUserCompany()
+      if (!profile) throw new Error('Not authenticated')
 
-      if (!profile) {
-        throw new Error('Not authenticated')
-      }
-
-      const { error } = await supabase
+      const amount = parseFloat(newExp.amount)
+      const { data: inserted, error } = await supabase
         .from('project_expenses')
         .insert({
-          project_id: projectId,
-          category: newExpense.category,
-          description: newExpense.description,
-          amount: parseFloat(newExpense.amount),
-          date: newExpense.date,
-          vendor: newExpense.vendor || null,
-          payment_status: newExpense.payment_status,
-          created_by: profile.id
+          project_id:     project.id,
+          category:       newExp.category,
+          description:    newExp.description,
+          amount,
+          date:           newExp.date,
+          vendor:         newExp.vendor || null,
+          payment_status: newExp.payment_status,
+          created_by:     profile.id,
         })
-
+        .select('id').single()
       if (error) throw error
 
-      const addedAmount = parseFloat(newExpense.amount)
-
-      // Update expenses list instantly
-      setExpenses(prev => [{
-        id: crypto.randomUUID(),
-        category: newExpense.category,
-        description: newExpense.description,
-        amount: addedAmount,
-        date: newExpense.date,
-        vendor: newExpense.vendor || null,
-        payment_status: newExpense.payment_status,
-        created_by: { name: profile.full_name ?? 'You', avatar: profile.avatar_url ?? '' }
-      }, ...prev])
-
-      // Update stat cards instantly
-      setBudgetData(prev => {
-        if (!prev) return prev
-        const newTotal = prev.total_expenses + addedAmount
-        const newRemaining = prev.estimated_budget - newTotal
-        const newPct = prev.estimated_budget > 0 ? (newTotal / prev.estimated_budget) * 100 : 0
-        return { ...prev, total_expenses: newTotal, remaining: newRemaining, percentage_used: newPct }
-      })
-      onSpentChange?.(budgetData ? budgetData.total_expenses + addedAmount : addedAmount)
-
-      // Reset form
-      setNewExpense({
-        category: 'labor',
-        description: '',
-        amount: '',
-        date: new Date().toISOString().split('T')[0],
-        vendor: '',
-        payment_status: 'pending'
-      })
-      setShowAddExpense(false)
-    } catch (error: any) {
-      console.error('Failed to add expense:', error?.code, error?.message, error?.details)
-      toast.error('Failed to add expense. Please try again.')
+      const added: Expense = {
+        id:                   inserted.id,
+        category:             newExp.category,
+        description:          newExp.description,
+        amount,
+        date:                 newExp.date,
+        vendor:               newExp.vendor || null,
+        payment_status:       newExp.payment_status,
+        design_selection_id:  null,
+        created_by:           { name: profile.full_name ?? 'You', avatar: profile.avatar_url ?? '' },
+      }
+      setExpenses(prev => prev ? [added, ...prev] : [added])
+      setBudgetData(prev => prev ? { ...prev, total_expenses: prev.total_expenses + amount } : prev)
+      onSpentChange?.(budgetData ? budgetData.total_expenses + amount : amount)
+      setNewExp(EMPTY_EXPENSE_FORM)
+      setShowAdd(false)
+      toast.success('Expense added')
+    } catch (err: any) {
+      console.error('Failed to add expense:', err?.message)
+      toast.error('Failed to add expense.')
+    } finally {
+      setSaving(false)
     }
   }
 
-  function handleDeleteExpense(expenseId: string, description: string) {
-    setConfirmDelete({ id: expenseId, description })
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingExp) return
+    setSaving(true)
+    try {
+      const supabase = createClient()
+      const newAmount = parseFloat(editForm.amount)
+      const { error } = await supabase.from('project_expenses').update({
+        category:       editForm.category,
+        description:    editForm.description,
+        amount:         newAmount,
+        date:           editForm.date,
+        vendor:         editForm.vendor || null,
+        payment_status: editForm.payment_status,
+      }).eq('id', editingExp.id)
+      if (error) throw error
+
+      const diff = newAmount - editingExp.amount
+      setExpenses(prev => prev?.map(ex => ex.id === editingExp.id
+        ? { ...ex, ...editForm, amount: newAmount, vendor: editForm.vendor || null }
+        : ex) ?? prev)
+      setBudgetData(prev => prev ? { ...prev, total_expenses: prev.total_expenses + diff } : prev)
+      onSpentChange?.(budgetData ? budgetData.total_expenses + diff : newAmount)
+      setEditingExp(null)
+      toast.success('Expense updated')
+    } catch (err: any) {
+      toast.error('Failed to update expense.')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  function getInitials(name: string): string {
-    if (!name) return '?'
-    const parts = name.trim().split(' ')
-    if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
-    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+  async function confirmDelete() {
+    if (!confirmDel) return
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from('project_expenses').delete().eq('id', confirmDel.id)
+      if (error) throw error
+      const deleted = expenses?.find(e => e.id === confirmDel.id)
+      setExpenses(prev => prev?.filter(e => e.id !== confirmDel.id) ?? prev)
+      if (deleted) {
+        setBudgetData(prev => prev ? { ...prev, total_expenses: prev.total_expenses - deleted.amount } : prev)
+        onSpentChange?.(budgetData ? budgetData.total_expenses - deleted.amount : 0)
+      }
+      setConfirmDel(null)
+    } catch {
+      toast.error('Failed to delete expense.')
+    }
   }
 
-  function formatCurrency(amount: number, currency: string = 'USD'): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount)
+  async function markAsPaid(expId: string) {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('project_expenses')
+      .update({ payment_status: 'paid' })
+      .eq('id', expId)
+    if (error) { toast.error('Failed to mark as paid.'); return }
+    setExpenses(prev => prev?.map(e => e.id === expId ? { ...e, payment_status: 'paid' } : e) ?? prev)
+    toast.success('Marked as paid')
   }
 
-  function formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
+  function openEdit(exp: Expense) {
+    setEditingExp(exp)
+    setEditForm({
+      category:       exp.category,
+      description:    exp.description,
+      amount:         String(exp.amount),
+      date:           exp.date,
+      vendor:         exp.vendor ?? '',
+      payment_status: exp.payment_status,
     })
+    setDetailExp(null)
   }
 
-  function getCategoryIcon(category: string): string {
-    const icons: Record<string, string> = {
-      materials: '🧱',
-      labor: '👷',
-      equipment: '🚜',
-      permits: '📋',
-      subcontractors: '🔧',
-      utilities: '⚡',
-      insurance: '🛡️',
-      other: '📦'
-    }
-    return icons[category] || '📦'
-  }
+  // ── Loading ────────────────────────────────────────────────────────────────
 
-  function getCategoryColor(category: string): string {
-    const colors: Record<string, string> = {
-      materials:      'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-      labor:          'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-      equipment:      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
-      permits:        'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
-      subcontractors: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
-      utilities:      'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300',
-      insurance:      'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300',
-      other:          'bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300'
-    }
-    return colors[category] || 'bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300'
-  }
-
-  const categories = [
-    { value: 'all', label: 'All Expenses' },
-    { value: 'labor', label: 'Labor' },
-    { value: 'equipment', label: 'Equipment' },
-    { value: 'permits', label: 'Permits' },
-    { value: 'subcontractors', label: 'Subcontractors' },
-    { value: 'utilities', label: 'Utilities' },
-    { value: 'insurance', label: 'Insurance' },
-    { value: 'other', label: 'Other' }
-  ]
-
-  const filteredExpenses = categoryFilter === 'all'
-    ? expenses
-    : expenses.filter(exp => exp.category === categoryFilter)
-
-  // Calculate expenses by category for the chart
-  const expensesByCategory = categories.slice(1).map(cat => {
-    const total = expenses
-      .filter(exp => exp.category === cat.value)
-      .reduce((sum, exp) => sum + exp.amount, 0)
-    return {
-      category: cat.label,
-      amount: total,
-      percentage: budgetData && budgetData.total_expenses > 0
-        ? (total / budgetData.total_expenses) * 100
-        : 0
-    }
-  }).filter(item => item.amount > 0)
-
-
-
-  if (!budgetData) {
+  if (budgetData === null || expenses === null) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        <p>Failed to load budget data</p>
+      <div className="flex items-center justify-center py-20">
+        <div className="w-6 h-6 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
       </div>
     )
   }
 
-  const budgetStatus = budgetData.percentage_used > 100
-    ? 'over'
-    : budgetData.percentage_used > 90
-    ? 'warning'
-    : 'healthy'
+  // ── Derived values ─────────────────────────────────────────────────────────
 
-  function openEditExpense(expense: Expense) {
-    setEditingExpense(expense)
-    setEditForm({
-      category: expense.category,
-      description: expense.description,
-      amount: String(expense.amount),
-      date: expense.date,
-      vendor: expense.vendor ?? '',
-      payment_status: expense.payment_status
-    })
-    setDetailExpense(null)
-  }
+  const currency = budgetData.currency
+  const estimated = budgetData.estimated_budget
 
-  async function handleSaveExpense(e: React.FormEvent) {
-    e.preventDefault()
-    if (!editingExpense) return
-    const supabase = createClient()
-    const updatedAmount = parseFloat(editForm.amount)
-    const { error } = await supabase
-      .from('project_expenses')
-      .update({
-        category: editForm.category,
-        description: editForm.description,
-        amount: updatedAmount,
-        date: editForm.date,
-        vendor: editForm.vendor || null,
-        payment_status: editForm.payment_status
-      })
-      .eq('id', editingExpense.id)
-    if (error) { console.error('Failed to update expense:', error?.message); return }
+  // Split recorded expenses by payment status
+  const paidTotal    = expenses.filter(e => e.payment_status === 'paid').reduce((n, e) => n + e.amount, 0)
+  const pendingTotal = expenses.filter(e => e.payment_status !== 'paid').reduce((n, e) => n + e.amount, 0)
 
-    const diff = updatedAmount - editingExpense.amount
-    setExpenses(prev => prev.map(e => e.id === editingExpense.id
-      ? { ...e, category: editForm.category, description: editForm.description, amount: updatedAmount, date: editForm.date, vendor: editForm.vendor || null, payment_status: editForm.payment_status }
-      : e
-    ))
-    if (budgetData && diff !== 0) {
-      const newTotal = budgetData.total_expenses + diff
-      const newRemaining = budgetData.estimated_budget - newTotal
-      const newPct = budgetData.estimated_budget > 0 ? (newTotal / budgetData.estimated_budget) * 100 : 0
-      setBudgetData({ ...budgetData, total_expenses: newTotal, remaining: newRemaining, percentage_used: newPct })
-      onSpentChange?.(newTotal)
-    }
-    setEditingExpense(null)
-  }
+  // Projected spend: actual + unpaid committed material + unpaid installation labor
+  const dsExpIds    = new Set(expenses.filter(e => e.design_selection_id).map(e => e.design_selection_id))
+  const dsLaborIds  = new Set(expenses.filter(e => e.category === 'labor' && e.design_selection_id).map(e => e.design_selection_id))
 
-  async function confirmDeleteExpense() {
-    if (!confirmDelete) return
-    try {
-      const supabase = createClient()
-      const { error } = await supabase.from('project_expenses').delete().eq('id', confirmDelete.id)
-      if (error) throw error
-      const deleted = expenses.find(e => e.id === confirmDelete.id)
-      setExpenses(prev => prev.filter(e => e.id !== confirmDelete.id))
-      if (deleted && budgetData) {
-        const newTotal = budgetData.total_expenses - deleted.amount
-        const newRemaining = budgetData.estimated_budget - newTotal
-        const newPct = budgetData.estimated_budget > 0 ? (newTotal / budgetData.estimated_budget) * 100 : 0
-        setBudgetData({ ...budgetData, total_expenses: newTotal, remaining: newRemaining, percentage_used: newPct })
-        onSpentChange?.(newTotal)
-      }
-    } catch (error: any) {
-      console.error('Failed to delete expense:', error?.message)
-    } finally {
-      setConfirmDelete(null)
-    }
+  const unpaidMaterials = dsItems
+    .filter(s => ['ordered','received','installed'].includes(s.status) && !dsExpIds.has(s.id))
+    .reduce((n, s) => n + s.price, 0)
+  const unpaidInstall = dsItems
+    .filter(s => ['approved','ordered','received','installed'].includes(s.status) && !dsLaborIds.has(s.id))
+    .reduce((n, s) => n + s.installation_cost, 0)
+  const approvedUnordered = dsItems
+    .filter(s => s.status === 'approved')
+    .reduce((n, s) => n + s.price, 0)
+
+  const projected    = budgetData.total_expenses + unpaidMaterials + unpaidInstall + approvedUnordered
+  const projectedPct = estimated > 0 ? (projected / estimated) * 100 : 0
+  const remaining    = estimated - projected
+  const isOver       = remaining < 0
+
+  const allExpenses = [...expenses].sort((a, b) => b.date.localeCompare(a.date))
+  const filteredExpenses = allExpenses
+    .filter(e => catFilter === 'all' || e.category === catFilter)
+    .filter(e => payFilter === 'all' ? true : payFilter === 'paid' ? e.payment_status === 'paid' : e.payment_status !== 'paid')
+
+  const pendingPayments = expenses.filter(e => e.payment_status === 'pending' || e.payment_status === 'overdue')
+    .sort((a, b) => (a.payment_status === 'overdue' ? -1 : 1))
+
+  const cardStyle = { backgroundColor: colors.bgAlt, border: colors.border, borderRadius: '0.5rem' }
+  const inputStyle = {
+    backgroundColor: colors.bgAlt, border: colors.border,
+    color: colors.text, borderRadius: '0.375rem',
+    padding: '0.5rem 0.75rem', fontSize: '0.875rem',
+    width: '100%', outline: 'none',
   }
 
   return (
     <>
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Budget</h2>
-        <p className="text-sm text-gray-500 mt-1">Track project expenses and budget allocation</p>
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold" style={{ color: colors.text }}>Budget</h2>
+          <p className="text-sm mt-0.5" style={{ color: colors.textMuted }}>
+            Track project expenses and projected spend
+          </p>
+        </div>
       </div>
 
-      {/* Unified Budget Overview */}
-      {(() => {
-        const hasSelections = selectionCosts.total > 0
-        const projected = budgetData.total_expenses + selectionCosts.committed + selectionCosts.approved
-        const projectedPct = budgetData.estimated_budget > 0 ? (projected / budgetData.estimated_budget) * 100 : 0
-        const displayPct = hasSelections ? projectedPct : budgetData.percentage_used
-        const displayStatus = displayPct > 100 ? 'over' : displayPct > 90 ? 'warning' : 'healthy'
-        const remaining = budgetData.estimated_budget - (hasSelections ? projected : budgetData.total_expenses)
-
-        return (
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            {/* Header row */}
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-gray-900">
-                    {formatCurrency(hasSelections ? projected : budgetData.total_expenses, budgetData.currency)}
-                  </span>
-                  <span className="text-sm text-gray-400">
-                    of {formatCurrency(budgetData.estimated_budget, budgetData.currency)}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {hasSelections ? 'Projected total (actual + committed + approved)' : 'Actual expenses'}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className={`text-lg font-bold ${displayStatus === 'over' ? 'text-red-600' : displayStatus === 'warning' ? 'text-yellow-600' : 'text-green-600'}`}>
-                  {displayStatus === 'over' ? '+' : ''}{formatCurrency(Math.abs(remaining), budgetData.currency)}
-                </p>
-                <p className="text-xs text-gray-400 mt-0.5">{displayStatus === 'over' ? 'over budget' : 'remaining'}</p>
-              </div>
+      {/* ── Budget Overview ── */}
+      <div className="rounded-lg p-5" style={cardStyle}>
+        {/* Top row */}
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold" style={{ color: colors.text }}>
+                {fmt(projected, currency)}
+              </span>
+              <span className="text-sm" style={{ color: colors.textMuted }}>
+                of {fmt(estimated, currency)}
+              </span>
             </div>
-
-            {/* Stacked bar */}
-            <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden flex mb-1.5">
-              {budgetData.total_expenses > 0 && (
-                <div className="h-full bg-blue-500 transition-all" style={{ width: `${Math.min((budgetData.total_expenses / budgetData.estimated_budget) * 100, 100)}%` }} />
-              )}
-              {selectionCosts.committed > 0 && (
-                <div className="h-full bg-purple-500 transition-all" style={{ width: `${Math.min((selectionCosts.committed / budgetData.estimated_budget) * 100, Math.max(0, 100 - (budgetData.total_expenses / budgetData.estimated_budget) * 100))}%` }} />
-              )}
-              {selectionCosts.approved > 0 && (
-                <div className="h-full bg-yellow-400 transition-all" style={{ width: `${Math.min((selectionCosts.approved / budgetData.estimated_budget) * 100, Math.max(0, 100 - ((budgetData.total_expenses + selectionCosts.committed) / budgetData.estimated_budget) * 100))}%` }} />
-              )}
-              {!hasSelections && budgetData.total_expenses === 0 && (
-                <div className="h-full bg-green-400 transition-all" style={{ width: '0%' }} />
-              )}
-            </div>
-            <p className={`text-xs ${displayStatus === 'over' ? 'text-red-500' : 'text-gray-400'}`}>
-              {displayPct.toFixed(1)}% of budget {hasSelections ? 'projected' : 'used'}
+            <p className="text-xs mt-0.5" style={{ color: colors.textMuted }}>
+              Projected total (paid + committed + approved)
             </p>
-
-            {/* Breakdown rows — only shown when design selections exist */}
-            {hasSelections && (
-              <div className="mt-5 pt-4 border-t border-gray-100 divide-y divide-gray-100">
-                <div className="flex items-center justify-between py-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-                    <span className="text-gray-600">Actual expenses</span>
-                  </div>
-                  <span className="font-medium text-gray-900">{formatCurrency(budgetData.total_expenses, budgetData.currency)}</span>
-                </div>
-                <div className="flex items-center justify-between py-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
-                    <span className="text-gray-600">Committed</span>
-                    <span className="text-gray-400 text-xs">({selectionCosts.count.committed} ordered/received)</span>
-                  </div>
-                  <span className="font-medium text-gray-900">{formatCurrency(selectionCosts.committed, budgetData.currency)}</span>
-                </div>
-                <div className="flex items-center justify-between py-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-yellow-400 shrink-0" />
-                    <span className="text-gray-600">Approved, not ordered</span>
-                    <span className="text-gray-400 text-xs">({selectionCosts.count.approved})</span>
-                  </div>
-                  <span className="font-medium text-gray-900">{formatCurrency(selectionCosts.approved, budgetData.currency)}</span>
-                </div>
-                {selectionCosts.unconfirmed > 0 && (
-                  <div className="flex items-center justify-between py-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-gray-300 shrink-0" />
-                      <span className="text-gray-400">Unconfirmed</span>
-                      <span className="text-gray-400 text-xs">({selectionCosts.count.unconfirmed} pending approval)</span>
-                    </div>
-                    <span className="font-medium text-gray-400">{formatCurrency(selectionCosts.unconfirmed, budgetData.currency)}</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between pt-2.5 pb-0.5">
-                  <div />
-                  <div className="text-right">
-                    <span className={`text-sm font-semibold ${displayStatus === 'over' ? 'text-red-600' : displayStatus === 'warning' ? 'text-yellow-600' : 'text-gray-900'}`}>
-                      {formatCurrency(projected, budgetData.currency)}
-                    </span>
-                    <span className="text-xs text-gray-400 ml-1.5">projected ({projectedPct.toFixed(1)}%)</span>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
-        )
-      })()}
+          <div className="text-right">
+            <p className="text-lg font-bold" style={{ color: isOver ? '#DC2626' : projectedPct > 90 ? '#D97706' : '#16A34A' }}>
+              {isOver ? '+' : ''}{fmt(Math.abs(remaining), currency)}
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: colors.textMuted }}>
+              {isOver ? 'over budget' : 'remaining'}
+            </p>
+          </div>
+        </div>
 
-      {/* Expenses Section */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-baseline gap-2">
-          <h3 className="text-lg font-semibold text-gray-900">Expenses</h3>
-          {expenses.length > 0 && (
-            <span className="text-sm text-gray-400">{expenses.length} {expenses.length === 1 ? 'entry' : 'entries'}</span>
+        {/* Stacked bar */}
+        <div className="w-full h-2.5 rounded-full overflow-hidden flex mb-2" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+          {paidTotal > 0 && (
+            <div className="h-full bg-blue-500" style={{ width: `${Math.min((paidTotal / estimated) * 100, 100)}%` }} />
+          )}
+          {pendingTotal > 0 && (
+            <div className="h-full bg-orange-400" style={{ width: `${Math.min((pendingTotal / estimated) * 100, Math.max(0, 100 - (paidTotal / estimated) * 100))}%` }} />
+          )}
+          {(unpaidMaterials + unpaidInstall) > 0 && (
+            <div className="h-full bg-purple-500" style={{ width: `${Math.min(((unpaidMaterials + unpaidInstall) / estimated) * 100, Math.max(0, 100 - (budgetData.total_expenses / estimated) * 100))}%` }} />
+          )}
+          {approvedUnordered > 0 && (
+            <div className="h-full bg-yellow-400" style={{ width: `${Math.min((approvedUnordered / estimated) * 100, Math.max(0, 100 - ((budgetData.total_expenses + unpaidMaterials + unpaidInstall) / estimated) * 100))}%` }} />
           )}
         </div>
-        <button
-          onClick={() => setShowAddExpense(true)}
-          className="inline-flex items-center cursor-pointer gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Expense
-        </button>
+
+        {/* Legend */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs" style={{ color: colors.textMuted }}>
+          {paidTotal > 0 && (
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+              Paid {fmt(paidTotal, currency)}
+            </span>
+          )}
+          {pendingTotal > 0 && (
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-orange-400 shrink-0" />
+              Pending {fmt(pendingTotal, currency)}
+            </span>
+          )}
+          {(unpaidMaterials + unpaidInstall) > 0 && (
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+              Committed {fmt(unpaidMaterials + unpaidInstall, currency)}
+            </span>
+          )}
+          {approvedUnordered > 0 && (
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-yellow-400 shrink-0" />
+              Approved {fmt(approvedUnordered, currency)}
+            </span>
+          )}
+          <span className="ml-auto font-medium" style={{ color: isOver ? '#DC2626' : colors.textMuted }}>
+            {projectedPct.toFixed(1)}% of budget
+          </span>
+        </div>
       </div>
 
-      {/* Add Expense Modal */}
-      {showAddExpense && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div
-            className="rounded-xl w-full max-w-lg flex flex-col"
-            style={{ backgroundColor: colors.bg, boxShadow: "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)" }}
-          >
-            {/* Header */}
-            <div
-              className="flex items-center justify-between px-6 py-4"
-              style={{ borderBottom: colors.borderBottom }}
-            >
-              <div>
-                <h2 className="text-2xl font-bold" style={{ color: colors.text }}>Add Expense</h2>
-                <p className="text-sm mt-1" style={{ color: colors.textMuted }}>Record a new project expense</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowAddExpense(false)}
-                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
-              >
-                <svg className="w-6 h-6" style={{ color: colors.textMuted }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+      {/* ── Pending Payments ── */}
+      {pendingPayments.length > 0 && (
+        <div>
+          <h3 className="text-base font-semibold mb-3" style={{ color: colors.text }}>
+            Pending Payments
+            <span className="ml-2 text-sm font-normal" style={{ color: colors.textMuted }}>
+              {pendingPayments.length} {pendingPayments.length === 1 ? 'item' : 'items'} · {fmt(pendingPayments.reduce((s, e) => s + e.amount, 0), currency)}
+            </span>
+          </h3>
+          <div className="space-y-2">
+            {pendingPayments.map(exp => {
+              const cc = CATEGORY_COLORS[exp.category] ?? CATEGORY_COLORS.other
+              const isOverdue = exp.payment_status === 'overdue'
+              return (
+                <div
+                  key={exp.id}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg"
+                  style={{ ...cardStyle, borderLeft: `3px solid ${isOverdue ? '#DC2626' : '#D97706'}` }}
+                >
+                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setDetailExp(exp)}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium truncate" style={{ color: colors.text }}>{exp.description}</span>
+                      <span className="text-sm font-bold shrink-0" style={{ color: isOverdue ? '#DC2626' : colors.text }}>
+                        {fmt(exp.amount, currency)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: cc.bg, color: cc.text }}>
+                        {CATEGORY_LABELS[exp.category] ?? exp.category}
+                      </span>
+                      <span className="text-xs" style={{ color: colors.textMuted }}>{fmtDate(exp.date)}</span>
+                      {exp.vendor && <span className="text-xs" style={{ color: colors.textMuted }}>· {exp.vendor}</span>}
+                      <span className="text-xs font-semibold" style={{ color: isOverdue ? '#DC2626' : '#D97706' }}>
+                        {isOverdue ? 'Overdue' : 'Pending'}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => markAsPaid(exp.id)}
+                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-green-600 hover:bg-green-700 cursor-pointer"
+                  >
+                    Mark Paid
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
-            {/* Body */}
-            <form onSubmit={handleAddExpense}>
-              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
-                {/* Description */}
+      {/* ── Design Selection Costs ── */}
+      {dsItems.length > 0 && (
+        <div>
+          <h3 className="text-base font-semibold mb-3" style={{ color: colors.text }}>
+            Design Selection Costs
+            <span className="ml-2 text-sm font-normal" style={{ color: colors.textMuted }}>
+              {dsItems.length} {dsItems.length === 1 ? 'item' : 'items'}
+            </span>
+          </h3>
+          <div className="space-y-2">
+            {dsItems.map(item => {
+              const sc = DS_STATUS_COLORS[item.status] ?? DS_STATUS_COLORS.approved
+              const showPipeline = ['ordered','received','installed'].includes(item.status)
+              return (
+                <div key={item.id} className="rounded-lg p-4" style={{ ...cardStyle, borderLeft: `3px solid ${sc.border}` }}>
+                  {/* Top row: name + status */}
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0">
+                      <span className="text-sm font-semibold" style={{ color: colors.text }}>{item.option_name}</span>
+                      <span className="text-xs ml-2" style={{ color: colors.textMuted }}>
+                        {item.category}{item.room_location ? ` · ${item.room_location}` : ''}
+                      </span>
+                    </div>
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0"
+                      style={{ backgroundColor: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}
+                    >
+                      {DS_STATUS_LABELS[item.status]}
+                    </span>
+                  </div>
+
+                  {/* Cost rows */}
+                  <div className="space-y-1.5 mb-3">
+                    {item.price > 0 && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span style={{ color: colors.textMuted }}>Materials</span>
+                        {item.materialExpense
+                          ? <PaymentBadge status={item.materialExpense.payment_status} date={item.materialExpense.date} amount={item.materialExpense.amount} currency={currency} />
+                          : <span style={{ color: colors.textMuted }}>{fmt(item.price, currency)} — not yet paid</span>
+                        }
+                      </div>
+                    )}
+                    {item.installation_cost > 0 && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span style={{ color: colors.textMuted }}>Installation</span>
+                        {item.laborExpense
+                          ? <PaymentBadge status={item.laborExpense.payment_status} date={item.laborExpense.date} amount={item.laborExpense.amount} currency={currency} />
+                          : <span style={{ color: item.status === 'installed' ? '#D97706' : colors.textMuted }}>
+                              {fmt(item.installation_cost, currency)}{item.status !== 'installed' ? ' — pending install' : ' — not yet paid'}
+                            </span>
+                        }
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Task pipeline */}
+                  {showPipeline && (
+                    <div className="flex items-center gap-1.5">
+                      <PipelineDot label="Order"    status={item.orderTask?.status    ?? null} darkMode={darkMode} />
+                      <ChevronRightIcon className="h-3 w-3 shrink-0" style={{ color: colors.textMuted }} />
+                      <PipelineDot label="Delivery" status={item.deliveryTask?.status ?? null} darkMode={darkMode} />
+                      <ChevronRightIcon className="h-3 w-3 shrink-0" style={{ color: colors.textMuted }} />
+                      <PipelineDot label="Install"  status={item.installTask?.status  ?? null} darkMode={darkMode} />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── All Expenses ── */}
+      <div>
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <h3 className="text-base font-semibold" style={{ color: colors.text }}>
+            All Expenses
+            <span className="ml-2 text-sm font-normal" style={{ color: colors.textMuted }}>
+              {filteredExpenses.length} {filteredExpenses.length === 1 ? 'entry' : 'entries'}
+            </span>
+          </h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Paid / Unpaid toggle */}
+            <div className="flex rounded-lg overflow-hidden" style={{ border: colors.border }}>
+              {(['all', 'paid', 'unpaid'] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setPayFilter(f)}
+                  className="px-3 py-1.5 text-xs font-medium capitalize cursor-pointer"
+                  style={payFilter === f
+                    ? { backgroundColor: '#2563EB', color: '#fff' }
+                    : { backgroundColor: colors.bgAlt, color: colors.textMuted }
+                  }
+                >
+                  {f === 'unpaid' ? 'Pending' : f.charAt(0).toUpperCase() + f.slice(1)}
+                </button>
+              ))}
+            </div>
+            <select
+              value={catFilter}
+              onChange={e => setCatFilter(e.target.value)}
+              className="text-sm rounded-lg px-3 py-1.5 outline-none"
+              style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text, colorScheme: darkMode ? 'dark' : 'light' }}
+            >
+              {FILTER_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+            <button
+              onClick={() => setShowAdd(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium cursor-pointer"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Add
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {filteredExpenses.length > 0 ? filteredExpenses.map(exp => {
+            const cc = CATEGORY_COLORS[exp.category] ?? CATEGORY_COLORS.other
+            const isPaid = exp.payment_status === 'paid'
+            const isOverdue = exp.payment_status === 'overdue'
+            return (
+              <div
+                key={exp.id}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer"
+                style={cardStyle}
+                onClick={() => setDetailExp(exp)}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium truncate" style={{ color: colors.text }}>{exp.description}</span>
+                    <span className="text-sm font-bold shrink-0" style={{ color: colors.text }}>{fmt(exp.amount, currency)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: cc.bg, color: cc.text }}>
+                      {CATEGORY_LABELS[exp.category] ?? exp.category}
+                    </span>
+                    <span className="text-xs" style={{ color: colors.textMuted }}>{fmtDate(exp.date)}</span>
+                    {exp.vendor && <span className="text-xs" style={{ color: colors.textMuted }}>· {exp.vendor}</span>}
+                    <span className="text-xs font-medium" style={{
+                      color: isPaid ? '#16A34A' : isOverdue ? '#DC2626' : '#D97706'
+                    }}>
+                      {isPaid ? 'Paid' : isOverdue ? 'Overdue' : 'Pending'}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={e => { e.stopPropagation(); openEdit(exp) }}
+                    className="p-1.5 rounded-lg"
+                    style={{ color: colors.textMuted, border: colors.border }}
+                    title="Edit"
+                  >
+                    <PencilSquareIcon className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); setConfirmDel({ id: exp.id, description: exp.description }) }}
+                    className="p-1.5 rounded-lg"
+                    style={{ color: colors.textMuted, border: colors.border }}
+                    title="Delete"
+                    onMouseEnter={e => (e.currentTarget.style.color = '#EF4444')}
+                    onMouseLeave={e => (e.currentTarget.style.color = colors.textMuted)}
+                  >
+                    <TrashIcon className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            )
+          }) : (
+            <div className="text-center py-10 rounded-lg" style={{ ...cardStyle, borderStyle: 'dashed' }}>
+              <CheckCircleIcon className="h-10 w-10 mx-auto mb-2" style={{ color: darkMode ? '#374151' : '#D1D5DB' }} />
+              <p className="text-sm" style={{ color: colors.textMuted }}>
+                No expenses match this filter
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+
+    {/* ── Add Expense Modal ── */}
+    {showAdd && (
+      <>
+        <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowAdd(false)} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none px-4">
+          <div className="pointer-events-auto rounded-xl shadow-xl w-full max-w-md" style={{ backgroundColor: colors.bg, border: colors.border }}>
+            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: colors.borderBottom }}>
+              <h3 className="text-base font-semibold" style={{ color: colors.text }}>Add Expense</h3>
+              <button onClick={() => setShowAdd(false)} style={{ color: colors.textMuted }}><XMarkIcon className="h-5 w-5" /></button>
+            </div>
+            <form onSubmit={handleAddExpense} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: colors.textMuted }}>
+                  Description <span style={{ color: '#DC2626' }}>*</span>
+                </label>
+                <textarea
+                  required rows={2} value={newExp.description}
+                  onChange={e => setNewExp(f => ({ ...f, description: e.target.value }))}
+                  placeholder="What was this expense for?"
+                  className="resize-none outline-none"
+                  style={inputStyle}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
-                    Description <span className="text-[#FF6B6B]">*</span>
+                  <label className="block text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Category</label>
+                  <select
+                    value={newExp.category}
+                    onChange={e => setNewExp(f => ({ ...f, category: e.target.value }))}
+                    className="outline-none"
+                    style={{ ...inputStyle, colorScheme: darkMode ? 'dark' : 'light' }}
+                  >
+                    {ALL_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: colors.textMuted }}>
+                    Amount <span style={{ color: '#DC2626' }}>*</span>
                   </label>
-                  <textarea
-                    value={newExpense.description}
-                    onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
-                    style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
-                    rows={2}
-                    placeholder="What was this expense for?"
-                    required
+                  <input
+                    required type="number" min="0" step="0.01"
+                    value={newExp.amount}
+                    onChange={e => setNewExp(f => ({ ...f, amount: e.target.value }))}
+                    placeholder="0.00"
+                    className="outline-none"
+                    style={inputStyle}
                   />
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Category */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
-                      Category
-                    </label>
-                    <select
-                      value={newExpense.category}
-                      onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
-                      className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
-                      style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text, colorScheme: darkMode ? 'dark' : 'light' }}
-                      required
-                    >
-                      {categories.slice(1).map(cat => (
-                        <option key={cat.value} value={cat.value}>{cat.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Amount */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
-                      Amount ({budgetData.currency}) <span className="text-[#FF6B6B]">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={newExpense.amount}
-                      onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
-                      className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      style={{ backgroundColor: colors.bg, border: `1px solid ${colors.border}`, color: colors.text }}
-                      placeholder="0.00"
-                      required
-                    />
-                  </div>
-
-                  {/* Date */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
-                      Date <span className="text-[#FF6B6B]">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={newExpense.date}
-                      onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
-                      className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      style={{ backgroundColor: colors.bg, border: `1px solid ${colors.border}`, color: colors.text }}
-                      required
-                    />
-                  </div>
-
-                  {/* Vendor */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
-                      Vendor
-                    </label>
-                    <input
-                      type="text"
-                      value={newExpense.vendor}
-                      onChange={(e) => setNewExpense({ ...newExpense, vendor: e.target.value })}
-                      className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      style={{ backgroundColor: colors.bg, border: `1px solid ${colors.border}`, color: colors.text }}
-                      placeholder="Vendor name"
-                    />
-                  </div>
-
-                  {/* Payment Status */}
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
-                      Payment Status
-                    </label>
-                    <select
-                      value={newExpense.payment_status}
-                      onChange={(e) => setNewExpense({ ...newExpense, payment_status: e.target.value as 'pending' | 'paid' | 'overdue' })}
-                      className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
-                      style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text, colorScheme: darkMode ? 'dark' : 'light' }}
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="paid">Paid</option>
-                      <option value="overdue">Overdue</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: colors.textMuted }}>
+                    Date <span style={{ color: '#DC2626' }}>*</span>
+                  </label>
+                  <input
+                    required type="date"
+                    value={newExp.date}
+                    onChange={e => setNewExp(f => ({ ...f, date: e.target.value }))}
+                    className="outline-none"
+                    style={{ ...inputStyle, colorScheme: darkMode ? 'dark' : 'light' }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Vendor</label>
+                  <input
+                    type="text" value={newExp.vendor}
+                    onChange={e => setNewExp(f => ({ ...f, vendor: e.target.value }))}
+                    placeholder="Vendor name"
+                    className="outline-none"
+                    style={inputStyle}
+                  />
                 </div>
               </div>
-
-              {/* Footer */}
-              <div
-                className="px-6 py-4 flex items-center justify-end gap-3"
-                style={{ borderTop: colors.borderBottom }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setShowAddExpense(false)}
-                  className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
-                  style={{ border: colors.border, color: colors.text }}
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Payment Status</label>
+                <select
+                  value={newExp.payment_status}
+                  onChange={e => setNewExp(f => ({ ...f, payment_status: e.target.value as any }))}
+                  className="outline-none"
+                  style={{ ...inputStyle, colorScheme: darkMode ? 'dark' : 'light' }}
                 >
-                  Cancel
+                  <option value="pending">Pending</option>
+                  <option value="paid">Paid</option>
+                  <option value="overdue">Overdue</option>
+                </select>
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="submit" disabled={saving || !newExp.description || !newExp.amount}
+                  className="flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {saving ? 'Saving…' : 'Add Expense'}
                 </button>
                 <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-lg bg-[#FF6B6B] text-white font-medium hover:bg-[#FF5252] transition-colors"
-                  style={{ boxShadow: "0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)" }}
+                  type="button" onClick={() => setShowAdd(false)}
+                  className="px-4 py-2.5 rounded-lg text-sm font-semibold"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                 >
-                  Add Expense
+                  Cancel
                 </button>
               </div>
             </form>
           </div>
         </div>
-      )}
+      </>
+    )}
 
-      {/* Category Filter */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {categories.map(cat => (
-          <button
-            key={cat.value}
-            onClick={() => setCategoryFilter(cat.value)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-              categoryFilter === cat.value
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Expenses List */}
-      <div className="space-y-3">
-        {filteredExpenses.length > 0 ? (
-          filteredExpenses.map(expense => (
-            <div
-              key={expense.id}
-              onClick={() => setDetailExpense(expense)}
-              className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
-            >
-              {/* Category Icon */}
-              <div className="text-3xl shrink-0">
-                {getCategoryIcon(expense.category)}
-              </div>
-
-              {/* Expense Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-4 mb-1">
-                  <h4 className="font-medium text-gray-900">{expense.description}</h4>
-                  <span className="text-lg font-bold text-gray-900 shrink-0">
-                    {formatCurrency(expense.amount, budgetData.currency)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 text-sm text-gray-500 flex-wrap">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(expense.category)}`}>
-                    {expense.category}
-                  </span>
-                  <span>{formatDate(expense.date)}</span>
-                  {expense.vendor && (
-                    <>
-                      <span>•</span>
-                      <span>{expense.vendor}</span>
-                    </>
-                  )}
-                  <span>•</span>
-                  <span className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold overflow-hidden">
-                      {expense.created_by.avatar && expense.created_by.avatar !== '?' ? (
-                        <img src={expense.created_by.avatar} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        (expense.created_by.name?.[0] ?? '?').toUpperCase()
-                      )}
-                    </div>
-                    <span className="hidden sm:inline">{expense.created_by.name}</span>
-                  </span>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <button
-                onClick={e => { e.stopPropagation(); handleDeleteExpense(expense.id, expense.description) }}
-                className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors shrink-0"
-                title="Delete"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          ))
-        ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <div className="text-6xl mb-4">💰</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No {categoryFilter === 'all' ? '' : categoryFilter} expenses yet
-            </h3>
-            <p className="text-gray-600">
-              {categoryFilter === 'all'
-                ? 'Add your first expense to track project costs'
-                : `Add ${categoryFilter} expenses to see them here`}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-
-    {/* Expense Detail Panel */}
-    {detailExpense && (
+    {/* ── Edit Expense Modal ── */}
+    {editingExp && (
       <>
-        <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setDetailExpense(null)} />
-        <div
-          className="fixed right-0 top-0 h-full w-96 shadow-xl z-50 flex flex-col"
-          style={{ backgroundColor: darkMode ? colors.bg : '#ffffff' }}
-        >
-          <div
-            className="flex items-center justify-between px-5 py-4"
-            style={{ borderBottom: `1px solid ${darkMode ? colors.border : '#e5e7eb'}` }}
-          >
-            <h3 className="text-base font-semibold" style={{ color: darkMode ? colors.text : '#111827' }}>Expense Details</h3>
-            <button onClick={() => setDetailExpense(null)} style={{ color: darkMode ? '#9ca3af' : '#9ca3af' }} className="hover:opacity-70">
-              <span className="text-xl leading-none">&times;</span>
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-5 space-y-6">
-            {/* Title & Amount */}
-            <div>
-              <p className="text-lg font-semibold" style={{ color: darkMode ? colors.text : '#111827' }}>{detailExpense.description}</p>
-              <p className="text-2xl font-bold mt-1" style={{ color: darkMode ? colors.text : '#111827' }}>{formatCurrency(detailExpense.amount, budgetData?.currency ?? 'USD')}</p>
+        <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setEditingExp(null)} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none px-4">
+          <div className="pointer-events-auto rounded-xl shadow-xl w-full max-w-md" style={{ backgroundColor: colors.bg, border: colors.border }}>
+            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: colors.borderBottom }}>
+              <h3 className="text-base font-semibold" style={{ color: colors.text }}>Edit Expense</h3>
+              <button onClick={() => setEditingExp(null)} style={{ color: colors.textMuted }}><XMarkIcon className="h-5 w-5" /></button>
             </div>
-
-            {/* Details */}
-            <section>
-              <p
-                className="text-xs font-bold uppercase tracking-widest mb-3 pb-1.5"
-                style={{ color: darkMode ? '#6b7280' : '#9ca3af', borderBottom: `1px solid ${darkMode ? colors.border : '#f3f4f6'}` }}
-              >Overview</p>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-xs mb-0.5" style={{ color: darkMode ? '#6b7280' : '#9ca3af' }}>Category</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getCategoryColor(detailExpense.category)}`}>{detailExpense.category}</span>
-                </div>
-                <div>
-                  <p className="text-xs mb-0.5" style={{ color: darkMode ? '#6b7280' : '#9ca3af' }}>Payment Status</p>
-                  <span className={`text-xs px-2 py-0.5 rounded font-medium capitalize ${
-                    detailExpense.payment_status === 'paid'
-                      ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                      : detailExpense.payment_status === 'overdue'
-                      ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                      : 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                  }`}>{detailExpense.payment_status}</span>
-                </div>
-                <div>
-                  <p className="text-xs mb-0.5" style={{ color: darkMode ? '#6b7280' : '#9ca3af' }}>Date</p>
-                  <span className="font-medium" style={{ color: darkMode ? colors.text : '#374151' }}>{formatDate(detailExpense.date)}</span>
-                </div>
-                {detailExpense.vendor && (
-                  <div className="col-span-2">
-                    <p className="text-xs mb-0.5" style={{ color: darkMode ? '#6b7280' : '#9ca3af' }}>Vendor</p>
-                    <span className="font-medium" style={{ color: darkMode ? colors.text : '#374151' }}>{detailExpense.vendor}</span>
-                  </div>
-                )}
+            <form onSubmit={handleSaveEdit} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Description</label>
+                <input
+                  required value={editForm.description}
+                  onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                  className="outline-none"
+                  style={inputStyle}
+                />
               </div>
-            </section>
-
-            {/* Added By */}
-            <section>
-              <p
-                className="text-xs font-bold uppercase tracking-widest mb-3 pb-1.5"
-                style={{ color: darkMode ? '#6b7280' : '#9ca3af', borderBottom: `1px solid ${darkMode ? colors.border : '#f3f4f6'}` }}
-              >Added By</p>
-              <div className="flex items-center gap-2 text-sm">
-                <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold overflow-hidden shrink-0">
-                  {detailExpense.created_by.avatar ? (
-                    <img src={detailExpense.created_by.avatar} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    (detailExpense.created_by.name?.[0] ?? '?').toUpperCase()
-                  )}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Category</label>
+                  <select
+                    value={editForm.category}
+                    onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
+                    className="outline-none"
+                    style={{ ...inputStyle, colorScheme: darkMode ? 'dark' : 'light' }}
+                  >
+                    {ALL_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                  </select>
                 </div>
-                <span className="font-medium" style={{ color: darkMode ? colors.text : '#374151' }}>{detailExpense.created_by.name}</span>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Amount</label>
+                  <input
+                    required type="number" min="0" step="0.01"
+                    value={editForm.amount}
+                    onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))}
+                    className="outline-none"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Date</label>
+                  <input
+                    required type="date" value={editForm.date}
+                    onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))}
+                    className="outline-none"
+                    style={{ ...inputStyle, colorScheme: darkMode ? 'dark' : 'light' }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Vendor</label>
+                  <input
+                    value={editForm.vendor}
+                    onChange={e => setEditForm(f => ({ ...f, vendor: e.target.value }))}
+                    className="outline-none"
+                    style={inputStyle}
+                  />
+                </div>
               </div>
-            </section>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Payment Status</label>
+                <select
+                  value={editForm.payment_status}
+                  onChange={e => setEditForm(f => ({ ...f, payment_status: e.target.value as any }))}
+                  className="outline-none"
+                  style={{ ...inputStyle, colorScheme: darkMode ? 'dark' : 'light' }}
+                >
+                  <option value="pending">Pending</option>
+                  <option value="paid">Paid</option>
+                  <option value="overdue">Overdue</option>
+                </select>
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="submit" disabled={saving}
+                  className="flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {saving ? 'Saving…' : 'Save Changes'}
+                </button>
+                <button
+                  type="button" onClick={() => setEditingExp(null)}
+                  className="px-4 py-2.5 rounded-lg text-sm font-semibold"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
+        </div>
+      </>
+    )}
 
-          {/* Footer */}
-          <div
-            className="px-5 py-4 flex gap-2"
-            style={{ borderTop: `1px solid ${darkMode ? colors.border : '#e5e7eb'}` }}
-          >
+    {/* ── Expense Detail Panel ── */}
+    {detailExp && (
+      <>
+        <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setDetailExp(null)} />
+        <div className="fixed right-0 top-0 h-full w-96 shadow-xl z-50 flex flex-col" style={{ backgroundColor: colors.bg }}>
+          <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: colors.borderBottom }}>
+            <h3 className="text-base font-semibold" style={{ color: colors.text }}>Expense Details</h3>
+            <button onClick={() => setDetailExp(null)} style={{ color: colors.textMuted }}>
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-5 space-y-5">
+            <div>
+              <p className="text-lg font-semibold" style={{ color: colors.text }}>{detailExp.description}</p>
+              <p className="text-2xl font-bold mt-1" style={{ color: colors.text }}>{fmt(detailExp.amount, currency)}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {[
+                { label: 'Category', value: <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: (CATEGORY_COLORS[detailExp.category] ?? CATEGORY_COLORS.other).bg, color: (CATEGORY_COLORS[detailExp.category] ?? CATEGORY_COLORS.other).text }}>{CATEGORY_LABELS[detailExp.category] ?? detailExp.category}</span> },
+                { label: 'Date',     value: fmtDate(detailExp.date) },
+                { label: 'Status',   value: detailExp.payment_status },
+                ...(detailExp.vendor ? [{ label: 'Vendor', value: detailExp.vendor }] : []),
+                { label: 'Added by', value: detailExp.created_by.name },
+              ].map(({ label, value }) => (
+                <div key={label} className={label === 'Added by' || label === 'Vendor' ? 'col-span-2' : ''}>
+                  <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>{label}</p>
+                  <span style={{ color: colors.text }}>{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="px-5 py-4 flex gap-2" style={{ borderTop: colors.borderBottom }}>
             <button
-              onClick={() => openEditExpense(detailExpense)}
-              className="flex items-center gap-1.5 px-4 py-2 border rounded-lg text-sm font-medium transition-colors cursor-pointer"
-              style={{ borderColor: darkMode ? colors.border : '#e5e7eb', color: darkMode ? colors.text : '#374151' }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = darkMode ? colors.bgAlt : '#f9fafb')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+              onClick={() => openEdit(detailExp)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium"
+              style={{ border: colors.border, color: colors.text }}
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-              Edit
+              <PencilSquareIcon className="h-4 w-4" /> Edit
             </button>
             <button
-              onClick={e => { e.stopPropagation(); setDetailExpense(null); handleDeleteExpense(detailExpense.id, detailExpense.description) }}
-              className="flex-1 px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors cursor-pointer dark:border-red-800 dark:hover:bg-red-900/30"
+              onClick={() => { setDetailExp(null); setConfirmDel({ id: detailExp.id, description: detailExp.description }) }}
+              className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50"
+              style={{ border: '1px solid #FECACA' }}
             >
               Delete
             </button>
@@ -896,118 +1027,19 @@ export default function ProjectBudgetTab({ project, onSpentChange }: ProjectBudg
       </>
     )}
 
-    {/* Edit Expense Modal */}
-    {editingExpense && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
-          <div className="flex items-center justify-between px-6 py-4 border-b">
-            <h3 className="text-base font-semibold text-gray-900">Edit Expense</h3>
-            <button onClick={() => setEditingExpense(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
-          </div>
-          <form onSubmit={handleSaveExpense} className="p-6 space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
-              <input
-                required
-                value={editForm.description}
-                onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Category</label>
-                <select
-                  value={editForm.category}
-                  onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
-                  className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
-                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text, colorScheme: darkMode ? 'dark' : 'light' }}
-                >
-                  {['labor','equipment','permits','subcontractors','utilities','insurance','other'].map(c => (
-                    <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Amount</label>
-                <input
-                  required
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={editForm.amount}
-                  onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Date</label>
-                <input
-                  required
-                  type="date"
-                  value={editForm.date}
-                  onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Vendor (optional)</label>
-                <input
-                  value={editForm.vendor}
-                  onChange={e => setEditForm(f => ({ ...f, vendor: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Payment Status</label>
-              <select
-                value={editForm.payment_status}
-                onChange={e => setEditForm(f => ({ ...f, payment_status: e.target.value as 'pending' | 'paid' | 'overdue' }))}
-                className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
-                style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text, colorScheme: darkMode ? 'dark' : 'light' }}
-              >
-                <option value="pending">Pending</option>
-                <option value="paid">Paid</option>
-                <option value="overdue">Overdue</option>
-              </select>
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setEditingExpense(null)} className="flex-1 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
-                Cancel
-              </button>
-              <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
-                Save Changes
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    )}
-
-    {/* Delete confirmation modal */}
-    {confirmDelete && (
+    {/* ── Confirm Delete ── */}
+    {confirmDel && (
       <>
-        <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDelete(null)} />
+        <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDel(null)} />
         <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
           <div className="pointer-events-auto rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
             <p className="text-sm font-medium text-center mb-1" style={{ color: colors.text }}>Delete this expense?</p>
-            <p className="text-xs text-center mb-5" style={{ color: colors.textMuted }}>{confirmDelete.description}</p>
+            <p className="text-xs text-center mb-5" style={{ color: colors.textMuted }}>{confirmDel.description}</p>
             <div className="flex gap-3">
-              <button
-                onClick={confirmDeleteExpense}
-                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white"
-                style={{ backgroundColor: '#DC2626' }}
-              >
+              <button onClick={confirmDelete} className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: '#DC2626' }}>
                 Delete
               </button>
-              <button
-                onClick={() => setConfirmDelete(null)}
-                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium"
-                style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
-              >
+              <button onClick={() => setConfirmDel(null)} className="flex-1 px-4 py-2 rounded-lg text-sm font-medium" style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}>
                 Cancel
               </button>
             </div>

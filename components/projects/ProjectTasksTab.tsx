@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { createClient } from '@/lib/supabase/client'
 import { updateTask, createTask } from '@/lib/supabase/tasks'
+import toast from 'react-hot-toast'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import {
   ClockIcon,
@@ -11,6 +13,10 @@ import {
   PencilIcon,
   PlusIcon,
   TrashIcon,
+  ExclamationTriangleIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline'
 import { CheckIcon } from '@heroicons/react/24/outline'
 import TaskCreationModal from '@/components/dashboard/TaskCreationModal'
@@ -20,7 +26,7 @@ interface Task {
   title: string
   description: string | null
   status: 'not-started' | 'in-progress' | 'completed' | 'blocked' | 'review'
-  priority: 'low' | 'medium' | 'high' | 'critical'
+  priority: 'low' | 'medium' | 'high' | 'critical' | null
   trade: string | null
   phase: string | null
   start_date: string | null
@@ -31,6 +37,9 @@ interface Task {
   progress: number | null
   assignee_id: string | null
   assignee_name: string | null
+  design_selection_id: string | null
+  selection_task_type: 'order' | 'delivery' | 'installation' | null
+  blocking_rfi_id: string | null
   crew_size: number | null
   equipment: string[] | null
   materials: string[] | null
@@ -54,19 +63,48 @@ interface Props {
   project: ProjectDetails
 }
 
-const PRIORITY_COLORS: Record<Task['priority'], string> = {
-  low: 'bg-slate-100 text-slate-600 dark:bg-slate-700/60 dark:text-slate-300',
-  medium: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
-  high: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
-  critical: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+function PriorityBadge({ priority }: { priority: Task['priority'] }) {
+  if (!priority) return null
+  const isUrgent = priority === 'critical' || priority === 'high'
+  return (
+    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${isUrgent ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>
+      {isUrgent ? 'Urgent' : 'Not Urgent'}
+    </span>
+  )
+}
+
+const PRIORITY_COLORS: Record<string, string> = {
+  low:      'bg-slate-100 text-slate-600',
+  medium:   'bg-blue-100 text-blue-700',
+  high:     'bg-amber-100 text-amber-700',
+  critical: 'bg-red-100 text-red-700',
 }
 
 const STATUS_LABELS: Record<Task['status'], string> = {
   'not-started': 'To Do',
   'in-progress': 'In Progress',
-  'completed': 'Done',
-  'blocked': 'Blocked',
-  'review': 'In Review'
+  'completed':   'Done',
+  'blocked':     'Blocked',
+  'review':      'In Review',
+}
+
+// Construction phase order — drives grouping sequence
+const PHASE_ORDER = [
+  'pre-construction',
+  'foundation',
+  'framing',
+  'mep',
+  'finishing',
+  'closeout',
+]
+
+const PHASE_LABELS: Record<string, string> = {
+  'pre-construction': 'Pre-Construction',
+  'foundation':       'Foundation',
+  'framing':          'Framing',
+  'mep':              'MEP',
+  'finishing':        'Finishing',
+  'closeout':         'Closeout',
 }
 
 function formatDate(dateStr: string) {
@@ -74,22 +112,32 @@ function formatDate(dateStr: string) {
 }
 
 function isOverdue(task: Task) {
-  return task.due_date && task.status !== 'completed' && new Date(task.due_date) < new Date()
+  return !!(task.due_date && task.status !== 'completed' && new Date(task.due_date) < new Date())
+}
+
+// Deterministic avatar color from name — avoids random color flicker on re-render
+function avatarColor(name: string) {
+  const palette = ['#6366F1','#0EA5E9','#10B981','#F59E0B','#EF4444','#8B5CF6','#EC4899','#14B8A6']
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return palette[Math.abs(hash) % palette.length]
 }
 
 export default function ProjectTasksTab({ project }: Props) {
-  const { colors } = useThemeColors()
-  const [tasks, setTasks] = useState<Task[]>(project.tasks as Task[])
-  const [loading, setLoading] = useState(false)
-  const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const { colors, darkMode } = useThemeColors()
+  const [tasks, setTasks] = useState<Task[] | null>(null)
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'done'>('all')
+  const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(new Set())
   const [detailTask, setDetailTask] = useState<Task | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showAddTaskModal, setShowAddTaskModal] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null)
-  const [undoInfo, setUndoInfo] = useState<{ task: Task; prevStatus: Task['status'] } | null>(null)
-  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Build avatar lookup from project team members — avoids extra queries
+  const memberAvatarMap = Object.fromEntries(
+    project.teamMembers.map(m => [m.id, { avatar: m.avatar, name: m.name }])
+  )
 
   useEffect(() => {
     fetchTasks()
@@ -103,104 +151,54 @@ export default function ProjectTasksTab({ project }: Props) {
         .select('*')
         .eq('project_id', project.id)
         .order('created_at', { ascending: false })
-
-      if (!error) {
-        const fetched = (data as Task[]) || []
+      if (!error && data) {
+        const fetched = data as Task[]
         setTasks(fetched)
-        await syncProgress(fetched)
+        syncProgress(fetched)
       }
-    } catch {
-      // tasks table may use different schema
-    } finally {
-      setLoading(false)
-    }
+    } catch { /* tasks table may use different schema */ }
   }
 
   function calcProgress(currentTasks: Task[]) {
     if (currentTasks.length === 0) return 0
-    const totalHours = currentTasks.reduce((sum, t) => sum + (t.estimated_hours ?? 1), 0)
-    const completedHours = currentTasks
-      .filter(t => t.status === 'completed')
-      .reduce((sum, t) => sum + (t.estimated_hours ?? 1), 0)
-    return Math.round((completedHours / totalHours) * 100)
+    const total = currentTasks.reduce((s, t) => s + (t.estimated_hours ?? 1), 0)
+    const done  = currentTasks.filter(t => t.status === 'completed')
+                               .reduce((s, t) => s + (t.estimated_hours ?? 1), 0)
+    return Math.round((done / total) * 100)
   }
 
-  async function syncProgress(currentTasks: Task[]) {
+  function syncProgress(currentTasks: Task[]) {
     if (currentTasks.length === 0) return
     const progress = calcProgress(currentTasks)
     window.dispatchEvent(new CustomEvent('project-progress-update', { detail: { progress } }))
     const supabase = createClient()
-    await supabase
-      .from('projects')
+    supabase.from('projects')
       .update({ progress, updated_at: new Date().toISOString() })
       .eq('id', project.id)
   }
 
-  async function toggleTaskDone(task: Task, showUndo = false) {
-    const prevStatus = task.status
-    const newStatus: Task['status'] = prevStatus === 'completed' ? 'not-started' : 'completed'
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('tasks')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
-      .eq('id', task.id)
-      .select()
-      .single()
-
-    if (data) {
-      const updated = tasks.map(t => t.id === task.id ? data as Task : t)
-      setTasks(updated)
-      await syncProgress(updated)
-
-      if (showUndo && newStatus === 'completed') {
-        if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
-        setUndoInfo({ task: data as Task, prevStatus })
-        undoTimerRef.current = setTimeout(() => setUndoInfo(null), 4000)
+  async function updateTaskStatus(taskId: string, status: Task['status']) {
+    // Enforce procurement pipeline sequence
+    if (status !== 'not-started') {
+      const task = tasks?.find(t => t.id === taskId)
+      if (task?.design_selection_id && task.selection_task_type) {
+        const linked = (tasks ?? []).filter(t => t.design_selection_id === task.design_selection_id)
+        const prereq =
+          task.selection_task_type === 'delivery'     ? linked.find(t => t.selection_task_type === 'order')    :
+          task.selection_task_type === 'installation' ? linked.find(t => t.selection_task_type === 'delivery') :
+          null
+        if (prereq && prereq.status !== 'completed') {
+          toast.error(`Complete "${prereq.title}" first`)
+          setStatusDropdownId(null)
+          return
+        }
       }
     }
-  }
 
-  function toggleSelect(id: string) {
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
+    const prevTask = tasks?.find(t => t.id === taskId)
+    const wasCompleted = prevTask?.status === 'completed'
+    const becomingIncomplete = wasCompleted && status !== 'completed'
 
-  async function bulkMarkComplete() {
-    const ids = Array.from(selectedIds).filter(id => tasks.find(t => t.id === id)?.status !== 'completed')
-    if (!ids.length) return
-    const updated = tasks.map(t => ids.includes(t.id) ? { ...t, status: 'completed' as Task['status'] } : t)
-    setTasks(updated)
-    setSelectedIds(new Set())
-    const supabase = createClient()
-    await supabase.from('tasks').update({ status: 'completed', updated_at: new Date().toISOString() }).in('id', ids)
-    await syncProgress(updated)
-  }
-
-  async function bulkMarkActive() {
-    const ids = Array.from(selectedIds).filter(id => tasks.find(t => t.id === id)?.status === 'completed')
-    if (!ids.length) return
-    const updated = tasks.map(t => ids.includes(t.id) ? { ...t, status: 'not-started' as Task['status'] } : t)
-    setTasks(updated)
-    setSelectedIds(new Set())
-    const supabase = createClient()
-    await supabase.from('tasks').update({ status: 'not-started', updated_at: new Date().toISOString() }).in('id', ids)
-    await syncProgress(updated)
-  }
-
-  async function deleteTask(id: string) {
-    const supabase = createClient()
-    await supabase.from('tasks').delete().eq('id', id)
-    const updated = tasks.filter(t => t.id !== id)
-    setTasks(updated)
-    setConfirmDeleteId(null)
-    setDetailTask(null)
-    await syncProgress(updated)
-  }
-
-  async function updateTaskStatus(taskId: string, status: Task['status']) {
     const supabase = createClient()
     const { data } = await supabase
       .from('tasks')
@@ -209,71 +207,204 @@ export default function ProjectTasksTab({ project }: Props) {
       .select()
       .single()
     if (data) {
-      const updated = tasks.map(t => t.id === taskId ? data as Task : t)
+      const updatedTask = data as Task
+      const updated = (tasks ?? []).map(t => t.id === taskId ? updatedTask : t)
       setTasks(updated)
-      await syncProgress(updated)
+      syncProgress(updated)
+      if (detailTask?.id === taskId) setDetailTask(updatedTask)
+
+      if (status === 'completed' && updatedTask.design_selection_id && updatedTask.selection_task_type) {
+        await syncSelectionOnTaskComplete(updatedTask)
+      } else if (becomingIncomplete && prevTask?.design_selection_id && prevTask?.selection_task_type) {
+        await revertSelectionOnTaskUncomplete(prevTask)
+      }
     }
     setStatusDropdownId(null)
   }
 
-  async function handleUndo() {
-    if (!undoInfo) return
-    if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
-    setUndoInfo(null)
+  async function revertSelectionOnTaskUncomplete(task: Task) {
     const supabase = createClient()
-    const { data } = await supabase
-      .from('tasks')
-      .update({ status: undoInfo.prevStatus, updated_at: new Date().toISOString() })
-      .eq('id', undoInfo.task.id)
-      .select()
-      .single()
-    if (data) {
-      const updated = tasks.map(t => t.id === undoInfo.task.id ? data as Task : t)
-      setTasks(updated)
-      await syncProgress(updated)
+
+    const revertStatusMap: Record<string, string> = {
+      order:        'approved',
+      delivery:     'ordered',
+      installation: 'received',
+    }
+    const revertStatus = revertStatusMap[task.selection_task_type!]
+    if (!revertStatus) return
+
+    await supabase.from('design_selections')
+      .update({ status: revertStatus })
+      .eq('id', task.design_selection_id)
+
+    // Delete the auto-created expense for this task type
+    if (task.selection_task_type === 'order') {
+      await supabase.from('project_expenses')
+        .delete()
+        .eq('design_selection_id', task.design_selection_id)
+        .eq('category', 'materials')
+    } else if (task.selection_task_type === 'installation') {
+      await supabase.from('project_expenses')
+        .delete()
+        .eq('design_selection_id', task.design_selection_id)
+        .eq('category', 'labor')
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async function syncSelectionOnTaskComplete(task: Task) {
+    const supabase = createClient()
+    const selection = project.designSelections?.find(s => s.id === task.design_selection_id)
+    if (!selection) return
+
+    const selectionStatusMap: Record<string, string> = {
+      order:        'ordered',
+      delivery:     'received',
+      installation: 'installed',
+    }
+    const newStatus = selectionStatusMap[task.selection_task_type!]
+    if (!newStatus) return
+
+    // Update selection status
+    await supabase
+      .from('design_selections')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', selection.id)
+
+    const today = new Date().toISOString().split('T')[0]
+
+    // Auto-create expense: material cost on order, installation labor on install
+    if (task.selection_task_type === 'order' && selection.price > 0) {
+      // Check no expense already exists for this selection (avoid double-create)
+      const { data: existing } = await supabase
+        .from('project_expenses')
+        .select('id')
+        .eq('project_id', project.id)
+        .eq('design_selection_id', selection.id)
+        .eq('category', 'materials')
+        .limit(1)
+
+      if (!existing || existing.length === 0) {
+        await supabase.from('project_expenses').insert({
+          project_id:           project.id,
+          category:             'materials',
+          description:          `${selection.option_name}${selection.room_location ? ` — ${selection.room_location}` : ''}`,
+          amount:               selection.price,
+          date:                 today,
+          vendor:               selection.manufacturer || null,
+          payment_status:       'pending',
+          design_selection_id:  selection.id,
+        })
+      }
+    } else if (task.selection_task_type === 'installation' && selection.installation_cost > 0) {
+      const { data: existing } = await supabase
+        .from('project_expenses')
+        .select('id')
+        .eq('project_id', project.id)
+        .eq('design_selection_id', selection.id)
+        .eq('category', 'labor')
+        .limit(1)
+
+      if (!existing || existing.length === 0) {
+        await supabase.from('project_expenses').insert({
+          project_id:           project.id,
+          category:             'labor',
+          description:          `Installation — ${selection.option_name}`,
+          amount:               selection.installation_cost,
+          date:                 today,
+          payment_status:       'pending',
+          design_selection_id:  selection.id,
+        })
+      }
+    }
+  }
+
+  async function deleteTask(id: string) {
+    const supabase = createClient()
+    await supabase.from('tasks').delete().eq('id', id)
+    const updated = (tasks ?? []).filter(t => t.id !== id)
+    setTasks(updated)
+    setConfirmDeleteId(null)
+    setDetailTask(null)
+    syncProgress(updated)
+  }
+
   async function handleAddTask(taskData: any) {
     const { error } = await createTask({
-      title: taskData.title!,
-      description: taskData.description || null,
-      project_id: project.id,
-      project_name: project.name,
-      trade: taskData.trade || 'general',
-      phase: taskData.phase || 'pre-construction',
-      priority: taskData.priority || 'medium',
-      status: taskData.status || 'not-started',
-      assignee_id: taskData.assigneeId || null,
-      assignee_name: taskData.assignee || null,
-      assignee_avatar: taskData.assigneeAvatar || null,
-      start_date: taskData.startDate || null,
-      due_date: taskData.dueDate || new Date().toISOString().split('T')[0],
-      duration: taskData.duration || 1,
-      progress: taskData.progress || 0,
-      estimated_hours: taskData.estimatedHours || 8,
-      actual_hours: taskData.actualHours || 0,
-      dependencies: taskData.dependencies || [],
-      attachments: taskData.attachments || 0,
-      comments: taskData.comments || 0,
-      location: taskData.location || null,
-      weather_dependent: taskData.weatherDependent || false,
-      weather_buffer: taskData.weatherBuffer || 0,
+      title:              taskData.title!,
+      description:        taskData.description || null,
+      project_id:         project.id,
+      project_name:       project.name,
+      trade:              taskData.trade || 'general',
+      phase:              taskData.phase || 'pre-construction',
+      priority:           taskData.priority || null,
+      status:             taskData.status || 'not-started',
+      assignee_id:        taskData.assigneeId || null,
+      assignee_name:      taskData.assignee || null,
+      assignee_avatar:    taskData.assigneeAvatar || null,
+      start_date:         taskData.startDate || null,
+      due_date:           taskData.dueDate || new Date().toISOString().split('T')[0],
+      duration:           taskData.duration || 1,
+      progress:           taskData.progress || 0,
+      estimated_hours:    taskData.estimatedHours || 8,
+      actual_hours:       taskData.actualHours || 0,
+      dependencies:       taskData.dependencies || [],
+      attachments:        taskData.attachments || 0,
+      comments:           taskData.comments || 0,
+      location:           taskData.location || null,
+      weather_dependent:  taskData.weatherDependent || false,
+      weather_buffer:     taskData.weatherBuffer || 0,
       inspection_required: taskData.inspectionRequired || false,
-      inspection_type: taskData.inspectionType || null,
-      crew_size: taskData.crewSize || 1,
-      equipment: taskData.equipment || [],
-      materials: taskData.materials || [],
-      certifications: taskData.certifications || [],
-      safety_protocols: taskData.safetyProtocols || [],
-      quality_standards: taskData.qualityStandards || [],
-      documentation: taskData.documentation || [],
-      notify_inspector: taskData.notifyInspector || false,
-      client_visibility: taskData.clientVisibility || false,
+      inspection_type:    taskData.inspectionType || null,
+      crew_size:          taskData.crewSize || 1,
+      equipment:          taskData.equipment || [],
+      materials:          taskData.materials || [],
+      certifications:     taskData.certifications || [],
+      safety_protocols:   taskData.safetyProtocols || [],
+      quality_standards:  taskData.qualityStandards || [],
+      documentation:      taskData.documentation || [],
+      notify_inspector:   taskData.notifyInspector || false,
+      client_visibility:  taskData.clientVisibility || false,
     })
     if (!error) {
       setShowAddTaskModal(false)
+      await fetchTasks()
+    }
+  }
+
+  async function handleEditSave(taskData: any) {
+    if (!detailTask) return
+    const { error } = await updateTask(detailTask.id, {
+      title:              taskData.title!,
+      description:        taskData.description || null,
+      trade:              taskData.trade,
+      phase:              taskData.phase || undefined,
+      priority:           taskData.priority,
+      status:             taskData.status,
+      assignee_id:        taskData.assigneeId || null,
+      assignee_name:      taskData.assignee || null,
+      start_date:         taskData.startDate || null,
+      due_date:           taskData.dueDate || null,
+      duration:           taskData.duration ?? 0,
+      progress:           taskData.progress ?? 0,
+      estimated_hours:    taskData.estimatedHours ?? 0,
+      actual_hours:       taskData.actualHours ?? 0,
+      dependencies:       taskData.dependencies ?? [],
+      location:           taskData.location || null,
+      weather_dependent:  taskData.weatherDependent ?? false,
+      weather_buffer:     taskData.weatherBuffer ?? 0,
+      inspection_required: taskData.inspectionRequired ?? false,
+      inspection_type:    taskData.inspectionType || null,
+      crew_size:          taskData.crewSize ?? 1,
+      equipment:          taskData.equipment ?? [],
+      materials:          taskData.materials ?? [],
+      certifications:     taskData.certifications ?? [],
+      safety_protocols:   taskData.safetyProtocols ?? [],
+      quality_standards:  taskData.qualityStandards ?? [],
+      client_visibility:  taskData.clientVisibility ?? false,
+    })
+    if (!error) {
+      setShowEditModal(false)
+      setDetailTask(null)
       await fetchTasks()
     }
   }
@@ -285,13 +416,13 @@ export default function ProjectTasksTab({ project }: Props) {
       description: t.description ?? '',
       project: project.name ?? '',
       projectId: project.id,
-      trade: (t.trade ?? 'general') as "electrical" | "plumbing" | "hvac" | "concrete" | "framing" | "finishing" | "general",
-      phase: (t.phase ?? 'pre-construction') as "pre-construction" | "foundation" | "framing" | "mep" | "finishing" | "closeout",
-      priority: t.priority,
+      trade: (t.trade ?? 'general') as any,
+      phase: (t.phase ?? 'pre-construction') as any,
+      priority: (t.priority ?? 'medium') as any,
       status: t.status,
       assignee: t.assignee_name ?? '',
       assigneeId: t.assignee_id ?? '',
-      assigneeAvatar: '',
+      assigneeAvatar: memberAvatarMap[t.assignee_id ?? '']?.avatar ?? '',
       startDate: t.start_date ?? '',
       dueDate: t.due_date ?? '',
       duration: t.duration ?? 0,
@@ -318,356 +449,636 @@ export default function ProjectTasksTab({ project }: Props) {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async function handleEditSave(taskData: any) {
-    if (!detailTask) return
-    const { error } = await updateTask(detailTask.id, {
-      title: taskData.title!,
-      description: taskData.description || null,
-      trade: taskData.trade as "electrical" | "plumbing" | "hvac" | "concrete" | "framing" | "finishing" | "general",
-      phase: (taskData.phase || undefined) as "pre-construction" | "foundation" | "framing" | "mep" | "finishing" | "closeout" | undefined,
-      priority: taskData.priority as Task['priority'],
-      status: taskData.status as Task['status'],
-      assignee_id: taskData.assigneeId || null,
-      assignee_name: taskData.assignee || null,
-      start_date: taskData.startDate || null,
-      due_date: taskData.dueDate || null,
-      duration: taskData.duration ?? 0,
-      progress: taskData.progress ?? 0,
-      estimated_hours: taskData.estimatedHours ?? 0,
-      actual_hours: taskData.actualHours ?? 0,
-      dependencies: taskData.dependencies ?? [],
-      location: taskData.location || null,
-      weather_dependent: taskData.weatherDependent ?? false,
-      weather_buffer: taskData.weatherBuffer ?? 0,
-      inspection_required: taskData.inspectionRequired ?? false,
-      inspection_type: taskData.inspectionType || null,
-      crew_size: taskData.crewSize ?? 1,
-      equipment: taskData.equipment ?? [],
-      materials: taskData.materials ?? [],
-      certifications: taskData.certifications ?? [],
-      safety_protocols: taskData.safetyProtocols ?? [],
-      quality_standards: taskData.qualityStandards ?? [],
-      client_visibility: taskData.clientVisibility ?? false,
+  function togglePhase(phase: string) {
+    setCollapsedPhases(prev => {
+      const next = new Set(prev)
+      next.has(phase) ? next.delete(phase) : next.add(phase)
+      return next
     })
-    if (!error) {
-      setShowEditModal(false)
-      setDetailTask(null)
-      await fetchTasks()
-    }
   }
 
+  if (tasks === null) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-6 h-6 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+      </div>
+    )
+  }
+
+  // Apply status filter
   const filtered = tasks.filter(t => {
     if (filterStatus === 'active') return t.status !== 'completed'
-    if (filterStatus === 'done') return t.status === 'completed'
+    if (filterStatus === 'done')   return t.status === 'completed'
     return true
   })
 
-  const todoCount = tasks.filter(t => t.status === 'not-started').length
+  // Blocked tasks — always drawn from all tasks (not the filtered set) so the
+  // alert strip is visible regardless of the active filter
+  const blockedTasks = tasks.filter(t => t.status === 'blocked')
+
+  // Group filtered tasks by phase in construction sequence
+  const phaseGroups = PHASE_ORDER
+    .map(phase => ({
+      key:   phase,
+      label: PHASE_LABELS[phase],
+      tasks: filtered.filter(t => t.phase === phase),
+    }))
+    .filter(g => g.tasks.length > 0)
+
+  // Tasks that have no recognised phase go at the bottom under "Other"
+  const unassignedTasks = filtered.filter(
+    t => !t.phase || !PHASE_ORDER.includes(t.phase)
+  )
+  if (unassignedTasks.length > 0) {
+    phaseGroups.push({ key: 'other', label: 'Other', tasks: unassignedTasks })
+  }
+
+  // Stat card counts
+  const todoCount       = tasks.filter(t => t.status === 'not-started').length
   const inProgressCount = tasks.filter(t => t.status === 'in-progress' || t.status === 'review').length
-  const doneCount = tasks.filter(t => t.status === 'completed').length
-  const overdueCount = tasks.filter(isOverdue).length
+  const doneCount       = tasks.filter(t => t.status === 'completed').length
+  const overdueCount    = tasks.filter(isOverdue).length
 
   return (
     <div className="space-y-6" onClick={() => statusDropdownId && setStatusDropdownId(null)}>
-      {/* Header */}
+
+      {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Tasks</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Track and manage project tasks</p>
+          <h2 className="text-xl font-semibold" style={{ color: colors.text }}>Tasks</h2>
+          <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
+            Project progress by phase — {doneCount} of {tasks.length} tasks complete
+          </p>
         </div>
-        <button
-          onClick={() => setShowAddTaskModal(true)}
-          className="inline-flex items-center cursor-pointer gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-        >
-          <PlusIcon className="h-4 w-4" />
-          Add Task
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/taskflow"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+            style={{ color: colors.textMuted, border: colors.border }}
+          >
+            <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+            TaskFlow
+          </Link>
+          <button
+            onClick={() => setShowAddTaskModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium cursor-pointer"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Add Task
+          </button>
+        </div>
       </div>
 
-      {/* Summary */}
+      {/* ── Stat Cards ── */}
       <div className="grid grid-cols-4 gap-3">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center">
-          <div className="text-lg font-bold text-gray-600 dark:text-gray-400">{todoCount}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">To Do</div>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: darkMode ? 'rgba(75,85,99,0.2)' : '#F3F4F6' }}>
+              <ClockIcon className="w-5 h-5" style={{ color: darkMode ? '#9CA3AF' : '#6B7280' }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>To Do</div>
+              <div className="text-lg font-bold" style={{ color: colors.text }}>{todoCount}</div>
+            </div>
+          </div>
+          <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full" style={{ width: `${tasks.length ? (todoCount / tasks.length) * 100 : 0}%`, backgroundColor: '#6B7280' }} />
+          </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center">
-          <div className="text-lg font-bold text-blue-600">{inProgressCount}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">In Progress</div>
+
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
+              <PencilIcon className="w-5 h-5" style={{ color: '#2563EB' }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>In Progress</div>
+              <div className="text-lg font-bold" style={{ color: '#2563EB' }}>{inProgressCount}</div>
+            </div>
+          </div>
+          <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full" style={{ width: `${tasks.length ? (inProgressCount / tasks.length) * 100 : 0}%`, backgroundColor: '#2563EB' }} />
+          </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center">
-          <div className="text-lg font-bold text-green-600">{doneCount}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Done</div>
+
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
+              <CheckIcon className="w-5 h-5" style={{ color: '#16A34A' }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Done</div>
+              <div className="text-lg font-bold" style={{ color: '#16A34A' }}>{doneCount}</div>
+            </div>
+          </div>
+          <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full" style={{ width: `${tasks.length ? (doneCount / tasks.length) * 100 : 0}%`, backgroundColor: '#16A34A' }} />
+          </div>
+          <div className="text-xs mt-1" style={{ color: colors.textMuted }}>
+            {tasks.length ? Math.round((doneCount / tasks.length) * 100) : 0}% complete
+          </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center">
-          <div className={`text-lg font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-gray-400 dark:text-gray-500'}`}>{overdueCount}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Overdue</div>
+
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: overdueCount > 0 ? 'rgba(220,38,38,0.1)' : (darkMode ? 'rgba(75,85,99,0.2)' : '#F3F4F6') }}>
+              <XMarkIcon className="w-5 h-5" style={{ color: overdueCount > 0 ? '#DC2626' : (darkMode ? '#6B7280' : '#9CA3AF') }} />
+            </div>
+            <div>
+              <div className="text-xs" style={{ color: colors.textMuted }}>Overdue</div>
+              <div className="text-lg font-bold" style={{ color: overdueCount > 0 ? '#DC2626' : colors.textMuted }}>{overdueCount}</div>
+            </div>
+          </div>
+          <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+            <div className="h-full rounded-full" style={{ width: `${tasks.length ? (overdueCount / tasks.length) * 100 : 0}%`, backgroundColor: overdueCount > 0 ? '#DC2626' : '#9CA3AF' }} />
+          </div>
         </div>
       </div>
 
-      {/* Filter */}
+      {/* ── Blocked Alert Strip ── */}
+      {blockedTasks.length > 0 && (
+        <div className="rounded-lg p-4" style={{ backgroundColor: darkMode ? 'rgba(220,38,38,0.1)' : '#FEF2F2', border: '1px solid #FECACA' }}>
+          <div className="flex items-start gap-3">
+            <ExclamationTriangleIcon className="h-5 w-5 shrink-0 mt-0.5" style={{ color: '#DC2626' }} />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold mb-1" style={{ color: '#DC2626' }}>
+                {blockedTasks.length} blocked {blockedTasks.length === 1 ? 'task' : 'tasks'} — action required
+              </p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {blockedTasks.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setDetailTask(t)}
+                    className="text-sm hover:underline text-left"
+                    style={{ color: darkMode ? '#FCA5A5' : '#991B1B' }}
+                  >
+                    • {t.title}
+                    {t.phase && (
+                      <span className="ml-1 text-xs opacity-70">
+                        [{PHASE_LABELS[t.phase] ?? t.phase}]
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Filter Tabs ── */}
       <div className="flex gap-2">
-        {[
-          { key: 'all', label: 'All' },
+        {([
+          { key: 'all',    label: 'All' },
           { key: 'active', label: 'Active' },
-          { key: 'done', label: 'Completed' },
-        ].map(f => (
+          { key: 'done',   label: 'Completed' },
+        ] as const).map(f => (
           <button
             key={f.key}
             onClick={() => setFilterStatus(f.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-              filterStatus === f.key
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+            style={filterStatus === f.key
+              ? { backgroundColor: '#2563EB', color: '#FFFFFF' }
+              : { backgroundColor: darkMode ? '#1f2937' : '#F3F4F6', color: colors.textMuted }
+            }
           >
             {f.label}
           </button>
         ))}
       </div>
 
-      {/* Task List */}
-      {loading ? (
-        <div className="space-y-2">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4 animate-pulse flex gap-3">
-              <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded" />
-              <div className="flex-1">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-1" />
-                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-12 text-center">
-          <CheckIcon className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-          <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-1">
+      {/* ── Phase Groups ── */}
+      {filtered.length === 0 ? (
+        <div className="rounded-lg p-12 text-center" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+          <CheckIcon className="h-12 w-12 mx-auto mb-4" style={{ color: darkMode ? '#374151' : '#D1D5DB' }} />
+          <h3 className="text-base font-medium mb-1" style={{ color: colors.text }}>
             {filterStatus === 'done' ? 'No completed tasks yet' : 'No active tasks'}
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            {filterStatus !== 'done' ? 'Add tasks to track work on this project' : 'Complete some tasks to see them here'}
+          <p className="text-sm" style={{ color: colors.textMuted }}>
+            {filterStatus !== 'done' ? 'Add tasks to start tracking work on this project' : 'Complete some tasks to see them here'}
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {filtered.map(task => {
-            const overdue = isOverdue(task)
-            const isSelected = selectedIds.has(task.id)
-            return (
-              <div
-                key={task.id}
-                onClick={() => !selectedIds.size && setDetailTask(task)}
-                className={`flex items-center gap-4 p-4 bg-white dark:bg-gray-800 border rounded-lg hover:shadow-md dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.4)] transition-all cursor-pointer ${isSelected ? 'border-blue-300' : 'border-gray-200 dark:border-gray-700 dark:hover:border-gray-500'}`}
-                style={isSelected ? { backgroundColor: 'rgba(219,234,254,0.4)' } : {}}
-              >
-                {/* Checkbox */}
-                <button
-                  onClick={e => { e.stopPropagation(); toggleSelect(task.id) }}
-                  className="shrink-0"
-                >
-                  {isSelected
-                    ? <div className="h-6 w-6 rounded border-2 border-blue-500 bg-blue-500 flex items-center justify-center">
-                        <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      </div>
-                    : task.status === 'completed'
-                      ? <div className="h-6 w-6 rounded border-2 border-green-500 bg-green-500 flex items-center justify-center">
-                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        </div>
-                      : <div className="h-6 w-6 rounded border-2 border-gray-300 hover:border-blue-500" />
-                  }
-                </button>
+        <div className="space-y-4">
+          {phaseGroups.map(group => {
+            const isCollapsed = collapsedPhases.has(group.key)
+            const groupDone     = group.tasks.filter(t => t.status === 'completed').length
+            const groupBlocked  = group.tasks.filter(t => t.status === 'blocked').length
+            const groupOverdue  = group.tasks.filter(isOverdue).length
+            const completePct   = group.tasks.length ? Math.round((groupDone / group.tasks.length) * 100) : 0
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4 mb-1">
-                    <h4 className={`font-medium ${task.status === 'completed' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
-                      {task.title}
-                    </h4>
-                    <div className="relative shrink-0">
-                      <button
-                        onClick={e => { e.stopPropagation(); setStatusDropdownId(statusDropdownId === task.id ? null : task.id) }}
-                        className={`text-xs font-semibold px-2 py-1 rounded-md border transition-colors ${
-                          task.status === 'completed' ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/40 dark:text-green-300 dark:border-green-600 dark:hover:bg-green-900/60' :
-                          task.status === 'in-progress' ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-200 dark:border-blue-500 dark:hover:bg-blue-900/60' :
-                          task.status === 'review' ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-500 dark:hover:bg-purple-900/60' :
-                          task.status === 'blocked' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-300 dark:border-red-500 dark:hover:bg-red-900/60' :
-                          'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 dark:bg-gray-700/50 dark:text-gray-300 dark:border-gray-500 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        {STATUS_LABELS[task.status]} ▾
-                      </button>
-                      {statusDropdownId === task.id && (
-                        <div className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 overflow-hidden">
-                          {(Object.entries(STATUS_LABELS) as [Task['status'], string][]).map(([val, label]) => (
-                            <button
-                              key={val}
-                              onClick={e => { e.stopPropagation(); updateTaskStatus(task.id, val) }}
-                              className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center gap-2 ${task.status === val ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-700 dark:text-gray-300'}`}
-                            >
-                              <span className={`w-1.5 h-1.5 rounded-full ${
-                                val === 'completed' ? 'bg-green-500' :
-                                val === 'in-progress' ? 'bg-blue-500' :
-                                val === 'review' ? 'bg-purple-500' :
-                                val === 'blocked' ? 'bg-red-500' : 'bg-gray-400'
-                              }`} />
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+            return (
+              <div key={group.key} className="rounded-lg overflow-hidden" style={{ border: colors.border }}>
+                {/* Phase Header */}
+                <button
+                  onClick={() => togglePhase(group.key)}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors cursor-pointer"
+                  style={{ backgroundColor: darkMode ? colors.bgAlt : '#F9FAFB', borderBottom: isCollapsed ? 'none' : colors.borderBottom }}
+                >
+                  {isCollapsed
+                    ? <ChevronRightIcon className="h-4 w-4 shrink-0" style={{ color: colors.textMuted }} />
+                    : <ChevronDownIcon  className="h-4 w-4 shrink-0" style={{ color: colors.textMuted }} />
+                  }
+
+                  <span className="text-sm font-semibold" style={{ color: colors.text }}>
+                    {group.label}
+                  </span>
+
+                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB', color: colors.textMuted }}>
+                    {groupDone}/{group.tasks.length}
+                  </span>
+
+                  {/* Per-phase progress bar */}
+                  <div className="flex-1 max-w-32 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: darkMode ? '#374151' : '#E5E7EB' }}>
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${completePct}%`,
+                        backgroundColor: completePct === 100 ? '#16A34A' : '#2563EB',
+                      }}
+                    />
                   </div>
-                  {task.description && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">{task.description}</p>
-                  )}
-                  <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PRIORITY_COLORS[task.priority]}`}>
-                      {task.priority}
-                    </span>
-                    {task.due_date && (
-                      <span className={`text-xs flex items-center gap-0.5 ${overdue ? 'text-red-600 font-medium' : 'text-gray-400'}`}>
-                        <ClockIcon className="h-3 w-3" />
-                        {overdue ? 'Overdue · ' : ''}{formatDate(task.due_date)}
+
+                  <span className="text-xs" style={{ color: colors.textMuted }}>{completePct}%</span>
+
+                  {/* Inline badges for blocked / overdue — only show if relevant */}
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    {groupBlocked > 0 && (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: darkMode ? 'rgba(220,38,38,0.2)' : '#FEE2E2', color: '#DC2626' }}>
+                        {groupBlocked} blocked
                       </span>
                     )}
-                    {task.trade && (
-                      <span className="text-xs text-gray-400">{task.trade}</span>
+                    {groupOverdue > 0 && (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: darkMode ? 'rgba(245,158,11,0.2)' : '#FEF3C7', color: '#D97706' }}>
+                        {groupOverdue} overdue
+                      </span>
                     )}
                   </div>
-                </div>
-
-                {/* Delete */}
-                <button
-                  onClick={e => { e.stopPropagation(); setConfirmDeleteId(task.id) }}
-                  className="shrink-0 p-1 text-gray-300 hover:text-red-500 rounded"
-                >
-                  <TrashIcon className="h-4 w-4" />
                 </button>
+
+                {/* Task Rows */}
+                {!isCollapsed && (
+                  <div className="divide-y" style={{ borderColor: darkMode ? '#1f2937' : '#F3F4F6' }}>
+                    {group.tasks.map(task => {
+                      const overdue = isOverdue(task)
+                      const member  = memberAvatarMap[task.assignee_id ?? '']
+
+                      return (
+                        <div
+                          key={task.id}
+                          onClick={() => setDetailTask(task)}
+                          className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors"
+                          style={{
+                            backgroundColor: colors.bg,
+                            borderLeft: task.status === 'blocked' ? '3px solid #DC2626' : '3px solid transparent',
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = darkMode ? colors.bgAlt : '#F9FAFB')}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = colors.bg)}
+                        >
+                          {/* Status toggle button */}
+                          <button
+                            onClick={e => {
+                              e.stopPropagation()
+                              updateTaskStatus(task.id, task.status === 'completed' ? 'not-started' : 'completed')
+                            }}
+                            className="shrink-0"
+                            title={task.status === 'completed' ? 'Mark incomplete' : 'Mark complete'}
+                          >
+                            {task.status === 'completed'
+                              ? <div className="h-5 w-5 rounded-full border-2 border-green-500 bg-green-500 flex items-center justify-center">
+                                  <svg className="h-3 w-3 text-white" viewBox="0 0 12 12" fill="none">
+                                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                </div>
+                              : <div className="h-5 w-5 rounded-full border-2 hover:border-blue-500 transition-colors" style={{ borderColor: darkMode ? '#4B5563' : '#D1D5DB' }} />
+                            }
+                          </button>
+
+                          {/* Title + meta */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span
+                                className={`text-sm font-medium truncate ${task.status === 'completed' ? 'line-through' : ''}`}
+                                style={{ color: task.status === 'completed' ? colors.textMuted : colors.text }}
+                              >
+                                {task.title}
+                              </span>
+                              {task.selection_task_type && (
+                                <span className="shrink-0 text-xs px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: darkMode ? 'rgba(14,165,233,0.15)' : '#F0F9FF', color: '#0EA5E9' }}>
+                                  {task.selection_task_type === 'order' ? 'Order' : task.selection_task_type === 'delivery' ? 'Delivery' : 'Install'}
+                                </span>
+                              )}
+                              {task.inspection_required && (
+                                <span className="shrink-0 text-xs px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: darkMode ? 'rgba(139,92,246,0.2)' : '#EDE9FE', color: '#7C3AED' }}>
+                                  Inspection
+                                </span>
+                              )}
+                              {task.blocking_rfi_id && task.status === 'blocked' && (
+                                <span className="shrink-0 text-xs px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: darkMode ? 'rgba(220,38,38,0.2)' : '#FEF2F2', color: '#DC2626' }}>
+                                  Blocked · RFI
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <PriorityBadge priority={task.priority} />
+                              {task.trade && (
+                                <span className="text-xs" style={{ color: colors.textMuted }}>{task.trade}</span>
+                              )}
+                              {task.due_date && (
+                                <span className={`text-xs flex items-center gap-0.5 ${overdue ? 'font-medium' : ''}`} style={{ color: overdue ? '#DC2626' : colors.textMuted }}>
+                                  <ClockIcon className="h-3 w-3" />
+                                  {overdue ? 'Overdue · ' : ''}{formatDate(task.due_date)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Assignee avatar */}
+                          {(task.assignee_name || member) && (
+                            <div className="shrink-0 flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                              <div
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold overflow-hidden shrink-0"
+                                style={{ backgroundColor: avatarColor(task.assignee_name ?? 'X') }}
+                                title={task.assignee_name ?? ''}
+                              >
+                                {member?.avatar
+                                  ? <img src={member.avatar} alt={task.assignee_name ?? ''} className="w-full h-full object-cover" />
+                                  : (task.assignee_name?.[0] ?? '?').toUpperCase()
+                                }
+                              </div>
+                              <span className="text-xs hidden sm:block max-w-20 truncate" style={{ color: colors.textMuted }}>
+                                {task.assignee_name}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Status dropdown */}
+                          <div className="relative shrink-0" onClick={e => e.stopPropagation()}>
+                            <button
+                              onClick={() => setStatusDropdownId(statusDropdownId === task.id ? null : task.id)}
+                              className="text-xs font-semibold px-2 py-1 rounded-md border transition-colors cursor-pointer"
+                              style={
+                                task.status === 'completed' ? { backgroundColor: darkMode ? 'rgba(22,163,74,0.2)' : '#F0FDF4', color: '#16A34A', borderColor: '#86EFAC' } :
+                                task.status === 'in-progress' ? { backgroundColor: darkMode ? 'rgba(37,99,235,0.2)' : '#EFF6FF', color: '#2563EB', borderColor: '#BFDBFE' } :
+                                task.status === 'blocked' ? { backgroundColor: darkMode ? 'rgba(220,38,38,0.2)' : '#FEF2F2', color: '#DC2626', borderColor: '#FECACA' } :
+                                task.status === 'review' ? { backgroundColor: darkMode ? 'rgba(124,58,237,0.2)' : '#F5F3FF', color: '#7C3AED', borderColor: '#DDD6FE' } :
+                                { backgroundColor: darkMode ? '#374151' : '#F9FAFB', color: colors.textMuted, borderColor: darkMode ? '#4B5563' : '#E5E7EB' }
+                              }
+                            >
+                              {STATUS_LABELS[task.status]} ▾
+                            </button>
+                            {statusDropdownId === task.id && (
+                              <div className="absolute right-0 top-full mt-1 w-36 rounded-lg shadow-lg z-20 overflow-hidden" style={{ backgroundColor: colors.bg, border: colors.border }}>
+                                {(Object.entries(STATUS_LABELS) as [Task['status'], string][]).map(([val, label]) => (
+                                  <button
+                                    key={val}
+                                    onClick={() => updateTaskStatus(task.id, val)}
+                                    className="w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer"
+                                    style={{
+                                      color: task.status === val ? '#2563EB' : colors.text,
+                                      backgroundColor: task.status === val ? (darkMode ? 'rgba(37,99,235,0.1)' : '#EFF6FF') : 'transparent',
+                                    }}
+                                    onMouseEnter={e => { if (task.status !== val) e.currentTarget.style.backgroundColor = darkMode ? colors.bgAlt : '#F9FAFB' }}
+                                    onMouseLeave={e => { if (task.status !== val) e.currentTarget.style.backgroundColor = 'transparent' }}
+                                  >
+                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                      val === 'completed'   ? 'bg-green-500' :
+                                      val === 'in-progress' ? 'bg-blue-500' :
+                                      val === 'review'      ? 'bg-purple-500' :
+                                      val === 'blocked'     ? 'bg-red-500' : 'bg-gray-400'
+                                    }`} />
+                                    {label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Delete */}
+                          <button
+                            onClick={e => { e.stopPropagation(); setConfirmDeleteId(task.id) }}
+                            className="shrink-0 p-1 rounded transition-colors"
+                            style={{ color: darkMode ? '#4B5563' : '#D1D5DB' }}
+                            onMouseEnter={e => (e.currentTarget.style.color = '#EF4444')}
+                            onMouseLeave={e => (e.currentTarget.style.color = darkMode ? '#4B5563' : '#D1D5DB')}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             )
           })}
         </div>
       )}
 
-      {/* Task Detail Panel */}
+      {/* ── Task Detail Panel ── */}
       {detailTask && (
         <>
           <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setDetailTask(null)} />
-          <div className="fixed right-0 top-0 h-full w-96 bg-white dark:bg-gray-800 shadow-xl z-50 flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b dark:border-gray-700">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Task Details</h3>
-              <button onClick={() => setDetailTask(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          <div className="fixed right-0 top-0 h-full w-96 shadow-xl z-50 flex flex-col" style={{ backgroundColor: colors.bg }}>
+            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: colors.borderBottom }}>
+              <h3 className="text-base font-semibold" style={{ color: colors.text }}>Task Details</h3>
+              <button onClick={() => setDetailTask(null)} style={{ color: colors.textMuted }} className="hover:opacity-70">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
+
             <div className="flex-1 overflow-y-auto p-5 space-y-6">
-              {/* Title & Description */}
               <div>
-                <p className={`text-lg font-semibold ${detailTask.status === 'completed' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
+                <p className={`text-lg font-semibold ${detailTask.status === 'completed' ? 'line-through' : ''}`} style={{ color: detailTask.status === 'completed' ? colors.textMuted : colors.text }}>
                   {detailTask.title}
                 </p>
                 {detailTask.description && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{detailTask.description}</p>
+                  <p className="text-sm mt-1" style={{ color: colors.textMuted }}>{detailTask.description}</p>
                 )}
               </div>
 
-              {/* Status & Priority */}
               <section>
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100 dark:border-gray-700">Overview</p>
+                <p className="text-xs font-bold uppercase tracking-widest mb-3 pb-1.5" style={{ color: colors.textMuted, borderBottom: colors.borderBottom }}>Overview</p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Status</p><span className="font-medium text-gray-700 dark:text-gray-300">{STATUS_LABELS[detailTask.status]}</span></div>
-                  <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Priority</p><span className={`text-xs px-1.5 py-0.5 rounded font-medium ${PRIORITY_COLORS[detailTask.priority]}`}>{detailTask.priority}</span></div>
-                  {detailTask.trade && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Trade</p><span className="font-medium text-gray-700 dark:text-gray-300 capitalize">{detailTask.trade}</span></div>}
-                  {detailTask.phase && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Phase</p><span className="font-medium text-gray-700 dark:text-gray-300 capitalize">{detailTask.phase.replace('-', ' ')}</span></div>}
-                  {detailTask.location && <div className="col-span-2"><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Location</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.location}</span></div>}
+                  <div>
+                    <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Status</p>
+                    <span className="font-medium" style={{ color: colors.text }}>{STATUS_LABELS[detailTask.status]}</span>
+                  </div>
+                  <div>
+                    <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Priority</p>
+                    <PriorityBadge priority={detailTask.priority} />
+                  </div>
+                  {detailTask.trade && (
+                    <div>
+                      <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Trade</p>
+                      <span className="font-medium capitalize" style={{ color: colors.text }}>{detailTask.trade}</span>
+                    </div>
+                  )}
+                  {detailTask.phase && (
+                    <div>
+                      <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Phase</p>
+                      <span className="font-medium" style={{ color: colors.text }}>{PHASE_LABELS[detailTask.phase] ?? detailTask.phase}</span>
+                    </div>
+                  )}
+                  {detailTask.location && (
+                    <div className="col-span-2">
+                      <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Location</p>
+                      <span className="font-medium" style={{ color: colors.text }}>{detailTask.location}</span>
+                    </div>
+                  )}
                 </div>
               </section>
 
-              {/* Scheduling */}
               <section>
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100 dark:border-gray-700">Scheduling</p>
+                <p className="text-xs font-bold uppercase tracking-widest mb-3 pb-1.5" style={{ color: colors.textMuted, borderBottom: colors.borderBottom }}>Scheduling</p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  {detailTask.start_date && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Start Date</p><span className="font-medium text-gray-700 dark:text-gray-300">{formatDate(detailTask.start_date)}</span></div>}
-                  <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Due Date</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.due_date ? formatDate(detailTask.due_date) : '—'}</span></div>
-                  {detailTask.duration != null && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Duration</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.duration}d</span></div>}
-                  {detailTask.estimated_hours != null && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Est. Hours</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.estimated_hours}h</span></div>}
-                  {detailTask.actual_hours != null && detailTask.actual_hours > 0 && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Actual Hours</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.actual_hours}h</span></div>}
-                  {detailTask.progress != null && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Progress</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.progress}%</span></div>}
+                  {detailTask.start_date && (
+                    <div>
+                      <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Start</p>
+                      <span className="font-medium" style={{ color: colors.text }}>{formatDate(detailTask.start_date)}</span>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Due</p>
+                    <span className={`font-medium ${isOverdue(detailTask) ? 'text-red-600' : ''}`} style={isOverdue(detailTask) ? {} : { color: colors.text }}>
+                      {detailTask.due_date ? formatDate(detailTask.due_date) : '—'}
+                    </span>
+                  </div>
+                  {detailTask.estimated_hours != null && (
+                    <div>
+                      <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Est. Hours</p>
+                      <span className="font-medium" style={{ color: colors.text }}>{detailTask.estimated_hours}h</span>
+                    </div>
+                  )}
+                  {detailTask.actual_hours != null && detailTask.actual_hours > 0 && (
+                    <div>
+                      <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Actual Hours</p>
+                      <span className="font-medium" style={{ color: colors.text }}>{detailTask.actual_hours}h</span>
+                    </div>
+                  )}
                 </div>
               </section>
 
-              {/* Resources */}
               {(detailTask.assignee_name || detailTask.crew_size || (detailTask.equipment?.length ?? 0) > 0 || (detailTask.materials?.length ?? 0) > 0) && (
                 <section>
-                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100 dark:border-gray-700">Resources</p>
+                  <p className="text-xs font-bold uppercase tracking-widest mb-3 pb-1.5" style={{ color: colors.textMuted, borderBottom: colors.borderBottom }}>Resources</p>
                   <div className="space-y-2 text-sm">
-                    {detailTask.assignee_name && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Assignee</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.assignee_name}</span></div>}
-                    {detailTask.crew_size != null && detailTask.crew_size > 0 && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Crew Size</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.crew_size}</span></div>}
+                    {detailTask.assignee_name && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold overflow-hidden shrink-0"
+                          style={{ backgroundColor: avatarColor(detailTask.assignee_name) }}>
+                          {memberAvatarMap[detailTask.assignee_id ?? '']?.avatar
+                            ? <img src={memberAvatarMap[detailTask.assignee_id ?? '']!.avatar!} alt="" className="w-full h-full object-cover" />
+                            : detailTask.assignee_name[0].toUpperCase()
+                          }
+                        </div>
+                        <span style={{ color: colors.text }}>{detailTask.assignee_name}</span>
+                      </div>
+                    )}
+                    {detailTask.crew_size != null && detailTask.crew_size > 1 && (
+                      <div>
+                        <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Crew Size</p>
+                        <span className="font-medium" style={{ color: colors.text }}>{detailTask.crew_size}</span>
+                      </div>
+                    )}
                     {(detailTask.equipment?.length ?? 0) > 0 && (
-                      <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Equipment</p>
-                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.equipment!.map(e => <span key={e} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">{e}</span>)}</div>
+                      <div>
+                        <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Equipment</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {detailTask.equipment!.map(e => (
+                            <span key={e} className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: colors.bgAlt, color: colors.text }}>{e}</span>
+                          ))}
+                        </div>
                       </div>
                     )}
                     {(detailTask.materials?.length ?? 0) > 0 && (
-                      <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Materials</p>
-                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.materials!.map(m => <span key={m} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">{m}</span>)}</div>
+                      <div>
+                        <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Materials</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {detailTask.materials!.map(m => (
+                            <span key={m} className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: colors.bgAlt, color: colors.text }}>{m}</span>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
                 </section>
               )}
 
-              {/* Quality & Safety */}
               {(detailTask.inspection_required || detailTask.weather_dependent || (detailTask.safety_protocols?.length ?? 0) > 0 || (detailTask.certifications?.length ?? 0) > 0) && (
                 <section>
-                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100 dark:border-gray-700">Quality & Safety</p>
+                  <p className="text-xs font-bold uppercase tracking-widest mb-3 pb-1.5" style={{ color: colors.textMuted, borderBottom: colors.borderBottom }}>Quality & Safety</p>
                   <div className="space-y-2 text-sm">
                     {detailTask.inspection_required && (
-                      <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Inspection</p>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.inspection_type ?? 'Required'}</span>
+                      <div>
+                        <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Inspection</p>
+                        <span className="font-medium" style={{ color: colors.text }}>{detailTask.inspection_type ?? 'Required'}</span>
                       </div>
                     )}
                     {detailTask.weather_dependent && (
-                      <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Weather Dependent</p>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">Yes{detailTask.weather_buffer ? ` · ${detailTask.weather_buffer}d buffer` : ''}</span>
+                      <div>
+                        <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Weather Dependent</p>
+                        <span className="font-medium" style={{ color: colors.text }}>Yes{detailTask.weather_buffer ? ` · ${detailTask.weather_buffer}d buffer` : ''}</span>
                       </div>
                     )}
                     {(detailTask.certifications?.length ?? 0) > 0 && (
-                      <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Certifications</p>
-                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.certifications!.map(c => <span key={c} className="text-xs bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 px-1.5 py-0.5 rounded">{c}</span>)}</div>
+                      <div>
+                        <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Certifications</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {detailTask.certifications!.map(c => (
+                            <span key={c} className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: darkMode ? 'rgba(37,99,235,0.15)' : '#EFF6FF', color: '#2563EB' }}>{c}</span>
+                          ))}
+                        </div>
                       </div>
                     )}
                     {(detailTask.safety_protocols?.length ?? 0) > 0 && (
-                      <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Safety Protocols</p>
-                        <div className="flex flex-wrap gap-1 mt-1">{detailTask.safety_protocols!.map(s => <span key={s} className="text-xs bg-orange-50 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300 px-1.5 py-0.5 rounded">{s}</span>)}</div>
+                      <div>
+                        <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Safety Protocols</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {detailTask.safety_protocols!.map(s => (
+                            <span key={s} className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: darkMode ? 'rgba(245,158,11,0.15)' : '#FFFBEB', color: '#D97706' }}>{s}</span>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
                 </section>
               )}
 
-              {/* Meta */}
               <section>
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 pb-1.5 border-b border-gray-100 dark:border-gray-700">Details</p>
+                <p className="text-xs font-bold uppercase tracking-widest mb-3 pb-1.5" style={{ color: colors.textMuted, borderBottom: colors.borderBottom }}>Details</p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Created</p><span className="font-medium text-gray-700 dark:text-gray-300">{formatDate(detailTask.created_at)}</span></div>
-                  {detailTask.dependencies != null && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Dependencies</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.dependencies.length}</span></div>}
-                  {detailTask.client_visibility != null && <div><p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Client Visible</p><span className="font-medium text-gray-700 dark:text-gray-300">{detailTask.client_visibility ? 'Yes' : 'No'}</span></div>}
+                  <div>
+                    <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Created</p>
+                    <span className="font-medium" style={{ color: colors.text }}>{formatDate(detailTask.created_at)}</span>
+                  </div>
+                  {detailTask.client_visibility != null && (
+                    <div>
+                      <p className="text-xs mb-0.5" style={{ color: colors.textMuted }}>Client Visible</p>
+                      <span className="font-medium" style={{ color: colors.text }}>{detailTask.client_visibility ? 'Yes' : 'No'}</span>
+                    </div>
+                  )}
                 </div>
               </section>
             </div>
-            <div className="px-5 py-4 border-t dark:border-gray-700 flex gap-2">
+
+            <div className="px-5 py-4 flex gap-2" style={{ borderTop: colors.borderBottom }}>
               <button
                 onClick={() => setShowEditModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors"
+                style={{ border: colors.border, color: colors.text }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = darkMode ? colors.bgAlt : '#F9FAFB')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
               >
                 <PencilIcon className="h-4 w-4" />
                 Edit
               </button>
               <button
                 onClick={() => setConfirmDeleteId(detailTask.id)}
-                className="flex-1 px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium cursor-pointer hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/30"
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors"
+                style={{ border: '1px solid #FECACA', color: '#DC2626' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#FEF2F2')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
               >
                 Delete
               </button>
@@ -676,7 +1087,7 @@ export default function ProjectTasksTab({ project }: Props) {
         </>
       )}
 
-      {/* Add Task Modal */}
+      {/* ── Add Task Modal ── */}
       {showAddTaskModal && (
         <TaskCreationModal
           isOpen={showAddTaskModal}
@@ -689,13 +1100,13 @@ export default function ProjectTasksTab({ project }: Props) {
             name: m.name,
             avatar: m.avatar || '',
             role: m.role,
-            trades: []
+            trades: [],
           }))}
-          existingTasks={tasks.map(toModalTask)}
+          existingTasks={(tasks ?? []).map(toModalTask)}
         />
       )}
 
-      {/* Edit Task Modal */}
+      {/* ── Edit Task Modal ── */}
       {showEditModal && detailTask && (
         <TaskCreationModal
           isOpen={showEditModal}
@@ -703,71 +1114,38 @@ export default function ProjectTasksTab({ project }: Props) {
           onSave={handleEditSave}
           editingTask={toModalTask(detailTask)}
           projects={[{ id: project.id, name: project.name ?? '' }]}
-          teamMembers={[]}
-          existingTasks={tasks.map(toModalTask)}
+          teamMembers={project.teamMembers.map(m => ({
+            id: m.id,
+            name: m.name,
+            avatar: m.avatar || '',
+            role: m.role,
+            trades: [],
+          }))}
+          existingTasks={(tasks ?? []).map(toModalTask)}
         />
       )}
 
-      {/* Floating selection bar */}
-      {selectedIds.size > 0 && (() => {
-        const selTasks = tasks.filter(t => selectedIds.has(t.id))
-        const hasIncomplete = selTasks.some(t => t.status !== 'completed')
-        const hasComplete = selTasks.some(t => t.status === 'completed')
-        return (
-          <div
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
-          >
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              {selectedIds.size} selected
-            </span>
-            <div className="w-px h-4 bg-gray-200 dark:bg-gray-600" />
-            {hasIncomplete && (
-              <button
-                onClick={bulkMarkComplete}
-                className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-500"
-              >
-                Mark Complete
-              </button>
-            )}
-            {hasComplete && (
-              <button
-                onClick={bulkMarkActive}
-                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-              >
-                Mark Active
-              </button>
-            )}
-            <button
-              onClick={() => setSelectedIds(new Set())}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200"
-            >
-              Clear
-            </button>
-          </div>
-        )
-      })()}
-
-      {/* Confirm Delete Modal */}
+      {/* ── Confirm Delete ── */}
       {confirmDeleteId && (
         <>
           <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDeleteId(null)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
             <div className="pointer-events-auto rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
               <p className="text-sm font-medium text-center mb-1" style={{ color: colors.text }}>Delete this task?</p>
-              <p className="text-xs text-center mb-5" style={{ color: colors.textMuted }}>
+              <p className="text-xs text-center mb-5 truncate px-2" style={{ color: colors.textMuted }}>
                 {tasks.find(t => t.id === confirmDeleteId)?.title}
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => deleteTask(confirmDeleteId)}
-                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white"
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white cursor-pointer"
                   style={{ backgroundColor: '#DC2626' }}
                 >
                   Delete
                 </button>
                 <button
                   onClick={() => setConfirmDeleteId(null)}
-                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium"
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
                   style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                 >
                   Cancel
@@ -776,22 +1154,6 @@ export default function ProjectTasksTab({ project }: Props) {
             </div>
           </div>
         </>
-      )}
-
-      {/* Undo toast */}
-      {undoInfo && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-gray-900 text-white px-4 py-3 rounded-xl shadow-lg text-sm">
-          <span>Task marked as complete</span>
-          <button
-            onClick={handleUndo}
-            className="font-semibold text-blue-400 hover:text-blue-300 underline underline-offset-2"
-          >
-            Undo
-          </button>
-          <div className="w-24 h-1 bg-gray-700 rounded-full overflow-hidden">
-            <div className="h-full bg-blue-400 rounded-full animate-[shrink_4s_linear_forwards]" />
-          </div>
-        </div>
       )}
     </div>
   )

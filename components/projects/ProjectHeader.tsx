@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
-import { Calendar, DollarSign, TrendingUp, MapPin, AlertCircle, Palette } from 'lucide-react'
+import { Calendar, DollarSign, TrendingUp, MapPin, AlertCircle } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
@@ -117,13 +117,6 @@ export default function ProjectHeader({ project }: Props) {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            <Link
-              href={`/projects/${project.id}/design-selections`}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
-            >
-              <Palette className="h-4 w-4" />
-              Design Selections
-            </Link>
             <button
               onClick={() => setShowEdit(true)}
               className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
@@ -177,30 +170,38 @@ export default function ProjectHeader({ project }: Props) {
           </MetricCard>
 
           {/* Budget */}
-          <MetricCard
-            icon={<DollarSign className="h-5 w-5" />}
-            label="Budget"
-            value={`$${(project.spent / 1000).toFixed(1)}k / $${(project.estimated_budget / 1000).toFixed(1)}k`}
-            color={project.isOverBudget ? 'red' : project.budgetPercentage > 90 ? 'yellow' : 'green'}
-          >
-            <div className="mt-2">
-              <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    project.isOverBudget ? 'bg-red-600' :
-                    project.budgetPercentage > 90 ? 'bg-yellow-500' : 'bg-green-600'
-                  }`}
-                  style={{ width: `${Math.min(100, project.budgetPercentage)}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                <span>{project.budgetPercentage.toFixed(0)}% used</span>
-                <span className={project.budgetRemaining < 0 ? 'text-red-600 font-medium' : ''}>
-                  ${(Math.abs(project.budgetRemaining) / 1000).toFixed(1)}k {project.budgetRemaining < 0 ? 'over' : 'left'}
-                </span>
-              </div>
-            </div>
-          </MetricCard>
+          {(() => {
+            const hasSelections = project.designSelectionsSummary.length > 0
+            const displaySpend = hasSelections ? project.projectedSpend : project.spent
+            const displayPct = hasSelections ? project.projectedPercentage : project.budgetPercentage
+            const isOver = displayPct > 100
+            const remaining = project.estimated_budget - displaySpend
+            return (
+              <MetricCard
+                icon={<DollarSign className="h-5 w-5" />}
+                label={hasSelections ? 'Projected Budget' : 'Budget'}
+                value={`$${(displaySpend / 1000).toFixed(1)}k / $${(project.estimated_budget / 1000).toFixed(1)}k`}
+                color={isOver ? 'red' : displayPct > 90 ? 'yellow' : 'green'}
+              >
+                <div className="mt-2">
+                  <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        isOver ? 'bg-red-600' : displayPct > 90 ? 'bg-yellow-500' : 'bg-green-600'
+                      }`}
+                      style={{ width: `${Math.min(100, displayPct)}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <span>{displayPct.toFixed(0)}% {hasSelections ? 'projected' : 'used'}</span>
+                    <span className={remaining < 0 ? 'text-red-600 font-medium' : ''}>
+                      ${(Math.abs(remaining) / 1000).toFixed(1)}k {remaining < 0 ? 'over' : 'left'}
+                    </span>
+                  </div>
+                </div>
+              </MetricCard>
+            )
+          })()}
 
           {/* Team */}
           <MetricCard
