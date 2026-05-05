@@ -11,7 +11,7 @@ type Task = {
   dueDate: string
   estimatedHours: number
   trade: string
-  priority: "critical" | "high" | "medium" | "low"
+  priority: "critical" | "high" | "medium" | "low" | null
 }
 
 type TeamMember = {

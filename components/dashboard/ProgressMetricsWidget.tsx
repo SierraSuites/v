@@ -8,7 +8,7 @@ type Task = {
   title: string
   status: "not-started" | "in-progress" | "review" | "completed" | "blocked"
   trade: "electrical" | "plumbing" | "hvac" | "concrete" | "framing" | "finishing" | "general"
-  priority: "critical" | "high" | "medium" | "low"
+  priority: "critical" | "high" | "medium" | "low" | null
   progress: number
   dueDate: string
   estimatedHours: number

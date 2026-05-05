@@ -37,7 +37,7 @@ interface Task {
   title: string
   description?: string
   status: string
-  priority: string
+  priority: string | null
   trade?: string
   estimatedHours?: number
   actualHours?: number
@@ -279,7 +279,7 @@ export default function TaskDetailPanel({ task, onClose, onEdit, onStatusChange 
         <div className="flex items-start justify-between gap-3 p-5 border-b">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
-              <span className={`text-xs font-bold px-2 py-0.5 rounded ${PRIORITY_COLORS[task.priority] || 'bg-gray-100 text-gray-600'}`}>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded ${task.priority ? PRIORITY_COLORS[task.priority] : 'bg-gray-100 text-gray-600'}`}>
                 {task.priority?.toUpperCase()}
               </span>
               {task.trade && (

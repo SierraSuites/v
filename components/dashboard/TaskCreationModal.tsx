@@ -11,7 +11,7 @@ type Task = {
   projectId: string
   trade: "electrical" | "plumbing" | "hvac" | "concrete" | "framing" | "finishing" | "general"
   phase: "pre-construction" | "foundation" | "framing" | "mep" | "finishing" | "closeout"
-  priority: "critical" | "high" | "medium" | "low"
+  priority: "critical" | "high" | "medium" | "low" | null
   status: "not-started" | "in-progress" | "review" | "completed" | "blocked"
   assignee: string
   assigneeId: string
@@ -820,7 +820,7 @@ export default function TaskCreationModal({
                     Priority Level
                   </label>
                   <select
-                    value={formData.priority}
+                    value={formData.priority ?? ''}
                     onChange={(e) => handleInputChange("priority", e.target.value)}
                     className="w-full px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
                     style={inputStyle()}
