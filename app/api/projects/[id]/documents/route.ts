@@ -98,8 +98,42 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 }
 
 /**
+ * PATCH /api/projects/[id]/documents?documentId=<uuid>
+ * Update a document's entity link (linked_entity_type + linked_entity_id).
+ */
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const authResult = await requireProjectPermission(id, 'uploadDocuments')
+    if (!authResult.authorized) return authResult.error
+
+    const supabase = await createClient()
+    const { searchParams } = new URL(request.url)
+    const documentId = searchParams.get('documentId')
+    if (!documentId) return NextResponse.json({ error: 'Missing documentId' }, { status: 400 })
+
+    const raw = await request.json()
+    const VALID_ENTITY_TYPES = ['change_order', 'rfi', 'design_selection']
+    const linked_entity_type = raw.linked_entity_type === null ? null
+      : VALID_ENTITY_TYPES.includes(raw.linked_entity_type) ? raw.linked_entity_type : undefined
+    if (linked_entity_type === undefined) return NextResponse.json({ error: 'Invalid linked_entity_type' }, { status: 400 })
+
+    const { error } = await supabase
+      .from('project_documents')
+      .update({ linked_entity_type, linked_entity_id: raw.linked_entity_id ?? null })
+      .eq('id', documentId)
+      .eq('project_id', id)
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+/**
  * DELETE /api/projects/[id]/documents?documentId=<uuid>
- * Delete a document record by its ID.
+ * Delete a document record and its storage file.
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
@@ -113,11 +147,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const documentId = searchParams.get('documentId')
 
     if (!documentId) {
-      return NextResponse.json(
-        { error: 'Missing required query parameter: documentId' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Missing required query parameter: documentId' }, { status: 400 })
     }
+
+    // Fetch file_path before deleting so we can remove the storage object
+    const { data: doc } = await supabase
+      .from('project_documents')
+      .select('file_path')
+      .eq('id', documentId)
+      .eq('project_id', id)
+      .single()
 
     const { error: deleteError } = await supabase
       .from('project_documents')
@@ -127,10 +166,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     if (deleteError) {
       console.error('[DELETE /api/projects/:id/documents] Delete error:', deleteError)
-      return NextResponse.json(
-        { error: 'Failed to delete document' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Failed to delete document' }, { status: 500 })
+    }
+
+    // Remove the storage file — best-effort, don't fail the request if it errors
+    if (doc?.file_path) {
+      await supabase.storage.from('project-documents').remove([doc.file_path])
     }
 
     return NextResponse.json({ success: true })

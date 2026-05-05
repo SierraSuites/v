@@ -732,6 +732,8 @@ export default function AppShell({ children, user }: AppShellProps) {
 
         {/* Page Content */}
         <main className={`flex-1 overflow-y-auto [scrollbar-gutter:stable] ${darkMode ? 'bg-[#0f1117]' : 'bg-gray-50'}`}>{children}</main>
+        {/* Portal target: keeps modals in same compositing context as the backdrop-blur header */}
+        <div id="modal-portal-root" />
       </div>
     </div>
   )

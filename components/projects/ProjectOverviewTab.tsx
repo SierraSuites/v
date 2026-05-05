@@ -14,27 +14,52 @@ import { useThemeColors } from '@/lib/hooks/useThemeColors'
 
 interface Props {
   project: ProjectDetails
+  refreshKey?: number
 }
 
-export default function ProjectOverviewTab({ project }: Props) {
+export default function ProjectOverviewTab({ project, refreshKey = 0 }: Props) {
   const { colors, darkMode } = useThemeColors()
   const [milestones, setMilestones] = useState<ProjectMilestone[]>(project.milestones)
   const [expenses, setExpenses] = useState(project.expenses)
+  const [phaseTaskProgress, setPhaseTaskProgress] = useState<Record<string, { total: number; completed: number }>>({})
 
   useEffect(() => {
     const supabase = createClient()
 
     async function fetchLiveData() {
-      const [milestonesRes, expensesRes] = await Promise.all([
+      const [milestonesRes, expensesRes, tasksRes] = await Promise.all([
         supabase.from('project_milestones').select('*').eq('project_id', project.id).order('due_date', { ascending: true }),
-        supabase.from('project_expenses').select('*').eq('project_id', project.id).order('date', { ascending: false })
+        supabase.from('project_expenses').select('*').eq('project_id', project.id).order('date', { ascending: false }),
+        supabase.from('tasks').select('id, phase, status').eq('project_id', project.id),
       ])
       if (milestonesRes.data) setMilestones(milestonesRes.data as ProjectMilestone[])
       if (expensesRes.data) setExpenses(expensesRes.data as typeof project.expenses)
+      if (tasksRes.data && project.phases.length > 0) {
+        const norm = (s: string) => s.toLowerCase().replace(/[\s\-_]+/g, '')
+        const progress: Record<string, { total: number; completed: number }> = {}
+        for (const task of tasksRes.data) {
+          if (!task.phase) continue
+          const phase = project.phases.find((p: any) => norm(p.name) === norm(task.phase))
+          if (!phase) continue
+          if (!progress[phase.id]) progress[phase.id] = { total: 0, completed: 0 }
+          progress[phase.id].total++
+          if (task.status === 'completed') progress[phase.id].completed++
+        }
+        setPhaseTaskProgress(progress)
+      }
     }
 
     fetchLiveData()
-  }, [project.id])
+  }, [project.id, refreshKey])
+
+  function isMilestoneAtRisk(m: ProjectMilestone): boolean {
+    if (m.status === 'completed' || m.status === 'cancelled') return false
+    if (!m.phase_id) return false
+    const prog = phaseTaskProgress[m.phase_id]
+    if (!prog || prog.total === 0 || prog.completed === prog.total) return false
+    const daysUntil = (new Date(m.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    return daysUntil <= 14
+  }
 
   // Calculate completion percentage by milestone
   const completedMilestones = milestones.filter(m => m.status === 'completed').length
@@ -59,7 +84,9 @@ export default function ProjectOverviewTab({ project }: Props) {
     return acc
   }, {} as Record<string, number>)
 
-  const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0)
+  // Use the live project.spent value (kept current by ProjectDetailClient via onSpentChange)
+  // rather than summing the locally-fetched expenses, which may lag after Budget tab mutations.
+  const totalSpent = project.spent
 
   const topCategories = Object.entries(expensesByCategory)
     .sort(([, a], [, b]) => b - a)
@@ -78,7 +105,7 @@ export default function ProjectOverviewTab({ project }: Props) {
       {/* Key Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Milestones Progress */}
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(124,58,237,0.1)' }}>
               <TrendingUp className="w-5 h-5" style={{ color: '#7C3AED' }} />
@@ -97,7 +124,7 @@ export default function ProjectOverviewTab({ project }: Props) {
         </div>
 
         {/* Documents */}
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
               <FileText className="w-5 h-5" style={{ color: '#2563EB' }} />
@@ -116,7 +143,7 @@ export default function ProjectOverviewTab({ project }: Props) {
         </div>
 
         {/* Team Size */}
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
               <Users className="w-5 h-5" style={{ color: '#16A34A' }} />
@@ -131,7 +158,7 @@ export default function ProjectOverviewTab({ project }: Props) {
               <div
                 key={i}
                 className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium text-white overflow-hidden"
-                style={{ backgroundColor: '#6B7280', border: `2px solid ${colors.bgAlt}` }}
+                style={{ backgroundColor: '#6B7280', border: `2px solid ${colors.card}` }}
                 title={member.name}
               >
                 {member.avatar ? (
@@ -144,7 +171,7 @@ export default function ProjectOverviewTab({ project }: Props) {
             {project.teamMembers.length > 5 && (
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium"
-                style={{ backgroundColor: colors.bgMuted, border: `2px solid ${colors.bgAlt}`, color: colors.textMuted }}
+                style={{ backgroundColor: colors.bgMuted, border: `2px solid ${colors.card}`, color: colors.textMuted }}
               >
                 +{project.teamMembers.length - 5}
               </div>
@@ -156,68 +183,124 @@ export default function ProjectOverviewTab({ project }: Props) {
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Milestones */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Upcoming Milestones</h2>
+        <div className="rounded-lg overflow-hidden" style={{ backgroundColor: colors.card, border: colors.border }}>
+          <div className="px-5 py-4" style={{ borderBottom: colors.borderBottom }}>
+            <h2 className="text-base font-semibold" style={{ color: colors.text }}>Upcoming Milestones</h2>
           </div>
-          <div className="divide-y divide-gray-100 dark:divide-gray-700">
-            {upcomingMilestones.length > 0 ? (
-              upcomingMilestones.map((milestone) => {
-                const dueDate = new Date(milestone.due_date)
-                const today = new Date()
-                const daysUntil = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-                const isOverdue = daysUntil < 0
 
-                return (
-                  <div key={milestone.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 dark:text-gray-100">{milestone.name}</h3>
-                        {milestone.description && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{milestone.description}</p>
-                        )}
-                        <div className="flex items-center gap-2 mt-2">
-                          <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                          <span className="text-sm text-gray-600 dark:text-gray-400">{format(dueDate, 'MMM d, yyyy')}</span>
+          {upcomingMilestones.length > 0 ? (() => {
+            const [next, ...rest] = upcomingMilestones
+            return (
+              <div className="divide-y" style={{ borderColor: darkMode ? '#1f2937' : '#f3f4f6' }}>
+                {/* Next milestone — featured */}
+                {(() => {
+                  const dueDate = new Date(next.due_date)
+                  const daysUntil = Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                  const overdue = daysUntil < 0
+                  const atRisk = isMilestoneAtRisk(next)
+                  const prog = next.phase_id ? phaseTaskProgress[next.phase_id] : null
+                  const pct = prog && prog.total > 0 ? Math.round((prog.completed / prog.total) * 100) : null
+                  const trackBg = darkMode ? '#374151' : '#E5E7EB'
+                  return (
+                    <div className="px-5 py-4" style={{ backgroundColor: darkMode ? 'rgba(37,99,235,0.08)' : 'rgba(239,246,255,0.8)' }}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#2563EB' }}>Next Milestone</span>
+                            {atRisk && (
+                              <span className="text-xs font-medium px-1.5 py-0.5 rounded-full"
+                                style={{ backgroundColor: darkMode ? 'rgba(245,158,11,0.15)' : '#FFFBEB', color: '#D97706' }}>
+                                At Risk
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-semibold text-sm truncate" style={{ color: colors.text }}>{next.name}</p>
+                          {next.description && (
+                            <p className="text-xs mt-0.5 truncate" style={{ color: colors.textMuted }}>{next.description}</p>
+                          )}
+                          {pct !== null && prog && (
+                            <div className="mt-2 space-y-1">
+                              <div className="flex items-center justify-between text-xs" style={{ color: colors.textMuted }}>
+                                <span>{prog.completed}/{prog.total} tasks</span>
+                                <span>{pct}%</span>
+                              </div>
+                              <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: trackBg }}>
+                                <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: pct === 100 ? '#16A34A' : '#2563EB' }} />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                            overdue ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                            : daysUntil <= 7 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                          }`}>
+                            {overdue ? <><AlertTriangle className="h-3 w-3" />{Math.abs(daysUntil)}d overdue</>
+                              : daysUntil === 0 ? 'Due today'
+                              : `${daysUntil} days`}
+                          </span>
+                          <p className="text-xs mt-1" style={{ color: colors.textMuted }}>{format(dueDate, 'MMM d, yyyy')}</p>
                         </div>
                       </div>
-                      <div>
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                            isOverdue
-                              ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
-                              : daysUntil < 7
-                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300'
-                              : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                          }`}
-                        >
-                          {isOverdue ? (
-                            <>
-                              <AlertTriangle className="h-3 w-3" />
-                              {Math.abs(daysUntil)} days overdue
-                            </>
-                          ) : daysUntil === 0 ? (
-                            'Due today'
-                          ) : (
-                            `${daysUntil} days`
+                    </div>
+                  )
+                })()}
+
+                {/* Remaining milestones */}
+                {rest.map(milestone => {
+                  const dueDate = new Date(milestone.due_date)
+                  const daysUntil = Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                  const overdue = daysUntil < 0
+                  const atRisk = isMilestoneAtRisk(milestone)
+                  const prog = milestone.phase_id ? phaseTaskProgress[milestone.phase_id] : null
+                  const pct = prog && prog.total > 0 ? Math.round((prog.completed / prog.total) * 100) : null
+                  const trackBg = darkMode ? '#374151' : '#E5E7EB'
+                  return (
+                    <div key={milestone.id} className="px-5 py-3.5" style={{ borderColor: darkMode ? '#1f2937' : '#f3f4f6' }}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-sm font-medium truncate" style={{ color: colors.text }}>{milestone.name}</p>
+                            {atRisk && (
+                              <span className="text-xs font-medium px-1.5 py-0.5 rounded-full"
+                                style={{ backgroundColor: darkMode ? 'rgba(245,158,11,0.15)' : '#FFFBEB', color: '#D97706' }}>
+                                At Risk
+                              </span>
+                            )}
+                          </div>
+                          {pct !== null && prog && (
+                            <div className="mt-1.5 flex items-center gap-2">
+                              <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ backgroundColor: trackBg, maxWidth: '100px' }}>
+                                <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: pct === 100 ? '#16A34A' : '#2563EB' }} />
+                              </div>
+                              <span className="text-xs" style={{ color: colors.textMuted }}>{prog.completed}/{prog.total}</span>
+                            </div>
                           )}
+                        </div>
+                        <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${
+                          overdue ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                          : daysUntil <= 7 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                          : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                        }`}>
+                          {overdue ? `${Math.abs(daysUntil)}d overdue` : daysUntil === 0 ? 'Today' : `${daysUntil}d`}
                         </span>
                       </div>
                     </div>
-                  </div>
-                )
-              })
-            ) : (
-              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                <Calendar className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-                <p>No upcoming milestones</p>
+                  )
+                })}
               </div>
-            )}
-          </div>
+            )
+          })() : (
+            <div className="p-8 text-center" style={{ color: colors.textMuted }}>
+              <Calendar className="h-10 w-10 mx-auto mb-3" style={{ color: darkMode ? '#374151' : '#D1D5DB' }} />
+              <p className="text-sm">No upcoming milestones</p>
+            </div>
+          )}
         </div>
 
         {/* Budget Breakdown */}
-        <div className="rounded-lg" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="p-5" style={{ borderBottom: colors.borderBottom }}>
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold" style={{ color: colors.text }}>Budget Breakdown</h2>

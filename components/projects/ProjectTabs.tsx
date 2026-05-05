@@ -5,7 +5,7 @@
 // Tab navigation for project details
 // ============================================================================
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { Users, FileText, DollarSign, Calendar, CheckSquare, BarChart3, GitMerge, HelpCircle, Palette } from 'lucide-react'
 import ProjectTeamTab from './ProjectTeamTab'
@@ -28,6 +28,8 @@ type TabId = 'overview' | 'tasks' | 'design-selections' | 'timeline' | 'budget' 
 export default function ProjectTabs({ project, onSpentChange }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [milestoneCount, setMilestoneCount] = useState(project.milestones.length)
+  const [refreshKey, setRefreshKey] = useState(0)
+  const bumpRefresh = useCallback(() => setRefreshKey(k => k + 1), [])
 
   const tabs = [
     {
@@ -126,17 +128,17 @@ export default function ProjectTabs({ project, onSpentChange }: Props) {
         </nav>
       </div>
 
-      {/* Tab Content */}
+      {/* Tab Content — all tabs mount immediately so background fetches run in parallel */}
       <div className="pb-12">
-        {activeTab === 'overview' && <ProjectOverviewTab project={project} />}
-        {activeTab === 'team' && <ProjectTeamTab project={project} />}
-        {activeTab === 'documents' && <ProjectDocumentsTab project={project} />}
-        {activeTab === 'budget' && <ProjectBudgetTab project={project} onSpentChange={onSpentChange} />}
-        {activeTab === 'timeline' && <ProjectTimelineTab project={project} onMilestoneCountChange={setMilestoneCount} />}
-        {activeTab === 'tasks' && <ProjectTasksTab project={project} />}
-        {activeTab === 'design-selections' && <ProjectDesignSelectionsTab project={project} />}
-        {activeTab === 'change-orders' && <ProjectChangeOrdersTab project={project} />}
-        {activeTab === 'rfis' && <ProjectRFIsTab project={project} />}
+        <div className={activeTab === 'overview' ? '' : 'hidden'}><ProjectOverviewTab project={project} refreshKey={refreshKey} /></div>
+        <div className={activeTab === 'tasks' ? '' : 'hidden'}><ProjectTasksTab project={project} refreshKey={refreshKey} onMutate={bumpRefresh} /></div>
+        <div className={activeTab === 'design-selections' ? '' : 'hidden'}><ProjectDesignSelectionsTab project={project} refreshKey={refreshKey} onMutate={bumpRefresh} /></div>
+        <div className={activeTab === 'timeline' ? '' : 'hidden'}><ProjectTimelineTab project={project} refreshKey={refreshKey} onMutate={bumpRefresh} onMilestoneCountChange={setMilestoneCount} /></div>
+        <div className={activeTab === 'budget' ? '' : 'hidden'}><ProjectBudgetTab project={project} refreshKey={refreshKey} onMutate={bumpRefresh} onSpentChange={onSpentChange} /></div>
+        <div className={activeTab === 'documents' ? '' : 'hidden'}><ProjectDocumentsTab project={project} refreshKey={refreshKey} /></div>
+        <div className={activeTab === 'team' ? '' : 'hidden'}><ProjectTeamTab project={project} /></div>
+        <div className={activeTab === 'change-orders' ? '' : 'hidden'}><ProjectChangeOrdersTab project={project} refreshKey={refreshKey} onMutate={bumpRefresh} /></div>
+        <div className={activeTab === 'rfis' ? '' : 'hidden'}><ProjectRFIsTab project={project} refreshKey={refreshKey} onMutate={bumpRefresh} /></div>
       </div>
     </div>
   )

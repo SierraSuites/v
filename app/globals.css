@@ -281,11 +281,6 @@
 .dark .force-light textarea::placeholder {
   color: #94a3b8 !important;
 }
-.dark .force-light button:not([data-slot="button"]) {
-  background-color: revert !important;
-  color: revert !important;
-  border-color: revert !important;
-}
 .dark .force-light .bg-white          { background-color: #ffffff !important; }
 .dark .force-light .bg-gray-50        { background-color: #f9fafb !important; }
 .dark .force-light .bg-gray-100       { background-color: #f3f4f6 !important; }
@@ -294,6 +289,12 @@
 .dark .force-light .text-gray-700     { color: #374151 !important; }
 .dark .force-light .text-gray-600     { color: #4b5563 !important; }
 .dark .force-light .border-gray-200   { border-color: #e5e7eb !important; }
+/* Undo rounded card overrides inside force-light pages */
+.dark .force-light .rounded-xl[style],
+.dark .force-light .rounded-lg[style] { background-color: var(--card) !important; border-color: var(--border) !important; }
+.dark .force-light .rounded-xl.border,
+.dark .force-light .rounded-lg.border,
+.dark .force-light .rounded-2xl.border { border-color: var(--border) !important; }
 
 /* ─── Global dark mode overrides ─────────────────────────────────────────────
    Pages use hardcoded Tailwind utility classes (bg-white, bg-gray-50, etc.)

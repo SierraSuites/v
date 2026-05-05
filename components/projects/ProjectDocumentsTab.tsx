@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { createClient } from '@/lib/supabase/client'
-import { getUserCompany } from '@/lib/auth/get-user-company'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import toast from 'react-hot-toast'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
@@ -26,9 +26,10 @@ interface Document {
 
 interface ProjectDocumentsTabProps {
   project: ProjectDetails
+  refreshKey?: number
 }
 
-export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProps) {
+export default function ProjectDocumentsTab({ project, refreshKey = 0 }: ProjectDocumentsTabProps) {
   const { colors, darkMode } = useThemeColors()
   const projectId = project.id
   const [documents, setDocuments] = useState<Document[] | null>(null)
@@ -45,7 +46,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
 
   useEffect(() => {
     loadDocuments()
-  }, [projectId])
+  }, [projectId, refreshKey])
 
   useEffect(() => {
     async function loadEntityOptions() {
@@ -79,51 +80,30 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
 
   async function loadDocuments() {
     try {
-      const supabase = createClient()
+      const res = await fetch(`/api/projects/${projectId}/documents`)
+      if (!res.ok) throw new Error('Failed to load documents')
+      const { documents: data } = await res.json()
 
-      const { data, error } = await supabase
-        .from('project_documents')
-        .select(`
-          id,
-          name,
-          file_path,
-          file_type,
-          file_size,
-          category,
-          uploaded_at,
-          linked_entity_type,
-          linked_entity_id,
-          uploaded_by:user_profiles!project_documents_uploaded_by_fkey (
-            id,
-            full_name,
-            avatar_url
-          )
-        `)
-        .eq('project_id', projectId)
-        .order('uploaded_at', { ascending: false })
-
-      if (error) throw error
-
-      const formattedDocs: Document[] = (data || []).map(doc => ({
+      const formattedDocs: Document[] = (data || []).map((doc: any) => ({
         id: doc.id,
         name: doc.name,
-        file_path: (doc as any).file_path,
+        file_path: doc.file_path,
         file_type: doc.file_type,
         file_size: doc.file_size,
         category: doc.category,
         uploaded_at: doc.uploaded_at,
-        linked_entity_type: (doc as any).linked_entity_type || null,
-        linked_entity_id: (doc as any).linked_entity_id || null,
+        linked_entity_type: doc.linked_entity_type || null,
+        linked_entity_id: doc.linked_entity_id || null,
         uploaded_by: {
-          id: (doc.uploaded_by as any)?.id || '',
-          name: (doc.uploaded_by as any)?.full_name || 'Unknown',
-          avatar: getInitials((doc.uploaded_by as any)?.full_name || 'Unknown')
+          id: doc.uploaded_by_profile?.id || '',
+          name: doc.uploaded_by_profile?.full_name || 'Unknown',
+          avatar: getInitials(doc.uploaded_by_profile?.full_name || 'Unknown')
         }
       }))
 
       setDocuments(formattedDocs)
     } catch (error: any) {
-      console.error('Failed to load documents:', error?.code, error?.message, error?.details, error?.hint)
+      console.error('Failed to load documents:', error?.message)
     } finally {
       setLoading(false)
     }
@@ -131,71 +111,50 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
 
   async function handleUpload(files: FileList) {
     if (!files || files.length === 0) return
-
     setUploading(true)
-
     try {
       const supabase = createClient()
-      const profile = await getUserCompany()
-
-      if (!profile) {
-        throw new Error('Not authenticated')
-      }
 
       for (const file of Array.from(files)) {
-        // Validate file size (max 50MB)
-        const maxSize = 50 * 1024 * 1024
-        if (file.size > maxSize) {
+        if (file.size > 50 * 1024 * 1024) {
           toast.error(`File ${file.name} is too large. Maximum size is 50MB.`)
           continue
         }
 
-        // Upload to Supabase Storage
         const timestamp = Date.now()
         const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
         const filePath = `${projectId}/${timestamp}-${sanitizedFileName}`
 
         const { error: uploadError } = await supabase.storage
           .from('project-documents')
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
-          })
+          .upload(filePath, file, { cacheControl: '3600', upsert: false })
 
         if (uploadError) {
-          console.error('Upload error:', uploadError)
           toast.error(`Failed to upload ${file.name}: ${uploadError.message}`)
           continue
         }
 
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('project-documents')
-          .getPublicUrl(filePath)
-
-        // Create database record
-        const { error: dbError } = await supabase
-          .from('project_documents')
-          .insert({
-            project_id: projectId,
+        // Route DB record through API so RBAC is enforced
+        const res = await fetch(`/api/projects/${projectId}/documents`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             name: file.name,
             file_path: filePath,
             file_type: file.type,
             file_size: file.size,
             category: detectCategory(file.name),
-            uploaded_by: profile.id
-          })
-
-        if (dbError) {
-          console.error('Database error:', dbError)
-          toast.error(`Failed to save ${file.name} record: ${dbError.message}`)
+          }),
+        })
+        if (!res.ok) {
+          toast.error(`Failed to save ${file.name} record.`)
+          // Clean up the orphaned storage file
+          await supabase.storage.from('project-documents').remove([filePath])
         }
       }
 
-      // Reload documents
       await loadDocuments()
     } catch (error) {
-      console.error('Upload failed:', error)
       toast.error('Upload failed. Please try again.')
     } finally {
       setUploading(false)
@@ -204,17 +163,8 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
 
   async function handleDelete(documentId: string) {
     try {
-      const supabase = createClient()
-
-      // Delete from database (storage deletion can be handled by trigger or separately)
-      const { error } = await supabase
-        .from('project_documents')
-        .delete()
-        .eq('id', documentId)
-
-      if (error) throw error
-
-      // Remove from local state
+      const res = await fetch(`/api/projects/${projectId}/documents?documentId=${documentId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(await res.text())
       setDocuments(prev => (prev ?? []).filter(d => d.id !== documentId))
       setConfirmDeleteDoc(null)
     } catch (error) {
@@ -224,11 +174,12 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
   }
 
   async function linkDocument(docId: string, entityType: string | null, entityId: string | null) {
-    const supabase = createClient()
-    await supabase
-      .from('project_documents')
-      .update({ linked_entity_type: entityType, linked_entity_id: entityId })
-      .eq('id', docId)
+    const res = await fetch(`/api/projects/${projectId}/documents?documentId=${docId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ linked_entity_type: entityType, linked_entity_id: entityId }),
+    })
+    if (!res.ok) { toast.error('Failed to update link.'); return }
     setDocuments(prev => prev
       ? prev.map(d => d.id === docId ? { ...d, linked_entity_type: entityType as Document['linked_entity_type'], linked_entity_id: entityId } : d)
       : prev
@@ -359,8 +310,8 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Documents</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Upload and manage project files and attachments</p>
+        <h2 className="text-xl font-semibold" style={{ color: colors.text }}>Documents</h2>
+        <p className="text-sm mt-1" style={{ color: colors.textMuted }}>Upload and manage project files and attachments</p>
       </div>
 
       {/* Stat Cards */}
@@ -435,30 +386,28 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
 
       {/* Upload Area */}
       <div
-        className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-          dragActive
-            ? 'border-blue-500 bg-blue-50'
-            : uploading
-            ? 'border-gray-300 bg-gray-50'
-            : 'border-gray-300 hover:border-gray-400'
-        }`}
+        className="border-2 border-dashed rounded-xl p-8 text-center transition-colors"
+        style={{
+          borderColor: dragActive ? '#3B82F6' : colors.bgMuted,
+          backgroundColor: dragActive ? (darkMode ? 'rgba(37,99,235,0.1)' : '#EFF6FF') : colors.bgAlt,
+        }}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
       >
-        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: darkMode ? 'rgba(37,99,235,0.15)' : '#DBEAFE' }}>
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#2563EB' }}>
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
         </div>
-        <p className="text-lg font-medium text-gray-900 mb-2">
+        <p className="text-lg font-medium mb-2" style={{ color: colors.text }}>
           {uploading ? 'Uploading files...' : 'Upload Documents'}
         </p>
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm mb-4" style={{ color: colors.textMuted }}>
           Drag and drop files here, or click to browse
         </p>
-        <p className="text-xs text-gray-500 mb-4">
+        <p className="text-xs mb-4" style={{ color: colors.textMuted }}>
           Supported: PDF, Word, Excel, Images, CAD files (Max 50MB per file)
         </p>
         <input
@@ -494,11 +443,11 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
           <button
             key={cat.value}
             onClick={() => setFilter(cat.value)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-              filter === cat.value
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            className="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors"
+            style={filter === cat.value
+              ? { backgroundColor: '#2563EB', color: '#fff' }
+              : { backgroundColor: colors.bgAlt, color: colors.textMuted }
+            }
           >
             {cat.label} <span className={filter === cat.value ? 'opacity-90' : 'opacity-60'}>({cat.count})</span>
           </button>
@@ -511,17 +460,18 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
           filteredDocuments.map(doc => (
             <div
               key={doc.id}
-              className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+              className="flex items-center gap-4 p-4 rounded-lg transition-shadow"
+              style={{ backgroundColor: colors.bg, border: colors.border }}
             >
               {/* File Icon */}
-              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center shrink-0 text-2xl">
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 text-2xl" style={{ backgroundColor: darkMode ? 'rgba(37,99,235,0.1)' : '#EFF6FF' }}>
                 {getFileIcon(doc.file_type, doc.category)}
               </div>
 
               {/* File Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <h4 className="font-medium text-gray-900 truncate">{doc.name}</h4>
+                  <h4 className="font-medium truncate" style={{ color: colors.text }}>{doc.name}</h4>
                   {doc.linked_entity_type && (() => {
                     const opt = entityOptions.find(o => o.id === doc.linked_entity_id)
                     const label = doc.linked_entity_type === 'change_order' ? 'CO' : doc.linked_entity_type === 'rfi' ? 'RFI' : 'DS'
@@ -535,7 +485,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
                     )
                   })()}
                 </div>
-                <div className="flex items-center gap-3 text-sm text-gray-500 mt-1 flex-wrap">
+                <div className="flex items-center gap-3 text-sm mt-1 flex-wrap" style={{ color: colors.textMuted }}>
                   <span>{formatFileSize(doc.file_size)}</span>
                   <span className="hidden sm:inline">•</span>
                   <span className="hidden sm:inline">{formatDate(doc.uploaded_at)}</span>
@@ -566,7 +516,7 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
                         <option key={o.id} value={o.id}>{o.label}</option>
                       ))}
                     </select>
-                    <button onClick={() => setLinkingDocId(null)} className="text-xs text-gray-400 hover:text-gray-600">✕</button>
+                    <button onClick={() => setLinkingDocId(null)} className="text-xs" style={{ color: colors.textMuted }}>✕</button>
                   </div>
                 )}
               </div>
@@ -623,12 +573,12 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
             </div>
           ))
         ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <div className="text-center py-12 bg-[#F9FAFB] dark:bg-[#1a1d2e] rounded-lg" style={{ border: colors.border }}>
             <div className="text-6xl mb-4">📁</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="text-lg font-medium mb-2" style={{ color: colors.text }}>
               No {filter === 'all' ? '' : filter} documents yet
             </h3>
-            <p className="text-gray-600">
+            <p style={{ color: colors.textMuted }}>
               {filter === 'all'
                 ? 'Upload your first document to get started'
                 : `Upload ${filter} files to see them here`}
@@ -656,18 +606,19 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 shrink-0">
+              <div className="flex items-center justify-between px-5 py-3 shrink-0" style={{ borderBottom: colors.borderBottom }}>
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="text-xl">{getFileIcon(previewDoc.file_type, previewDoc.category)}</span>
-                  <span className="font-medium text-gray-900 truncate">{previewDoc.name}</span>
-                  <span className="text-sm text-gray-500 shrink-0">{formatFileSize(previewDoc.file_size)}</span>
+                  <span className="font-medium truncate" style={{ color: colors.text }}>{previewDoc.name}</span>
+                  <span className="text-sm shrink-0" style={{ color: colors.textMuted }}>{formatFileSize(previewDoc.file_size)}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-4">
                   <a
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors"
+                    style={{ backgroundColor: colors.bgAlt, color: colors.text, border: colors.border }}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -685,10 +636,13 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
                   </button>
                   <button
                     onClick={() => setPreviewDoc(null)}
-                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-1.5 rounded-lg transition-colors"
+                    style={{ color: colors.textMuted }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = colors.bgMuted)}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                     title="Close"
                   >
-                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -696,11 +650,11 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
               </div>
 
               {/* Preview Body */}
-              <div className="flex-1 overflow-hidden bg-gray-100">
+              <div className="flex-1 overflow-hidden" style={{ backgroundColor: colors.bgAlt }}>
                 {isPdf && (
                   previewBlobUrl
                     ? <iframe src={previewBlobUrl} className="w-full h-full border-0" title={previewDoc.name} />
-                    : <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    : <div className="w-full h-full flex items-center justify-center" style={{ color: colors.textMuted }}>
                         <svg className="w-8 h-8 animate-spin" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -717,9 +671,9 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
                   </div>
                 )}
                 {!canPreview && (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-gray-500">
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-4" style={{ color: colors.textMuted }}>
                     <div className="text-6xl">{getFileIcon(previewDoc.file_type, previewDoc.category)}</div>
-                    <p className="text-lg font-medium text-gray-700">Preview not available for this file type</p>
+                    <p className="text-lg font-medium" style={{ color: colors.text }}>Preview not available for this file type</p>
                     <p className="text-sm">{previewDoc.file_type || 'Unknown type'}</p>
                     <button
                       onClick={() => handleDownload(url, previewDoc.name)}
@@ -739,9 +693,9 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
       })()}
 
       {/* Confirm Delete Modal */}
-      {confirmDeleteDoc && (
+      {confirmDeleteDoc && createPortal(
         <>
-          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDeleteDoc(null)} />
+          <div className="fixed inset-0 bg-black/40 z-9999" onClick={() => setConfirmDeleteDoc(null)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
             <div className="pointer-events-auto rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
               <p className="text-sm font-medium text-center mb-1" style={{ color: colors.text }}>Delete this document?</p>
@@ -764,7 +718,8 @@ export default function ProjectDocumentsTab({ project }: ProjectDocumentsTabProp
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.getElementById('modal-portal-root') ?? document.body
       )}
     </div>
   )

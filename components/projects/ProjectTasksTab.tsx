@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { createClient } from '@/lib/supabase/client'
-import { updateTask, createTask } from '@/lib/supabase/tasks'
 import toast from 'react-hot-toast'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import {
@@ -61,6 +61,8 @@ interface Task {
 
 interface Props {
   project: ProjectDetails
+  refreshKey?: number
+  onMutate?: () => void
 }
 
 function PriorityBadge({ priority }: { priority: Task['priority'] }) {
@@ -123,7 +125,7 @@ function avatarColor(name: string) {
   return palette[Math.abs(hash) % palette.length]
 }
 
-export default function ProjectTasksTab({ project }: Props) {
+export default function ProjectTasksTab({ project, refreshKey = 0, onMutate }: Props) {
   const { colors, darkMode } = useThemeColors()
   const [tasks, setTasks] = useState<Task[] | null>(null)
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'done'>('all')
@@ -141,30 +143,27 @@ export default function ProjectTasksTab({ project }: Props) {
 
   useEffect(() => {
     fetchTasks()
-  }, [project.id])
+  }, [project.id, refreshKey])
 
   async function fetchTasks() {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('project_id', project.id)
-        .order('created_at', { ascending: false })
-      if (!error && data) {
-        const fetched = data as Task[]
-        setTasks(fetched)
-        syncProgress(fetched)
-      }
-    } catch { /* tasks table may use different schema */ }
+      const res = await fetch(`/api/projects/${project.id}/tasks`)
+      if (!res.ok) throw new Error(await res.text())
+      const { tasks: data } = await res.json()
+      const fetched = (data ?? []) as Task[]
+      setTasks(fetched)
+      syncProgress(fetched)
+    } catch (err) {
+      console.error('Failed to load tasks:', err)
+      setTasks([])
+      toast.error('Failed to load tasks.')
+    }
   }
 
   function calcProgress(currentTasks: Task[]) {
     if (currentTasks.length === 0) return 0
-    const total = currentTasks.reduce((s, t) => s + (t.estimated_hours ?? 1), 0)
-    const done  = currentTasks.filter(t => t.status === 'completed')
-                               .reduce((s, t) => s + (t.estimated_hours ?? 1), 0)
-    return Math.round((done / total) * 100)
+    const completed = currentTasks.filter(t => t.status === 'completed').length
+    return Math.round((completed / currentTasks.length) * 100)
   }
 
   function syncProgress(currentTasks: Task[]) {
@@ -196,30 +195,47 @@ export default function ProjectTasksTab({ project }: Props) {
     }
 
     const prevTask = tasks?.find(t => t.id === taskId)
+    const prevTasks = tasks ?? []
     const wasCompleted = prevTask?.status === 'completed'
     const becomingIncomplete = wasCompleted && status !== 'completed'
 
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('tasks')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', taskId)
-      .select()
-      .single()
-    if (data) {
-      const updatedTask = data as Task
-      const updated = (tasks ?? []).map(t => t.id === taskId ? updatedTask : t)
-      setTasks(updated)
-      syncProgress(updated)
+    // Optimistic update — UI responds instantly
+    const optimisticTask = { ...prevTask!, status }
+    const optimisticTasks = prevTasks.map(t => t.id === taskId ? optimisticTask : t)
+    setTasks(optimisticTasks)
+    syncProgress(optimisticTasks)
+    if (detailTask?.id === taskId) setDetailTask(optimisticTask)
+    setStatusDropdownId(null)
+
+    // Network request in background
+    const res = await fetch(`/api/projects/${project.id}/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
+    const json = await res.json()
+    if (json.task) {
+      // Reconcile with server response (picks up updated_at etc.)
+      const updatedTask = json.task as Task
+      const reconciledTasks = (tasks ?? []).map(t => t.id === taskId ? updatedTask : t)
+      setTasks(reconciledTasks)
+      syncProgress(reconciledTasks)
       if (detailTask?.id === taskId) setDetailTask(updatedTask)
 
       if (status === 'completed' && updatedTask.design_selection_id && updatedTask.selection_task_type) {
         await syncSelectionOnTaskComplete(updatedTask)
+        onMutate?.()
       } else if (becomingIncomplete && prevTask?.design_selection_id && prevTask?.selection_task_type) {
         await revertSelectionOnTaskUncomplete(prevTask)
+        onMutate?.()
       }
+    } else {
+      // Rollback on failure
+      setTasks(prevTasks)
+      syncProgress(prevTasks)
+      if (detailTask?.id === taskId && prevTask) setDetailTask(prevTask)
+      toast.error('Failed to update task status')
     }
-    setStatusDropdownId(null)
   }
 
   async function revertSelectionOnTaskUncomplete(task: Task) {
@@ -319,93 +335,102 @@ export default function ProjectTasksTab({ project }: Props) {
   }
 
   async function deleteTask(id: string) {
-    const supabase = createClient()
-    await supabase.from('tasks').delete().eq('id', id)
+    await fetch(`/api/projects/${project.id}/tasks/${id}`, { method: 'DELETE' })
     const updated = (tasks ?? []).filter(t => t.id !== id)
     setTasks(updated)
     setConfirmDeleteId(null)
     setDetailTask(null)
     syncProgress(updated)
+    onMutate?.()
   }
 
   async function handleAddTask(taskData: any) {
-    const { error } = await createTask({
-      title:              taskData.title!,
-      description:        taskData.description || null,
-      project_id:         project.id,
-      project_name:       project.name,
-      trade:              taskData.trade || 'general',
-      phase:              taskData.phase || 'pre-construction',
-      priority:           taskData.priority || null,
-      status:             taskData.status || 'not-started',
-      assignee_id:        taskData.assigneeId || null,
-      assignee_name:      taskData.assignee || null,
-      assignee_avatar:    taskData.assigneeAvatar || null,
-      start_date:         taskData.startDate || null,
-      due_date:           taskData.dueDate || new Date().toISOString().split('T')[0],
-      duration:           taskData.duration || 1,
-      progress:           taskData.progress || 0,
-      estimated_hours:    taskData.estimatedHours || 8,
-      actual_hours:       taskData.actualHours || 0,
-      dependencies:       taskData.dependencies || [],
-      attachments:        taskData.attachments || 0,
-      comments:           taskData.comments || 0,
-      location:           taskData.location || null,
-      weather_dependent:  taskData.weatherDependent || false,
-      weather_buffer:     taskData.weatherBuffer || 0,
-      inspection_required: taskData.inspectionRequired || false,
-      inspection_type:    taskData.inspectionType || null,
-      crew_size:          taskData.crewSize || 1,
-      equipment:          taskData.equipment || [],
-      materials:          taskData.materials || [],
-      certifications:     taskData.certifications || [],
-      safety_protocols:   taskData.safetyProtocols || [],
-      quality_standards:  taskData.qualityStandards || [],
-      documentation:      taskData.documentation || [],
-      notify_inspector:   taskData.notifyInspector || false,
-      client_visibility:  taskData.clientVisibility || false,
+    const res = await fetch(`/api/projects/${project.id}/tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title:               taskData.title,
+        description:         taskData.description || null,
+        project_name:        project.name,
+        trade:               taskData.trade || 'general',
+        phase:               taskData.phase || 'pre-construction',
+        priority:            taskData.priority || null,
+        status:              taskData.status || 'not-started',
+        assignee_id:         taskData.assigneeId || null,
+        assignee_name:       taskData.assignee || null,
+        assignee_avatar:     taskData.assigneeAvatar || null,
+        start_date:          taskData.startDate || null,
+        due_date:            taskData.dueDate || new Date().toISOString().split('T')[0],
+        duration:            taskData.duration || 1,
+        progress:            taskData.progress || 0,
+        estimated_hours:     taskData.estimatedHours || 8,
+        actual_hours:        taskData.actualHours || 0,
+        dependencies:        taskData.dependencies || [],
+        attachments:         taskData.attachments || 0,
+        comments:            taskData.comments || 0,
+        location:            taskData.location || null,
+        weather_dependent:   taskData.weatherDependent || false,
+        weather_buffer:      taskData.weatherBuffer || 0,
+        inspection_required: taskData.inspectionRequired || false,
+        inspection_type:     taskData.inspectionType || null,
+        crew_size:           taskData.crewSize || 1,
+        equipment:           taskData.equipment || [],
+        materials:           taskData.materials || [],
+        certifications:      taskData.certifications || [],
+        safety_protocols:    taskData.safetyProtocols || [],
+        quality_standards:   taskData.qualityStandards || [],
+        documentation:       taskData.documentation || [],
+        notify_inspector:    taskData.notifyInspector || false,
+        client_visibility:   taskData.clientVisibility || false,
+      }),
     })
-    if (!error) {
+    if (res.ok) {
       setShowAddTaskModal(false)
       await fetchTasks()
+      onMutate?.()
     }
   }
 
   async function handleEditSave(taskData: any) {
     if (!detailTask) return
-    const { error } = await updateTask(detailTask.id, {
-      title:              taskData.title!,
-      description:        taskData.description || null,
-      trade:              taskData.trade,
-      phase:              taskData.phase || undefined,
-      priority:           taskData.priority,
-      status:             taskData.status,
-      assignee_id:        taskData.assigneeId || null,
-      assignee_name:      taskData.assignee || null,
-      start_date:         taskData.startDate || null,
-      due_date:           taskData.dueDate || null,
-      duration:           taskData.duration ?? 0,
-      progress:           taskData.progress ?? 0,
-      estimated_hours:    taskData.estimatedHours ?? 0,
-      actual_hours:       taskData.actualHours ?? 0,
-      dependencies:       taskData.dependencies ?? [],
-      location:           taskData.location || null,
-      weather_dependent:  taskData.weatherDependent ?? false,
-      weather_buffer:     taskData.weatherBuffer ?? 0,
-      inspection_required: taskData.inspectionRequired ?? false,
-      inspection_type:    taskData.inspectionType || null,
-      crew_size:          taskData.crewSize ?? 1,
-      equipment:          taskData.equipment ?? [],
-      materials:          taskData.materials ?? [],
-      certifications:     taskData.certifications ?? [],
-      safety_protocols:   taskData.safetyProtocols ?? [],
-      quality_standards:  taskData.qualityStandards ?? [],
-      client_visibility:  taskData.clientVisibility ?? false,
+    const res = await fetch(`/api/projects/${project.id}/tasks/${detailTask.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title:               taskData.title,
+        description:         taskData.description || null,
+        trade:               taskData.trade,
+        phase:               taskData.phase || undefined,
+        priority:            taskData.priority,
+        status:              taskData.status,
+        assignee_id:         taskData.assigneeId || null,
+        assignee_name:       taskData.assignee || null,
+        start_date:          taskData.startDate || null,
+        due_date:            taskData.dueDate || null,
+        duration:            taskData.duration ?? 0,
+        progress:            taskData.progress ?? 0,
+        estimated_hours:     taskData.estimatedHours ?? 0,
+        actual_hours:        taskData.actualHours ?? 0,
+        dependencies:        taskData.dependencies ?? [],
+        location:            taskData.location || null,
+        weather_dependent:   taskData.weatherDependent ?? false,
+        weather_buffer:      taskData.weatherBuffer ?? 0,
+        inspection_required: taskData.inspectionRequired ?? false,
+        inspection_type:     taskData.inspectionType || null,
+        crew_size:           taskData.crewSize ?? 1,
+        equipment:           taskData.equipment ?? [],
+        materials:           taskData.materials ?? [],
+        certifications:      taskData.certifications ?? [],
+        safety_protocols:    taskData.safetyProtocols ?? [],
+        quality_standards:   taskData.qualityStandards ?? [],
+        client_visibility:   taskData.clientVisibility ?? false,
+      }),
     })
-    if (!error) {
+    if (res.ok) {
       setShowEditModal(false)
       setDetailTask(null)
       await fetchTasks()
+      onMutate?.()
     }
   }
 
@@ -531,7 +556,7 @@ export default function ProjectTasksTab({ project }: Props) {
 
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-4 gap-3">
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: darkMode ? 'rgba(75,85,99,0.2)' : '#F3F4F6' }}>
               <ClockIcon className="w-5 h-5" style={{ color: darkMode ? '#9CA3AF' : '#6B7280' }} />
@@ -546,7 +571,7 @@ export default function ProjectTasksTab({ project }: Props) {
           </div>
         </div>
 
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
               <PencilIcon className="w-5 h-5" style={{ color: '#2563EB' }} />
@@ -561,7 +586,7 @@ export default function ProjectTasksTab({ project }: Props) {
           </div>
         </div>
 
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
               <CheckIcon className="w-5 h-5" style={{ color: '#16A34A' }} />
@@ -579,7 +604,7 @@ export default function ProjectTasksTab({ project }: Props) {
           </div>
         </div>
 
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: overdueCount > 0 ? 'rgba(220,38,38,0.1)' : (darkMode ? 'rgba(75,85,99,0.2)' : '#F3F4F6') }}>
               <XMarkIcon className="w-5 h-5" style={{ color: overdueCount > 0 ? '#DC2626' : (darkMode ? '#6B7280' : '#9CA3AF') }} />
@@ -649,7 +674,7 @@ export default function ProjectTasksTab({ project }: Props) {
 
       {/* ── Phase Groups ── */}
       {filtered.length === 0 ? (
-        <div className="rounded-lg p-12 text-center" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-12 text-center" style={{ backgroundColor: colors.card, border: colors.border }}>
           <CheckIcon className="h-12 w-12 mx-auto mb-4" style={{ color: darkMode ? '#374151' : '#D1D5DB' }} />
           <h3 className="text-base font-medium mb-1" style={{ color: colors.text }}>
             {filterStatus === 'done' ? 'No completed tasks yet' : 'No active tasks'}
@@ -1126,10 +1151,10 @@ export default function ProjectTasksTab({ project }: Props) {
       )}
 
       {/* ── Confirm Delete ── */}
-      {confirmDeleteId && (
+      {confirmDeleteId && createPortal(
         <>
-          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDeleteId(null)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="fixed inset-0 bg-black/40 z-9999" onClick={() => setConfirmDeleteId(null)} />
+          <div className="fixed inset-0 z-9999 flex items-center justify-center pointer-events-none">
             <div className="pointer-events-auto rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
               <p className="text-sm font-medium text-center mb-1" style={{ color: colors.text }}>Delete this task?</p>
               <p className="text-xs text-center mb-5 truncate px-2" style={{ color: colors.textMuted }}>
@@ -1153,7 +1178,8 @@ export default function ProjectTasksTab({ project }: Props) {
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.getElementById('modal-portal-root') ?? document.body
       )}
     </div>
   )

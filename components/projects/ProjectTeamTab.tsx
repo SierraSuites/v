@@ -160,7 +160,7 @@ export default function ProjectTeamTab({ project }: Props) {
     u.email.toLowerCase().includes(addSearch.toLowerCase())
   )
 
-  const cardStyle = { backgroundColor: colors.bg, border: colors.border, borderRadius: '0.5rem' }
+  const cardStyle = { backgroundColor: colors.card, border: colors.border, borderRadius: '0.5rem' }
   const inputStyle = {
     backgroundColor: colors.bgAlt,
     border: colors.border,
@@ -189,7 +189,7 @@ export default function ProjectTeamTab({ project }: Props) {
         <button
           onClick={() => { setShowAddModal(true); setAddError('') }}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium cursor-pointer"
-          disabled={available.length === 0 && !loading}
+          disabled={!loading && available.length === 0 && (members ?? []).length > 0}
         >
           <UserPlus className="h-4 w-4" />
           Add Member
@@ -202,7 +202,7 @@ export default function ProjectTeamTab({ project }: Props) {
         return (
           <div className="grid grid-cols-3 gap-4">
             {/* Total Members */}
-            <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+            <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
                   <Users className="w-5 h-5" style={{ color: '#2563EB' }} />
@@ -219,7 +219,7 @@ export default function ProjectTeamTab({ project }: Props) {
             </div>
 
             {/* Unique Roles */}
-            <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+            <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(124,58,237,0.1)' }}>
                   <Shield className="w-5 h-5" style={{ color: '#7C3AED' }} />
@@ -236,7 +236,7 @@ export default function ProjectTeamTab({ project }: Props) {
             </div>
 
             {/* Edit Access */}
-            <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+            <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(22,163,74,0.1)' }}>
                   <Crown className="w-5 h-5" style={{ color: '#16A34A' }} />

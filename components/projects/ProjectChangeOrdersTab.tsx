@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import {
@@ -33,6 +34,8 @@ interface ChangeOrder {
 
 interface Props {
   project: ProjectDetails
+  refreshKey?: number
+  onMutate?: () => void
 }
 
 const STATUS_LABELS: Record<ChangeOrder['status'], string> = {
@@ -61,7 +64,7 @@ function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function ProjectChangeOrdersTab({ project }: Props) {
+export default function ProjectChangeOrdersTab({ project, refreshKey = 0, onMutate }: Props) {
   const { colors, darkMode } = useThemeColors()
   const [changeOrders, setChangeOrders] = useState<ChangeOrder[] | null>(null)
   const [loading, setLoading] = useState(false)
@@ -79,7 +82,7 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
 
   useEffect(() => {
     fetchChangeOrders()
-  }, [project.id])
+  }, [project.id, refreshKey])
 
   async function fetchChangeOrders() {
     try {
@@ -118,6 +121,7 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
         setChangeOrders(prev => [newCO, ...(prev ?? [])])
         setForm({ title: '', description: '', reason: '', change_amount: '', days_added: '0' })
         setShowForm(false)
+        onMutate?.()
       }
     } finally {
       setSubmitting(false)
@@ -133,6 +137,7 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
     if (res.ok) {
       const updated = await res.json()
       setChangeOrders(prev => (prev ?? []).map(co => co.id === coId ? updated : co))
+      onMutate?.()
     }
   }
 
@@ -140,6 +145,7 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
     const res = await fetch(`/api/projects/${project.id}/change-orders/${coId}`, { method: 'DELETE' })
     if (res.ok) {
       setChangeOrders(prev => (prev ?? []).filter(co => co.id !== coId))
+      onMutate?.()
     }
     setConfirmDeleteId(null)
   }
@@ -158,8 +164,8 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Change Orders</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="text-xl font-semibold" style={{ color: colors.text }}>Change Orders</h2>
+          <p className="text-sm mt-1" style={{ color: colors.textMuted }}>
             Track scope changes and budget adjustments
           </p>
         </div>
@@ -175,7 +181,7 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
         {/* Total CO Value */}
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: totalValue >= 0 ? 'rgba(22,163,74,0.1)' : 'rgba(220,38,38,0.1)' }}>
               <DocumentTextIcon className="w-5 h-5" style={{ color: totalValue >= 0 ? '#16A34A' : '#DC2626' }} />
@@ -192,7 +198,7 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
         </div>
 
         {/* Pending Approval */}
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: pendingCount > 0 ? 'rgba(217,119,6,0.1)' : (darkMode ? 'rgba(75,85,99,0.2)' : '#F3F4F6') }}>
               <ClockIcon className="w-5 h-5" style={{ color: pendingCount > 0 ? '#D97706' : (darkMode ? '#6B7280' : '#9CA3AF') }} />
@@ -209,7 +215,7 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
         </div>
 
         {/* Total COs */}
-        <div className="rounded-lg p-4" style={{ backgroundColor: colors.bgAlt, border: colors.border }}>
+        <div className="rounded-lg p-4" style={{ backgroundColor: colors.card, border: colors.border }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(37,99,235,0.1)' }}>
               <CheckCircleIcon className="w-5 h-5" style={{ color: '#2563EB' }} />
@@ -228,63 +234,68 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
 
       {/* Create Form */}
       {showForm && (
-        <div className="bg-white border rounded-lg p-6">
-          <h3 className="text-base font-semibold text-gray-900 mb-4">New Change Order</h3>
+        <div className="rounded-lg p-6" style={{ backgroundColor: colors.bg, border: colors.border }}>
+          <h3 className="text-base font-semibold mb-4" style={{ color: colors.text }}>New Change Order</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: colors.textMuted }}>Title *</label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
                   placeholder="e.g., Additional electrical panel upgrade"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                   required
                 />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: colors.textMuted }}>Description *</label>
                 <textarea
                   value={form.description}
                   onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
                   placeholder="Detailed description of the scope change..."
                   rows={3}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                   required
                 />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Change</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: colors.textMuted }}>Reason for Change</label>
                 <input
                   type="text"
                   value={form.reason}
                   onChange={e => setForm(p => ({ ...p, reason: e.target.value }))}
                   placeholder="e.g., Client request, site condition, design change"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cost Change ({project.currency}) *</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: colors.textMuted }}>Cost Change ({project.currency}) *</label>
                 <input
                   type="number"
                   value={form.change_amount}
                   onChange={e => setForm(p => ({ ...p, change_amount: e.target.value }))}
                   placeholder="5000 or -2000"
                   step="0.01"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                   required
                 />
-                <p className="text-xs text-gray-400 mt-1">Use negative for deductions</p>
+                <p className="text-xs mt-1" style={{ color: colors.textMuted }}>Use negative for deductions</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Schedule Impact (days)</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: colors.textMuted }}>Schedule Impact (days)</label>
                 <input
                   type="number"
                   value={form.days_added}
                   onChange={e => setForm(p => ({ ...p, days_added: e.target.value }))}
                   placeholder="0"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ backgroundColor: colors.bgAlt, border: colors.border, color: colors.text }}
                 />
               </div>
             </div>
@@ -299,7 +310,8 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ border: colors.border, color: colors.text, backgroundColor: colors.bgAlt }}
               >
                 Cancel
               </button>
@@ -319,10 +331,10 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
           ))}
         </div>
       ) : changeOrders.length === 0 ? (
-        <div className="bg-white border rounded-lg p-12 text-center">
-          <DocumentTextIcon className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-          <h3 className="text-base font-medium text-gray-900 mb-1">No change orders yet</h3>
-          <p className="text-sm text-gray-500 mb-4">Track scope changes and budget adjustments</p>
+        <div className="rounded-lg p-12 text-center" style={{ backgroundColor: colors.bg, border: colors.border }}>
+          <DocumentTextIcon className="h-12 w-12 mx-auto mb-4" style={{ color: colors.textMuted }} />
+          <h3 className="text-base font-medium mb-1" style={{ color: colors.text }}>No change orders yet</h3>
+          <p className="text-sm mb-4" style={{ color: colors.textMuted }}>Track scope changes and budget adjustments</p>
           <button
             onClick={() => setShowForm(true)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
@@ -334,71 +346,71 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
       ) : (
         <div className="space-y-3">
           {changeOrders.map(co => (
-            <div key={co.id} className="bg-white border rounded-lg overflow-hidden">
+            <div key={co.id} className="rounded-lg overflow-hidden" style={{ backgroundColor: colors.bg, border: colors.border }}>
               {/* CO Header */}
               <div
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
+                className={`flex items-center justify-between p-4 cursor-pointer ${darkMode ? 'hover:bg-white/5' : 'hover:bg-gray-50'}`}
                 onClick={() => setExpandedId(expandedId === co.id ? null : co.id)}
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <span className="text-xs font-mono font-semibold text-gray-500 whitespace-nowrap">
+                  <span className="text-xs font-mono font-semibold whitespace-nowrap" style={{ color: colors.textMuted }}>
                     {co.co_number}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{co.title}</p>
-                    <p className="text-xs text-gray-400">{formatDate(co.created_at)}</p>
+                    <p className="font-medium truncate" style={{ color: colors.text }}>{co.title}</p>
+                    <p className="text-xs" style={{ color: colors.textMuted }}>{formatDate(co.created_at)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 ml-4">
-                  <span className={`text-sm font-semibold ${co.change_amount >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  <span className={`text-sm font-semibold ${co.change_amount >= 0 ? 'text-red-500' : 'text-green-500'}`}>
                     {co.change_amount >= 0 ? '+' : ''}{formatCurrency(co.change_amount, project.currency)}
                   </span>
                   <span className={`text-xs font-medium px-2 py-1 rounded-full ${STATUS_COLORS[co.status]}`}>
                     {STATUS_LABELS[co.status]}
                   </span>
                   {expandedId === co.id
-                    ? <ChevronUpIcon className="h-4 w-4 text-gray-400" />
-                    : <ChevronDownIcon className="h-4 w-4 text-gray-400" />
+                    ? <ChevronUpIcon className="h-4 w-4" style={{ color: colors.textMuted }} />
+                    : <ChevronDownIcon className="h-4 w-4" style={{ color: colors.textMuted }} />
                   }
                 </div>
               </div>
 
               {/* Expanded Details */}
               {expandedId === co.id && (
-                <div className="border-t px-4 pb-4 pt-3 bg-gray-50">
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="px-4 pb-4 pt-3 space-y-4" style={{ backgroundColor: colors.bgAlt, borderTop: colors.border }}>
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-xs text-gray-500 font-medium mb-1">Description</p>
-                      <p className="text-sm text-gray-700">{co.description}</p>
+                      <p className="text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Description</p>
+                      <p className="text-sm" style={{ color: colors.text }}>{co.description}</p>
                     </div>
                     {co.reason && (
                       <div>
-                        <p className="text-xs text-gray-500 font-medium mb-1">Reason</p>
-                        <p className="text-sm text-gray-700">{co.reason}</p>
+                        <p className="text-xs font-medium mb-1" style={{ color: colors.textMuted }}>Reason</p>
+                        <p className="text-sm" style={{ color: colors.text }}>{co.reason}</p>
                       </div>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div className="bg-white rounded p-3 border">
-                      <p className="text-xs text-gray-500 mb-1">Original Budget</p>
-                      <p className="text-sm font-semibold">{formatCurrency(co.original_amount, project.currency)}</p>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="rounded p-3" style={{ backgroundColor: colors.bg, border: colors.border }}>
+                      <p className="text-xs mb-1" style={{ color: colors.textMuted }}>Original Budget</p>
+                      <p className="text-sm font-semibold" style={{ color: colors.text }}>{formatCurrency(co.original_amount, project.currency)}</p>
                     </div>
-                    <div className="bg-white rounded p-3 border">
-                      <p className="text-xs text-gray-500 mb-1">Change Amount</p>
-                      <p className={`text-sm font-semibold ${co.change_amount >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <div className="rounded p-3" style={{ backgroundColor: colors.bg, border: colors.border }}>
+                      <p className="text-xs mb-1" style={{ color: colors.textMuted }}>Change Amount</p>
+                      <p className={`text-sm font-semibold ${co.change_amount >= 0 ? 'text-red-500' : 'text-green-500'}`}>
                         {co.change_amount >= 0 ? '+' : ''}{formatCurrency(co.change_amount, project.currency)}
                       </p>
                     </div>
-                    <div className="bg-white rounded p-3 border">
-                      <p className="text-xs text-gray-500 mb-1">New Budget</p>
-                      <p className="text-sm font-semibold">{formatCurrency(co.original_amount + co.change_amount, project.currency)}</p>
+                    <div className="rounded p-3" style={{ backgroundColor: colors.bg, border: colors.border }}>
+                      <p className="text-xs mb-1" style={{ color: colors.textMuted }}>New Budget</p>
+                      <p className="text-sm font-semibold" style={{ color: colors.text }}>{formatCurrency(co.original_amount + co.change_amount, project.currency)}</p>
                     </div>
                   </div>
 
                   {co.days_added !== 0 && (
-                    <p className="text-sm text-gray-600 mb-3">
-                      Schedule impact: <span className="font-medium">{co.days_added > 0 ? '+' : ''}{co.days_added} days</span>
+                    <p className="text-sm" style={{ color: colors.textMuted }}>
+                      Schedule impact: <span className="font-medium" style={{ color: colors.text }}>{co.days_added > 0 ? '+' : ''}{co.days_added} days</span>
                     </p>
                   )}
 
@@ -464,10 +476,10 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
       )}
 
       {/* Confirm Delete Modal */}
-      {confirmDeleteId && (
+      {confirmDeleteId && createPortal(
         <>
-          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDeleteId(null)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="fixed inset-0 bg-black/40 z-9999" onClick={() => setConfirmDeleteId(null)} />
+          <div className="fixed inset-0 z-9999 flex items-center justify-center pointer-events-none">
             <div className="pointer-events-auto rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
               <p className="text-sm font-medium text-center mb-1" style={{ color: colors.text }}>Delete this change order?</p>
               <p className="text-xs text-center mb-5" style={{ color: colors.textMuted }}>
@@ -491,7 +503,8 @@ export default function ProjectChangeOrdersTab({ project }: Props) {
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.getElementById('modal-portal-root') ?? document.body
       )}
     </div>
   )

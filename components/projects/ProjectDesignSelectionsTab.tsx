@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { ProjectDetails, DesignSelection } from '@/lib/projects/get-project-details'
 import { createClient } from '@/lib/supabase/client'
-import { getUserCompany } from '@/lib/auth/get-user-company'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import { createTask } from '@/lib/supabase/tasks'
 import toast from 'react-hot-toast'
@@ -19,6 +19,8 @@ import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
 
 interface Props {
   project: ProjectDetails
+  refreshKey?: number
+  onMutate?: () => void
 }
 
 type FilterStatus = 'all' | 'pending' | 'approved' | 'ordered' | 'received' | 'installed' | 'rejected'
@@ -95,7 +97,7 @@ function PipelineStep({
   )
 }
 
-export default function ProjectDesignSelectionsTab({ project }: Props) {
+export default function ProjectDesignSelectionsTab({ project, refreshKey = 0, onMutate }: Props) {
   const { colors, darkMode } = useThemeColors()
   const [selections, setSelections] = useState<DesignSelection[] | null>(null)
   const [tasks, setTasks] = useState<any[] | null>(null)
@@ -112,25 +114,22 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
   useEffect(() => {
     fetchSelections()
     fetchTasks()
-  }, [project.id])
+  }, [project.id, refreshKey])
 
   async function fetchSelections() {
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('design_selections')
-      .select('*')
-      .eq('project_id', project.id)
-      .order('created_at', { ascending: true })
-    if (data) setSelections(data as DesignSelection[])
+    const res = await fetch(`/api/projects/${project.id}/design-selections`)
+    if (res.ok) {
+      const { selections } = await res.json()
+      if (selections) setSelections(selections as DesignSelection[])
+    }
   }
 
   async function fetchTasks() {
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('project_id', project.id)
-    if (data) setTasks(data as any)
+    const res = await fetch(`/api/projects/${project.id}/tasks`)
+    if (res.ok) {
+      const { tasks } = await res.json()
+      if (tasks) setTasks(tasks as any)
+    }
   }
 
   function openAdd() {
@@ -164,13 +163,7 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
     if (!form.option_name.trim() || !form.price) return
     setSaving(true)
     try {
-      const supabase = createClient()
-      const profile = await getUserCompany()
-      if (!profile) throw new Error('Not authenticated')
-
       const basePayload = {
-        project_id:        project.id,
-        company_id:        profile.company_id,
         category:          form.category,
         room_location:     form.room_location,
         option_name:       form.option_name.trim(),
@@ -191,12 +184,15 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
         const statusChanged = original?.status !== form.status
 
         if (statusChanged && form.status === 'approved') {
-          // Save all other fields first, then trigger signature modal
-          await supabase.from('design_selections').update(basePayload).eq('id', editingId)
+          // Save fields first, then open signature modal
+          await fetch(`/api/projects/${project.id}/design-selections/${editingId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(basePayload),
+          })
           await fetchSelections()
           setShowPanel(false)
           setSaving(false)
-          // Open signature modal for the updated selection
           const updated = { ...original!, ...basePayload } as DesignSelection
           openSignatureModal(updated)
           return
@@ -204,7 +200,6 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
 
         const payload: any = { ...basePayload, status: form.status }
 
-        // Clear approval data when moving away from approved
         if (statusChanged && original?.status === 'approved' && form.status !== 'approved') {
           payload.client_approved = false
           payload.approved_date = null
@@ -212,17 +207,25 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
           payload.approved_by_email = null
         }
 
-        // Delete linked tasks when resetting to pending
         if (statusChanged && form.status === 'pending') {
           await deleteLinkedTasks(editingId)
         }
 
-        await supabase.from('design_selections').update(payload).eq('id', editingId)
+        await fetch(`/api/projects/${project.id}/design-selections/${editingId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
       } else {
-        await supabase.from('design_selections').insert({ ...basePayload, created_by: profile.id })
+        await fetch(`/api/projects/${project.id}/design-selections`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(basePayload),
+        })
       }
 
       await fetchSelections()
+      onMutate?.()
       setShowPanel(false)
     } catch {
       toast.error('Failed to save. Please try again.')
@@ -232,10 +235,11 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
   }
 
   async function handleDelete(id: string) {
-    const supabase = createClient()
-    await supabase.from('design_selections').delete().eq('id', id)
+    await fetch(`/api/projects/${project.id}/design-selections/${id}`, { method: 'DELETE' })
     setSelections(prev => (prev ?? []).filter(s => s.id !== id))
+    setTasks(prev => prev ? prev.filter((t: any) => t.design_selection_id !== id) : prev)
     setConfirmDeleteId(null)
+    onMutate?.()
   }
 
   function openSignatureModal(sel: DesignSelection) {
@@ -348,6 +352,7 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
         }
 
         toast.success(`Approved by ${clientName} — 3 tasks created for ${sel.option_name}`)
+        onMutate?.()
       } else {
         toast.success(`${sel.option_name} approved by ${clientName}`)
       }
@@ -371,9 +376,13 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
   }
 
   async function handleReject(sel: DesignSelection) {
-    const supabase = createClient()
-    await supabase.from('design_selections').update({ status: 'rejected' }).eq('id', sel.id)
+    await fetch(`/api/projects/${project.id}/design-selections/${sel.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'rejected' }),
+    })
     setSelections(prev => (prev ?? []).map(s => s.id === sel.id ? { ...s, status: 'rejected' } : s))
+    onMutate?.()
   }
 
   // Derive linked task statuses for a selection's pipeline
@@ -406,7 +415,7 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
   }
   const totalValue = selections.reduce((n, s) => n + s.price + s.installation_cost, 0)
 
-  const cardStyle = { backgroundColor: colors.bgAlt, border: colors.border, borderRadius: '0.5rem' }
+  const cardStyle = { backgroundColor: colors.card, border: colors.border, borderRadius: '0.5rem' }
 
   const FILTERS: { key: FilterStatus; label: string }[] = [
     { key: 'all',       label: `All (${selections.length})` },
@@ -488,7 +497,7 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
             const showPipeline = ['approved', 'ordered', 'received', 'installed'].includes(sel.status)
 
             return (
-              <div key={sel.id} className="rounded-lg p-4" style={{ ...cardStyle, borderLeft: `3px solid ${sc.border}` }}>
+              <div key={sel.id} className="rounded-lg p-4" style={{ backgroundColor: colors.card, borderRadius: '0.5rem', borderTop: colors.border, borderRight: colors.border, borderBottom: colors.border, borderLeft: `3px solid ${sc.border}` }}>
                 <div className="flex items-start gap-4">
 
                   {/* Main info */}
@@ -823,10 +832,10 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
       )}
 
       {/* Client Signature Modal */}
-      {signatureTarget && (
+      {signatureTarget && createPortal(
         <>
-          <div className="fixed inset-0 bg-black/60 z-50" onClick={() => setSignatureTarget(null)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none px-4">
+          <div className="fixed inset-0 bg-black/60 z-9999" onClick={() => setSignatureTarget(null)} />
+          <div className="fixed inset-0 z-9999 flex items-center justify-center pointer-events-none px-4">
             <div className="pointer-events-auto rounded-xl shadow-xl w-full max-w-md" style={{ backgroundColor: colors.bg, border: colors.border }}>
               <div className="px-6 py-4" style={{ borderBottom: colors.borderBottom }}>
                 <h2 className="text-base font-semibold" style={{ color: colors.text }}>Client Approval</h2>
@@ -894,14 +903,15 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
               </form>
             </div>
           </div>
-        </>
+        </>,
+        document.getElementById('modal-portal-root') ?? document.body
       )}
 
       {/* Confirm Delete */}
-      {confirmDeleteId && (
+      {confirmDeleteId && createPortal(
         <>
-          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDeleteId(null)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="fixed inset-0 bg-black/40 z-9999" onClick={() => setConfirmDeleteId(null)} />
+          <div className="fixed inset-0 z-9999 flex items-center justify-center pointer-events-none">
             <div className="pointer-events-auto rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
               <p className="text-sm font-medium text-center mb-1" style={{ color: colors.text }}>Delete this selection?</p>
               <p className="text-xs text-center mb-5 px-2" style={{ color: colors.textMuted }}>
@@ -925,7 +935,8 @@ export default function ProjectDesignSelectionsTab({ project }: Props) {
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.getElementById('modal-portal-root') ?? document.body
       )}
     </div>
   )

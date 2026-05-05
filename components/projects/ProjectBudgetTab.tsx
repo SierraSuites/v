@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { createClient } from '@/lib/supabase/client'
-import { getUserCompany } from '@/lib/auth/get-user-company'
 import { ProjectDetails } from '@/lib/projects/get-project-details'
 import { useThemeColors } from '@/lib/hooks/useThemeColors'
 import {
@@ -148,6 +148,8 @@ function PaymentBadge({ status, date, amount, currency }: { status: string; date
 
 interface Props {
   project: ProjectDetails
+  refreshKey?: number
+  onMutate?: () => void
   onSpentChange?: (spent: number) => void
 }
 
@@ -160,7 +162,7 @@ const EMPTY_EXPENSE_FORM = {
   payment_status: 'pending' as 'pending' | 'paid' | 'overdue',
 }
 
-export default function ProjectBudgetTab({ project, onSpentChange }: Props) {
+export default function ProjectBudgetTab({ project, refreshKey = 0, onMutate, onSpentChange }: Props) {
   const { colors, darkMode } = useThemeColors()
   const [budgetData,  setBudgetData]  = useState<BudgetData | null>(null)
   const [expenses,    setExpenses]    = useState<Expense[] | null>(null)
@@ -175,18 +177,15 @@ export default function ProjectBudgetTab({ project, onSpentChange }: Props) {
   const [detailExp,   setDetailExp]   = useState<Expense | null>(null)
   const [saving,      setSaving]      = useState(false)
 
-  useEffect(() => { loadData() }, [project.id])
+  useEffect(() => { loadData() }, [project.id, refreshKey])
 
   async function loadData() {
     try {
       const supabase = createClient()
 
-      const [projectRes, expensesRes, selectionsRes, tasksRes] = await Promise.all([
-        supabase.from('projects').select('estimated_budget, currency').eq('id', project.id).single(),
-        supabase.from('project_expenses')
-          .select('id, category, description, amount, date, vendor, payment_status, created_by, design_selection_id')
-          .eq('project_id', project.id)
-          .order('date', { ascending: false }),
+      // Expenses + budget via RBAC-enforced API; DS + tasks are read-only secondary data
+      const [budgetRes, selectionsRes, tasksRes] = await Promise.all([
+        fetch(`/api/projects/${project.id}/expenses`),
         supabase.from('design_selections')
           .select('id, option_name, category, room_location, status, price, installation_cost')
           .eq('project_id', project.id)
@@ -197,21 +196,10 @@ export default function ProjectBudgetTab({ project, onSpentChange }: Props) {
           .not('design_selection_id', 'is', null),
       ])
 
-      if (projectRes.error) throw projectRes.error
-      if (expensesRes.error) throw expensesRes.error
+      if (!budgetRes.ok) throw new Error('Failed to load budget')
+      const { expenses: expensesRaw, estimated_budget, currency } = await budgetRes.json()
 
-      const expensesRaw = expensesRes.data || []
-
-      // Resolve creator names
-      const creatorIds = [...new Set(expensesRaw.map((e: any) => e.created_by).filter(Boolean))]
-      const creatorMap: Record<string, { full_name: string | null; avatar_url: string | null }> = {}
-      if (creatorIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('user_profiles').select('id, full_name, avatar_url').in('id', creatorIds)
-        profiles?.forEach((p: any) => { creatorMap[p.id] = p })
-      }
-
-      const formattedExpenses: Expense[] = expensesRaw.map((e: any) => ({
+      const formattedExpenses: Expense[] = (expensesRaw || []).map((e: any) => ({
         id: e.id,
         category: e.category,
         description: e.description,
@@ -221,18 +209,17 @@ export default function ProjectBudgetTab({ project, onSpentChange }: Props) {
         payment_status: e.payment_status || 'pending',
         design_selection_id: e.design_selection_id ?? null,
         created_by: {
-          name:   creatorMap[e.created_by]?.full_name  || 'Unknown',
-          avatar: creatorMap[e.created_by]?.avatar_url || '',
+          name:   e.created_by_profile?.full_name  || 'Unknown',
+          avatar: e.created_by_profile?.avatar_url || '',
         },
       }))
 
       const totalExpenses = formattedExpenses.reduce((s, e) => s + e.amount, 0)
-      const estimated     = projectRes.data.estimated_budget || 0
 
       setBudgetData({
-        estimated_budget: estimated,
+        estimated_budget: estimated_budget || 0,
         total_expenses:   totalExpenses,
-        currency:         projectRes.data.currency || 'USD',
+        currency:         currency || 'USD',
       })
       setExpenses(formattedExpenses)
 
@@ -284,43 +271,41 @@ export default function ProjectBudgetTab({ project, onSpentChange }: Props) {
     e.preventDefault()
     setSaving(true)
     try {
-      const supabase = createClient()
-      const profile  = await getUserCompany()
-      if (!profile) throw new Error('Not authenticated')
-
       const amount = parseFloat(newExp.amount)
-      const { data: inserted, error } = await supabase
-        .from('project_expenses')
-        .insert({
-          project_id:     project.id,
+      const res = await fetch(`/api/projects/${project.id}/expenses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           category:       newExp.category,
           description:    newExp.description,
           amount,
           date:           newExp.date,
           vendor:         newExp.vendor || null,
           payment_status: newExp.payment_status,
-          created_by:     profile.id,
-        })
-        .select('id').single()
-      if (error) throw error
+        }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const { expense: inserted } = await res.json()
 
       const added: Expense = {
-        id:                   inserted.id,
-        category:             newExp.category,
-        description:          newExp.description,
+        id:                  inserted.id,
+        category:            newExp.category,
+        description:         newExp.description,
         amount,
-        date:                 newExp.date,
-        vendor:               newExp.vendor || null,
-        payment_status:       newExp.payment_status,
-        design_selection_id:  null,
-        created_by:           { name: profile.full_name ?? 'You', avatar: profile.avatar_url ?? '' },
+        date:                newExp.date,
+        vendor:              newExp.vendor || null,
+        payment_status:      newExp.payment_status,
+        design_selection_id: null,
+        created_by:          { name: 'You', avatar: '' },
       }
       setExpenses(prev => prev ? [added, ...prev] : [added])
-      setBudgetData(prev => prev ? { ...prev, total_expenses: prev.total_expenses + amount } : prev)
-      onSpentChange?.(budgetData ? budgetData.total_expenses + amount : amount)
+      const newTotal = (budgetData?.total_expenses ?? 0) + amount
+      setBudgetData(prev => prev ? { ...prev, total_expenses: newTotal } : prev)
+      onSpentChange?.(newTotal)
       setNewExp(EMPTY_EXPENSE_FORM)
       setShowAdd(false)
       toast.success('Expense added')
+      onMutate?.()
     } catch (err: any) {
       console.error('Failed to add expense:', err?.message)
       toast.error('Failed to add expense.')
@@ -334,26 +319,31 @@ export default function ProjectBudgetTab({ project, onSpentChange }: Props) {
     if (!editingExp) return
     setSaving(true)
     try {
-      const supabase = createClient()
       const newAmount = parseFloat(editForm.amount)
-      const { error } = await supabase.from('project_expenses').update({
-        category:       editForm.category,
-        description:    editForm.description,
-        amount:         newAmount,
-        date:           editForm.date,
-        vendor:         editForm.vendor || null,
-        payment_status: editForm.payment_status,
-      }).eq('id', editingExp.id)
-      if (error) throw error
+      const res = await fetch(`/api/projects/${project.id}/expenses?expenseId=${editingExp.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category:       editForm.category,
+          description:    editForm.description,
+          amount:         newAmount,
+          date:           editForm.date,
+          vendor:         editForm.vendor || null,
+          payment_status: editForm.payment_status,
+        }),
+      })
+      if (!res.ok) throw new Error(await res.text())
 
       const diff = newAmount - editingExp.amount
       setExpenses(prev => prev?.map(ex => ex.id === editingExp.id
         ? { ...ex, ...editForm, amount: newAmount, vendor: editForm.vendor || null }
         : ex) ?? prev)
-      setBudgetData(prev => prev ? { ...prev, total_expenses: prev.total_expenses + diff } : prev)
-      onSpentChange?.(budgetData ? budgetData.total_expenses + diff : newAmount)
+      const newTotal = (budgetData?.total_expenses ?? 0) + diff
+      setBudgetData(prev => prev ? { ...prev, total_expenses: newTotal } : prev)
+      onSpentChange?.(newTotal)
       setEditingExp(null)
       toast.success('Expense updated')
+      onMutate?.()
     } catch (err: any) {
       toast.error('Failed to update expense.')
     } finally {
@@ -364,30 +354,32 @@ export default function ProjectBudgetTab({ project, onSpentChange }: Props) {
   async function confirmDelete() {
     if (!confirmDel) return
     try {
-      const supabase = createClient()
-      const { error } = await supabase.from('project_expenses').delete().eq('id', confirmDel.id)
-      if (error) throw error
+      const res = await fetch(`/api/projects/${project.id}/expenses?expenseId=${confirmDel.id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(await res.text())
       const deleted = expenses?.find(e => e.id === confirmDel.id)
       setExpenses(prev => prev?.filter(e => e.id !== confirmDel.id) ?? prev)
       if (deleted) {
-        setBudgetData(prev => prev ? { ...prev, total_expenses: prev.total_expenses - deleted.amount } : prev)
-        onSpentChange?.(budgetData ? budgetData.total_expenses - deleted.amount : 0)
+        const newTotal = (budgetData?.total_expenses ?? 0) - deleted.amount
+        setBudgetData(prev => prev ? { ...prev, total_expenses: newTotal } : prev)
+        onSpentChange?.(newTotal)
       }
       setConfirmDel(null)
+      onMutate?.()
     } catch {
       toast.error('Failed to delete expense.')
     }
   }
 
   async function markAsPaid(expId: string) {
-    const supabase = createClient()
-    const { error } = await supabase
-      .from('project_expenses')
-      .update({ payment_status: 'paid' })
-      .eq('id', expId)
-    if (error) { toast.error('Failed to mark as paid.'); return }
+    const res = await fetch(`/api/projects/${project.id}/expenses?expenseId=${expId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payment_status: 'paid' }),
+    })
+    if (!res.ok) { toast.error('Failed to mark as paid.'); return }
     setExpenses(prev => prev?.map(e => e.id === expId ? { ...e, payment_status: 'paid' } : e) ?? prev)
     toast.success('Marked as paid')
+    onMutate?.()
   }
 
   function openEdit(exp: Expense) {
@@ -449,7 +441,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: Props) {
   const pendingPayments = expenses.filter(e => e.payment_status === 'pending' || e.payment_status === 'overdue')
     .sort((a, b) => (a.payment_status === 'overdue' ? -1 : 1))
 
-  const cardStyle = { backgroundColor: colors.bgAlt, border: colors.border, borderRadius: '0.5rem' }
+  const cardStyle = { backgroundColor: colors.card, border: colors.border, borderRadius: '0.5rem' }
   const inputStyle = {
     backgroundColor: colors.bgAlt, border: colors.border,
     color: colors.text, borderRadius: '0.375rem',
@@ -765,7 +757,7 @@ export default function ProjectBudgetTab({ project, onSpentChange }: Props) {
               </div>
             )
           }) : (
-            <div className="text-center py-10 rounded-lg" style={{ ...cardStyle, borderStyle: 'dashed' }}>
+            <div className="text-center py-10 rounded-lg" style={{ backgroundColor: colors.bg, borderRadius: '0.5rem', borderWidth: '1px', borderStyle: 'dashed', borderColor: darkMode ? '#2d3548' : '#E0E0E0' }}>
               <CheckCircleIcon className="h-10 w-10 mx-auto mb-2" style={{ color: darkMode ? '#374151' : '#D1D5DB' }} />
               <p className="text-sm" style={{ color: colors.textMuted }}>
                 No expenses match this filter
@@ -777,10 +769,10 @@ export default function ProjectBudgetTab({ project, onSpentChange }: Props) {
     </div>
 
     {/* ── Add Expense Modal ── */}
-    {showAdd && (
+    {showAdd && createPortal(
       <>
-        <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowAdd(false)} />
-        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none px-4">
+        <div className="fixed inset-0 bg-black/50 z-9999" onClick={() => setShowAdd(false)} />
+        <div className="fixed inset-0 z-9999 flex items-center justify-center pointer-events-none px-4">
           <div className="pointer-events-auto rounded-xl shadow-xl w-full max-w-md" style={{ backgroundColor: colors.bg, border: colors.border }}>
             <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: colors.borderBottom }}>
               <h3 className="text-base font-semibold" style={{ color: colors.text }}>Add Expense</h3>
@@ -878,14 +870,15 @@ export default function ProjectBudgetTab({ project, onSpentChange }: Props) {
             </form>
           </div>
         </div>
-      </>
+      </>,
+      document.getElementById('modal-portal-root') ?? document.body
     )}
 
     {/* ── Edit Expense Modal ── */}
-    {editingExp && (
+    {editingExp && createPortal(
       <>
-        <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setEditingExp(null)} />
-        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none px-4">
+        <div className="fixed inset-0 bg-black/50 z-9999" onClick={() => setEditingExp(null)} />
+        <div className="fixed inset-0 z-9999 flex items-center justify-center pointer-events-none px-4">
           <div className="pointer-events-auto rounded-xl shadow-xl w-full max-w-md" style={{ backgroundColor: colors.bg, border: colors.border }}>
             <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: colors.borderBottom }}>
               <h3 className="text-base font-semibold" style={{ color: colors.text }}>Edit Expense</h3>
@@ -973,7 +966,8 @@ export default function ProjectBudgetTab({ project, onSpentChange }: Props) {
             </form>
           </div>
         </div>
-      </>
+      </>,
+      document.getElementById('modal-portal-root') ?? document.body
     )}
 
     {/* ── Expense Detail Panel ── */}
@@ -1028,10 +1022,10 @@ export default function ProjectBudgetTab({ project, onSpentChange }: Props) {
     )}
 
     {/* ── Confirm Delete ── */}
-    {confirmDel && (
+    {confirmDel && createPortal(
       <>
-        <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setConfirmDel(null)} />
-        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+        <div className="fixed inset-0 bg-black/40 z-9999" onClick={() => setConfirmDel(null)} />
+        <div className="fixed inset-0 z-9999 flex items-center justify-center pointer-events-none">
           <div className="pointer-events-auto rounded-xl shadow-xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: colors.bg, border: colors.border }}>
             <p className="text-sm font-medium text-center mb-1" style={{ color: colors.text }}>Delete this expense?</p>
             <p className="text-xs text-center mb-5" style={{ color: colors.textMuted }}>{confirmDel.description}</p>
@@ -1045,7 +1039,8 @@ export default function ProjectBudgetTab({ project, onSpentChange }: Props) {
             </div>
           </div>
         </div>
-      </>
+      </>,
+      document.getElementById('modal-portal-root') ?? document.body
     )}
     </>
   )
